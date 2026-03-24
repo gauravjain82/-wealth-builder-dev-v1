@@ -1,0 +1,110 @@
+/* Leaderboard Card Component Styles */
+.leaderboard-card {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(245, 196, 67, 0.3);
+  padding-bottom: 0.5rem;
+}
+
+.leaderboard-card__title {
+  color: #fbbf24;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.leaderboard-card__link {
+  padding: 0.5rem 1rem;
+  background: rgba(245, 196, 67, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 196, 67, 0.4);
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.leaderboard-card__link:hover {
+  background: rgba(245, 196, 67, 0.3);
+}
+
+.leaderboard-card__tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.leaderboard-card__columns {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .leaderboard-card__columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.leaderboard-card__column-title {
+  color: #fbbf24;
+  font-weight: 600;
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.leaderboard-card__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.leaderboard-card__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s;
+}
+
+.leaderboard-card__item:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.leaderboard-card__rank {
+  color: #fbbf24;
+  font-weight: 700;
+  font-size: 1.125rem;
+  min-width: 2rem;
+}
+
+.leaderboard-card__avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  border: 2px solid rgba(245, 196, 67, 0.3);
+}
+
+.leaderboard-card__name {
+  flex: 1;
+  color: white;
+  font-weight: 500;
+}
+
+.leaderboard-card__count {
+  color: #fbbf24;
+  font-weight: 600;
+}

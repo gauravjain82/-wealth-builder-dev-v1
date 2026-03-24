@@ -1,0 +1,35 @@
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: hsl(var(--background));
+  transition: background-color 0.2s ease;
+}
+
+.main-layout__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.main-layout__content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.main-layout__main {
+  flex: 1;
+  overflow-y: auto;
+  background: hsl(var(--background));
+  position: relative;
+}
+
+.main-layout__main-inner {
+  padding: 24px;
+  min-height: 100%;
+}

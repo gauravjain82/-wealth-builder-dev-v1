@@ -1,0 +1,128 @@
+/* FAQ Section Component Styles */
+.biz-faq {
+  max-width: 900px;
+  margin: 32px auto 60px;
+  padding: 30px;
+}
+
+.biz-faq-title {
+  font-size: 32px;
+  font-weight: 900;
+  text-align: left;
+  margin-bottom: 24px;
+  color: #f8fafc;
+}
+
+.biz-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.biz-faq-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.biz-faq-q {
+  padding: 14px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+  color: #f8fafc;
+  list-style: none;
+  transition: background 0.2s ease;
+}
+
+.biz-faq-q:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.biz-faq-q::-webkit-details-marker {
+  display: none;
+}
+
+.biz-faq-a {
+  padding: 12px 16px;
+  color: #c9d1d9;
+}
+
+.biz-btn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-block;
+  border: 0;
+  font-family: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.biz-btn-white {
+  background: #ffffff;
+  color: #000;
+  font-weight: 900;
+}
+
+.biz-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .biz-faq {
+    padding: 20px 12px;
+  }
+
+  .biz-faq-title {
+    font-size: 24px;
+  }
+
+  .biz-faq-q {
+    font-size: 14px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .biz-btn {
+    transition: none;
+  }
+  .biz-btn:hover {
+    transform: none;
+  }
+}
+
+/* App theme class support */
+html.light .biz-faq-title,
+body.light .biz-faq-title,
+.light .biz-faq-title {
+  color: #1e293b;
+}
+
+html.light .biz-faq-item,
+body.light .biz-faq-item,
+.light .biz-faq-item {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+html.light .biz-faq-q,
+body.light .biz-faq-q,
+.light .biz-faq-q {
+  color: #1e293b;
+}
+
+html.light .biz-faq-q:hover,
+body.light .biz-faq-q:hover,
+.light .biz-faq-q:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+html.light .biz-faq-a,
+body.light .biz-faq-a,
+.light .biz-faq-a {
+  color: #475569;
+}

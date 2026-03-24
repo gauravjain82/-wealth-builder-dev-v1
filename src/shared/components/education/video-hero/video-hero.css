@@ -1,0 +1,65 @@
+/* Video Hero Component Styles */
+.biz-hero {
+  padding: 40px 20px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.biz-hero.small .biz-hero-inner {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.biz-hero-media {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #262b33;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.biz-hero-video-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+}
+
+.biz-hero-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+/* App theme class support */
+html.light .biz-hero-media,
+body.light .biz-hero-media,
+.light .biz-hero-media {
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .biz-hero-media,
+body.dark .biz-hero-media,
+.dark .biz-hero-media {
+  border: 1px solid #262b33;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .biz-hero {
+    padding: 20px 12px;
+  }
+
+  .biz-hero.small .biz-hero-inner {
+    padding: 0 12px;
+  }
+}

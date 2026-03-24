@@ -1,0 +1,36 @@
+/* Typography component styles */
+
+/* Custom typography styles can be added here */
+/* Note: Most typography styling is handled via Tailwind classes and class-variance-authority */
+
+.typography-heading {
+  /* Base heading styles if needed */
+}
+
+.typography-text {
+  /* Base text styles if needed */
+}
+
+.typography-link {
+  /* Base link styles if needed */
+}
+
+.typography-blockquote {
+  /* Additional blockquote styles if needed */
+}
+
+.typography-code {
+  /* Additional code styles if needed */
+}
+
+.typography-list {
+  /* Additional list styles if needed */
+}
+
+.typography-divider {
+  /* Additional divider styles if needed */
+}
+
+.typography-badge {
+  /* Additional badge styles if needed */
+}

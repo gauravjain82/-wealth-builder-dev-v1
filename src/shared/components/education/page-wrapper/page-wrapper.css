@@ -1,0 +1,29 @@
+/* Education Page Wrapper Base Styles */
+.biz-wrap {
+  background: #0f1114;
+  color: #f8fafc;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+/* App theme class support */
+html.light .biz-wrap,
+body.light .biz-wrap,
+.light .biz-wrap {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+html.dark .biz-wrap,
+body.dark .biz-wrap,
+.dark .biz-wrap {
+  background: #0f1114;
+  color: #f8fafc;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .biz-wrap {
+    padding-bottom: 20px;
+  }
+}

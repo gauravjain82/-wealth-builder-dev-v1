@@ -1,0 +1,222 @@
+/* Reusable tracker table with legacy dark/gold look from old site */
+.tracker-table-shell {
+  border: 1px solid #30343d;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #191c22, #121419);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.tracker-table-wrap {
+  width: 100%;
+  overflow: auto;
+}
+
+.tracker-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: #f8fafc;
+}
+
+.tracker-th {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(180deg, #2b3038, #22262d);
+  color: #f4c95d;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(244, 201, 93, 0.35);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tracker-th.sticky-head {
+  position: sticky;
+  top: 0;
+}
+
+.tracker-search-th.sticky-head {
+  top: 40px;
+}
+
+.tracker-th.is-sortable {
+  cursor: default;
+  user-select: none;
+}
+
+.tracker-th-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tracker-sort-indicator {
+  margin-left: 8px;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.tracker-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+}
+
+.tracker-sort-btn:hover {
+  background-color: rgba(244, 201, 93, 0.15);
+}
+
+.tracker-search-th {
+  padding: 6px 8px;
+  background: linear-gradient(180deg, #252a31, #1f232a);
+}
+
+.tracker-search-input {
+  width: 100%;
+  min-width: 70px;
+  background: rgba(15, 18, 24, 0.95);
+  border: 1px solid rgba(244, 201, 93, 0.35);
+  border-radius: 6px;
+  color: #f8fafc;
+  font-size: 11px;
+  padding: 6px 8px;
+  outline: none;
+}
+
+.tracker-search-input:focus {
+  border-color: #f4c95d;
+  box-shadow: 0 0 0 2px rgba(244, 201, 93, 0.2);
+}
+
+.tracker-search-input::placeholder {
+  color: rgba(248, 250, 252, 0.5);
+}
+
+.tracker-search-placeholder {
+  display: block;
+  height: 30px;
+}
+
+.tracker-lock-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  opacity: 0.6;
+  transition: opacity 0.2s, background-color 0.2s;
+  font-size: 12px;
+  min-width: 20px;
+  min-height: 20px;
+}
+
+.tracker-lock-btn:hover {
+  opacity: 1;
+  background-color: rgba(244, 201, 93, 0.15);
+}
+
+.tracker-lock-btn.locked {
+  opacity: 1;
+  background-color: rgba(244, 201, 93, 0.25);
+}
+
+.tracker-lock-icon {
+  display: inline-block;
+  user-select: none;
+  line-height: 1;
+}
+
+.tracker-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.2s ease;
+  z-index: 10;
+}
+
+.tracker-resize-handle:hover {
+  background: #f4c95d;
+  opacity: 0.4;
+}
+
+.tracker-resize-handle:active {
+  background: #f4c95d;
+  opacity: 0.6;
+}
+
+.tracker-td {
+  padding: 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tracker-tr:nth-child(even) .tracker-td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tracker-tr:hover .tracker-td {
+  background: rgba(244, 201, 93, 0.12);
+}
+
+.tracker-tr.tracker-clickable {
+  cursor: pointer;
+}
+
+.tracker-empty-cell {
+  padding: 22px 14px;
+  text-align: center;
+  color: rgba(248, 250, 252, 0.75);
+}
+
+.sticky-col {
+  position: sticky;
+  z-index: 1;
+  background: linear-gradient(180deg, #1f232b, #181b22);
+  box-shadow: 8px 0 14px rgba(0, 0, 0, 0.22);
+}
+
+.tracker-th.sticky-col {
+  z-index: 3;
+  background: linear-gradient(180deg, #313741, #272c34);
+}
+
+.align-left {
+  text-align: left;
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .tracker-th,
+  .tracker-td {
+    font-size: 11px;
+    padding: 9px 8px;
+  }
+}

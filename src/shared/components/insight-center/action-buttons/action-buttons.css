@@ -1,0 +1,210 @@
+/* Action Buttons Component Styles */
+.ic-btn-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 1000px;
+  margin: 8px auto 0;
+}
+
+.ic-btn-row.single {
+  margin-top: -6px;
+}
+
+/* Buttons */
+.ic-btn {
+  --ic-btn-bg1: rgba(255, 215, 0, 0.18);
+  --ic-btn-bg2: rgba(255, 255, 255, 0.06);
+  --ic-btn-border: rgba(255, 255, 255, 0.18);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-width: 320px;
+  padding: 20px 40px;
+  border-radius: 16px;
+  border: 2px solid var(--ic-btn-border);
+  background: radial-gradient(
+      120% 120% at 0% 0%,
+      var(--ic-btn-bg1) 0%,
+      transparent 60%
+    ),
+    linear-gradient(180deg, var(--ic-btn-bg2), transparent);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  will-change: transform, box-shadow;
+  isolation: isolate;
+}
+
+/* Animated gradient drift (very subtle) */
+.ic-btn::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 215, 0, 0.12),
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 215, 0, 0.12)
+  );
+  filter: blur(24px);
+  opacity: 0.18;
+  z-index: -1;
+  animation: icGradDrift 9s linear infinite;
+}
+
+/* Sheen sweep on hover */
+.ic-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 120%;
+  height: 100%;
+  transform: skewX(-20deg);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.14) 48%,
+    rgba(255, 255, 255, 0.42) 50%,
+    rgba(255, 255, 255, 0.14) 52%,
+    transparent 100%
+  );
+  transition: left 600ms ease;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.ic-btn:hover::after,
+.ic-btn:focus-visible::after {
+  left: 130%;
+  opacity: 1;
+}
+
+/* Lift + glow */
+.ic-btn:hover,
+.ic-btn:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(255, 215, 0, 0.2), 0 10px 24px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 215, 0, 0.6);
+  outline: none;
+}
+
+/* Center label inside button */
+.ic-btn-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  line-height: 1.1;
+  position: relative;
+  z-index: 1;
+}
+
+/* Gradient drift keyframes */
+@keyframes icGradDrift {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* App theme class support */
+.light .ic-btn,
+html.light .ic-btn,
+body.light .ic-btn {
+  --ic-btn-bg1: rgba(255, 215, 0, 0.3);
+  --ic-btn-bg2: rgba(0, 0, 0, 0.08);
+  --ic-btn-border: rgba(0, 0, 0, 0.25);
+  color: #000;
+  background: radial-gradient(
+      120% 120% at 0% 0%,
+      var(--ic-btn-bg1) 0%,
+      transparent 60%
+    ),
+    linear-gradient(180deg, var(--ic-btn-bg2), transparent);
+}
+
+.light .ic-btn::before,
+html.light .ic-btn::before,
+body.light .ic-btn::before {
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 215, 0, 0.2),
+    rgba(0, 0, 0, 0.1),
+    rgba(255, 215, 0, 0.2)
+  );
+}
+
+.light .ic-btn::after,
+html.light .ic-btn::after,
+body.light .ic-btn::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 48%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.5) 52%,
+    transparent 100%
+  );
+}
+
+.light .ic-btn:hover,
+.light .ic-btn:focus-visible,
+html.light .ic-btn:hover,
+html.light .ic-btn:focus-visible,
+body.light .ic-btn:hover,
+body.light .ic-btn:focus-visible {
+  box-shadow: 0 18px 40px rgba(255, 215, 0, 0.3), 0 10px 24px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 215, 0, 0.8);
+}
+
+.dark .ic-btn,
+html.dark .ic-btn,
+body.dark .ic-btn,
+.dark .ic-btn-label,
+html.dark .ic-btn-label,
+body.dark .ic-btn-label {
+  color: #fff;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ic-btn::before {
+    animation: none;
+  }
+  .ic-btn,
+  .ic-btn:hover,
+  .ic-btn:focus-visible {
+    transform: none !important;
+    transition: none !important;
+  }
+  .ic-btn::after {
+    display: none;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ic-btn {
+    min-width: 260px;
+    padding: 18px 32px;
+    font-size: 1.125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .ic-btn {
+    min-width: 200px;
+    padding: 16px 24px;
+    font-size: 1rem;
+  }
+}

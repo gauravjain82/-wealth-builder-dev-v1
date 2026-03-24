@@ -1,0 +1,93 @@
+/* Gallery Row Component Styles */
+.biz-row {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 18px;
+}
+
+.biz-row-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.biz-row-title {
+  font-size: 34px;
+  font-weight: 900;
+  text-align: center;
+  padding-bottom: 10px;
+  color: #f8fafc;
+}
+
+.biz-row-dots {
+  flex: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Horizontal scrolling gallery */
+.biz-cards.one-line {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  padding-bottom: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #f4b21a #12151b;
+}
+
+.biz-cards.one-line::-webkit-scrollbar {
+  height: 8px;
+}
+
+.biz-cards.one-line::-webkit-scrollbar-track {
+  background: #12151b;
+  border-radius: 4px;
+}
+
+.biz-cards.one-line::-webkit-scrollbar-thumb {
+  background: #f4b21a;
+  border-radius: 4px;
+}
+
+.biz-cards.one-line::-webkit-scrollbar-thumb:hover {
+  background: #d69812;
+}
+
+/* App theme class support */
+html.light .biz-row-title,
+body.light .biz-row-title,
+.light .biz-row-title {
+  color: #1e293b;
+}
+
+html.light .biz-row-dots,
+body.light .biz-row-dots,
+.light .biz-row-dots {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+html.light .biz-cards.one-line::-webkit-scrollbar-track,
+body.light .biz-cards.one-line::-webkit-scrollbar-track,
+.light .biz-cards.one-line::-webkit-scrollbar-track {
+  background: #e2e8f0;
+}
+
+html.light .biz-cards.one-line,
+body.light .biz-cards.one-line,
+.light .biz-cards.one-line {
+  scrollbar-color: #f4b21a #e2e8f0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .biz-row {
+    padding: 32px 12px;
+  }
+
+  .biz-row-title {
+    font-size: 24px;
+  }
+}

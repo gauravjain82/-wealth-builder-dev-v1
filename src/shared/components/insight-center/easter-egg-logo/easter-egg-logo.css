@@ -1,0 +1,32 @@
+/* Easter Egg Logo Component Styles */
+.ic-logo-container {
+  margin-top: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.ic-logo {
+  width: 200px;
+  height: auto;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  display: block;
+  margin: 0 auto;
+  cursor: pointer;
+}
+
+.ic-logo:hover {
+  opacity: 1;
+  transform: scale(1.05);
+  filter: drop-shadow(0 8px 16px rgba(255, 215, 0, 0.3));
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ic-logo:hover {
+    transform: none;
+  }
+}

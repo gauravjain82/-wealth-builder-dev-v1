@@ -1,0 +1,441 @@
+/* Embedded video in the overlay viewer */
+.vault-embedded-video {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #000;
+  border-radius: 8px;
+  object-fit: contain;
+}
+/* ===============================
+   Ten Systematic Tools — Vault look
+   =============================== */
+.vault {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: calc(100vh - 0px);
+  background: radial-gradient(
+      1200px 600px at -10% -10%,
+      rgba(255, 215, 0, 0.06),
+      transparent 60%
+    ),
+    linear-gradient(135deg, #1a1a1a, #0f0f0f 60%);
+  color: #fff;
+}
+@media (max-width: 900px) {
+  .vault {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ----- Left Pane ----- */
+.vault-left {
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 20px 14px;
+  outline: none;
+}
+.vault-left-head {
+  padding: 6px 8px 12px;
+}
+.vault-left-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  width: 100%;
+}
+.vault-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.vault-menu-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 1fr 12px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 10px;
+  color: #ddd;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 160ms ease,
+    border-color 160ms ease, color 160ms ease;
+}
+.vault-menu-item .icon {
+  font-size: 1rem;
+  line-height: 0;
+  opacity: 0.95;
+  font-weight: 800;
+}
+.vault-menu-item .text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vault-menu-item .chev {
+  opacity: 0.25;
+  font-size: 1rem;
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+.vault-menu-item:hover {
+  border-color: rgba(255, 215, 0, 0.35);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.12), 0 10px 30px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+.vault-menu-item:hover .chev {
+  opacity: 0.7;
+  transform: translateX(3px);
+}
+.vault-menu-item:hover .text {
+  font-weight: 700;
+}
+.vault-menu-item.active {
+  border-color: rgba(255, 215, 0, 0.55);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 215, 0, 0.1),
+    rgba(255, 215, 0, 0.06)
+  );
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.25),
+    0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* disabled (access gated) */
+.vault-menu-item.disabled,
+.vault-menu-item.disabled * {
+  cursor: not-allowed !important;
+  opacity: 0.55;
+}
+.vault-menu-item.disabled:hover {
+  transform: none;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  color: #ddd;
+}
+
+/* ----- Right Pane ----- */
+.vault-right {
+  padding: 22px 22px 28px;
+}
+.vault-right-head {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.vault-right-head .title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.vault-right-head h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+/* Grid & Tiles */
+.vault-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+/* Card (thumb) */
+.vault-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  text-decoration: none;
+  color: #eee;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.03),
+    rgba(255, 255, 255, 0.02)
+  );
+  transition: transform 120ms ease, box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+.vault-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.15), 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+.vault-card .thumb-wrap {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  border-radius: 16px 16px 0 0;
+}
+.vault-card .thumb-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.vault-card .card-foot {
+  padding: 12px 14px;
+}
+.vault-card .name {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.row.gap {
+  display: flex;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+/* Row (no thumb) */
+.vault-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-decoration: none;
+  color: #e6e6e6;
+  padding: 18px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 14px;
+  transition: border-color 160ms ease, box-shadow 160ms ease,
+    transform 120ms ease;
+}
+.vault-row:hover {
+  border-color: rgba(255, 215, 0, 0.45);
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.12), 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+.vault-row .row-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.vault-row .row-arrow {
+  opacity: 0.7;
+  font-size: 1.4rem;
+}
+
+/* Buttons */
+.glass-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease,
+    transform 0.12s ease;
+}
+.glass-btn:hover {
+  border-color: rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.12);
+  transform: translateY(-1px);
+}
+.glass-btn.primary {
+  border-color: rgba(255, 215, 0, 0.6);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.18);
+}
+.ghost {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: #ddd;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.danger {
+  background: rgba(255, 75, 75, 0.12);
+  border: 1px solid rgba(255, 75, 75, 0.4);
+  color: #ff9d9d;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+/* ----- Editor UI ----- */
+.editor-bar {
+  display: flex;
+  gap: 8px;
+}
+.edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.editor-note {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+.edit-list {
+  display: grid;
+  gap: 12px;
+}
+.edit-item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 14px;
+  padding: 12px;
+}
+.edit-row {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.edit-row.two {
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.edit-row label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+.edit-row input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 10px;
+  padding: 9px 10px;
+  outline: none;
+}
+.thumb-actions {
+  display: flex;
+  align-items: end;
+  height: 100%;
+}
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.editor-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.editor-footer .spacer {
+  flex: 1;
+}
+
+/* Button normalization */
+.as-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* Empty state */
+.empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 0;
+  opacity: 0.8;
+}
+
+/* ----- Player modal (slides & pdf) ----- */
+.player-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.player-container {
+  position: relative;
+  width: min(96vw, 1280px);
+  aspect-ratio: 16 / 9;
+  background: transparent;
+}
+.player-close-btn {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+}
+.player-title {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Pagination controls */
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 16px 0;
+}
+
+.pagination-info {
+  color: #ccc;
+  font-size: 0.9rem;
+  font-weight: 500;
+  min-width: 100px;
+  text-align: center;
+}
+
+.pagination-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.vault-content {
+  display: flex;
+  flex-direction: column;
+}

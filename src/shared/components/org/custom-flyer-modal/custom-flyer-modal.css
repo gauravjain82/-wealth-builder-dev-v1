@@ -1,0 +1,289 @@
+/* CustomFlyerModal.css - Dark themed modal matching the design */
+
+.custom-flyer-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+.custom-flyer-modal {
+  background: #1a1d24;
+  border: 1px solid #3a3f4a;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 480px;
+  padding: 32px 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  position: relative;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.custom-flyer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.custom-flyer-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #f4b21a;
+  margin: 0;
+  letter-spacing: 0.3px;
+}
+
+.custom-flyer-close {
+  background: transparent;
+  border: none;
+  color: #8a8f98;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  margin-top: -8px;
+  margin-right: -8px;
+}
+
+.custom-flyer-close:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.custom-flyer-subtitle {
+  font-size: 14px;
+  color: #8a8f98;
+  margin: 0 0 28px 0;
+}
+
+.custom-flyer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.custom-flyer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-flyer-field:has(.custom-flyer-input:not(.custom-flyer-input-simple)) {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.custom-flyer-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8a8f98;
+  grid-column: 1;
+}
+
+.custom-flyer-label svg {
+  width: 20px;
+  height: 20px;
+}
+
+.custom-flyer-label-text {
+  font-size: 14px;
+  color: #c9d1d9;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.custom-flyer-input,
+.custom-flyer-textarea {
+  background: #0f1218;
+  border: 1px solid #3a3f4a;
+  border-radius: 8px;
+  color: #f8fafc;
+  font-size: 15px;
+  padding: 12px 16px;
+  outline: none;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.custom-flyer-input {
+  grid-column: 2;
+}
+
+.custom-flyer-input-simple {
+  width: 100%;
+}
+
+.custom-flyer-input:focus,
+.custom-flyer-textarea:focus {
+  border-color: #f4b21a;
+  background: #12151b;
+  box-shadow: 0 0 0 3px rgba(244, 178, 26, 0.1);
+}
+
+.custom-flyer-input::placeholder,
+.custom-flyer-textarea::placeholder {
+  color: #5a5f68;
+}
+
+.custom-flyer-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.custom-flyer-icon-btn {
+  background: transparent;
+  border: none;
+  color: #8a8f98;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  grid-column: 3;
+}
+
+.custom-flyer-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f4b21a;
+}
+
+.custom-flyer-icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.custom-flyer-generate-btn {
+  background: linear-gradient(135deg, #f4b21a 0%, #d69812 100%);
+  color: #1a1d24;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(244, 178, 26, 0.2);
+}
+
+.custom-flyer-generate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(244, 178, 26, 0.3);
+  background: linear-gradient(135deg, #ffbe1a 0%, #e0a312 100%);
+}
+
+.custom-flyer-generate-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(244, 178, 26, 0.2);
+}
+
+.custom-flyer-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%238a8f98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+.custom-flyer-select:focus {
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23f4b21a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.custom-flyer-file-input {
+  background: #0f1218;
+  border: 1px solid #3a3f4a;
+  border-radius: 8px;
+  color: #f8fafc;
+  font-size: 14px;
+  padding: 10px 16px;
+  outline: none;
+  transition: all 0.2s;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+
+.custom-flyer-file-input:focus {
+  border-color: #f4b21a;
+  background: #12151b;
+  box-shadow: 0 0 0 3px rgba(244, 178, 26, 0.1);
+}
+
+.custom-flyer-file-input::file-selector-button {
+  background: linear-gradient(135deg, #f4b21a 0%, #d69812 100%);
+  color: #1a1d24;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 12px;
+  transition: all 0.2s;
+}
+
+.custom-flyer-file-input::file-selector-button:hover {
+  background: linear-gradient(135deg, #ffbe1a 0%, #e0a312 100%);
+}
+
+.custom-flyer-preview {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.custom-flyer-preview-img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #f4b21a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 600px) {
+  .custom-flyer-modal {
+    width: 95%;
+    padding: 24px 20px;
+  }
+
+  .custom-flyer-title {
+    font-size: 18px;
+  }
+
+  .custom-flyer-subtitle {
+    font-size: 13px;
+  }
+}
