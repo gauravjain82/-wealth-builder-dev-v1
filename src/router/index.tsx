@@ -8,7 +8,6 @@ import { LoginPage, SignupPage } from '@/features/auth';
 
 // Lazy load pages for code splitting
 const HomePage = lazy(() => import('@/features/home/pages/home-page'));
-const DashboardPage = lazy(() => import('@/features/dashboard/pages/dashboard-page'));
 const EventsPage = lazy(() => import('@/features/events/pages/events-page'));
 const EducationPage = lazy(() => import('@/features/education/pages/education-page'));
 const ProspectTrackerPage = lazy(() => import('@/features/team/prospect/pages/prospect-tracker-page'));
@@ -104,7 +103,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'dashboard',
-        element: lazyLoad(DashboardPage),
+        element: <Navigate to="/home" replace />,
       },
       {
         path: 'events',

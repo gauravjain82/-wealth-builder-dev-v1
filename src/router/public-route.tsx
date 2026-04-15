@@ -8,10 +8,10 @@ interface PublicRouteProps {
 }
 
 /**
- * PublicRoute - Redirects authenticated users to dashboard
+ * PublicRoute - Redirects authenticated users to home
  * Use for login, signup, and other public pages that authenticated users shouldn't access
  */
-export function PublicRoute({ children, redirectTo = '/dashboard' }: PublicRouteProps) {
+export function PublicRoute({ children, redirectTo = '/home' }: PublicRouteProps) {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -22,7 +22,7 @@ export function PublicRoute({ children, redirectTo = '/dashboard' }: PublicRoute
     );
   }
 
-  // If authenticated, redirect to dashboard
+  // If authenticated, redirect to home
   if (isAuthenticated) {
     return <Navigate to={redirectTo} replace />;
   }

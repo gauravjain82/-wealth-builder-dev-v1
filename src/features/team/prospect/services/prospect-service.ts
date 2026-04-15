@@ -73,6 +73,13 @@ function appendIfPresent(params: URLSearchParams, key: string, value?: string | 
   params.set(key, normalized);
 }
 
+function resolveNextUrl(nextUrl: string): string {
+  if (nextUrl.startsWith('http://') || nextUrl.startsWith('https://')) {
+    return nextUrl;
+  }
+  return `${API_BASE_URL}${nextUrl}`;
+}
+
 export async function fetchProspects(query: ProspectQueryParams = {}): Promise<ProspectsResponse> {
   const token = localStorage.getItem('wb.authToken');
   
@@ -136,7 +143,7 @@ export async function fetchUsersForSelection(): Promise<Prospect[]> {
 
     const data: ProspectsResponse = await response.json();
     users.push(...data.results);
-    nextUrl = data.next;
+    nextUrl = data.next ? resolveNextUrl(data.next) : null;
     pageSafety += 1;
   }
 
@@ -164,7 +171,6 @@ export async function saveProspectCallLog(
   const time = new Date().toLocaleString();
   const line = `[${time}] ${outcome}${note ? ` - ${note}` : ''}`;
   const mergedNotes = existingNotes ? `${line}\n${existingNotes}` : line;
-
   const response = await fetch(`${API_BASE_URL}/api/accounts/users/${prospect.id}/`, {
     method: 'PATCH',
     headers: getAuthHeaders(),

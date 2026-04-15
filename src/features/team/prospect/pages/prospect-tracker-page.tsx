@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useState } from 'react';
+import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import { Plan } from '@/core/types';
 import {
   Block,
@@ -23,6 +23,12 @@ import { AddAgencyCodeModal } from '../components/add-agency-code-modal';
 import { CallLogModal } from '../components/call-log-modal';
 import { buildProspectColumns } from '../prospect-columns';
 import type { AddAgentFormData, AddProspectFormData } from '../types';
+import {
+  createTrackerNote,
+  fetchTrackerNotesForUser,
+  type TrackerNote,
+} from '@/features/team/services/tracker-notes-service';
+import { TrackerNotesModal } from '@/features/team/components/tracker-notes-modal';
 
 export default function ProspectTrackerPage() {
   const pageHeading = 'Prospect Tracker';
@@ -35,6 +41,13 @@ export default function ProspectTrackerPage() {
   const [addAgencyCodeFor, setAddAgencyCodeFor] = useState<Prospect | null>(null);
   const [addProspectOpen, setAddProspectOpen] = useState(false);
   const [savingCallLog, setSavingCallLog] = useState(false);
+  const [savingNoteProspectIdSet, setSavingNoteProspectIdSet] = useState<Set<number>>(new Set());
+  const [loadingNoteProspectIdSet, setLoadingNoteProspectIdSet] = useState<Set<number>>(new Set());
+  const [notesByProspectId, setNotesByProspectId] = useState<Record<number, TrackerNote[]>>({});
+  const [noteDraftByProspectId, setNoteDraftByProspectId] = useState<Record<number, string>>({});
+  const [focusedNoteInputId, setFocusedNoteInputId] = useState<number | null>(null);
+  const [notesOpenFor, setNotesOpenFor] = useState<Prospect | null>(null);
+  const [modalNoteDraft, setModalNoteDraft] = useState('');
   const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
   const [pendingDeleteProspect, setPendingDeleteProspect] = useState<Prospect | null>(null);
   const [pageSize] = useState(20);
@@ -70,6 +83,26 @@ export default function ProspectTrackerPage() {
       prev.map((item) => (String(item.id) === String(updated.id) ? { ...item, ...updated } : item))
     );
   };
+
+  const ensureNotesLoaded = useCallback(async (userId: number) => {
+    if (notesByProspectId[userId]) return;
+    setLoadingNoteProspectIdSet((prev) => new Set(prev).add(userId));
+    try {
+      const loaded = await fetchTrackerNotesForUser(userId);
+      setNotesByProspectId((prev) => ({ ...prev, [userId]: loaded }));
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to load notes.',
+      });
+    } finally {
+      setLoadingNoteProspectIdSet((prev) => {
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
+    }
+  }, [addToast, notesByProspectId]);
 
   const handleEditProspect = (row: Prospect) => {
     setEditingProspect(row);
@@ -111,6 +144,63 @@ export default function ProspectTrackerPage() {
       setLoadingMore(false);
     }
   };
+
+  const handleNoteDraftChange = useCallback((prospectId: number, value: string) => {
+    setNoteDraftByProspectId((prev) => ({ ...prev, [prospectId]: value }));
+  }, []);
+
+  const handleAddInlineNote = useCallback(async (row: Prospect) => {
+    const draft = (noteDraftByProspectId[row.id] || '').trim();
+    if (!draft) return;
+
+    setSavingNoteProspectIdSet((prev) => new Set(prev).add(row.id));
+    try {
+      const created = await createTrackerNote(row.id, draft, 'prospect');
+      setNotesByProspectId((prev) => {
+        const current = prev[row.id] || [];
+        return { ...prev, [row.id]: [...current, created] };
+      });
+      setNoteDraftByProspectId((prev) => ({ ...prev, [row.id]: '' }));
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to save note.',
+      });
+    } finally {
+      setSavingNoteProspectIdSet((prev) => {
+        const next = new Set(prev);
+        next.delete(row.id);
+        return next;
+      });
+    }
+  }, [addToast, noteDraftByProspectId]);
+
+  const handleAddModalNote = useCallback(async () => {
+    if (!notesOpenFor) return;
+    const text = modalNoteDraft.trim();
+    if (!text) return;
+
+    setSavingNoteProspectIdSet((prev) => new Set(prev).add(notesOpenFor.id));
+    try {
+      const created = await createTrackerNote(notesOpenFor.id, text, 'prospect');
+      setNotesByProspectId((prev) => {
+        const current = prev[notesOpenFor.id] || [];
+        return { ...prev, [notesOpenFor.id]: [...current, created] };
+      });
+      setModalNoteDraft('');
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to save note.',
+      });
+    } finally {
+      setSavingNoteProspectIdSet((prev) => {
+        const next = new Set(prev);
+        next.delete(notesOpenFor.id);
+        return next;
+      });
+    }
+  }, [addToast, modalNoteDraft, notesOpenFor]);
 
   const mapProspectToForm = (prospect: Prospect): AddProspectFormData => ({
     firstName: prospect.first_name || '',
@@ -445,9 +535,43 @@ export default function ProspectTrackerPage() {
   };
 
   const columns = useMemo(
-    () => buildProspectColumns(handleEditProspect, handleOpenCallLog, handleDeleteProspect),
-    [handleDeleteProspect]
+    () =>
+      buildProspectColumns(handleEditProspect, handleOpenCallLog, handleDeleteProspect, {
+        notesByProspectId,
+        noteDraftByProspectId,
+        focusedNoteInputId,
+        savingNoteProspectIdSet,
+        onNoteDraftChange: handleNoteDraftChange,
+        onNoteFocus: setFocusedNoteInputId,
+        onNoteBlur: () => setFocusedNoteInputId(null),
+        onAddInlineNote: handleAddInlineNote,
+        onOpenAllNotes: (row) => {
+          void ensureNotesLoaded(row.id);
+          setNotesOpenFor(row);
+          setModalNoteDraft('');
+        },
+      }),
+    [
+      focusedNoteInputId,
+      handleAddInlineNote,
+      handleDeleteProspect,
+      notesByProspectId,
+      noteDraftByProspectId,
+      savingNoteProspectIdSet,
+      handleNoteDraftChange,
+      ensureNotesLoaded,
+    ]
   );
+
+  const notesForOpenProspect = useMemo(() => {
+    if (!notesOpenFor) return [];
+    const notes = notesByProspectId[notesOpenFor.id] || [];
+    return [...notes].sort((a, b) => {
+      const at = new Date(a.created_at).getTime();
+      const bt = new Date(b.created_at).getTime();
+      return at - bt;
+    });
+  }, [notesByProspectId, notesOpenFor]);
 
   useEffect(() => {
     loadProspects(1, true);
@@ -587,6 +711,20 @@ export default function ProspectTrackerPage() {
         loading={savingCallLog}
         onClose={() => setPendingDeleteProspect(null)}
         onConfirm={confirmDeleteProspect}
+      />
+
+      <TrackerNotesModal
+        open={Boolean(notesOpenFor)}
+        title={`Notes - ${notesOpenFor?.full_name || notesOpenFor?.email || ''}`}
+        notes={notesForOpenProspect}
+        draft={modalNoteDraft}
+        saving={Boolean(
+          notesOpenFor &&
+            (savingNoteProspectIdSet.has(notesOpenFor.id) || loadingNoteProspectIdSet.has(notesOpenFor.id))
+        )}
+        onClose={() => setNotesOpenFor(null)}
+        onDraftChange={setModalNoteDraft}
+        onAddNote={handleAddModalNote}
       />
     </div>
   );

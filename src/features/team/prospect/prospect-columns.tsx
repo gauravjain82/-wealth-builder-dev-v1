@@ -1,11 +1,31 @@
 import type { TrackerTableColumn } from '@/shared/components';
 import type { Prospect } from './services/prospect-service';
+import type { TrackerNote } from '@/features/team/services/tracker-notes-service';
 import { buildProfileSummary } from './prospect-utils';
+
+interface ProspectColumnOptions {
+  notesByProspectId: Record<number, TrackerNote[]>;
+  noteDraftByProspectId: Record<number, string>;
+  focusedNoteInputId: number | null;
+  savingNoteProspectIdSet: Set<number>;
+  onNoteDraftChange: (prospectId: number, value: string) => void;
+  onNoteFocus: (prospectId: number) => void;
+  onNoteBlur: () => void;
+  onAddInlineNote: (row: Prospect) => Promise<void>;
+  onOpenAllNotes: (row: Prospect) => void;
+}
+
+function formatNoteDate(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString();
+}
 
 export function buildProspectColumns(
   onEdit: (row: Prospect) => void,
   onOpenCallLog: (row: Prospect) => void,
-  onDelete: (row: Prospect) => void
+  onDelete: (row: Prospect) => void,
+  options: ProspectColumnOptions
 ): TrackerTableColumn<Prospect>[] {
   return [
     {
@@ -99,11 +119,61 @@ export function buildProspectColumns(
     {
       key: 'notes',
       label: 'Notes',
-      width: 360,
+      width: 420,
       render: (row) => {
-        const notes = row.prospect_meta?.notes || '';
-        return notes.length > 50 ? notes.substring(0, 50) + '...' : notes || '-';
+        const notes = options.notesByProspectId[row.id] || [];
+        const lastNote = notes.length > 0 ? notes[notes.length - 1] : null;
+        const isFocused = options.focusedNoteInputId === row.id;
+        const draft = options.noteDraftByProspectId[row.id] || '';
+        const inputValue = isFocused ? draft : draft || lastNote?.text || '';
+        const isSaving = options.savingNoteProspectIdSet.has(row.id);
+
+        return (
+          <div className="flex w-full flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <input
+                className="h-8 w-full rounded border border-white/15 bg-white/5 px-2 text-xs text-white outline-none focus:border-amber-300/50"
+                type="text"
+                placeholder="Add a quick note... (Press Enter)"
+                value={inputValue}
+                disabled={isSaving}
+                onChange={(e) => options.onNoteDraftChange(row.id, e.target.value)}
+                onFocus={() => options.onNoteFocus(row.id)}
+                onBlur={() => options.onNoteBlur()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void options.onAddInlineNote(row);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="h-8 w-8 rounded border border-white/20 bg-white/5 text-sm hover:bg-white/10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  options.onOpenAllNotes(row);
+                }}
+                title="Open all notes"
+                aria-label={`Open all notes for ${row.full_name || row.email}`}
+              >
+                ✏
+              </button>
+            </div>
+            {lastNote && !isFocused && !draft && (
+              <div className="truncate text-[11px] text-white/70">
+                {(lastNote.created_by_name || '—') + ' • ' + formatNoteDate(lastNote.created_at)}
+              </div>
+            )}
+          </div>
+        );
       },
+      value: (row) => {
+        const notes = options.notesByProspectId[row.id] || [];
+        return notes.map((note) => note.text).join(' ');
+      },
+      searchable: true,
+      searchPlaceholder: 'Search Notes',
     },
     {
       key: 'actions',

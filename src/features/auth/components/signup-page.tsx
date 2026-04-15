@@ -27,7 +27,7 @@ export function SignupPage() {
     try {
       await signUp({ email, password, displayName });
       addToast({ type: 'success', message: 'Account created successfully!' });
-      navigate('/dashboard');
+      navigate('/home');
     } catch (error: any) {
       addToast({ type: 'error', message: error.message || 'Failed to create account' });
     } finally {
@@ -40,7 +40,7 @@ export function SignupPage() {
     try {
       await signInWithGoogle();
       addToast({ type: 'success', message: 'Account created successfully!' });
-      navigate('/dashboard');
+      navigate('/home');
     } catch (error: any) {
       addToast({ type: 'error', message: error.message || 'Failed to sign up with Google' });
     } finally {

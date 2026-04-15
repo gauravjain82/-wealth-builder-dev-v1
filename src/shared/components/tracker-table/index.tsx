@@ -20,6 +20,12 @@ export interface TrackerTableColumn<T> {
   render?: (row: T) => ReactNode;
 }
 
+export interface TrackerTableHeaderGroupCell {
+  label?: ReactNode;
+  colSpan: number;
+  className?: string;
+}
+
 interface TrackerTableProps<T> {
   columns: TrackerTableColumn<T>[];
   rows: T[];
@@ -37,6 +43,7 @@ interface TrackerTableProps<T> {
   onRowClick?: (row: T) => void;
   tableId?: string;
   resizable?: boolean;
+  headerGroupRows?: TrackerTableHeaderGroupCell[][];
 }
 
 function toSortableValue(value: unknown): string | number {
@@ -138,6 +145,7 @@ export function TrackerTable<T>({
   onRowClick,
   tableId,
   resizable = true,
+  headerGroupRows = [],
 }: TrackerTableProps<T>) {
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | null>(
     defaultSort ? { key: defaultSort.key, direction: defaultSort.direction ?? 'asc' } : null
@@ -261,6 +269,9 @@ export function TrackerTable<T>({
     return columnWidths[column.key] ?? widthToPixels(column.width, column.minWidth ?? 180);
   };
 
+  const groupRowHeight = 40;
+  const baseHeaderTop = headerGroupRows.length * groupRowHeight;
+
   const handleSearchDraftChange = (columnKey: string, value: string) => {
     setSearchDraft((prev) => ({ ...prev, [columnKey]: value }));
   };
@@ -346,6 +357,27 @@ export function TrackerTable<T>({
       <div className="tracker-table-wrap">
         <table className="tracker-table">
           <thead>
+            {headerGroupRows.map((groupRow, rowIndex) => (
+              <tr key={`group-row-${rowIndex}`}>
+                {groupRow.map((cell, cellIndex) => (
+                  <th
+                    key={`group-cell-${rowIndex}-${cellIndex}`}
+                    colSpan={cell.colSpan}
+                    className={[
+                      'tracker-th',
+                      'tracker-group-th',
+                      stickyHeader ? 'sticky-head' : '',
+                      cell.className || '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    style={stickyHeader ? { top: rowIndex * groupRowHeight } : undefined}
+                  >
+                    {cell.label || ''}
+                  </th>
+                ))}
+              </tr>
+            ))}
             <tr>
               {columns.map((column) => {
                 const isSticky = getStickyColumns.has(column.key);
@@ -371,6 +403,7 @@ export function TrackerTable<T>({
                       width,
                       minWidth: width,
                       maxWidth: width,
+                      ...(stickyHeader ? { top: baseHeaderTop } : {}),
                       ...(isSticky ? { left: stickyOffsets[column.key] ?? 0 } : {}),
                     }}
                   >
@@ -433,6 +466,7 @@ export function TrackerTable<T>({
                       width,
                       minWidth: width,
                       maxWidth: width,
+                      ...(stickyHeader ? { top: baseHeaderTop + groupRowHeight } : {}),
                       ...(isSticky ? { left: stickyOffsets[column.key] ?? 0 } : {}),
                     }}
                   >

@@ -28,19 +28,26 @@
 
 .sidebar__title {
   font-weight: 600;
-  font-size: 14px;
-  color: hsl(var(--foreground));
+  font-size: 16px;
+  color: #f4d27f;
 }
 
 .sidebar__toggle-button {
-  background: transparent;
-  border: 1px solid hsl(var(--border));
-  border-radius: 4px;
   padding: 4px 8px;
-  cursor: pointer;
   font-size: 16px;
-  color: hsl(var(--muted-foreground));
-  transition: all 0.2s ease;
+  margin-left: 0px;
+  margin-right: 0px;
+  align-items: center;
+  background: #ffffff0d;
+  border: 1px solid #ffffff1a;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  height: 32px;
+  justify-content: center;
+  transition: all .2s ease;
+  width: 32px;
 }
 
 .sidebar__toggle-button:hover {

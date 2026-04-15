@@ -18,7 +18,7 @@ export function LoginPage() {
   const { signIn, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from || '/dashboard';
+  const from = (location.state as any)?.from || '/home';
 
   // Preload GIF
   useEffect(() => {

@@ -3,7 +3,7 @@ import { useAuth } from '@/features/auth';
 
 /**
  * RootRedirect - Smart root route handler
- * - If authenticated: redirect to dashboard
+ * - If authenticated: redirect to home
  * - If not authenticated: redirect to login
  * - While loading: show loader
  */
