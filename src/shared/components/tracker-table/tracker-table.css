@@ -383,6 +383,56 @@
   background: var(--tracker-sticky-hover-bg);
 }
 
+.tracker-tr.prospect-row-mark-client .tracker-td,
+.tracker-tr.prospect-row-mark-client .tracker-td.sticky-col {
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.tracker-tr.prospect-row-mark-client:hover .tracker-td,
+.tracker-tr.prospect-row-mark-client:hover .tracker-td.sticky-col {
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.tracker-tr.prospect-row-mark-client .tracker-td:first-child {
+  box-shadow: inset 3px 0 0 #22c55e;
+}
+
+.tracker-tr.prospect-row-mark-recruiter .tracker-td,
+.tracker-tr.prospect-row-mark-recruiter .tracker-td.sticky-col {
+  background: rgba(245, 158, 11, 0.16);
+}
+
+.tracker-tr.prospect-row-mark-recruiter:hover .tracker-td,
+.tracker-tr.prospect-row-mark-recruiter:hover .tracker-td.sticky-col {
+  background: rgba(245, 158, 11, 0.22);
+}
+
+.tracker-tr.prospect-row-mark-recruiter .tracker-td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.tracker-tr.prospect-row-mark-both .tracker-td,
+.tracker-tr.prospect-row-mark-both .tracker-td.sticky-col {
+  background: rgba(79, 125, 243, 0.16);
+}
+
+.tracker-tr.prospect-row-mark-both:hover .tracker-td,
+.tracker-tr.prospect-row-mark-both:hover .tracker-td.sticky-col {
+  background: rgba(79, 125, 243, 0.22);
+}
+
+.tracker-tr.prospect-row-mark-both .tracker-td:first-child {
+  box-shadow: inset 3px 0 0 #4f7df3;
+}
+
+.tracker-td.prospect-profile-cell,
+.tracker-th.prospect-profile-cell {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: initial;
+  vertical-align: top;
+}
+
 .align-left {
   text-align: left;
 }

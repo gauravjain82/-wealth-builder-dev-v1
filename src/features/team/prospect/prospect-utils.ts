@@ -19,13 +19,15 @@ export function buildProfileSummary(row: Prospect): string {
   if (!profile) return '-';
 
   const age = getAgeFromBirthday(profile.birthday);
+  const flags = profile.flags || {};
   const parts = [
-    profile.occupation || '-',
-    profile.gender || '-',
-    age,
-    profile.city || '-',
-    profile.state || '-',
+    profile.how_known || null,
+    profile.relationship !== undefined && profile.relationship !== null ? `${profile.relationship}/10` : null,
+    profile.occupation || null,
+    flags.married ? 'Married' : null,
+    flags.dependentKids ? 'Dependent Kids' : null,
+    age !== '-' ? `Age: ${age}` : null,
   ];
 
-  return parts.join(' | ');
+  return parts.filter(Boolean).join(' | ') || '-';
 }

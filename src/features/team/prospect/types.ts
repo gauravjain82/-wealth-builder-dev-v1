@@ -4,6 +4,7 @@ import { LevelCode } from '@/core/constants/levels';
 export interface AddAgentFormData {
   amaDate: string;
   agencyCode: string;
+  dateOfBirth: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -50,6 +51,7 @@ export interface AddProspectFormData {
 export const defaultAddAgentForm: AddAgentFormData = {
   amaDate: new Date().toISOString().split('T')[0],
   agencyCode: '',
+  dateOfBirth: '',
   firstName: '',
   lastName: '',
   phone: '',

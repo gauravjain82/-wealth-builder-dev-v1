@@ -60,6 +60,37 @@ export function AddProspectModal({
   const [form, setForm] = useState<AddProspectFormData>(defaultAddProspectForm);
   const addToast = useToastStore((state) => state.addToast);
 
+  const getDefaultRecruiter = () => {
+    const rawUser = localStorage.getItem('authUser');
+    const wbUserId = localStorage.getItem('wb.userId');
+
+    let recruiterId: number | null = null;
+    let recruiter = '';
+
+    if (rawUser) {
+      try {
+        const parsed = JSON.parse(rawUser);
+        const parsedId = Number.parseInt(String(parsed?.id ?? ''), 10);
+        if (Number.isFinite(parsedId)) recruiterId = parsedId;
+        recruiter =
+          parsed?.name ||
+          parsed?.full_name ||
+          `${parsed?.first_name || ''} ${parsed?.last_name || ''}`.trim() ||
+          parsed?.email ||
+          '';
+      } catch {
+        // Ignore malformed local storage and fallback to wb.userId.
+      }
+    }
+
+    if (recruiterId == null && wbUserId) {
+      const parsedId = Number.parseInt(String(wbUserId), 10);
+      if (Number.isFinite(parsedId)) recruiterId = parsedId;
+    }
+
+    return { recruiter, recruiterId };
+  };
+
   useEffect(() => {
     if (!open) {
       setForm(defaultAddProspectForm);
@@ -71,7 +102,12 @@ export function AddProspectModal({
       return;
     }
 
-    setForm(defaultAddProspectForm);
+    const defaultRecruiter = getDefaultRecruiter();
+    setForm({
+      ...defaultAddProspectForm,
+      recruiter: defaultRecruiter.recruiter,
+      recruiterId: defaultRecruiter.recruiterId,
+    });
   }, [open, initialForm]);
 
   if (!open) return null;
@@ -102,15 +138,17 @@ export function AddProspectModal({
       open={open}
       onClose={onClose}
       title={title}
-      contentClassName="max-h-[92vh] overflow-y-auto"
+      contentClassName="max-w-[760px] flex flex-col max-h-[90vh]"
     >
       <Form
-        className="grid gap-4"
+        className="flex min-h-0 flex-1 flex-col"
         onSubmit={(event) => {
           event.preventDefault();
           void handleSubmit();
         }}
       >
+        <div className="flex-1 overflow-y-auto pr-1">
+          <div className="grid gap-4">
           <FormRowGroup>
             <FormRow>
               <Label variant="form">First Name*</Label>
@@ -269,14 +307,19 @@ export function AddProspectModal({
             </FormRow>
           </FormRowGroup>
 
-      <FormActions className="mt-6">
-        <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={saving}>
-          {saving ? 'Saving...' : submitLabel}
-        </Button>
-      </FormActions>
+          </div>
+        </div>
+
+        <div className="mt-4 flex-shrink-0 border-t border-white/10 pt-4">
+          <FormActions>
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Saving...' : submitLabel}
+            </Button>
+          </FormActions>
+        </div>
       </Form>
     </Modal>
   );

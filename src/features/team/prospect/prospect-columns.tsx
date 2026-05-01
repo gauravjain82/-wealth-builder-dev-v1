@@ -15,7 +15,70 @@ interface ProspectColumnOptions {
   onAddInlineNote: (row: Prospect) => Promise<void>;
   onOpenAllNotes: (row: Prospect) => void;
   onToggleProspectMeta: (row: Prospect, field: 'top25' | 'hot', value: boolean) => void;
+  onChangeProspectMark: (row: Prospect, mark: 'default' | 'client' | 'recruiter' | 'both') => void;
   onChangeProspectOutcome: (row: Prospect, outcome: 'Client' | 'Recruit' | 'Both') => void;
+  editingProfileProspectId: number | null;
+  profileDraftByProspectId: Record<
+    number,
+    {
+      howKnown: string;
+      relationship: string;
+      occupation: string;
+      age: string;
+      whatTold: string;
+      married: boolean;
+      dependentKids: boolean;
+    }
+  >;
+  onStartProfileEdit: (row: Prospect) => void;
+  onProfileDraftFieldChange: (
+    prospectId: number,
+    field: 'howKnown' | 'relationship' | 'occupation' | 'age' | 'whatTold',
+    value: string
+  ) => void;
+  onProfileDraftFlagChange: (prospectId: number, field: 'married' | 'dependentKids', value: boolean) => void;
+  onSaveProfileEdit: (row: Prospect) => Promise<void>;
+  onCancelProfileEdit: () => void;
+  getRowIndex: (row: Prospect) => number;
+}
+
+type ProspectMark = 'default' | 'client' | 'recruiter' | 'both';
+
+function normalizeMarkValue(row: Prospect): ProspectMark {
+  const raw = (row.prospect_meta?.mark || '').toLowerCase();
+  if (raw === 'client' || raw === 'green') return 'client';
+  if (raw === 'recruiter' || raw === 'recruit' || raw === 'yellow') return 'recruiter';
+  if (raw === 'both' || raw === 'combined') return 'both';
+  return 'default';
+}
+
+function markVisual(mark: ProspectMark): { label: string; background: string; border: string } {
+  if (mark === 'client') {
+    return {
+      label: 'Client',
+      background: '#22c55e',
+      border: '#22c55e',
+    };
+  }
+  if (mark === 'recruiter') {
+    return {
+      label: 'Recruiter',
+      background: '#f59e0b',
+      border: '#f59e0b',
+    };
+  }
+  if (mark === 'both') {
+    return {
+      label: 'Both',
+      background: '#4f7df3',
+      border: '#4f7df3',
+    };
+  }
+  return {
+    label: 'Default',
+    background: '#9ca3af',
+    border: '#9ca3af',
+  };
 }
 
 function formatNoteDate(value: string): string {
@@ -32,32 +95,62 @@ export function buildProspectColumns(
 ): TrackerTableColumn<Prospect>[] {
   return [
     {
+      key: 'index',
+      label: '#',
+      width: 40,
+      align: 'center',
+      sortable: false,
+      value: (row) => options.getRowIndex(row),
+      render: (row) => options.getRowIndex(row),
+    },
+    {
       key: 'mark',
       label: '',
-      width: 48,
+      width: 60,
       align: 'center',
       sortable: false,
       render: (row) => {
-        const mark = row.prospect_meta?.mark || '';
-        const bg =
-          mark === 'Both'
-            ? '#a855f7'
-            : mark === 'Client'
-            ? '#22c55e'
-            : mark === 'Recruit'
-            ? '#3b82f6'
-            : '#64748b';
+        const current = normalizeMarkValue(row);
+        const visual = markVisual(current);
         return (
-          <span
-            title={mark || 'No mark'}
-            style={{
-              display: 'inline-block',
-              width: 12,
-              height: 12,
-              borderRadius: '50%',
-              backgroundColor: bg,
-            }}
-          />
+          <div className="relative inline-flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <select
+              title={`Marker: ${visual.label}`}
+              aria-label={`Marker for ${row.full_name || row.email}`}
+              value={current}
+              disabled={options.savingMetaProspectIdSet.has(row.id)}
+              onChange={(e) =>
+                options.onChangeProspectMark(
+                  row,
+                  (e.target.value as 'default' | 'client' | 'recruiter' | 'both') || 'default'
+                )
+              }
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: 14,
+                height: 14,
+                opacity: 0,
+                cursor: options.savingMetaProspectIdSet.has(row.id) ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <option value="default">Default</option>
+              <option value="client">Client</option>
+              <option value="recruiter">Recruiter</option>
+              <option value="both">Both</option>
+            </select>
+            <span
+              aria-hidden="true"
+              style={{
+                display: 'inline-block',
+                width: 14,
+                height: 14,
+                borderRadius: '50%',
+                border: `1px solid ${visual.border}`,
+                background: visual.background,
+              }}
+            />
+          </div>
         );
       },
     },
@@ -160,8 +253,106 @@ export function buildProspectColumns(
       key: 'profile',
       label: 'Profile',
       width: 320,
+      className: 'prospect-profile-cell',
       sortable: true,
-      render: (row) => buildProfileSummary(row),
+      render: (row) => {
+        const isEditing = options.editingProfileProspectId === row.id;
+        const draft = options.profileDraftByProspectId[row.id];
+        if (!isEditing || !draft) {
+          const summary = buildProfileSummary(row);
+          return (
+            <div
+              className="cursor-pointer rounded border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/90 hover:border-amber-300/35 hover:bg-white/10"
+              title="Click to edit profile"
+              onClick={(e) => {
+                e.stopPropagation();
+                options.onStartProfileEdit(row);
+              }}
+            >
+              {summary}
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex min-w-[300px] flex-col gap-2 rounded border border-amber-300/30 bg-black/30 p-2" onClick={(e) => e.stopPropagation()}>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                className="h-8 rounded border border-white/15 bg-white/5 px-2 text-xs text-white outline-none"
+                placeholder="Relationship"
+                value={draft.howKnown}
+                onChange={(e) => options.onProfileDraftFieldChange(row.id, 'howKnown', e.target.value)}
+              />
+              <input
+                className="h-8 rounded border border-white/15 bg-white/5 px-2 text-xs text-white outline-none"
+                type="number"
+                min="1"
+                max="10"
+                placeholder="Rel. scale"
+                value={draft.relationship}
+                onChange={(e) => options.onProfileDraftFieldChange(row.id, 'relationship', e.target.value)}
+              />
+              <input
+                className="h-8 rounded border border-white/15 bg-white/5 px-2 text-xs text-white outline-none"
+                placeholder="Occupation"
+                value={draft.occupation}
+                onChange={(e) => options.onProfileDraftFieldChange(row.id, 'occupation', e.target.value)}
+              />
+              <input
+                className="h-8 rounded border border-white/15 bg-white/5 px-2 text-xs text-white outline-none"
+                type="number"
+                min="1"
+                max="100"
+                placeholder="Age"
+                value={draft.age}
+                onChange={(e) => options.onProfileDraftFieldChange(row.id, 'age', e.target.value)}
+              />
+            </div>
+            <input
+              className="h-8 rounded border border-white/15 bg-white/5 px-2 text-xs text-white outline-none"
+              placeholder="What told"
+              value={draft.whatTold}
+              onChange={(e) => options.onProfileDraftFieldChange(row.id, 'whatTold', e.target.value)}
+            />
+            <div className="flex items-center gap-3 text-xs text-white/90">
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={draft.married}
+                  onChange={(e) => options.onProfileDraftFlagChange(row.id, 'married', e.target.checked)}
+                />
+                Married
+              </label>
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={draft.dependentKids}
+                  onChange={(e) => options.onProfileDraftFlagChange(row.id, 'dependentKids', e.target.checked)}
+                />
+                Dependent Kids
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="h-7 rounded border border-emerald-300/50 bg-emerald-500/20 px-2 text-xs text-emerald-200"
+                onClick={() => {
+                  void options.onSaveProfileEdit(row);
+                }}
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                className="h-7 rounded border border-white/25 bg-white/5 px-2 text-xs text-white/90"
+                onClick={() => options.onCancelProfileEdit()}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        );
+      },
       value: (row) => buildProfileSummary(row),
     },
     {

@@ -59,6 +59,10 @@ export function AddAgencyCodeModal({
       window.alert('Agency Code is required');
       return;
     }
+    if (!form.dateOfBirth.trim()) {
+      window.alert('Date of Birth is required');
+      return;
+    }
     await onSubmit(form);
   };
 
@@ -68,19 +72,33 @@ export function AddAgencyCodeModal({
   ];
 
   return (
-    <Modal open={Boolean(prospect)} onClose={onClose} title="Add Agent">
+    <Modal
+      open={Boolean(prospect)}
+      onClose={onClose}
+      title="Add Agent"
+      contentClassName="max-w-[760px] flex flex-col max-h-[90vh]"
+    >
       <Form
-        className="grid gap-4"
+        className="flex min-h-0 flex-1 flex-col"
         onSubmit={(event) => {
           event.preventDefault();
           void handleSubmit();
         }}
       >
+        <div className="flex-1 overflow-y-auto pr-1">
+          <div className="grid gap-4">
           <FormRowGroup>
             <FormRow>
               <Label variant="form">AMA Date*</Label>
               <DatePicker value={form.amaDate} onChange={(value) => updateField('amaDate', value)} />
             </FormRow>
+            <FormRow>
+              <Label variant="form">Date of Birth*</Label>
+              <DatePicker value={form.dateOfBirth} onChange={(value) => updateField('dateOfBirth', value)} />
+            </FormRow>
+          </FormRowGroup>
+
+          <FormRowGroup>
             <FormRow>
               <Label variant="form">Agency Code*</Label>
               <Input variant="surface" value={form.agencyCode} onChange={(e) => updateField('agencyCode', e.target.value)} placeholder="Enter agency code" />
@@ -191,10 +209,15 @@ export function AddAgencyCodeModal({
             </FormRow>
           </FormRowGroup>
 
+          </div>
+        </div>
+
+        <div className="mt-4 flex-shrink-0 border-t border-white/10 pt-4">
           <FormActions>
             <Button type="button" variant="outline" onClick={onClose}>CANCEL</Button>
             <Button type="submit" disabled={saving}>{saving ? 'SUBMITTING...' : 'SUBMIT'}</Button>
           </FormActions>
+        </div>
       </Form>
     </Modal>
   );

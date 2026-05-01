@@ -6,6 +6,7 @@ import {
   ConfirmationDialog,
   ErrorState,
   LoadingState,
+  Modal,
   TrackerTable,
 } from '@/shared/components';
 import { useToastStore } from '@/store';
@@ -33,6 +34,57 @@ import {
 import { TrackerNotesModal } from '@/features/team/components/tracker-notes-modal';
 
 type SortDirection = 'asc' | 'desc';
+type ProspectMark = 'default' | 'client' | 'recruiter' | 'both';
+type ProspectOutcome = 'Client' | 'Recruit' | 'Both';
+
+interface ImportedContact {
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  checked: boolean;
+}
+
+function normalizeMarkValue(value?: string | null): ProspectMark {
+  const raw = (value || '').toLowerCase();
+  if (raw === 'client' || raw === 'green') return 'client';
+  if (raw === 'recruiter' || raw === 'recruit' || raw === 'yellow') return 'recruiter';
+  if (raw === 'both' || raw === 'combined') return 'both';
+  return 'default';
+}
+
+function normalizeOutcomeValue(value?: string | null): ProspectOutcome {
+  const raw = (value || '').toLowerCase();
+  if (raw === 'client') return 'Client';
+  if (raw === 'recruit' || raw === 'recruiter') return 'Recruit';
+  return 'Both';
+}
+
+function ageFromBirthday(value?: string | null): string {
+  if (!value) return '';
+  const birth = new Date(value);
+  if (Number.isNaN(birth.getTime())) return '';
+
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age > 0 ? String(age) : '';
+}
+
+function birthdayFromAge(value: string): string | undefined {
+  const age = Number.parseInt(value, 10);
+  if (!Number.isFinite(age) || age <= 0) return undefined;
+
+  const today = new Date();
+  const year = today.getFullYear() - age;
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 function toProspectSort(sort: { key: string; direction: SortDirection } | null): string {
   if (!sort) return '-created_at';
@@ -43,6 +95,50 @@ function toProspectSort(sort: { key: string; direction: SortDirection } | null):
   };
   const mappedKey = keyMap[sort.key] || sort.key;
   return sort.direction === 'desc' ? `-${mappedKey}` : mappedKey;
+}
+
+function parseVCardContacts(content: string): ImportedContact[] {
+  const contacts: ImportedContact[] = [];
+  const cards = content.split('BEGIN:VCARD').slice(1);
+
+  cards.forEach((card) => {
+    const fnMatch = card.match(/FN:(.+?)(?:\r?\n|$)/);
+    const nMatch = card.match(/N:(.+?)(?:\r?\n|$)/);
+    const emailMatch = card.match(/EMAIL[^:]*:(.+?)(?:\r?\n|$)/i);
+    const cellMatch = card.match(/TEL[^:]*TYPE=CELL[^:]*:(.+?)(?:\r?\n|$)/i);
+    const homeMatch = card.match(/TEL[^:]*TYPE=HOME[^:]*:(.+?)(?:\r?\n|$)/i);
+    const anyTelMatch = card.match(/TEL[^:]*:(.+?)(?:\r?\n|$)/i);
+
+    let fullName = fnMatch?.[1]?.trim() || '';
+
+    if (!fullName && nMatch?.[1]) {
+      const parts = nMatch[1].split(';');
+      const last = (parts[0] || '').trim();
+      const first = (parts[1] || '').trim();
+      fullName = `${first} ${last}`.trim();
+    }
+
+    const nameParts = fullName.split(/\s+/).filter(Boolean);
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ');
+    const email = emailMatch?.[1]?.trim() || '';
+    const phone = cellMatch?.[1]?.trim() || homeMatch?.[1]?.trim() || anyTelMatch?.[1]?.trim() || '';
+
+    if (!firstName && !lastName && !email && !phone) {
+      return;
+    }
+
+    contacts.push({
+      firstName,
+      lastName,
+      fullName: fullName || [firstName, lastName].filter(Boolean).join(' '),
+      email,
+      phone,
+      checked: true,
+    });
+  });
+
+  return contacts;
 }
 
 export default function ProspectTrackerPage() {
@@ -64,10 +160,29 @@ export default function ProspectTrackerPage() {
   const [notesByProspectId, setNotesByProspectId] = useState<Record<number, TrackerNote[]>>({});
   const [noteDraftByProspectId, setNoteDraftByProspectId] = useState<Record<number, string>>({});
   const [focusedNoteInputId, setFocusedNoteInputId] = useState<number | null>(null);
+  const [editingProfileProspectId, setEditingProfileProspectId] = useState<number | null>(null);
+  const [profileDraftByProspectId, setProfileDraftByProspectId] = useState<
+    Record<
+      number,
+      {
+        howKnown: string;
+        relationship: string;
+        occupation: string;
+        age: string;
+        whatTold: string;
+        married: boolean;
+        dependentKids: boolean;
+      }
+    >
+  >({});
   const [notesOpenFor, setNotesOpenFor] = useState<Prospect | null>(null);
   const [modalNoteDraft, setModalNoteDraft] = useState('');
   const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
   const [pendingDeleteProspect, setPendingDeleteProspect] = useState<Prospect | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importingSelected, setImportingSelected] = useState(false);
+  const [importContacts, setImportContacts] = useState<ImportedContact[]>([]);
   const [pageSize] = useState(10);
   const [nextPageNum, setNextPageNum] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -430,6 +545,7 @@ export default function ProspectTrackerPage() {
         spouse_polo_size: formData.spousePoloSize,
         recruited_by: formData.recruiterId,
         leader: formData.leaderId,
+        profile: formData.dateOfBirth ? { birthday: formData.dateOfBirth } : undefined,
       });
 
       const updated = await activateProspectWithAgencyCode(addAgencyCodeFor.id, formData.agencyCode.trim());
@@ -531,6 +647,306 @@ export default function ProspectTrackerPage() {
     setPendingDeleteProspect(row);
   };
 
+  const handleBulkImportClick = async () => {
+    setImportLoading(true);
+    try {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.vcf,.vcs,.ics';
+      input.style.display = 'none';
+
+      input.onchange = async (event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (!file) {
+          setImportLoading(false);
+          return;
+        }
+
+        try {
+          const text = await file.text();
+          const parsed = parseVCardContacts(text);
+
+          if (parsed.length === 0) {
+            addToast({ type: 'warning', message: 'No valid contacts found in this file.' });
+            return;
+          }
+
+          setImportContacts(parsed);
+          setImportOpen(true);
+        } catch (err) {
+          addToast({
+            type: 'error',
+            message: err instanceof Error ? err.message : 'Failed to parse contacts file.',
+          });
+        } finally {
+          setImportLoading(false);
+        }
+      };
+
+      input.click();
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to start contact import.',
+      });
+      setImportLoading(false);
+    }
+  };
+
+  const handleImportSelectionChange = (index: number, checked: boolean) => {
+    setImportContacts((prev) => prev.map((item, i) => (i === index ? { ...item, checked } : item)));
+  };
+
+  const handleImportSelected = async () => {
+    const selected = importContacts.filter((item) => item.checked);
+    if (!selected.length) {
+      addToast({ type: 'warning', message: 'Select at least one contact to import.' });
+      return;
+    }
+
+    setImportingSelected(true);
+    try {
+      const rawUser = localStorage.getItem('authUser');
+      const wbUserId = localStorage.getItem('wb.userId');
+
+      let recruiterId: number | null = null;
+      if (rawUser) {
+        try {
+          const parsedUser = JSON.parse(rawUser);
+          const parsedId = Number.parseInt(String(parsedUser?.id ?? ''), 10);
+          if (Number.isFinite(parsedId)) recruiterId = parsedId;
+        } catch {
+          // Ignore malformed auth user payload.
+        }
+      }
+      if (recruiterId == null && wbUserId) {
+        const parsedId = Number.parseInt(String(wbUserId), 10);
+        if (Number.isFinite(parsedId)) recruiterId = parsedId;
+      }
+
+      const created = await Promise.allSettled(
+        selected.map((contact) => {
+          const fallbackBase = (contact.email?.split('@')[0] || contact.phone || 'Unknown Contact')
+            .replace(/[^a-zA-Z0-9\s]/g, ' ')
+            .trim();
+          const fallbackTokens = fallbackBase.split(/\s+/).filter(Boolean);
+          const firstName = contact.firstName || fallbackTokens[0] || 'Unknown';
+          const lastName = contact.lastName || fallbackTokens.slice(1).join(' ') || 'Contact';
+
+          return createProspect({
+            first_name: firstName,
+            last_name: lastName,
+            email: contact.email || undefined,
+            phone: contact.phone || undefined,
+            recruited_by: recruiterId,
+            parent: recruiterId,
+            profile: {},
+            prospect_meta: {
+              outcome: 'Both',
+              mark: 'default',
+              hot: false,
+              top25: false,
+            },
+          });
+        })
+      );
+
+      const succeeded = created.filter((item) => item.status === 'fulfilled');
+      const failed = created.filter((item) => item.status === 'rejected');
+
+      if (succeeded.length) {
+        const createdRows = succeeded
+          .map((item) => (item.status === 'fulfilled' ? item.value : null))
+          .filter((item): item is Prospect => Boolean(item));
+        setProspects((prev) => [...createdRows, ...prev]);
+      }
+
+      if (!failed.length) {
+        addToast({ type: 'success', message: `Imported ${succeeded.length} contacts.` });
+      } else {
+        addToast({
+          type: 'warning',
+          message: `Imported ${succeeded.length} contacts. ${failed.length} failed.`,
+        });
+      }
+
+      setImportOpen(false);
+      setImportContacts([]);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to import selected contacts.',
+      });
+    } finally {
+      setImportingSelected(false);
+    }
+  };
+
+  const handleStartProfileEdit = useCallback((row: Prospect) => {
+    const profile = row.profile || null;
+    setEditingProfileProspectId(row.id);
+    setProfileDraftByProspectId((prev) => ({
+      ...prev,
+      [row.id]: {
+        howKnown: profile?.how_known || '',
+        relationship:
+          profile?.relationship !== undefined && profile?.relationship !== null
+            ? String(profile.relationship)
+            : '',
+        occupation: profile?.occupation || '',
+        age: ageFromBirthday(profile?.birthday),
+        whatTold: profile?.what_told || '',
+        married: Boolean(profile?.flags?.married),
+        dependentKids: Boolean(profile?.flags?.dependentKids),
+      },
+    }));
+  }, []);
+
+  const handleProfileDraftFieldChange = useCallback(
+    (prospectId: number, field: 'howKnown' | 'relationship' | 'occupation' | 'age' | 'whatTold', value: string) => {
+      setProfileDraftByProspectId((prev) => ({
+        ...prev,
+        [prospectId]: {
+          ...(prev[prospectId] || {
+            howKnown: '',
+            relationship: '',
+            occupation: '',
+            age: '',
+            whatTold: '',
+            married: false,
+            dependentKids: false,
+          }),
+          [field]: value,
+        },
+      }));
+    },
+    []
+  );
+
+  const handleProfileDraftFlagChange = useCallback(
+    (prospectId: number, field: 'married' | 'dependentKids', value: boolean) => {
+      setProfileDraftByProspectId((prev) => ({
+        ...prev,
+        [prospectId]: {
+          ...(prev[prospectId] || {
+            howKnown: '',
+            relationship: '',
+            occupation: '',
+            age: '',
+            whatTold: '',
+            married: false,
+            dependentKids: false,
+          }),
+          [field]: value,
+        },
+      }));
+    },
+    []
+  );
+
+  const handleSaveProfileEdit = useCallback(
+    async (row: Prospect) => {
+      const draft = profileDraftByProspectId[row.id];
+      if (!draft) return;
+
+      setSavingMetaProspectIdSet((prev) => new Set(prev).add(row.id));
+      const previousProfile = row.profile || null;
+      const nextBirthday = birthdayFromAge(draft.age);
+      const optimisticProfile = {
+        ...(row.profile || {}),
+        city: row.profile?.city || '',
+        state: row.profile?.state || '',
+        phone: row.profile?.phone || row.phone || '',
+        gender: row.profile?.gender || '',
+        how_known: draft.howKnown || '',
+        relationship: draft.relationship ? Number.parseInt(draft.relationship, 10) : null,
+        occupation: draft.occupation || '',
+        birthday: nextBirthday || null,
+        what_told: draft.whatTold || '',
+        dependent_children: draft.dependentKids,
+        flags: {
+          ...(row.profile?.flags || {}),
+          married: draft.married,
+          dependentKids: draft.dependentKids,
+        },
+      };
+      const payloadProfile = {
+        ...(row.profile || {}),
+        how_known: draft.howKnown || undefined,
+        relationship: draft.relationship ? Number.parseInt(draft.relationship, 10) : null,
+        occupation: draft.occupation || undefined,
+        birthday: nextBirthday,
+        what_told: draft.whatTold || undefined,
+        dependent_children: draft.dependentKids,
+        flags: {
+          ...(row.profile?.flags || {}),
+          married: draft.married,
+          dependentKids: draft.dependentKids,
+        },
+      };
+
+      // Update row immediately so user sees changes right after clicking Save.
+      setProspects((prev) =>
+        prev.map((item) =>
+          item.id === row.id
+            ? {
+                ...item,
+                profile: optimisticProfile,
+              }
+            : item
+        )
+      );
+      setEditingProfileProspectId(null);
+
+      try {
+        const updated = await updateProspectDetails(row.id, {
+          profile: payloadProfile,
+        });
+
+        // Keep optimistic fields even if API responds with partial profile payload.
+        setProspects((prev) =>
+          prev.map((item) =>
+            item.id === row.id
+              ? {
+                  ...item,
+                  ...updated,
+                  profile: {
+                    ...(updated.profile || {}),
+                    ...optimisticProfile,
+                  },
+                }
+              : item
+          )
+        );
+      } catch (err) {
+        // Roll back optimistic profile on save failure.
+        setProspects((prev) =>
+          prev.map((item) =>
+            item.id === row.id
+              ? {
+                  ...item,
+                  profile: previousProfile,
+                }
+              : item
+          )
+        );
+        setEditingProfileProspectId(row.id);
+        addToast({
+          type: 'error',
+          message: err instanceof Error ? err.message : 'Failed to save profile.',
+        });
+      } finally {
+        setSavingMetaProspectIdSet((prev) => {
+          const next = new Set(prev);
+          next.delete(row.id);
+          return next;
+        });
+      }
+    },
+    [addToast, profileDraftByProspectId]
+  );
+
   const handleToggleProspectMeta = useCallback(
     async (row: Prospect, field: 'top25' | 'hot', value: boolean) => {
       setSavingMetaProspectIdSet((prev) => new Set(prev).add(row.id));
@@ -541,7 +957,7 @@ export default function ProspectTrackerPage() {
         hot: field === 'hot' ? value : Boolean(previous?.hot),
         top25: field === 'top25' ? value : Boolean(previous?.top25),
         outcome: previous?.outcome || '',
-        mark: previous?.mark || 'default',
+        mark: normalizeMarkValue(previous?.mark),
         files: previous?.files || [],
         source_date: previous?.source_date ?? null,
       };
@@ -593,8 +1009,69 @@ export default function ProspectTrackerPage() {
     [addToast]
   );
 
+  const handleChangeProspectMark = useCallback(
+    async (row: Prospect, mark: ProspectMark) => {
+      setSavingMetaProspectIdSet((prev) => new Set(prev).add(row.id));
+
+      const previous = row.prospect_meta;
+      const normalizedMark = normalizeMarkValue(mark);
+      const nextMeta = {
+        notes: previous?.notes || '',
+        hot: Boolean(previous?.hot),
+        top25: Boolean(previous?.top25),
+        outcome: previous?.outcome || '',
+        mark: normalizedMark,
+        files: previous?.files || [],
+        source_date: previous?.source_date ?? null,
+      };
+
+      setProspects((prev) =>
+        prev.map((item) =>
+          item.id === row.id
+            ? {
+                ...item,
+                prospect_meta: {
+                  ...(item.prospect_meta || {}),
+                  ...nextMeta,
+                },
+              }
+            : item
+        )
+      );
+
+      try {
+        const updated = await updateProspectDetails(row.id, {
+          prospect_meta: nextMeta,
+        });
+        updateProspectInState(updated);
+      } catch (err) {
+        setProspects((prev) =>
+          prev.map((item) =>
+            item.id === row.id
+              ? {
+                  ...item,
+                  prospect_meta: previous ?? null,
+                }
+              : item
+          )
+        );
+        addToast({
+          type: 'error',
+          message: err instanceof Error ? err.message : 'Failed to update marker.',
+        });
+      } finally {
+        setSavingMetaProspectIdSet((prev) => {
+          const next = new Set(prev);
+          next.delete(row.id);
+          return next;
+        });
+      }
+    },
+    [addToast]
+  );
+
   const handleChangeProspectOutcome = useCallback(
-    async (row: Prospect, outcome: 'Client' | 'Recruit' | 'Both') => {
+    async (row: Prospect, outcome: ProspectOutcome) => {
       setSavingMetaProspectIdSet((prev) => new Set(prev).add(row.id));
 
       const previous = row.prospect_meta;
@@ -602,8 +1079,8 @@ export default function ProspectTrackerPage() {
         notes: previous?.notes || '',
         hot: Boolean(previous?.hot),
         top25: Boolean(previous?.top25),
-        outcome,
-        mark: previous?.mark || 'default',
+        outcome: normalizeOutcomeValue(outcome),
+        mark: normalizeMarkValue(previous?.mark),
         files: previous?.files || [],
         source_date: previous?.source_date ?? null,
       };
@@ -769,10 +1246,20 @@ export default function ProspectTrackerPage() {
           setModalNoteDraft('');
         },
         onToggleProspectMeta: handleToggleProspectMeta,
+        onChangeProspectMark: handleChangeProspectMark,
         onChangeProspectOutcome: handleChangeProspectOutcome,
+        editingProfileProspectId,
+        profileDraftByProspectId,
+        onStartProfileEdit: handleStartProfileEdit,
+        onProfileDraftFieldChange: handleProfileDraftFieldChange,
+        onProfileDraftFlagChange: handleProfileDraftFlagChange,
+        onSaveProfileEdit: handleSaveProfileEdit,
+        onCancelProfileEdit: () => setEditingProfileProspectId(null),
+        getRowIndex: (row) => prospects.indexOf(row) + 1,
       }),
     [
       focusedNoteInputId,
+      prospects,
       handleAddInlineNote,
       handleDeleteProspect,
       notesByProspectId,
@@ -782,9 +1269,22 @@ export default function ProspectTrackerPage() {
       handleNoteDraftChange,
       ensureNotesLoaded,
       handleToggleProspectMeta,
+      handleChangeProspectMark,
       handleChangeProspectOutcome,
+      editingProfileProspectId,
+      profileDraftByProspectId,
+      handleStartProfileEdit,
+      handleProfileDraftFieldChange,
+      handleProfileDraftFlagChange,
+      handleSaveProfileEdit,
     ]
   );
+
+  const getProspectRowClassName = useCallback((row: Prospect): string => {
+    const mark = normalizeMarkValue(row.prospect_meta?.mark);
+    if (mark === 'default') return '';
+    return `prospect-row-mark-${mark}`;
+  }, []);
 
   const notesForOpenProspect = useMemo(() => {
     if (!notesOpenFor) return [];
@@ -851,9 +1351,14 @@ export default function ProspectTrackerPage() {
         description={`${pageDescription} • ${totalCount} total`}
         className="mb-6 flex-shrink-0"
         actions={
-          <Button type="button" onClick={() => setAddProspectOpen(true)}>
-            + New Prospect
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" onClick={() => void handleBulkImportClick()} disabled={importLoading}>
+              {importLoading ? 'Loading...' : 'Import Contacts'}
+            </Button>
+            <Button type="button" onClick={() => setAddProspectOpen(true)}>
+              + New Prospect
+            </Button>
+          </div>
         }
       />
 
@@ -862,6 +1367,7 @@ export default function ProspectTrackerPage() {
           columns={columns}
           rows={prospects}
           rowKey={(row) => String(row.id)}
+          rowClassName={(row) => getProspectRowClassName(row)}
           stickyFirstNColumns={3}
           resizable
           tableId="prospect-tracker"
@@ -932,6 +1438,79 @@ export default function ProspectTrackerPage() {
         onClose={() => setEditingProspect(null)}
         onSubmit={handleUpdateProspect}
       />
+
+      <Modal
+        open={importOpen}
+        onClose={() => {
+          if (importingSelected) return;
+          setImportOpen(false);
+        }}
+        title="Import Contacts"
+        contentClassName="max-w-[820px] flex flex-col max-h-[85vh]"
+      >
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="text-sm text-white/70">Select contacts to create as prospects.</div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setImportContacts((prev) => prev.map((item) => ({ ...item, checked: true })))}
+                disabled={importingSelected || importContacts.length === 0}
+              >
+                Select All
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setImportContacts((prev) => prev.map((item) => ({ ...item, checked: false })))}
+                disabled={importingSelected || importContacts.length === 0}
+              >
+                Unselect All
+              </Button>
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-white/10">
+            {importContacts.length === 0 ? (
+              <div className="px-4 py-6 text-sm text-white/60">No contacts loaded.</div>
+            ) : (
+              <div className="divide-y divide-white/10">
+                {importContacts.map((contact, index) => (
+                  <label key={`${contact.fullName}-${contact.email}-${index}`} className="flex cursor-pointer items-start gap-3 px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={contact.checked}
+                      onChange={(e) => handleImportSelectionChange(index, e.target.checked)}
+                      disabled={importingSelected}
+                      className="mt-1"
+                    />
+                    <div className="text-sm">
+                      <div className="font-medium text-white">{contact.fullName || 'Unnamed Contact'}</div>
+                      <div className="text-white/60">
+                        {contact.email || 'No email'} • {contact.phone || 'No phone'}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 flex items-center justify-end gap-2 border-t border-white/10 pt-4">
+            <Button type="button" variant="outline" onClick={() => setImportOpen(false)} disabled={importingSelected}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleImportSelected()}
+              disabled={importingSelected || !importContacts.some((item) => item.checked)}
+            >
+              {importingSelected ? 'Importing...' : 'Import Selected'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <ConfirmationDialog
         open={Boolean(pendingDeleteProspect)}

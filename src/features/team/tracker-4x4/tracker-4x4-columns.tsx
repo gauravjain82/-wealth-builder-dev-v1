@@ -13,6 +13,7 @@ function asYesNo(value: boolean): string {
 interface Build4x4ColumnsOptions {
   onToggle: (userId: number, field: keyof Tracker4x4Record, value: boolean) => void;
   onPatch: (userId: number, field: keyof Tracker4x4Record, value: number | string | boolean | null) => void;
+  onSaveAndAddProduction: (row: Tracker4x4Record, savingsField: SavingsToggleField, amountField: SavingsAmountField, amount: number) => void;
   savingKeySet: Set<string>;
   notesByUserId: Record<number, TrackerNote[]>;
   noteDraftByUserId: Record<number, string>;
@@ -125,13 +126,14 @@ function isSaving(
   return options.savingKeySet.has(savingKey);
 }
 
-type SavingsToggleField =
+// Defined before Build4x4ColumnsOptions so the interface can reference them.
+export type SavingsToggleField =
   | 'personal_savings'
   | 'finish_2nd_savings'
   | 'finish_3rd_savings'
   | 'finish_4th_savings';
 
-type SavingsAmountField =
+export type SavingsAmountField =
   | 'personal_savings_amount'
   | 'finish_2nd_savings_amount'
   | 'finish_3rd_savings_amount'
@@ -153,6 +155,11 @@ function SavingsAmountCell({
   const saving = isSaving(row, savingsField, options) || isSaving(row, amountField, options);
   const [amountInput, setAmountInput] = useState(currentAmount == null ? '' : String(currentAmount));
   const [isEditingAmount, setIsEditingAmount] = useState(false);
+  const [showButtons, setShowButtons] = useState(() => {
+    const v = currentAmount == null ? '' : String(currentAmount);
+    const n = Number(v.trim());
+    return v.trim() !== '' && Number.isFinite(n) && n > 0;
+  });
 
   const normalizedAmount = Number(currentAmount);
   const hasPersistedAmount =
@@ -173,68 +180,107 @@ function SavingsAmountCell({
     }
   }, [hasPersistedAmount]);
 
-  const saveAmount = () => {
+  const parseCurrentInput = (): number | null => {
     const trimmed = amountInput.trim();
-    if (!trimmed) {
-      options.onPatch(row.user_id, amountField, null);
-      if (checked) {
-        options.onToggle(row.user_id, savingsField, false);
-      }
-      setIsEditingAmount(false);
-      return;
-    }
-
+    if (!trimmed) return null;
     const parsed = Number(trimmed);
-    if (!Number.isFinite(parsed)) {
-      setAmountInput(currentAmount == null ? '' : String(currentAmount));
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const commitSave = () => {
+    const parsed = parseCurrentInput();
+    if (parsed === null) {
+      options.onPatch(row.user_id, amountField, null);
+      if (checked) options.onToggle(row.user_id, savingsField, false);
+      setIsEditingAmount(false);
+      setShowButtons(false);
       return;
     }
-
     options.onPatch(row.user_id, amountField, parsed);
-    if (!checked) {
-      options.onToggle(row.user_id, savingsField, true);
+    if (!checked) options.onToggle(row.user_id, savingsField, true);
+    setShowButtons(false);
+  };
+
+  const commitSaveAndAdd = () => {
+    const parsed = parseCurrentInput();
+    if (parsed === null) return;
+    options.onPatch(row.user_id, amountField, parsed);
+    if (!checked) options.onToggle(row.user_id, savingsField, true);
+    setShowButtons(false);
+    options.onSaveAndAddProduction(row, savingsField, amountField, parsed);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+      setShowButtons(true);
+    }
+    if (e.key === 'Escape') {
+      setAmountInput(currentAmount == null ? '' : String(currentAmount));
+      setShowButtons(false);
+      (e.currentTarget as HTMLInputElement).blur();
     }
   };
 
   return (
     <div
-      className={`tracker-toggle-box ${showAmountInput ? 'is-on' : 'is-off'} ${saving ? 'cursor-wait opacity-75' : ''}`}
-      onClick={() => {
-        if (!showAmountInput) return;
-        if (saving) return;
-        options.onToggle(row.user_id, savingsField, false);
-        setIsEditingAmount(false);
-      }}
+      className={`flex flex-col gap-1 items-center ${saving ? 'cursor-wait opacity-75' : ''}`}
+      onClick={(e) => e.stopPropagation()}
     >
-      {showAmountInput ? (
-        <input
-          className="h-7 w-24 rounded border border-white/25 bg-transparent px-2 text-center text-xs text-white placeholder-white/60"
-          type="number"
-          min={0}
-          step="0.01"
-          value={amountInput}
-          disabled={saving}
-          placeholder="Amount"
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => setAmountInput(e.target.value)}
-          onBlur={saveAmount}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              (e.currentTarget as HTMLInputElement).blur();
-            }
-            if (e.key === 'Escape') {
-              setAmountInput(currentAmount == null ? '' : String(currentAmount));
-              (e.currentTarget as HTMLInputElement).blur();
-            }
-          }}
-        />
-      ) : (
-        renderCheckbox(row, savingsField, options, {
-          displayChecked: false,
-          onChangeChecked: (nextChecked) => {
-            setIsEditingAmount(nextChecked);
-          },
-        })
+      <div
+        className={`tracker-toggle-box ${showAmountInput ? 'is-on' : 'is-off'}`}
+        onClick={() => {
+          if (!showAmountInput || saving) return;
+          options.onToggle(row.user_id, savingsField, false);
+          setIsEditingAmount(false);
+          setShowButtons(false);
+        }}
+      >
+        {showAmountInput ? (
+          <input
+            className="h-7 w-24 rounded border border-white/25 bg-transparent px-2 text-center text-xs text-white placeholder-white/60"
+            type="number"
+            min={0}
+            step="0.01"
+            value={amountInput}
+            disabled={saving}
+            placeholder="Amount"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              const val = e.target.value;
+              setAmountInput(val);
+              const parsed = Number(val.trim());
+              setShowButtons(val.trim() !== '' && Number.isFinite(parsed));
+            }}
+            onKeyDown={handleInputKeyDown}
+          />
+        ) : (
+          renderCheckbox(row, savingsField, options, {
+            displayChecked: false,
+            onChangeChecked: (nextChecked) => {
+              setIsEditingAmount(nextChecked);
+            },
+          })
+        )}
+      </div>
+
+      {showButtons && !saving && (
+        <div className="flex flex-col gap-1 w-full" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            className="w-full rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-white/20 transition-colors"
+            onMouseDown={(e) => { e.preventDefault(); commitSave(); }}
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            className="w-full rounded bg-blue-600/80 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-blue-500 transition-colors"
+            onMouseDown={(e) => { e.preventDefault(); commitSaveAndAdd(); }}
+          >
+            Save + Add to Production
+          </button>
+        </div>
       )}
     </div>
   );

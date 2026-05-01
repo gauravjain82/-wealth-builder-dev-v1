@@ -14,6 +14,12 @@ import {
   type TrackerNote,
 } from '@/features/team/services/tracker-notes-service';
 import { TrackerNotesModal } from '@/features/team/components/tracker-notes-modal';
+import {
+  AddProductionModal,
+  type AddProductionFormData,
+} from '@/features/team/prospect/components/add-production-modal';
+import { createProductionRecord } from '@/features/team/production-tracker/services/production-tracker-service';
+import type { SavingsToggleField, SavingsAmountField } from '../tracker-4x4-columns';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -56,6 +62,9 @@ export default function Tracker4x4Page() {
   const [savingNoteUserIdSet, setSavingNoteUserIdSet] = useState<Set<number>>(new Set());
   const [notesOpenFor, setNotesOpenFor] = useState<Tracker4x4Record | null>(null);
   const [modalNoteDraft, setModalNoteDraft] = useState('');
+  const [addProductionRow, setAddProductionRow] = useState<Tracker4x4Record | null>(null);
+  const [addProductionInitialForm, setAddProductionInitialForm] = useState<AddProductionFormData | null>(null);
+  const [savingProduction, setSavingProduction] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -178,11 +187,135 @@ export default function Tracker4x4Page() {
     }
   };
 
+  const handleSaveAndAddProduction = useCallback(
+    (row: Tracker4x4Record, _savingsField: SavingsToggleField, _amountField: SavingsAmountField, amount: number) => {
+      const today = new Date().toISOString().split('T')[0];
+
+      // Prefill logged-in user as agent_1 from localStorage.
+      let agent1Id: number | null = null;
+      let agent1Name = '';
+      try {
+        const raw = localStorage.getItem('authUser');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const parsedId = Number.parseInt(String(parsed?.id ?? ''), 10);
+          if (Number.isFinite(parsedId)) agent1Id = parsedId;
+          agent1Name =
+            parsed?.name ||
+            parsed?.full_name ||
+            `${parsed?.first_name || ''} ${parsed?.last_name || ''}`.trim() ||
+            parsed?.email ||
+            '';
+        }
+      } catch {
+        // Ignore malformed payload.
+      }
+
+      const form: AddProductionFormData = {
+        status: 'Active',
+        dateWritten: today,
+        closureDate: '',
+        client: row.user_name || '',
+        agentMode: 'single',
+        agent1Id,
+        agent1Name,
+        agent2Id: null,
+        agent2Name: '',
+        agent1Pct: 100,
+        agent2Pct: 0,
+        split: '100/0',
+        targetPoints: String(amount),
+        multiplierPercent: '',
+        company: '',
+        product: '',
+        otherProduct: '',
+        policyNumber: '',
+        delivery: 'Email',
+        trialApp: false,
+        notes: '',
+      };
+
+      setAddProductionInitialForm(form);
+      setAddProductionRow(row);
+    },
+    []
+  );
+
+  const handleAddProductionSubmit = useCallback(
+    async (data: AddProductionFormData) => {
+      if (!addProductionRow) return;
+      try {
+        setSavingProduction(true);
+        const [pA, pB] = data.split.split('/').map((v) => parseFloat(v) || 0);
+        const base = parseFloat(data.targetPoints) || 0;
+
+        const MULTIPLIER_TABLE: Record<string, number> = {
+          'TRANSAMERICA|FFIUL II': 1.25,
+          'TRANSAMERICA|TERM LB - 10 YEARS': 1.10,
+          'TRANSAMERICA|TERM LB - 15 YEARS': 1.16,
+          'TRANSAMERICA|TERM LB - 20/25/30 YEARS': 1.26,
+          'TRANSAMERICA|FINAL EXPENSE': 1.10,
+          'NATIONWIDE|NEW HEIGHTS IUL ACCUMULATOR 2020': 1.09,
+          'NORTH AMERICAN|SECURE HORIZON - CLIENT AGE 0-70': 0.062888,
+          'NORTH AMERICAN|SECURE HORIZON - CLIENT AGE 71-75': 0.053496,
+          'NORTH AMERICAN|SECURE HORIZON - CLIENT AGE 76+': 0.040919,
+          'EVEREST|EVEREST': 1.0,
+        };
+
+        let multiplier = 1;
+        if (data.company === 'OTHER' || data.product === 'OTHER') {
+          const pct = parseFloat(data.multiplierPercent);
+          multiplier = Number.isNaN(pct) ? 1 : pct;
+        } else {
+          multiplier = MULTIPLIER_TABLE[`${data.company}|${data.product}`] ?? 1;
+        }
+
+        const totalPoints = Math.round(base * multiplier * 100) / 100;
+
+        await createProductionRecord({
+          prospect: null,
+          client_name: data.client,
+          date_written: data.dateWritten || null,
+          closure_date: data.closureDate || null,
+          delivery: data.delivery,
+          status: data.status,
+          notes: data.notes,
+          trial_app: data.trialApp,
+          policy_company: data.company,
+          policy_number: data.policyNumber,
+          policy_product: data.product,
+          policy_other_product: data.otherProduct,
+          points_target: totalPoints,
+          agent_1: data.agent1Id,
+          agent_1_name: data.agent1Name,
+          agent_1_pct: pA,
+          agent_2: data.agentMode === 'split' ? data.agent2Id : null,
+          agent_2_name: data.agentMode === 'split' ? data.agent2Name : '',
+          agent_2_pct: pB,
+          split_mode: data.agentMode === 'split' ? 'split' : 'solo',
+        });
+
+        setAddProductionRow(null);
+        setAddProductionInitialForm(null);
+        addToast({ type: 'success', message: 'Added to Production Tracker.' });
+      } catch (err) {
+        addToast({
+          type: 'error',
+          message: err instanceof Error ? err.message : 'Failed to save production record.',
+        });
+      } finally {
+        setSavingProduction(false);
+      }
+    },
+    [addProductionRow, addToast]
+  );
+
   const columns = useMemo(
     () =>
       build4x4Columns({
         onToggle: handleToggle,
         onPatch: handlePatchField,
+        onSaveAndAddProduction: handleSaveAndAddProduction,
         savingKeySet,
         notesByUserId,
         noteDraftByUserId,
@@ -198,7 +331,7 @@ export default function Tracker4x4Page() {
           setModalNoteDraft('');
         },
       }),
-    [savingKeySet, notesByUserId, noteDraftByUserId, focusedNoteInputId, savingNoteUserIdSet]
+    [savingKeySet, notesByUserId, noteDraftByUserId, focusedNoteInputId, savingNoteUserIdSet, handleSaveAndAddProduction]
   );
 
   const headerGroupRows = useMemo(
@@ -365,6 +498,20 @@ export default function Tracker4x4Page() {
           </div>
         )} */}
       </div>
+
+      <AddProductionModal
+        open={Boolean(addProductionRow)}
+        saving={savingProduction}
+        prospect={null}
+        title="Add to Production"
+        submitLabel="Save and Add to Production"
+        initialForm={addProductionInitialForm}
+        onClose={() => {
+          setAddProductionRow(null);
+          setAddProductionInitialForm(null);
+        }}
+        onSubmit={handleAddProductionSubmit}
+      />
 
       <TrackerNotesModal
         open={Boolean(notesOpenFor)}

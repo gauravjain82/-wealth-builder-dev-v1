@@ -54,6 +54,15 @@ export function buildAssociateColumns(
 ): TrackerTableColumn<AssociateTrackerRecord>[] {
   return [
     {
+      key: 'index',
+      label: '#',
+      width: 40,
+      align: 'center',
+      sortable: false,
+      value: (row) => row.user_id,
+      render: (row) => row.user_id,
+    },
+    {
       key: 'user_name',
       label: 'Name',
       width: 260,

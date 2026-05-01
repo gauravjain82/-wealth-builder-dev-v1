@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useState, useEffect, useRef } from 'react';
+import { CSSProperties, ReactNode, useMemo, useState, useEffect, useRef } from 'react';
 import './tracker-table.css';
 
 type Align = 'left' | 'center' | 'right';
@@ -51,6 +51,8 @@ interface TrackerTableProps<T> {
   onServerSortChange?: (sort: { key: string; direction: SortDirection } | null) => void;
   serverFilters?: Record<string, string>;
   onServerFilterChange?: (filters: Record<string, string>) => void;
+  rowClassName?: (row: T, index: number) => string;
+  rowStyle?: (row: T, index: number) => CSSProperties | undefined;
 }
 
 function toSortableValue(value: unknown): string | number {
@@ -157,6 +159,8 @@ export function TrackerTable<T>({
   onServerSortChange,
   serverFilters,
   onServerFilterChange,
+  rowClassName,
+  rowStyle,
 }: TrackerTableProps<T>) {
   const useServerMode = Boolean(onServerSortChange || onServerFilterChange);
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | null>(
@@ -582,7 +586,8 @@ export function TrackerTable<T>({
               visibleRows.map((row, rowIndex) => (
                 <tr
                   key={rowKey(row, rowIndex)}
-                  className={`tracker-tr ${onRowClick ? 'tracker-clickable' : ''}`}
+                  className={`tracker-tr ${onRowClick ? 'tracker-clickable' : ''} ${rowClassName?.(row, rowIndex) || ''}`}
+                  style={rowStyle?.(row, rowIndex)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {columns.map((column) => {
