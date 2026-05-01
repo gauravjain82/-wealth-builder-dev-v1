@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DatePicker, Modal } from '@/shared/components';
 import type { TrackerTableColumn } from '@/shared/components';
 import type { ProductionTrackerRecord } from './services/production-tracker-service';
