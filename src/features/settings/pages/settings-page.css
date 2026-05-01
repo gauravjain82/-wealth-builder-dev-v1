@@ -1,0 +1,771 @@
+/* Settings Profile UI (mirrors legacy profile styling) */
+
+.settings-profile-page.profile-page {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+.settings-profile-page .profile-header {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.settings-profile-page .page-title {
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #d4af37 0%, #f4e5a1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 10px 0;
+  text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+}
+
+.settings-profile-page .page-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 16px;
+  margin: 0;
+}
+
+.settings-profile-page .profile-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.settings-profile-page .glass-section {
+  background: linear-gradient(135deg, rgba(18, 18, 18, 0.7) 0%, rgba(30, 30, 30, 0.5) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 40px rgba(212, 175, 55, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-profile-page .glass-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.5), transparent);
+}
+
+.settings-profile-page .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.settings-profile-page .request-card-header {
+  margin-bottom: 16px;
+}
+
+.settings-profile-page .section-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-profile-page .title-icon {
+  font-size: 24px;
+  filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5));
+}
+
+.settings-profile-page .btn-primary,
+.settings-profile-page .btn-upgrade {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: none;
+}
+
+.settings-profile-page .btn-primary,
+.settings-profile-page .btn-upgrade {
+  background: linear-gradient(135deg, #d4af37 0%, #f4e5a1 50%, #d4af37 100%);
+  background-size: 200% 100%;
+  color: #000;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
+}
+
+.settings-profile-page .btn-primary:hover,
+.settings-profile-page .btn-upgrade:hover {
+  background-position: 100% 0;
+  transform: translateY(-1px);
+}
+
+.settings-profile-page .btn-primary:disabled,
+.settings-profile-page .btn-upgrade:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.settings-profile-page .button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.settings-profile-page .profile-content {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 30px;
+}
+
+.settings-profile-page .profile-photo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings-profile-page .profile-photo {
+  width: 160px;
+  height: 160px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.05) 100%);
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-profile-page .profile-initials {
+  font-size: 48px;
+  font-weight: 800;
+  color: #d4af37;
+}
+
+.settings-profile-page .profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-profile-page .field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.settings-profile-page .field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-profile-page .field-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.settings-profile-page .input-field {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+}
+
+.settings-profile-page .input-field:focus {
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.12);
+}
+
+.settings-profile-page .input-field:disabled {
+  opacity: 0.75;
+}
+
+.settings-profile-page .account-level-content {
+  text-align: center;
+}
+
+.settings-profile-page .current-level {
+  margin-bottom: 28px;
+}
+
+.settings-profile-page .level-badge {
+  display: inline-block;
+  padding: 24px 40px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.05) 100%);
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  border-radius: 16px;
+}
+
+.settings-profile-page .level-name {
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #d4af37 0%, #f4e5a1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.settings-profile-page .level-description {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.settings-profile-page .upgrade-section,
+.settings-profile-page .max-level-info,
+.settings-profile-page .admin-level-info {
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+.settings-profile-page .admin-level-info p {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.settings-profile-page .upgrade-info {
+  margin-bottom: 16px;
+}
+
+.settings-profile-page .upgrade-arrow {
+  font-size: 36px;
+  color: #d4af37;
+  margin-bottom: 12px;
+}
+
+.settings-profile-page .next-level {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.settings-profile-page .next-level strong {
+  color: #d4af37;
+}
+
+.settings-profile-page .payment-method-content {
+  max-width: 100%;
+}
+
+.settings-profile-page .plan-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.settings-profile-page .plan-card {
+  border: 1px solid rgba(212, 175, 55, 0.75);
+  border-radius: 8px;
+  padding: 16px 16px 18px;
+  background: rgba(0, 0, 0, 0.15);
+  min-height: 282px;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-profile-page .plan-card.current {
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.settings-profile-page .plan-name {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.settings-profile-page .plan-price {
+  color: #d4af37;
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.settings-profile-page .plan-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.35);
+  margin-bottom: 12px;
+}
+
+.settings-profile-page .plan-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.settings-profile-page .plan-action-btn {
+  margin-top: auto;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #2f2f2f;
+  background: linear-gradient(135deg, #d4af37 0%, #f4e5a1 100%);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.settings-profile-page .plan-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.settings-profile-page .plan-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.settings-profile-page .payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.settings-profile-page .card-element-wrapper {
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+}
+
+.settings-profile-page .payment-notice {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 10px;
+}
+
+.settings-profile-page .notice-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.settings-profile-page .payment-notice p {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.settings-profile-page .saved-card-block {
+  margin-top: 18px;
+}
+
+.settings-profile-page .saved-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.78);
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+  margin-bottom: 10px;
+}
+
+.settings-profile-page .card-display {
+  width: 100%;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.05) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 12px;
+}
+
+.settings-profile-page .card-brand {
+  font-size: 12px;
+  font-weight: 800;
+  color: #d4af37;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+}
+
+.settings-profile-page .card-number {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.settings-profile-page .card-expiry {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.settings-profile-page .tickets-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-profile-page .ticket-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.settings-profile-page .ticket-event {
+  font-size: 16px;
+  font-weight: 700;
+  color: #d4af37;
+}
+
+.settings-profile-page .ticket-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.settings-profile-page .ticket-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-profile-page .detail-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.settings-profile-page .detail-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.settings-profile-page .status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.settings-profile-page .status-pending {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffd24d;
+  border-color: rgba(255, 193, 7, 0.4);
+}
+
+.settings-profile-page .status-approved {
+  background: rgba(76, 175, 80, 0.2);
+  color: #62d26b;
+  border-color: rgba(76, 175, 80, 0.4);
+}
+
+.settings-profile-page .status-rejected,
+.settings-profile-page .status-failed {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ff7b7b;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.settings-profile-page .request-reason {
+  margin-top: 14px;
+}
+
+.settings-profile-page .empty-state,
+.settings-profile-page .loading-state {
+  text-align: center;
+  padding: 28px 16px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+@media (max-width: 1024px) {
+  .settings-profile-page.profile-page {
+    padding: 20px;
+  }
+
+  .settings-profile-page .page-title {
+    font-size: 28px;
+  }
+
+  .settings-profile-page .glass-section {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .settings-profile-page .profile-content {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-profile-page .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-profile-page .ticket-info {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-profile-page .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .settings-profile-page .plan-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Approval Requests Table */
+.settings-profile-page .approvals-content {
+  overflow-x: auto;
+}
+
+.settings-profile-page .approvals-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.settings-profile-page .approvals-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.settings-profile-page .approvals-table thead {
+  background: rgba(212, 175, 55, 0.1);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.settings-profile-page .approvals-table th {
+  padding: 12px 16px;
+  text-align: left;
+  color: #d4af37;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.settings-profile-page .approvals-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+  color: #e2e8f0;
+}
+
+.settings-profile-page .approvals-table tbody tr:hover {
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.settings-profile-page .approvals-table .request-id {
+  font-weight: 600;
+  color: #d4af37;
+}
+
+.settings-profile-page .approvals-table .user-info {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.settings-profile-page .approvals-table .status-cell {
+  text-align: center;
+}
+
+.settings-profile-page .approvals-table .created-date {
+  font-size: 13px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.settings-profile-page .approvals-table .actions-cell {
+  text-align: center;
+}
+
+.settings-profile-page .action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.settings-profile-page .btn-approve-small,
+.settings-profile-page .btn-reject-small {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.settings-profile-page .btn-approve-small {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.settings-profile-page .btn-approve-small:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.3);
+  color: #bbf7d0;
+}
+
+.settings-profile-page .btn-reject-small {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.settings-profile-page .btn-reject-small:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fecaca;
+}
+
+.settings-profile-page .btn-approve-small:disabled,
+.settings-profile-page .btn-reject-small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-profile-page .status-text {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* Modal Styles for Approval Actions */
+.settings-profile-page .action-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.settings-profile-page .modal-description {
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.settings-profile-page .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings-profile-page .form-group label {
+  color: #cbd5e1;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.settings-profile-page .textarea-field {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.settings-profile-page .textarea-field:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
+}
+
+.settings-profile-page .textarea-field::placeholder {
+  color: #64748b;
+}
+
+.settings-profile-page .modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.settings-profile-page .btn-secondary {
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  color: #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.settings-profile-page .btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+.settings-profile-page .btn-approve,
+.settings-profile-page .btn-reject {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.settings-profile-page .btn-approve {
+  background: linear-gradient(135deg, #22c55e 0%, #86efac 100%);
+  color: #ffffff;
+}
+
+.settings-profile-page .btn-approve:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(34, 197, 94, 0.3);
+}
+
+.settings-profile-page .btn-reject {
+  background: linear-gradient(135deg, #ef4444 0%, #fca5a5 100%);
+  color: #ffffff;
+}
+
+.settings-profile-page .btn-reject:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+}
+
+.settings-profile-page .btn-approve:disabled,
+.settings-profile-page .btn-reject:disabled,
+.settings-profile-page .btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

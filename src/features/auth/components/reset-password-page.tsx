@@ -6,12 +6,6 @@ import { Badge, Button, Heading, Input, Label, Text } from '@shared/components/u
 const GIF_URL = 'https://files2.edgagement.com/sites/wb/images/login.gif';
 const MIN_PASSWORD_LENGTH = 6;
 
-interface LoginResponse {
-  token: string;
-  user_id: number;
-  username: string;
-}
-
 function getApiBaseUrl(): string {
   return (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 }
@@ -46,10 +40,6 @@ export default function ResetPasswordPage() {
 
   const token = useMemo(() => (searchParams.get('token') || '').trim(), [searchParams]);
 
-  const [email, setEmail] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -71,16 +61,6 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (!email.trim()) {
-      setError('Email is required to complete setup.');
-      return;
-    }
-
-    if (!firstName.trim() || !lastName.trim()) {
-      setError('First name and last name are required.');
-      return;
-    }
-
     if (password.length < MIN_PASSWORD_LENGTH) {
       setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
@@ -94,7 +74,7 @@ export default function ResetPasswordPage() {
     setIsLoading(true);
 
     try {
-      setStatusMessage('Setting your password...');
+      setStatusMessage('Resetting your password...');
       const resetResponse = await fetch(buildApiUrl('/api/accounts/password-reset/'), {
         method: 'POST',
         headers: {
@@ -110,61 +90,8 @@ export default function ResetPasswordPage() {
         throw new Error(await parseError(resetResponse, 'Failed to reset password.'));
       }
 
-      setStatusMessage('Password set. Signing in to update your details...');
-      const loginResponse = await fetch(buildApiUrl('/api/accounts/login/'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: email.trim(),
-          password,
-        }),
-      });
-
-      if (!loginResponse.ok) {
-        throw new Error(
-          await parseError(
-            loginResponse,
-            'Password reset was successful, but automatic sign-in failed. Please sign in and update your profile from Settings.'
-          )
-        );
-      }
-
-      const loginData = (await loginResponse.json()) as LoginResponse;
-
-      setStatusMessage('Updating your details...');
-      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
-      const updatePayload: Record<string, string> = {
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        full_name: fullName,
-      };
-
-      if (phone.trim()) {
-        updatePayload.phone = phone.trim();
-      }
-
-      const updateResponse = await fetch(buildApiUrl(`/api/accounts/users/${loginData.user_id}/`), {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Token ${loginData.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatePayload),
-      });
-
-      if (!updateResponse.ok) {
-        throw new Error(
-          await parseError(
-            updateResponse,
-            'Password reset was successful, but profile update failed. Please sign in and update profile details from Settings.'
-          )
-        );
-      }
-
       setStatusMessage('');
-      setSuccessMessage('Your password and profile details were updated successfully. Redirecting to login...');
+      setSuccessMessage('Your password was updated successfully. Redirecting to login...');
       window.setTimeout(() => {
         navigate('/login', { replace: true });
       }, 1800);
@@ -173,7 +100,7 @@ export default function ResetPasswordPage() {
       if (submitError instanceof Error) {
         setError(submitError.message);
       } else {
-        setError('Unable to complete profile setup. Please try again.');
+        setError('Unable to reset password. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -197,7 +124,7 @@ export default function ResetPasswordPage() {
 
       <section className="flex-1 grid place-items-center p-6">
         <div className="w-full max-w-[520px] bg-[#111] border border-white/[0.08] rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.6)] grid content-start gap-3">
-          <Heading as="h2" variant="h3" className="my-1">Set Password And Complete Profile</Heading>
+          <Heading as="h2" variant="h3" className="my-1">Set New Password</Heading>
 
           {!token && (
             <div className="grid gap-3">
@@ -216,61 +143,6 @@ export default function ResetPasswordPage() {
 
           {token && (
             <form onSubmit={handleSubmit} className="grid gap-3.5">
-              <div className="grid gap-1.5">
-                <Label htmlFor="email" className="text-sm text-[#e7e7ea]">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="you@example.com"
-                  className="w-full bg-white/[0.06] border border-white/[0.12] rounded-[10px] px-3.5 py-3 text-white outline-none"
-                  autoComplete="email"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="firstName" className="text-sm text-[#e7e7ea]">First Name</Label>
-                  <Input
-                    id="firstName"
-                    required
-                    value={firstName}
-                    onChange={(event) => setFirstName(event.target.value)}
-                    placeholder="First name"
-                    className="w-full bg-white/[0.06] border border-white/[0.12] rounded-[10px] px-3.5 py-3 text-white outline-none"
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <div className="grid gap-1.5">
-                  <Label htmlFor="lastName" className="text-sm text-[#e7e7ea]">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    required
-                    value={lastName}
-                    onChange={(event) => setLastName(event.target.value)}
-                    placeholder="Last name"
-                    className="w-full bg-white/[0.06] border border-white/[0.12] rounded-[10px] px-3.5 py-3 text-white outline-none"
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-1.5">
-                <Label htmlFor="phone" className="text-sm text-[#e7e7ea]">Phone</Label>
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  placeholder="Phone (optional)"
-                  className="w-full bg-white/[0.06] border border-white/[0.12] rounded-[10px] px-3.5 py-3 text-white outline-none"
-                  disabled={isLoading}
-                />
-              </div>
-
               <div className="grid gap-1.5">
                 <Label htmlFor="password" className="text-sm text-[#e7e7ea]">New Password</Label>
                 <div className="relative">
@@ -363,7 +235,7 @@ export default function ResetPasswordPage() {
                 disabled={isLoading}
                 className="mt-0.5 bg-gradient-to-br from-[rgba(255,215,0,0.9)] to-[rgba(255,215,0,0.75)] text-black font-bold border-none rounded-xl px-3.5 py-3 cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
               >
-                {isLoading ? 'Processing...' : 'Complete Setup'}
+                {isLoading ? 'Processing...' : 'Reset Password'}
               </Button>
             </form>
           )}

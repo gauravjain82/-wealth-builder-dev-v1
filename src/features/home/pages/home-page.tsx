@@ -7,6 +7,19 @@ import { useCarouselImages } from '@/hooks/use-carousel-images';
 import { Plan } from '@core/types';
 
 /** ============================
+ *  HELPER: Normalize plan value
+ *  ============================ */
+function normalizePlan(value?: string | null): Plan {
+  const raw = (value || '').trim().toLowerCase();
+  if (raw === Plan.Agent.toLowerCase()) return Plan.Agent;
+  if (raw === Plan.Leader.toLowerCase()) return Plan.Leader;
+  if (raw === Plan.Broker.toLowerCase()) return Plan.Broker;
+  if (raw === Plan.SeniorBroker.toLowerCase()) return Plan.SeniorBroker;
+  if (raw === Plan.Admin.toLowerCase()) return Plan.Admin;
+  return Plan.NewAgent;
+}
+
+/** ============================
  *  ASSET URLS
  *  ============================ */
 const BACKGROUND_URL =
@@ -28,7 +41,7 @@ export default function HomePage() {
   const [muted, setMuted] = useState(true);
 
   /* ===== User Type ===== */
-  const currentPlan = user?.plan ?? user?.accountType;
+  const currentPlan = normalizePlan(user?.plan ?? user?.accountType);
   const isPaid = currentPlan !== Plan.NewAgent;
 
   /* ===== Contest slider ===== */
