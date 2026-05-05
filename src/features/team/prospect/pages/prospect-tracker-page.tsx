@@ -532,7 +532,7 @@ export default function ProspectTrackerPage() {
       setSavingCallLog(true);
       const fullName = `${formData.firstName || ''} ${formData.lastName || ''}`.trim();
 
-      await updateProspectDetails(addAgencyCodeFor.id, {
+      const updatedDetails = await updateProspectDetails(addAgencyCodeFor.id, {
         first_name: formData.firstName,
         last_name: formData.lastName,
         full_name: fullName || undefined,
@@ -540,6 +540,7 @@ export default function ProspectTrackerPage() {
         email: formData.email,
         ama_date: formData.amaDate,
         polo_size: formData.poloSize,
+        level_id: formData.level ?? undefined,
         spouse_name: formData.spouseName,
         spouse_phone: formData.spousePhone,
         spouse_polo_size: formData.spousePoloSize,
@@ -548,7 +549,12 @@ export default function ProspectTrackerPage() {
         profile: formData.dateOfBirth ? { birthday: formData.dateOfBirth } : undefined,
       });
 
-      const updated = await activateProspectWithAgencyCode(addAgencyCodeFor.id, formData.agencyCode.trim());
+      const activated = await activateProspectWithAgencyCode(addAgencyCodeFor.id, formData.agencyCode.trim());
+      const updated: Prospect = {
+        ...updatedDetails,
+        ...activated,
+        profile: activated.profile ?? updatedDetails.profile,
+      };
       updateProspectInState(updated);
       setActiveCallLogProspect(updated);
       setAddAgencyCodeFor(null);

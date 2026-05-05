@@ -1,5 +1,4 @@
 import { Plan } from '@/core/types';
-import { LevelCode } from '@/core/constants/levels';
 
 export interface AddAgentFormData {
   amaDate: string;
@@ -17,7 +16,7 @@ export interface AddAgentFormData {
   recruiterId: number | null;
   leader: string;
   leaderId: number | null;
-  level: LevelCode;
+  level: number | null;
   plan: string;
 }
 
@@ -64,7 +63,7 @@ export const defaultAddAgentForm: AddAgentFormData = {
   recruiterId: null,
   leader: '',
   leaderId: null,
-  level: LevelCode.TA,
+  level: null,
   plan: Plan.NewAgent,
 };
 

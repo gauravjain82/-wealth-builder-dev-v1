@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Plan } from '@/core/types';
-import { LEVEL_OPTIONS, LevelCode } from '@/core/constants/levels';
 import {
   Button,
   DatePicker,
@@ -14,7 +13,8 @@ import {
   Select,
   UserAutocompleteDropdown,
 } from '@/shared/components';
-import type { Prospect } from '../services/prospect-service';
+import type { Level, Prospect } from '../services/prospect-service';
+import { fetchLevels } from '../services/prospect-service';
 import { defaultAddAgentForm, type AddAgentFormData } from '../types';
 
 interface AddAgencyCodeModalProps {
@@ -31,6 +31,13 @@ export function AddAgencyCodeModal({
   onSubmit,
 }: AddAgencyCodeModalProps) {
   const [form, setForm] = useState<AddAgentFormData>(defaultAddAgentForm);
+  const [levels, setLevels] = useState<Level[]>([]);
+
+  useEffect(() => {
+    fetchLevels()
+      .then(setLevels)
+      .catch(() => {/* silently ignore — dropdown will remain empty */});
+  }, []);
 
   useEffect(() => {
     if (!prospect) return;
@@ -39,6 +46,7 @@ export function AddAgencyCodeModal({
       agencyCode: prospect.agency_code || '',
       firstName: prospect.first_name || prospect.full_name?.split(' ')[0] || '',
       lastName: prospect.last_name || prospect.full_name?.split(' ').slice(1).join(' ') || '',
+      dateOfBirth: prospect.profile?.birthday?.split('T')[0] || '',
       phone: prospect.phone || '',
       email: prospect.email || '',
       recruiter: prospect.recruited_by_name || '',
@@ -191,10 +199,14 @@ export function AddAgencyCodeModal({
           <FormRowGroup>
             <FormRow>
               <Label variant="form">Level*</Label>
-              <Select value={form.level} onChange={(e) => updateField('level', e.target.value as LevelCode)}>
-                {LEVEL_OPTIONS.map((level) => (
-                  <option key={level.value} value={level.value}>
-                    {level.label}
+              <Select
+                value={form.level ?? ''}
+                onChange={(e) => updateField('level', e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">Select Level</option>
+                {levels.map((lvl) => (
+                  <option key={lvl.id} value={lvl.id}>
+                    {lvl.name}
                   </option>
                 ))}
               </Select>

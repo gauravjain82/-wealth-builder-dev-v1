@@ -7,6 +7,7 @@ export interface CurrentUserDetails {
   old_id?: string | null;
   plan?: string;
   roles?: string[];
+  agency_code?: string | null;
 }
 
 export interface PaymentProduct {
@@ -38,6 +39,10 @@ export interface SetupIntentResponse {
 export interface SubscriptionApprovalRequestResponse {
   id: number;
   old_id_snapshot: string;
+  buyer_name?: string;
+  buyer_role_snapshot_name?: string;
+  target_role?: number | null;
+  metadata?: { current_plan?: string; target_plan?: string; [key: string]: unknown };
   stripe_product_id: string;
   stripe_price_id: string;
   setup_intent_id: string;

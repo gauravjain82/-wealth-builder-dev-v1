@@ -155,11 +155,7 @@ function SavingsAmountCell({
   const saving = isSaving(row, savingsField, options) || isSaving(row, amountField, options);
   const [amountInput, setAmountInput] = useState(currentAmount == null ? '' : String(currentAmount));
   const [isEditingAmount, setIsEditingAmount] = useState(false);
-  const [showButtons, setShowButtons] = useState(() => {
-    const v = currentAmount == null ? '' : String(currentAmount);
-    const n = Number(v.trim());
-    return v.trim() !== '' && Number.isFinite(n) && n > 0;
-  });
+  const [showButtons, setShowButtons] = useState(false);
 
   const normalizedAmount = Number(currentAmount);
   const hasPersistedAmount =
@@ -212,8 +208,9 @@ function SavingsAmountCell({
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      const parsed = parseCurrentInput();
+      setShowButtons(parsed !== null);
       e.currentTarget.blur();
-      setShowButtons(true);
     }
     if (e.key === 'Escape') {
       setAmountInput(currentAmount == null ? '' : String(currentAmount));
@@ -221,6 +218,13 @@ function SavingsAmountCell({
       (e.currentTarget as HTMLInputElement).blur();
     }
   };
+
+  // const handleInputBlur = () => {
+  //   setShowButtons(false);
+  //   if (!hasPersistedAmount) {
+  //     setIsEditingAmount(false);
+  //   }
+  // };
 
   return (
     <div
@@ -249,10 +253,10 @@ function SavingsAmountCell({
             onChange={(e) => {
               const val = e.target.value;
               setAmountInput(val);
-              const parsed = Number(val.trim());
-              setShowButtons(val.trim() !== '' && Number.isFinite(parsed));
+              setShowButtons(false);
             }}
             onKeyDown={handleInputKeyDown}
+            // onBlur={handleInputBlur}
           />
         ) : (
           renderCheckbox(row, savingsField, options, {

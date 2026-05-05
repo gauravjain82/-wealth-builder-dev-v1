@@ -164,6 +164,26 @@ function getAuthHeaders(): HeadersInit {
   };
 }
 
+export interface Level {
+  id: number;
+  code: string;
+  name: string;
+  rank: number;
+}
+
+export async function fetchLevels(): Promise<Level[]> {
+  const response = await fetch(`${API_BASE_URL}/api/accounts/levels/`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch levels: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return Array.isArray(data) ? data : (data.results ?? []);
+}
+
 export async function saveProspectCallLog(
   prospect: Prospect,
   outcome: string,
@@ -231,6 +251,7 @@ interface UpdateProspectPayload {
   email?: string;
   ama_date?: string;
   polo_size?: string;
+  level_id?: number | null;
   spouse_name?: string;
   spouse_phone?: string;
   spouse_polo_size?: string;

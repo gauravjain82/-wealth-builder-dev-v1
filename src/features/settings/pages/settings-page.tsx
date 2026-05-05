@@ -645,8 +645,8 @@ export default function SettingsPage() {
                     <input className="input-field" value={currentPlan || '-'} disabled />
                   </div>
                   <div className="field-group">
-                    <label>Legacy Old ID</label>
-                    <input className="input-field" value={userDetails?.old_id || '-'} disabled />
+                    <label>Agency Code</label>
+                    <input className="input-field" value={userDetails?.agency_code || '-'} disabled />
                   </div>
                 </div>
               </div>
@@ -753,7 +753,7 @@ export default function SettingsPage() {
                   <div key={request.id} className="ticket-card">
                     <div className="section-header request-card-header">
                       <div className="ticket-event">
-                        Request #{request.id} • {request.stripe_price_id}
+                        Request #{request.id} • {request.metadata?.current_plan ?? '—'} → {request.metadata?.target_plan ?? '—'}
                       </div>
                       <ApprovalStatusBadge status={request.status} />
                     </div>
@@ -802,7 +802,9 @@ export default function SettingsPage() {
                     <tr>
                       <th>Request ID</th>
                       <th>User</th>
-                      <th>Status</th>
+                      <th>Current Role</th>
+                      <th>Target Role</th>
+                      <th style={{ textAlign: 'center' }}>Status</th>
                       <th>Created</th>
                       <th>Actions</th>
                     </tr>
@@ -815,7 +817,9 @@ export default function SettingsPage() {
                       return (
                         <tr key={request.id}>
                           <td className="request-id">#{request.id}</td>
-                          <td className="user-info">{request.old_id_snapshot}</td>
+                          <td className="role-cell">{request.buyer_name || request.old_id_snapshot}</td>
+                          <td className="role-cell">{request.metadata?.current_plan || request.buyer_role_snapshot_name || '—'}</td>
+                          <td className="role-cell">{request.metadata?.target_plan || '—'}</td>
                           <td className="status-cell">
                             <ApprovalStatusBadge status={request.status} />
                           </td>
