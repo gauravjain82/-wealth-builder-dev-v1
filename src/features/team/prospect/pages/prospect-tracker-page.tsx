@@ -87,7 +87,7 @@ function birthdayFromAge(value: string): string | undefined {
 }
 
 function toProspectSort(sort: { key: string; direction: SortDirection } | null): string {
-  if (!sort) return '-created_at';
+  if (!sort) return '';
   const keyMap: Record<string, string> = {
     full_name: 'name',
     recruited_by_name: 'recruiter_name',

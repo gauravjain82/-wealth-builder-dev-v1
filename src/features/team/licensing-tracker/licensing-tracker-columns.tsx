@@ -60,6 +60,31 @@ function isSaving(
   return options.savingKeySet.has(`${row.user_id}:${String(field)}`);
 }
 
+function getRowNotes(
+  row: LicensingTrackerRecord,
+  notesByUserId: Record<number, TrackerNote[]>
+): TrackerNote[] {
+  const loaded = notesByUserId[row.user_id];
+  if (loaded && loaded.length > 0) return loaded;
+
+  const latestText = row.latest_note_text?.trim();
+  if (!latestText) return [];
+
+  const createdAt = row.latest_note_created_at || row.updated_at || row.created_at;
+  return [
+    {
+      id: -row.user_id,
+      user: row.user_id,
+      created_by: null,
+      created_by_name: row.latest_note_created_by_name || undefined,
+      text: latestText,
+      tracker: row.latest_note_tracker || 'licensing',
+      created_at: createdAt,
+      updated_at: createdAt,
+    },
+  ];
+}
+
 export function buildLicensingColumns(
   options: BuildLicensingColumnsOptions
 ): TrackerTableColumn<LicensingTrackerRecord>[] {
@@ -281,12 +306,12 @@ export function buildLicensingColumns(
       label: 'Notes',
       width: 320,
       searchable: true,
-      value: (row) => (options.notesByUserId[row.user_id] || []).map((note) => note.text).join(' '),
+      value: (row) => getRowNotes(row, options.notesByUserId).map((note) => note.text).join(' '),
       render: (row) => (
         <TrackerNotesCell
           userId={row.user_id}
           userName={row.user_name}
-          notes={options.notesByUserId[row.user_id] || []}
+          notes={getRowNotes(row, options.notesByUserId)}
           draft={options.noteDraftByUserId[row.user_id] || ''}
           focusedNoteInputId={options.focusedNoteInputId}
           saving={options.savingNoteUserIdSet.has(row.user_id)}

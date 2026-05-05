@@ -87,6 +87,31 @@ function formatNoteDate(value: string): string {
   return parsed.toLocaleString();
 }
 
+function getRowNotes(
+  row: Prospect,
+  notesByProspectId: Record<number, TrackerNote[]>
+): TrackerNote[] {
+  const loaded = notesByProspectId[row.id];
+  if (loaded && loaded.length > 0) return loaded;
+
+  const latestText = row.latest_note_text?.trim();
+  if (!latestText) return [];
+
+  const createdAt = row.latest_note_created_at || row.updated_at || row.created_at;
+  return [
+    {
+      id: -row.id,
+      user: row.id,
+      created_by: null,
+      created_by_name: row.latest_note_created_by_name || undefined,
+      text: latestText,
+      tracker: row.latest_note_tracker || 'prospect',
+      created_at: createdAt,
+      updated_at: createdAt,
+    },
+  ];
+}
+
 export function buildProspectColumns(
   onEdit: (row: Prospect) => void,
   onOpenCallLog: (row: Prospect) => void,
@@ -360,7 +385,7 @@ export function buildProspectColumns(
       label: 'Notes',
       width: 420,
       render: (row) => {
-        const notes = options.notesByProspectId[row.id] || [];
+        const notes = getRowNotes(row, options.notesByProspectId);
         const lastNote = notes.length > 0 ? notes[notes.length - 1] : null;
         const isFocused = options.focusedNoteInputId === row.id;
         const draft = options.noteDraftByProspectId[row.id] || '';
@@ -383,6 +408,7 @@ export function buildProspectColumns(
                   if (e.key === 'Enter') {
                     e.preventDefault();
                     void options.onAddInlineNote(row);
+                    e.currentTarget.blur();
                   }
                 }}
               />
@@ -408,7 +434,7 @@ export function buildProspectColumns(
         );
       },
       value: (row) => {
-        const notes = options.notesByProspectId[row.id] || [];
+        const notes = getRowNotes(row, options.notesByProspectId);
         return notes.map((note) => note.text).join(' ');
       },
       searchable: true,

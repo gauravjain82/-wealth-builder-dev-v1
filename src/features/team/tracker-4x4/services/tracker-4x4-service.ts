@@ -6,6 +6,10 @@ export interface Tracker4x4Record {
   user_id: number;
   user_name: string;
   user_email: string;
+  latest_note_text?: string | null;
+  latest_note_tracker?: string | null;
+  latest_note_created_at?: string | null;
+  latest_note_created_by_name?: string | null;
   recruiter_name?: string | null;
   leader_name?: string | null;
   agency_code?: string | null;

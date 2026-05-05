@@ -33,6 +33,10 @@ export interface Prospect {
   last_name: string;
   full_name: string;
   status: string;
+  latest_note_text?: string | null;
+  latest_note_tracker?: string | null;
+  latest_note_created_at?: string | null;
+  latest_note_created_by_name?: string | null;
   agency_code: string;
   parent_name: string;
   recruited_by_name: string;
@@ -91,7 +95,7 @@ export async function fetchProspects(query: ProspectQueryParams = {}): Promise<P
   const params = new URLSearchParams();
   appendIfPresent(params, 'page', query.page);
   appendIfPresent(params, 'page_size', query.pageSize);
-  appendIfPresent(params, 'sort', query.sort);
+  // appendIfPresent(params, 'sort', query.sort);
   appendIfPresent(params, 'ordering', query.ordering);
   appendIfPresent(params, 'search', query.search);
 

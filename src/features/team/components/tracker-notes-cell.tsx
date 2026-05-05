@@ -53,6 +53,7 @@ export function TrackerNotesCell({
             if (e.key === 'Enter') {
               e.preventDefault();
               void onAddInlineNote(userId);
+              e.currentTarget.blur();
             }
           }}
           aria-label={`Add note for ${userName}`}
