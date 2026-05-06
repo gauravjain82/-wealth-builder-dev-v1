@@ -21,10 +21,6 @@ interface BackendUserProfile {
   last_name?: string;
   full_name?: string;
   roles?: string[];
-  plan?: unknown;
-  accountType?: unknown;
-  role?: unknown;
-  type?: unknown;
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -62,7 +58,24 @@ function normalizeAccountType(raw: unknown): AccountType {
 
   // If it's a string, validate against known roles
   if (typeof raw === 'string') {
-    return roleToPlan(raw);
+    const normalized = raw.trim();
+    if (!normalized) return DEFAULT_ACCOUNT_TYPE;
+
+    // Handle backend role constants (e.g., LEADER) and common variants (e.g., Leader, leader, Senior Broker)
+    const backendStyle = normalized.toUpperCase().replace(/[\s-]+/g, '_');
+    const mappedRole = roleToPlan(backendStyle);
+    if (mappedRole !== DEFAULT_ACCOUNT_TYPE || backendStyle === 'NEW_AGENT') {
+      return mappedRole;
+    }
+
+    // Handle direct plan labels from frontend style values
+    const lower = normalized.toLowerCase();
+    if (lower === Plan.NewAgent.toLowerCase()) return Plan.NewAgent;
+    if (lower === Plan.Agent.toLowerCase()) return Plan.Agent;
+    if (lower === Plan.Leader.toLowerCase()) return Plan.Leader;
+    if (lower === Plan.Broker.toLowerCase()) return Plan.Broker;
+    if (lower === Plan.SeniorBroker.toLowerCase()) return Plan.SeniorBroker;
+    if (lower === Plan.Admin.toLowerCase()) return Plan.Admin;
   }
 
   return DEFAULT_ACCOUNT_TYPE;
@@ -80,10 +93,9 @@ function mapBackendUserToProfile(
   fallbackUsername: string,
   fallbackId: number
 ): UserWithProfile {
-  // Prioritize roles array from backend
-  const accountType = normalizeAccountType(
-    backendUser.roles ?? backendUser.plan ?? backendUser.accountType ?? backendUser.role ?? backendUser.type
-  );
+  // Roles are the single source of truth for account type.
+  const roleSource = backendUser.roles?.[0];
+  const accountType = normalizeAccountType(roleSource);
 
   const firstName = backendUser.first_name || '';
   const lastName = backendUser.last_name || '';

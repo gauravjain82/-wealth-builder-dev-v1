@@ -10,6 +10,7 @@ function asYesNo(value: boolean): string {
 
 interface BuildAssociateColumnsOptions {
   onToggle: (userId: number, field: keyof AssociateTrackerRecord, value: boolean) => void;
+  onPatch: (userId: number, field: keyof AssociateTrackerRecord, value: number | string | null) => void;
   savingKeySet: Set<string>;
   notesByUserId: Record<number, TrackerNote[]>;
   noteDraftByUserId: Record<number, string>;
@@ -40,6 +41,90 @@ function renderCheckbox(
         onChange={(e) => options.onToggle(row.user_id, field, e.target.checked)}
       />
     </label>
+  );
+}
+
+function isSaving(
+  row: AssociateTrackerRecord,
+  field: keyof AssociateTrackerRecord,
+  options: BuildAssociateColumnsOptions
+): boolean {
+  return options.savingKeySet.has(`${row.user_id}:${String(field)}`);
+}
+
+function NetLicenseAmountCell({
+  row,
+  options,
+}: {
+  row: AssociateTrackerRecord;
+  options: BuildAssociateColumnsOptions;
+}) {
+  const field: keyof AssociateTrackerRecord = 'net_license_amount';
+  const saving = isSaving(row, field, options);
+  const initialValue = row.net_license_amount == null ? '' : String(row.net_license_amount);
+  let committedOnEnter = false;
+
+  return (
+    <input
+      className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-center text-xs text-white placeholder-white/50 outline-none focus:border-amber-300/60"
+      type="text"
+      inputMode="decimal"
+      defaultValue={initialValue}
+      disabled={saving}
+      placeholder="0"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const input = e.currentTarget as HTMLInputElement;
+          const raw = input.value.trim();
+          if (!raw) {
+            committedOnEnter = true;
+            options.onPatch(row.user_id, field, null);
+            input.blur();
+            return;
+          }
+
+          const parsed = Number(raw);
+          if (!Number.isFinite(parsed)) {
+            input.value = initialValue;
+            input.blur();
+            return;
+          }
+
+          committedOnEnter = true;
+          options.onPatch(row.user_id, field, parsed);
+          input.blur();
+        }
+      }}
+      onFocus={(e) => {
+        const raw = e.currentTarget.value.trim();
+        if (!raw) return;
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed) && parsed === 0) {
+          e.currentTarget.value = '';
+        }
+      }}
+      onBlur={(e) => {
+        if (committedOnEnter) {
+          committedOnEnter = false;
+          return;
+        }
+
+        const raw = e.currentTarget.value.trim();
+        if (!raw) {
+          options.onPatch(row.user_id, field, null);
+          return;
+        }
+
+        const parsed = Number(raw);
+        if (!Number.isFinite(parsed)) {
+          e.currentTarget.value = initialValue;
+          return;
+        }
+
+        options.onPatch(row.user_id, field, parsed);
+      }}
+    />
   );
 }
 
@@ -121,104 +206,112 @@ export function buildAssociateColumns(
       render: (row) => row.leader_name || '-',
     },
     {
-      key: 'milestone_multi_handed',
+      key: 'finish_1st_recruit',
       label: 'Multi-\nhanded',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.milestone_multi_handed),
-      render: (row) => renderCheckbox(row, 'milestone_multi_handed', options),
+      value: (row) => asYesNo(row.finish_1st_recruit),
+      render: (row) => renderCheckbox(row, 'finish_1st_recruit', options),
     },
     {
-      key: 'ten_thre_results_goals',
+      key: 'finish_1st_savings',
       label: '10% -\n3 RULES -\n3 GOALS',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.ten_thre_results_goals),
-      render: (row) => renderCheckbox(row, 'ten_thre_results_goals', options),
+      value: (row) => asYesNo(row.finish_1st_savings),
+      render: (row) => renderCheckbox(row, 'finish_1st_savings', options),
     },
     {
-      key: 'self_improvement',
+      key: 'big_event_1st',
       label: 'Self-\nImprovement',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.self_improvement),
-      render: (row) => renderCheckbox(row, 'self_improvement', options),
+      value: (row) => asYesNo(row.big_event_1st),
+      render: (row) => renderCheckbox(row, 'big_event_1st', options),
     },
     {
-      key: 'milestone_observe_4_recruits',
+      key: 'observe_4_recruits',
       label: 'Observe 4\nrecruits',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.milestone_observe_4_recruits),
-      render: (row) => renderCheckbox(row, 'milestone_observe_4_recruits', options),
+      value: (row) => asYesNo(row.observe_4_recruits),
+      render: (row) => (
+        <span className={`text-xs font-semibold ${row.observe_4_recruits ? 'text-emerald-400' : 'text-white/40'}`}>
+          {row.observe_4_recruits ? 'Yes' : 'No'}
+        </span>
+      ),
     },
     {
-      key: 'milestone_observe_4_clients',
+      key: 'observe_4_clients',
       label: 'Observe 4\nclients',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.milestone_observe_4_clients),
-      render: (row) => renderCheckbox(row, 'milestone_observe_4_clients', options),
+      value: (row) => asYesNo(row.observe_4_clients),
+      render: (row) => renderCheckbox(row, 'observe_4_clients', options),
     },
     {
-      key: 'get_license',
+      key: 'is_licensed',
       label: 'Get licensed',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.get_license || row.milestone_get_licensed),
-      render: (row) => renderCheckbox(row, 'get_license', options),
+      value: (row) => asYesNo(row.is_licensed),
+      render: (row) => (
+        <span className={`text-xs font-semibold ${row.is_licensed ? 'text-emerald-400' : 'text-white/40'}`}>
+          {row.is_licensed ? 'Yes' : 'No'}
+        </span>
+      ),
     },
     {
-      key: 'registration_convention',
+      key: 'direct_registration_1st',
       label: '1 Direct\nRegistration',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.registration_convention),
-      render: (row) => renderCheckbox(row, 'registration_convention', options),
+      value: (row) => asYesNo(row.direct_registration_1st),
+      render: (row) => renderCheckbox(row, 'direct_registration_1st', options),
     },
     {
-      key: 'recruit_ttl',
+      key: 'recruit_9',
       label: '9 Recruits',
       width: 120,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => String(row.recruit_ttl),
-      render: (row) => formatNumber(row.recruit_ttl),
+      value: (row) => String(row.recruit_9),
+      render: (row) => formatNumber(row.recruit_9),
     },
     {
-      key: 'personal_points',
+      key: 'personal_points_45k',
       label: '45k Personal\nPoints',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => String(row.personal_points),
-      render: (row) => formatNumber(row.personal_points),
+      value: (row) => String(row.personal_points_45k),
+      render: (row) => formatNumber(row.personal_points_45k),
     },
     {
-      key: 'licenses_in_ttl',
+      key: 'registration_base_15k',
       label: '3 Licenses',
       width: 120,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => String(row.licenses_in_ttl),
-      render: (row) => formatNumber(row.licenses_in_ttl),
+      value: (row) => String(row.registration_base_15k),
+      render: (row) => formatNumber(row.registration_base_15k),
     },
     {
       key: 'registrationsBase',
@@ -227,8 +320,8 @@ export function buildAssociateColumns(
       align: 'center',
       sortable: true,
       searchable: true,
-      value: () => '',
-      render: () => '-',
+      value: (row) => String(row.registration_base_15k),
+      render: (row) => formatNumber(row.registration_base_15k),
     },
     {
       key: 'net_license_amount',
@@ -238,37 +331,37 @@ export function buildAssociateColumns(
       sortable: true,
       searchable: true,
       value: (row) => String(row.net_license_amount),
-      render: (row) => formatNumber(row.net_license_amount),
+      render: (row) => <NetLicenseAmountCell row={row} options={options} />,
     },
     {
-      key: 'key_player',
+      key: 'is_key_player',
       label: 'Key Player',
       width: 120,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.key_player),
-      render: (row) => renderCheckbox(row, 'key_player', options),
+      value: (row) => asYesNo(row.is_key_player),
+      render: (row) => renderCheckbox(row, 'is_key_player', options),
     },
     {
-      key: 'training',
+      key: 'is_training',
       label: 'Training',
       width: 120,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.training),
-      render: (row) => renderCheckbox(row, 'training', options),
+      value: (row) => asYesNo(row.is_training),
+      render: (row) => renderCheckbox(row, 'is_training', options),
     },
     {
-      key: 'big_event',
+      key: 'big_event_2nd',
       label: 'Big Event',
       width: 120,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.big_event),
-      render: (row) => renderCheckbox(row, 'big_event', options),
+      value: (row) => asYesNo(row.big_event_2nd),
+      render: (row) => renderCheckbox(row, 'big_event_2nd', options),
     },
     {
       key: 'why',

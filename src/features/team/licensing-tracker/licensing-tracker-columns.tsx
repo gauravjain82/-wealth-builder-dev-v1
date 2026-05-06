@@ -132,14 +132,14 @@ export function buildLicensingColumns(
       render: (row) => row.leader_name || '-',
     },
     {
-      key: 'xcel',
+      key: 'is_xcel',
       label: 'Xcel',
       width: 120,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.xcel),
-      render: (row) => renderCheckbox(row, 'xcel', options),
+      value: (row) => asYesNo(row.is_xcel),
+      render: (row) => renderCheckbox(row, 'is_xcel', options),
     },
     {
       key: 'test_date',
@@ -165,7 +165,7 @@ export function buildLicensingColumns(
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => `${row.test_result || ''} ${row.test_result_date || ''}`.trim(),
+      value: (row) => `${row.test_result ? 'Pass' : ''} ${row.test_result_date || ''}`.trim(),
       render: (row) => (
         <div className="flex w-full flex-row gap-1">
           <DatePicker
@@ -176,26 +176,30 @@ export function buildLicensingColumns(
           />
           <select
             className="h-8 w-full rounded border border-white/15 bg-white/5 px-2 text-xs text-white outline-none focus:border-amber-300/50"
-            value={row.test_result || ''}
+            value={row.test_result === true ? 'true' : row.test_result === false && row.test_result_date ? 'false' : ''}
             disabled={isSaving(row, 'test_result', options)}
-            onChange={(e) => options.onPatch(row.user_id, 'test_result', e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '') return;
+              options.onToggle(row.user_id, 'test_result', v === 'true');
+            }}
           >
             <option value="" style={{ color: '#111827', backgroundColor: '#ffffff' }}></option>
-            <option value="Yes" style={{ color: '#111827', backgroundColor: '#ffffff' }}>Yes</option>
-            <option value="No" style={{ color: '#111827', backgroundColor: '#ffffff' }}>No</option>
+            <option value="true" style={{ color: '#111827', backgroundColor: '#ffffff' }}>Pass</option>
+            <option value="false" style={{ color: '#111827', backgroundColor: '#ffffff' }}>Fail</option>
           </select>
         </div>
       ),
     },
     {
-      key: 'fingerprint',
+      key: 'is_fingerprint_done',
       label: 'Fingerprint',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.fingerprint),
-      render: (row) => renderCheckbox(row, 'fingerprint', options),
+      value: (row) => asYesNo(row.is_fingerprint_done),
+      render: (row) => renderCheckbox(row, 'is_fingerprint_done', options),
     },
     {
       key: 'sircon_nipr_date',
@@ -215,34 +219,34 @@ export function buildLicensingColumns(
       ),
     },
     {
-      key: 'license_cert',
+      key: 'is_license_cert_done',
       label: 'Lic. Certificate',
       width: 160,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.license_cert),
-      render: (row) => renderCheckbox(row, 'license_cert', options),
+      value: (row) => asYesNo(row.is_license_cert_done),
+      render: (row) => renderCheckbox(row, 'is_license_cert_done', options),
     },
     {
-      key: 'launch_direct',
+      key: 'is_launch_direct_done',
       label: 'Launch / Direct',
       width: 160,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.launch_direct),
-      render: (row) => renderCheckbox(row, 'launch_direct', options),
+      value: (row) => asYesNo(row.is_launch_direct_done),
+      render: (row) => renderCheckbox(row, 'is_launch_direct_done', options),
     },
     {
-      key: 'agent_agreement',
+      key: 'is_agent_agreement_done',
       label: 'Agent Agreement',
       width: 160,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.agent_agreement),
-      render: (row) => renderCheckbox(row, 'agent_agreement', options),
+      value: (row) => asYesNo(row.is_agent_agreement_done),
+      render: (row) => renderCheckbox(row, 'is_agent_agreement_done', options),
     },
     {
       key: 'agent_approval_date',
@@ -262,44 +266,48 @@ export function buildLicensingColumns(
       ),
     },
     {
-      key: 'continuing_ed',
+      key: 'is_continuing_education_done',
       label: 'Cont. Education',
       width: 160,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.continuing_ed),
-      render: (row) => renderCheckbox(row, 'continuing_ed', options),
+      value: (row) => asYesNo(row.is_continuing_education_done),
+      render: (row) => renderCheckbox(row, 'is_continuing_education_done', options),
     },
     {
-      key: 'eop_platform',
+      key: 'is_eop_platform_done',
       label: 'E&O & Platform',
       width: 160,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.eop_platform),
-      render: (row) => renderCheckbox(row, 'eop_platform', options),
+      value: (row) => asYesNo(row.is_eop_platform_done),
+      render: (row) => renderCheckbox(row, 'is_eop_platform_done', options),
     },
     {
-      key: 'direct_deposit',
+      key: 'is_direct_deposit_done',
       label: 'Direct Deposit',
       width: 160,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.direct_deposit),
-      render: (row) => renderCheckbox(row, 'direct_deposit', options),
+      value: (row) => asYesNo(row.is_direct_deposit_done),
+      render: (row) => renderCheckbox(row, 'is_direct_deposit_done', options),
     },
     {
-      key: 'licensed',
+      key: 'is_licensed',
       label: 'Licensed',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.licensed),
-      render: (row) => renderCheckbox(row, 'licensed', options),
+      value: (row) => asYesNo(row.is_licensed),
+      render: (row) => (
+        <span className={`text-xs font-semibold ${row.is_licensed ? 'text-emerald-400' : 'text-white/40'}`}>
+          {row.is_licensed ? 'Yes' : 'No'}
+        </span>
+      ),
     },
     {
       key: 'notes',

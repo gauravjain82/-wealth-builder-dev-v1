@@ -14,28 +14,23 @@ export interface AssociateTrackerRecord {
   agency_code?: string | null;
   invited_at?: string | null;
   avatar_url?: string | null;
-  big_event: boolean;
-  big_event_reg: boolean;
-  finish_first_recruit: boolean;
-  get_license: boolean;
-  is_event_reset: boolean;
-  personal_points: number;
-  personal_savings: number | string;
-  recruit_ttl: number;
-  licenses_in_ttl: number;
+  finish_1st_recruit: boolean;
+  finish_1st_savings: boolean;
+  savings_1st_amount: number | string | null;
+  big_event_1st: boolean;
+  observe_4_recruits: boolean;
+  observe_4_clients: boolean;
+  is_licensed: boolean;
+  direct_registration_1st: boolean;
+  recruit_9: number;
+  personal_points_45k: number;
+  registration_base_15k: number;
   net_license_amount: number | string;
-  registration_convention: boolean;
-  self_improvement: boolean;
-  ten_thre_results_goals: boolean;
-  milestone_get_licensed: boolean;
-  milestone_observe_4_clients: boolean;
-  milestone_observe_4_recruits: boolean;
-  milestone_multi_handed: boolean;
-  savings_second_done: boolean;
-  savings_third_done: boolean;
-  savings_fourth_done: boolean;
-  key_player: boolean;
-  training: boolean;
+  is_net_licensed: boolean;
+  is_key_player: boolean;
+  is_training: boolean;
+  big_event_2nd: boolean;
+  is_big_event_2nd_reset: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -117,4 +112,29 @@ export async function updateAssociateTracker(
   }
 
   return (await response.json()) as AssociateTrackerRecord;
+}
+
+async function postAssociateReset(path: string, errorMessage: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`${errorMessage}: ${response.statusText}`);
+  }
+}
+
+export async function resetAssociateBigEvent(): Promise<void> {
+  await postAssociateReset(
+    '/api/tracker/trackers/associate/reset-big-event/',
+    'Failed to reset associate big event'
+  );
+}
+
+export async function resetAssociateTraining(): Promise<void> {
+  await postAssociateReset(
+    '/api/tracker/trackers/associate/reset-training/',
+    'Failed to reset associate training'
+  );
 }

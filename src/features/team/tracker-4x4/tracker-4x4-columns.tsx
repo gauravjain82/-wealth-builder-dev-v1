@@ -153,16 +153,16 @@ function getRowNotes(
 
 // Defined before Build4x4ColumnsOptions so the interface can reference them.
 export type SavingsToggleField =
-  | 'personal_savings'
+  | 'finish_1st_savings'
   | 'finish_2nd_savings'
   | 'finish_3rd_savings'
   | 'finish_4th_savings';
 
 export type SavingsAmountField =
-  | 'personal_savings_amount'
-  | 'finish_2nd_savings_amount'
-  | 'finish_3rd_savings_amount'
-  | 'finish_4th_savings_amount';
+  | 'savings_1st_amount'
+  | 'savings_2nd_amount'
+  | 'savings_3rd_amount'
+  | 'savings_4th_amount';
 
 function SavingsAmountCell({
   row,
@@ -370,31 +370,31 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
       render: (row) => renderCheckbox(row, 'finish_1st_recruit', options),
     },
     {
-      key: 'personal_savings',
+      key: 'finish_1st_savings',
       label: 'Personal Savings',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => `${asYesNo(row.personal_savings)} ${row.personal_savings_amount ?? ''}`,
+      value: (row) => `${asYesNo(row.finish_1st_savings)} ${row.savings_1st_amount ?? ''}`,
       render: (row) => (
         <SavingsAmountCell
           row={row}
-          savingsField="personal_savings"
-          amountField="personal_savings_amount"
+          savingsField="finish_1st_savings"
+          amountField="savings_1st_amount"
           options={options}
         />
       ),
     },
     {
-      key: 'big_event',
+      key: 'big_event_1st',
       label: 'Big Event',
       width: 100,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.big_event),
-      render: (row) => renderCheckbox(row, 'big_event', options),
+      value: (row) => asYesNo(row.big_event_1st),
+      render: (row) => renderCheckbox(row, 'big_event_1st', options),
     },
     {
       key: 'finish_2nd_recruit',
@@ -423,12 +423,12 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => `${asYesNo(row.finish_2nd_savings)} ${row.finish_2nd_savings_amount ?? ''}`,
+      value: (row) => `${asYesNo(row.finish_2nd_savings)} ${row.savings_2nd_amount ?? ''}`,
       render: (row) => (
         <SavingsAmountCell
           row={row}
           savingsField="finish_2nd_savings"
-          amountField="finish_2nd_savings_amount"
+          amountField="savings_2nd_amount"
           options={options}
         />
       ),
@@ -440,12 +440,12 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => `${asYesNo(row.finish_3rd_savings)} ${row.finish_3rd_savings_amount ?? ''}`,
+      value: (row) => `${asYesNo(row.finish_3rd_savings)} ${row.savings_3rd_amount ?? ''}`,
       render: (row) => (
         <SavingsAmountCell
           row={row}
           savingsField="finish_3rd_savings"
-          amountField="finish_3rd_savings_amount"
+          amountField="savings_3rd_amount"
           options={options}
         />
       ),
@@ -457,12 +457,12 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => `${asYesNo(row.finish_4th_savings)} ${row.finish_4th_savings_amount ?? ''}`,
+      value: (row) => `${asYesNo(row.finish_4th_savings)} ${row.savings_4th_amount ?? ''}`,
       render: (row) => (
         <SavingsAmountCell
           row={row}
           savingsField="finish_4th_savings"
-          amountField="finish_4th_savings_amount"
+          amountField="savings_4th_amount"
           options={options}
         />
       ),
@@ -502,14 +502,18 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
       ),
     },
     {
-      key: 'licensed',
+      key: 'is_licensed',
       label: 'Licensed',
       width: 100,
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => asYesNo(row.licensed),
-      render: (row) => renderCheckbox(row, 'licensed', options),
+      value: (row) => asYesNo(row.is_licensed),
+      render: (row) => (
+        <span className={`text-xs font-semibold ${row.is_licensed ? 'text-emerald-400' : 'text-white/40'}`}>
+          {row.is_licensed ? 'Yes' : 'No'}
+        </span>
+      ),
     },
     {
       key: 'notes',

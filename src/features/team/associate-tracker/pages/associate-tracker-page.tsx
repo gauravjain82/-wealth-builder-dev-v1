@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { Block, ErrorState, LoadingState, TrackerTable } from '@/shared/components';
+import { Block, Button, ErrorState, LoadingState, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { buildAssociateColumns } from '../associate-tracker-columns';
 import {
   fetchAssociates,
   type AssociateTrackerRecord,
   type AssociateTrackerQuery,
+  resetAssociateBigEvent,
+  resetAssociateTraining,
   updateAssociateTracker,
 } from '../services/associate-tracker-service';
 import {
@@ -65,12 +67,39 @@ export default function AssociateTrackerPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [resettingAction, setResettingAction] = useState<'big-event' | 'training' | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const pageSize = 10;
   const addToast = useToastStore((state) => state.addToast);
 
   const handleToggle = async (userId: number, field: keyof AssociateTrackerRecord, value: boolean) => {
+    const savingKey = `${userId}:${String(field)}`;
+    setSavingKeySet((prev) => new Set(prev).add(savingKey));
+    try {
+      const updated = await updateAssociateTracker(userId, { [field]: value });
+      setRows((prev) =>
+        prev.map((row) => (row.user_id === userId ? { ...row, ...updated } : row))
+      );
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to update tracker',
+      });
+    } finally {
+      setSavingKeySet((prev) => {
+        const next = new Set(prev);
+        next.delete(savingKey);
+        return next;
+      });
+    }
+  };
+
+  const handlePatchField = async (
+    userId: number,
+    field: keyof AssociateTrackerRecord,
+    value: number | string | null
+  ) => {
     const savingKey = `${userId}:${String(field)}`;
     setSavingKeySet((prev) => new Set(prev).add(savingKey));
     try {
@@ -174,6 +203,7 @@ export default function AssociateTrackerPage() {
     () =>
       buildAssociateColumns({
         onToggle: handleToggle,
+        onPatch: handlePatchField,
         savingKeySet,
         notesByUserId,
         noteDraftByUserId,
@@ -251,6 +281,44 @@ export default function AssociateTrackerPage() {
     [addToast]
   );
 
+  const handleResetAction = useCallback(
+    async (kind: 'big-event' | 'training') => {
+      const confirmed = window.confirm(
+        kind === 'big-event'
+          ? 'Reset Big Event for all associates?'
+          : 'Reset Training for all associates?'
+      );
+      if (!confirmed) return;
+
+      setResettingAction(kind);
+      try {
+        if (kind === 'big-event') {
+          await resetAssociateBigEvent();
+        } else {
+          await resetAssociateTraining();
+        }
+
+        addToast({
+          type: 'success',
+          message:
+            kind === 'big-event'
+              ? 'Associate big event reset completed.'
+              : 'Associate training reset completed.',
+        });
+
+        await loadRows(1, true, sortState, filters);
+      } catch (err) {
+        addToast({
+          type: 'error',
+          message: err instanceof Error ? err.message : 'Failed to reset associate tracker.',
+        });
+      } finally {
+        setResettingAction(null);
+      }
+    },
+    [addToast, filters, loadRows, sortState]
+  );
+
   useEffect(() => {
     void loadRows(1, true, sortState, filters);
   }, [loadRows, sortState, filters]);
@@ -313,6 +381,26 @@ export default function AssociateTrackerPage() {
         title={pageHeading}
         description={`${pageDescription} • ${totalCount} total`}
         className="mb-6 flex-shrink-0"
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleResetAction('big-event')}
+              disabled={resettingAction !== null}
+            >
+              {resettingAction === 'big-event' ? 'Resetting...' : 'Reset Events'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleResetAction('training')}
+              disabled={resettingAction !== null}
+            >
+              {resettingAction === 'training' ? 'Resetting...' : 'Reset Training'}
+            </Button>
+          </div>
+        }
       />
 
       <div className="flex-1 overflow-hidden">
