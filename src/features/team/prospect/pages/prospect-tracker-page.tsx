@@ -219,10 +219,7 @@ export default function ProspectTrackerPage() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
-  const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>({
-    key: 'created_at',
-    direction: 'desc',
-  });
+  const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const addToast = useToastStore((state) => state.addToast);

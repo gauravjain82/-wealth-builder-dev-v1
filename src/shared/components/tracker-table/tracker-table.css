@@ -180,7 +180,8 @@
 .tracker-group-th.group-sub {
   font-size: 13px;
   color: var(--tracker-group-sub-text);
-  text-wrap: auto;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .tracker-th.is-sortable {
@@ -402,6 +403,8 @@
   box-shadow: inset 3px 0 0 #22c55e;
 }
 
+.tracker-tr.prospect-row-mark-recruit .tracker-td,
+.tracker-tr.prospect-row-mark-recruit .tracker-td.sticky-col,
 .tracker-tr.prospect-row-mark-recruiter .tracker-td,
 .tracker-tr.prospect-row-mark-recruiter .tracker-td.sticky-col {
   background: rgb(245, 158, 11);
@@ -412,6 +415,7 @@
   background: rgb(245, 158, 11);
 } */
 
+.tracker-tr.prospect-row-mark-recruit .tracker-td:first-child,
 .tracker-tr.prospect-row-mark-recruiter .tracker-td:first-child {
   box-shadow: inset 3px 0 0 #f59e0b;
 }

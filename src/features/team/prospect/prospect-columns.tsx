@@ -47,7 +47,7 @@ interface ProspectColumnOptions {
 function normalizeMarkValue(row: Prospect): ProspectMark {
   const raw = (row.prospect_meta?.mark || '').toLowerCase();
   if (raw === 'client' || raw === 'green') return 'client';
-  if (raw === 'recruit' || raw === 'yellow') return 'recruit';
+  if (raw === 'recruit' || raw === 'yellow' || raw === 'orange') return 'recruit';
   if (raw === 'both' || raw === 'combined') return 'both';
   return 'default';
 }
@@ -126,7 +126,7 @@ export function buildProspectColumns(
             >
               <option value="default" style={{ backgroundColor: '#ffffff', color: '#111827' }}>Default</option>
               <option value="client" style={{ backgroundColor: '#ffffff', color: '#111827' }}>🟢 Client</option>
-              <option value="recruit" style={{ backgroundColor: '#ffffff', color: '#111827' }}>🟠 Recruit</option>
+              <option value="recruit" style={{ backgroundColor: '#ffffff', color: '#111827' }}>🟡 Recruit</option>
               <option value="both" style={{ backgroundColor: '#ffffff', color: '#111827' }}>🔵 Both</option>
             </select>
           </div>
