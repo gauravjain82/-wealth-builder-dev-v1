@@ -4,19 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { VideoHero, CarouselCard, LeaderboardCard, PerformanceTable } from '@/features/home/components';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { useCarouselImages } from '@/hooks/use-carousel-images';
+import { roleToPlan } from '@core/constants/roles';
 import { Plan } from '@core/types';
 
 /** ============================
- *  HELPER: Normalize plan value
+ *  HELPER: Normalize role into plan value
  *  ============================ */
-function normalizePlan(value?: string | null): Plan {
-  const raw = (value || '').trim().toLowerCase();
-  if (raw === Plan.Agent.toLowerCase()) return Plan.Agent;
-  if (raw === Plan.Leader.toLowerCase()) return Plan.Leader;
-  if (raw === Plan.Broker.toLowerCase()) return Plan.Broker;
-  if (raw === Plan.SeniorBroker.toLowerCase()) return Plan.SeniorBroker;
-  if (raw === Plan.Admin.toLowerCase()) return Plan.Admin;
-  return Plan.NewAgent;
+function normalizePlanFromRole(role?: string | null): Plan {
+  const normalizedRole = (role || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (!normalizedRole) return Plan.NewAgent;
+  return roleToPlan(normalizedRole);
 }
 
 /** ============================
@@ -41,7 +38,7 @@ export default function HomePage() {
   const [muted, setMuted] = useState(true);
 
   /* ===== User Type ===== */
-  const currentPlan = normalizePlan(user?.plan ?? user?.accountType);
+  const currentPlan = normalizePlanFromRole(user?.roles?.[0]);
   const isPaid = currentPlan !== Plan.NewAgent;
 
   /* ===== Contest slider ===== */

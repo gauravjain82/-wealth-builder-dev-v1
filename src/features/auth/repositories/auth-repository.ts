@@ -40,19 +40,19 @@ function buildApiUrl(path: string): string {
   return `${getApiBaseUrl()}${normalizedPath}`;
 }
 
-function normalizeAccountType(raw: unknown): AccountType {
+function normalizeAccountTypeFromRoles(raw: unknown): AccountType {
   if (!raw) return DEFAULT_ACCOUNT_TYPE;
 
   // If it's an array, use the first element (e.g., roles[0])
   if (Array.isArray(raw) && raw.length > 0) {
-    return normalizeAccountType(raw[0]);
+    return normalizeAccountTypeFromRoles(raw[0]);
   }
 
   // If it's an object, check for roles array first
   if (typeof raw === 'object' && raw !== null) {
     const nested = raw as Record<string, unknown>;
     if (Array.isArray(nested.roles) && nested.roles.length > 0) {
-      return normalizeAccountType(nested.roles[0]);
+      return normalizeAccountTypeFromRoles(nested.roles[0]);
     }
   }
 
@@ -94,8 +94,11 @@ function mapBackendUserToProfile(
   fallbackId: number
 ): UserWithProfile {
   // Roles are the single source of truth for account type.
-  const roleSource = backendUser.roles?.[0];
-  const accountType = normalizeAccountType(roleSource);
+  const roles = (backendUser.roles || []).filter(
+    (entry): entry is string => typeof entry === 'string' && entry.trim().length > 0
+  );
+  const primaryRole = roles[0];
+  const accountType = normalizeAccountTypeFromRoles(primaryRole);
 
   const firstName = backendUser.first_name || '';
   const lastName = backendUser.last_name || '';
@@ -109,6 +112,7 @@ function mapBackendUserToProfile(
     phoneNumber: null,
     emailVerified: true,
     accountType,
+    roles,
     plan: accountType,
     firstName: firstName || undefined,
     lastName: lastName || undefined,
@@ -230,8 +234,7 @@ export class AuthRepository {
   }
 
   private persistToLocalStorage(user: UserWithProfile): void {
-    localStorage.setItem('wb.plan', user.accountType);
-    localStorage.setItem('wb.accountType', user.accountType);
+    localStorage.setItem('wb.roles', JSON.stringify(user.roles || []));
     localStorage.setItem('wb.userId', user.id);
     localStorage.setItem('wb.userEmail', user.email);
     localStorage.setItem('wb.userName', user.name || user.displayName || user.email);
@@ -244,13 +247,14 @@ export class AuthRepository {
         displayName: user.displayName,
         fullName: user.fullName || user.name,
         photoURL: user.photoURL,
-        accountType: user.accountType,
+        roles: user.roles || [],
       })
     );
   }
 
   private clearLocalStorage(): void {
     localStorage.removeItem('authUser');
+    localStorage.removeItem('wb.roles');
     localStorage.removeItem('wb.plan');
     localStorage.removeItem('wb.accountType');
     localStorage.removeItem('wb.userId');

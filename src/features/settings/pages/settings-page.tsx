@@ -286,7 +286,7 @@ function UpgradeRequestForm({
         metadata: {
           source: 'settings_profile_upgrade',
           target_plan: targetPlan,
-          current_plan: user.plan || '',
+          current_plan: currentPlan,
         },
       });
 

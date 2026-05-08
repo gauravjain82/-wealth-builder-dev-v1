@@ -58,10 +58,11 @@ export default function OrgToolbar({
       : users
           .filter((user) => {
             const query = searchValue.toLowerCase();
+            const roleQuerySource = user.roles.join(' ').toLowerCase();
             return (
               user.name.toLowerCase().includes(query) ||
               user.email.toLowerCase().includes(query) ||
-              user.plan.toLowerCase().includes(query)
+              roleQuerySource.includes(query)
             );
           })
           .slice(0, 8);
@@ -212,7 +213,7 @@ export default function OrgToolbar({
                   >
                     <div className="org-toolbar-autocomplete-name">{user.name}</div>
                     <div className="org-toolbar-autocomplete-meta">
-                      <span className="org-toolbar-autocomplete-type">{user.plan || 'Agent'}</span>
+                      <span className="org-toolbar-autocomplete-type">{user.roles[0] || 'Agent'}</span>
                       {user.email && <span className="org-toolbar-autocomplete-email">{user.email}</span>}
                     </div>
                   </div>

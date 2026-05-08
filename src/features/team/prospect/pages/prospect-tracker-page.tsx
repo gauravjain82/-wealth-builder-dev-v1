@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
+import { roleToPlan } from '@/core/constants/roles';
 import { Plan } from '@/core/types';
 import {
   Block,
@@ -36,6 +37,36 @@ import { TrackerNotesModal } from '@/features/team/components/tracker-notes-moda
 type SortDirection = 'asc' | 'desc';
 type ProspectMark = 'default' | 'client' | 'recruiter' | 'both';
 type ProspectOutcome = 'Client' | 'Recruit' | 'Both';
+
+function parseStoredRoles(): string[] {
+  try {
+    const rawRoles = localStorage.getItem('wb.roles');
+    if (rawRoles) {
+      const parsed = JSON.parse(rawRoles);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (entry): entry is string => typeof entry === 'string' && entry.trim().length > 0
+        );
+      }
+    }
+
+    const authUserRaw = localStorage.getItem('authUser');
+    if (!authUserRaw) return [];
+    const authUser = JSON.parse(authUserRaw) as { roles?: unknown };
+    if (!Array.isArray(authUser.roles)) return [];
+    return authUser.roles.filter(
+      (entry): entry is string => typeof entry === 'string' && entry.trim().length > 0
+    );
+  } catch {
+    return [];
+  }
+}
+
+function resolvePlanFromPrimaryRole(role: string | null | undefined): Plan {
+  const normalizedRole = (role || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (!normalizedRole) return Plan.NewAgent;
+  return roleToPlan(normalizedRole);
+}
 
 interface ImportedContact {
   firstName: string;
@@ -197,20 +228,8 @@ export default function ProspectTrackerPage() {
   const addToast = useToastStore((state) => state.addToast);
 
   const resolvedPlan = useMemo(() => {
-    const planFromStorage =
-      localStorage.getItem('wb.plan') ||
-      localStorage.getItem('wb.accountType') ||
-      (() => {
-        try {
-          const raw = localStorage.getItem('authUser');
-          if (!raw) return null;
-          return JSON.parse(raw)?.accountType || null;
-        } catch {
-          return null;
-        }
-      })();
-
-    return planFromStorage || Plan.NewAgent;
+    const primaryRole = parseStoredRoles()[0] || null;
+    return resolvePlanFromPrimaryRole(primaryRole);
   }, []);
 
   const isNewAgent = resolvedPlan === Plan.NewAgent;

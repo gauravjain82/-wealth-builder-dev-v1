@@ -95,7 +95,7 @@ export async function fetchProspects(query: ProspectQueryParams = {}): Promise<P
   const params = new URLSearchParams();
   appendIfPresent(params, 'page', query.page);
   appendIfPresent(params, 'page_size', query.pageSize);
-  // appendIfPresent(params, 'sort', query.sort);
+  appendIfPresent(params, 'sort', query.sort || query.ordering);
   appendIfPresent(params, 'ordering', query.ordering);
   appendIfPresent(params, 'search', query.search);
 

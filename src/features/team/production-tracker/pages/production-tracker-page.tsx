@@ -5,6 +5,7 @@ import { buildProductionColumns } from '../production-columns';
 import {
   deleteProductionRecord,
   fetchProductionTracker,
+  type ProductionTrackerQuery,
   type ProductionTrackerRecord,
   type UpdateProductionPayload,
   updateProductionRecord,
@@ -13,6 +14,22 @@ import {
   AddProductionModal,
   type AddProductionFormData,
 } from '@/features/team/prospect/components/add-production-modal';
+
+type SortDirection = 'asc' | 'desc';
+
+function toSortParam(sort: { key: string; direction: SortDirection } | null): string | undefined {
+  if (!sort) return undefined;
+  return sort.direction === 'desc' ? `-${sort.key}` : sort.key;
+}
+
+function toBackendFilters(filters: Record<string, string>): Record<string, string> {
+  return Object.entries(filters).reduce<Record<string, string>>((acc, [key, value]) => {
+    const normalized = value.trim();
+    if (!normalized) return acc;
+    acc[key] = normalized;
+    return acc;
+  }, {});
+}
 
 export default function ProductionTrackerPage() {
   const pageHeading = 'Production Tracker';
@@ -23,6 +40,8 @@ export default function ProductionTrackerPage() {
   const [error, setError] = useState<string | null>(null);
   const [editingRow, setEditingRow] = useState<ProductionTrackerRecord | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const addToast = useToastStore((state) => state.addToast);
 
   const updateRowInState = (updated: ProductionTrackerRecord) => {
@@ -150,7 +169,11 @@ export default function ProductionTrackerPage() {
       try {
         setLoading(true);
         setError(null);
-        const data = await fetchProductionTracker();
+        const query: ProductionTrackerQuery = {
+          sort: toSortParam(sortState),
+          filters: toBackendFilters(filters),
+        };
+        const data = await fetchProductionTracker(query);
         if (isMounted) {
           setRows(data);
         }
@@ -173,7 +196,7 @@ export default function ProductionTrackerPage() {
     return () => {
       isMounted = false;
     };
-  }, [addToast]);
+  }, [addToast, sortState, filters]);
 
   if (loading) {
     return (
@@ -221,6 +244,10 @@ export default function ProductionTrackerPage() {
           tableId="production-tracker"
           emptyMessage="No production records found."
           className="h-full"
+          serverSort={sortState}
+          onServerSortChange={setSortState}
+          serverFilters={filters}
+          onServerFilterChange={setFilters}
         />
       </div>
 

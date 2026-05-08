@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { roleToPlan } from '@core/constants/roles';
 import { Plan } from '@core/types';
 import { Heading, Text } from '@/shared/components';
 import SecureSlidePlayer from '@/features/systematic-tools/components/secure-slide-player';
@@ -30,44 +31,43 @@ type DraftItem = {
   route: string;
 };
 
-const normalizePlan = (value: unknown): Plan => {
-  if (!value) return Plan.NewAgent;
-  if (typeof value === 'object') {
-    const nested =
-      (value as { plan?: unknown; accountType?: unknown; role?: unknown })
-        .plan ||
-      (value as { accountType?: unknown }).accountType ||
-      (value as { role?: unknown }).role;
-    return normalizePlan(nested);
+const normalizePlanFromRole = (role: string | null | undefined): Plan => {
+  const normalizedRole = (role || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (!normalizedRole) return Plan.NewAgent;
+  return roleToPlan(normalizedRole);
+};
+
+const parseStoredRoles = (): string[] => {
+  try {
+    const rawRoles = localStorage.getItem('wb.roles');
+    if (rawRoles) {
+      const parsed = JSON.parse(rawRoles);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (entry): entry is string => typeof entry === 'string' && entry.trim().length > 0
+        );
+      }
+    }
+
+    const authUserRaw = localStorage.getItem('authUser');
+    if (!authUserRaw) return [];
+    const authUser = JSON.parse(authUserRaw) as { roles?: unknown };
+    if (!Array.isArray(authUser.roles)) return [];
+    return authUser.roles.filter(
+      (entry): entry is string => typeof entry === 'string' && entry.trim().length > 0
+    );
+  } catch {
+    return [];
   }
-  if (typeof value !== 'string') return Plan.NewAgent;
-
-  const raw = value.trim();
-  const lower = raw.toLowerCase();
-  if (!raw) return Plan.NewAgent;
-
-  if (lower === 'new agent') return Plan.NewAgent;
-  if (lower === 'agent') return Plan.Agent;
-  if (lower === 'leader') return Plan.Leader;
-  if (lower === 'broker') return Plan.Broker;
-  if (lower === 'senior broker') return Plan.SeniorBroker;
-  if (lower === 'admin') return Plan.Admin;
-
-  const match = Object.values(Plan).find((plan) => plan === raw);
-  return match ?? Plan.NewAgent;
 };
 
 export default function TenSystematicToolsPage() {
   const { user } = useAuth();
 
-  const resolvePlan = () =>
-    normalizePlan(
-      user?.plan ||
-        user?.accountType ||
-        localStorage.getItem('wb.plan') ||
-        localStorage.getItem('userType') ||
-        Plan.NewAgent
-    );
+  const resolvePlan = () => {
+    const primaryRole = user?.roles?.[0] || parseStoredRoles()[0] || null;
+    return normalizePlanFromRole(primaryRole);
+  };
 
   const [userType, setUserType] = useState(resolvePlan);
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -81,7 +81,7 @@ export default function TenSystematicToolsPage() {
     setIsAdmin(
       normalized === Plan.Admin || localStorage.getItem('isAdmin') === 'true'
     );
-  }, [user?.plan, user?.accountType]);
+  }, [user?.roles]);
 
   const THUMBS = {
     unifiedSystemMain:

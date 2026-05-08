@@ -41,6 +41,11 @@ interface PaginatedProductionResponse {
   results: ProductionTrackerRecord[];
 }
 
+export interface ProductionTrackerQuery {
+  sort?: string;
+  filters?: Record<string, string>;
+}
+
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem('wb.authToken');
   if (!token) throw new Error('No authentication token found');
@@ -102,10 +107,25 @@ export async function createProductionRecord(payload: CreateProductionPayload): 
   return (await response.json()) as ProductionTrackerRecord;
 }
 
-export async function fetchProductionTracker(): Promise<ProductionTrackerRecord[]> {
+export async function fetchProductionTracker(
+  query: ProductionTrackerQuery = {}
+): Promise<ProductionTrackerRecord[]> {
   const headers = getAuthHeaders();
   const records: ProductionTrackerRecord[] = [];
-  let nextUrl: string | null = `${API_BASE_URL}/api/tracker/production/?page_size=200`;
+  const params = new URLSearchParams();
+  params.set('page_size', '200');
+  if (query.sort) {
+    params.set('sort', query.sort);
+  }
+  if (query.filters) {
+    Object.entries(query.filters).forEach(([key, value]) => {
+      const normalized = value?.trim();
+      if (!normalized) return;
+      params.set(key, normalized);
+    });
+  }
+
+  let nextUrl: string | null = `${API_BASE_URL}/api/tracker/production/?${params.toString()}`;
   let pageSafety = 0;
 
   while (nextUrl && pageSafety < 20) {

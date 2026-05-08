@@ -385,12 +385,12 @@
 
 .tracker-tr.prospect-row-mark-client .tracker-td,
 .tracker-tr.prospect-row-mark-client .tracker-td.sticky-col {
-  background: rgba(34, 197, 94, 0.14);
+  background: rgb(34, 197, 94);
 }
 
 .tracker-tr.prospect-row-mark-client:hover .tracker-td,
 .tracker-tr.prospect-row-mark-client:hover .tracker-td.sticky-col {
-  background: rgba(34, 197, 94, 0.2);
+  background: rgb(34, 197, 94);
 }
 
 .tracker-tr.prospect-row-mark-client .tracker-td:first-child {
@@ -399,13 +399,13 @@
 
 .tracker-tr.prospect-row-mark-recruiter .tracker-td,
 .tracker-tr.prospect-row-mark-recruiter .tracker-td.sticky-col {
-  background: rgba(245, 158, 11, 0.16);
+  background: rgb(245, 158, 11);
 }
 
-.tracker-tr.prospect-row-mark-recruiter:hover .tracker-td,
+/* .tracker-tr.prospect-row-mark-recruiter:hover .tracker-td,
 .tracker-tr.prospect-row-mark-recruiter:hover .tracker-td.sticky-col {
-  background: rgba(245, 158, 11, 0.22);
-}
+  background: rgb(245, 158, 11);
+} */
 
 .tracker-tr.prospect-row-mark-recruiter .tracker-td:first-child {
   box-shadow: inset 3px 0 0 #f59e0b;
@@ -413,12 +413,12 @@
 
 .tracker-tr.prospect-row-mark-both .tracker-td,
 .tracker-tr.prospect-row-mark-both .tracker-td.sticky-col {
-  background: rgba(79, 125, 243, 0.16);
+  background: rgb(79, 125, 243);
 }
 
 .tracker-tr.prospect-row-mark-both:hover .tracker-td,
 .tracker-tr.prospect-row-mark-both:hover .tracker-td.sticky-col {
-  background: rgba(79, 125, 243, 0.22);
+  background: rgb(79, 125, 243);
 }
 
 .tracker-tr.prospect-row-mark-both .tracker-td:first-child {

@@ -3,6 +3,8 @@ import type { Prospect } from './services/prospect-service';
 import type { TrackerNote } from '@/features/team/services/tracker-notes-service';
 import { buildProfileSummary } from './prospect-utils';
 
+type ProspectMark = 'default' | 'client' | 'recruit' | 'both';
+
 interface ProspectColumnOptions {
   notesByProspectId: Record<number, TrackerNote[]>;
   noteDraftByProspectId: Record<number, string>;
@@ -15,7 +17,7 @@ interface ProspectColumnOptions {
   onAddInlineNote: (row: Prospect) => Promise<void>;
   onOpenAllNotes: (row: Prospect) => void;
   onToggleProspectMeta: (row: Prospect, field: 'top25' | 'hot', value: boolean) => void;
-  onChangeProspectMark: (row: Prospect, mark: 'default' | 'client' | 'recruiter' | 'both') => void;
+  onChangeProspectMark: (row: Prospect, mark: ProspectMark) => void;
   onChangeProspectOutcome: (row: Prospect, outcome: 'Client' | 'Recruit' | 'Both') => void;
   editingProfileProspectId: number | null;
   profileDraftByProspectId: Record<
@@ -42,43 +44,12 @@ interface ProspectColumnOptions {
   getRowIndex: (row: Prospect) => number;
 }
 
-type ProspectMark = 'default' | 'client' | 'recruiter' | 'both';
-
 function normalizeMarkValue(row: Prospect): ProspectMark {
   const raw = (row.prospect_meta?.mark || '').toLowerCase();
   if (raw === 'client' || raw === 'green') return 'client';
-  if (raw === 'recruiter' || raw === 'recruit' || raw === 'yellow') return 'recruiter';
+  if (raw === 'recruit' || raw === 'yellow') return 'recruit';
   if (raw === 'both' || raw === 'combined') return 'both';
   return 'default';
-}
-
-function markVisual(mark: ProspectMark): { label: string; background: string; border: string } {
-  if (mark === 'client') {
-    return {
-      label: 'Client',
-      background: '#22c55e',
-      border: '#22c55e',
-    };
-  }
-  if (mark === 'recruiter') {
-    return {
-      label: 'Recruiter',
-      background: '#f59e0b',
-      border: '#f59e0b',
-    };
-  }
-  if (mark === 'both') {
-    return {
-      label: 'Both',
-      background: '#4f7df3',
-      border: '#4f7df3',
-    };
-  }
-  return {
-    label: 'Default',
-    background: '#9ca3af',
-    border: '#9ca3af',
-  };
 }
 
 function formatNoteDate(value: string): string {
@@ -126,55 +97,38 @@ export function buildProspectColumns(
       align: 'center',
       sortable: false,
       value: (row) => options.getRowIndex(row),
-      render: (row) => options.getRowIndex(row),
-    },
-    {
-      key: 'mark',
-      label: '',
-      width: 60,
-      align: 'center',
-      sortable: false,
       render: (row) => {
         const current = normalizeMarkValue(row);
-        const visual = markVisual(current);
         return (
           <div className="relative inline-flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <span className="select-none">{options.getRowIndex(row)}</span>
             <select
-              title={`Marker: ${visual.label}`}
+              title={`Marker for ${row.full_name || row.email}`}
               aria-label={`Marker for ${row.full_name || row.email}`}
               value={current}
               disabled={options.savingMetaProspectIdSet.has(row.id)}
               onChange={(e) =>
                 options.onChangeProspectMark(
                   row,
-                  (e.target.value as 'default' | 'client' | 'recruiter' | 'both') || 'default'
+                  (e.target.value as ProspectMark) || 'default'
                 )
               }
               style={{
                 position: 'absolute',
                 inset: 0,
-                width: 14,
-                height: 14,
+                width: '100%',
+                height: '100%',
                 opacity: 0,
+                color: '#111827',
+                backgroundColor: 'rgba(255, 255, 255, 0.98)',
                 cursor: options.savingMetaProspectIdSet.has(row.id) ? 'not-allowed' : 'pointer',
               }}
             >
-              <option value="default">Default</option>
-              <option value="client">Client</option>
-              <option value="recruiter">Recruiter</option>
-              <option value="both">Both</option>
+              <option value="default" style={{ backgroundColor: '#ffffff', color: '#111827' }}>Default</option>
+              <option value="client" style={{ backgroundColor: '#ffffff', color: '#111827' }}>🟢 Client</option>
+              <option value="recruit" style={{ backgroundColor: '#ffffff', color: '#111827' }}>🟠 Recruit</option>
+              <option value="both" style={{ backgroundColor: '#ffffff', color: '#111827' }}>🔵 Both</option>
             </select>
-            <span
-              aria-hidden="true"
-              style={{
-                display: 'inline-block',
-                width: 14,
-                height: 14,
-                borderRadius: '50%',
-                border: `1px solid ${visual.border}`,
-                background: visual.background,
-              }}
-            />
           </div>
         );
       },
@@ -190,7 +144,7 @@ export function buildProspectColumns(
     },
     {
       key: 'recruited_by_name',
-      label: 'Recruiter Name',
+      label: 'Associate',
       width: 180,
       sortable: true,
       render: (row) => row.recruited_by_name || '-',
@@ -458,7 +412,7 @@ export function buildProspectColumns(
             }}
             className="h-7 w-7 rounded border border-amber-300/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
           >
-            ✎
+            📝
           </button>
           <button
             type="button"
@@ -470,7 +424,7 @@ export function buildProspectColumns(
             }}
             className="h-7 w-7 rounded border border-blue-300/40 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20"
           >
-            ✉
+            📞
           </button>
           <button
             type="button"

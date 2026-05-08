@@ -20,8 +20,6 @@ interface BackendUser {
   first_name?: string;
   last_name?: string;
   full_name?: string;
-  plan?: string;
-  type?: string;
   agency_code?: string;
   level?: LevelPayload | null;
   roles?: string[];
@@ -150,11 +148,12 @@ function normalizeLevel(user: BackendUser | UnknownRecord): string {
   const levelName = getString(levelRecord || {}, 'name').trim();
   if (levelName) return levelName;
 
-  const type = getString(userRecord, 'type').trim();
-  if (type) return type;
-
-  const plan = getString(userRecord, 'plan').trim();
-  if (plan) return plan;
+  const roles = Array.isArray(userRecord.roles)
+    ? userRecord.roles.filter((role): role is string => typeof role === 'string' && role.trim().length > 0)
+    : [];
+  if (roles.length > 0) {
+    return roles[0].trim();
+  }
 
   return 'Agent';
 }
@@ -162,6 +161,15 @@ function normalizeLevel(user: BackendUser | UnknownRecord): string {
 function isSmd(user: OrgChartUser): boolean {
   const values = [user.level, user.plan, ...user.roles].map((value) => value.toUpperCase());
   return values.some((value) => value.includes('SMD') || value.includes('SENIOR MARKETING DIRECTOR'));
+}
+
+function normalizeRoleLabel(role: string): string {
+  return role
+    .trim()
+    .replace(/[\s-]+/g, '_')
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function buildChildrenMap(users: OrgChartUser[]): Record<string, string[]> {
@@ -193,6 +201,7 @@ function normalizeOrgUser(raw: UnknownRecord, parentIdFromTree: string | null = 
   const roles = Array.isArray(raw.roles)
     ? raw.roles.filter((role): role is string => typeof role === 'string')
     : [];
+  const primaryRoleLabel = roles.length > 0 ? normalizeRoleLabel(roles[0]) : 'Agent';
 
   const parsedChildCount = Number(raw.children_count ?? raw.child_count);
   const hasChildrenFlag = Boolean(raw.has_children);
@@ -206,7 +215,7 @@ function normalizeOrgUser(raw: UnknownRecord, parentIdFromTree: string | null = 
     id,
     name: normalizeName(raw),
     email: typeof raw.email === 'string' ? raw.email : '',
-    plan: typeof raw.plan === 'string' ? raw.plan : (typeof raw.type === 'string' ? raw.type : 'Agent'),
+    plan: primaryRoleLabel,
     level: normalizeLevel(raw),
     agencyCode: typeof raw.agency_code === 'string' ? raw.agency_code : '',
     parentId,
@@ -314,7 +323,7 @@ function transformToUsersAndChildrenMap(payload: unknown): {
             id: user.id,
             firstName,
             lastName: lastNameParts.join(' '),
-            agentLevel: user.level || user.plan || 'SMD',
+            agentLevel: user.level || user.roles[0] || 'SMD',
           };
         })
         .sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
