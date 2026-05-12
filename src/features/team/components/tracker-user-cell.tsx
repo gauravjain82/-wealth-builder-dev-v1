@@ -3,6 +3,7 @@ interface TrackerUserCellProps {
   agencyCode?: string | null;
   invitedAt?: string | null;
   avatarUrl?: string | null;
+  onAvatarClick?: () => void;
 }
 
 function getInitials(fullName: string): string {
@@ -29,16 +30,33 @@ export function TrackerUserCell({
   agencyCode,
   invitedAt,
   avatarUrl,
+  onAvatarClick,
 }: TrackerUserCellProps) {
   const initials = getInitials(fullName);
+  const avatarContent = avatarUrl
+    ? <img src={avatarUrl} alt="" className="tracker-user-avatar-img" />
+    : <span>{initials}</span>;
 
   return (
     <div className="tracker-user-cell">
-      <div className="tracker-user-avatar" aria-hidden="true">
-        {avatarUrl
-          ? <img src={avatarUrl} alt="" className="tracker-user-avatar-img" />
-          : <span>{initials}</span>}
-      </div>
+      {onAvatarClick ? (
+        <button
+          type="button"
+          className="tracker-user-avatar tracker-user-avatar-btn"
+          title={`Open profile for ${fullName || 'user'}`}
+          aria-label={`Open profile for ${fullName || 'user'}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onAvatarClick();
+          }}
+        >
+          {avatarContent}
+        </button>
+      ) : (
+        <div className="tracker-user-avatar" aria-hidden="true">
+          {avatarContent}
+        </div>
+      )}
       <div className="tracker-user-details">
         <div className="tracker-user-name">{fullName || '-'}</div>
         <span className="tracker-user-sub"> {formatInvitedDate(invitedAt)} • {agencyCode || '-'}</span>

@@ -52,6 +52,7 @@ export interface OrgNodeData {
   hasChildren?: boolean;
   onToggleCollapse?: () => void;
   onClick?: () => void;
+  onOpenProfile?: () => void;
   childrenCount?: number;
   filterBackground?: Record<string, string>;
   levelCounts?: LevelCount[];
@@ -75,6 +76,7 @@ const OrgNode = memo(function OrgNode({ data, selected }: NodeProps) {
     hasChildren = false,
     onToggleCollapse,
     onClick,
+    onOpenProfile,
     childrenCount = 0,
     levelCounts = [],
   } = nodeData;
@@ -125,7 +127,15 @@ const OrgNode = memo(function OrgNode({ data, selected }: NodeProps) {
       {isCollapsed && childrenCount > 0 && <div className="collapsed-count-badge">{childrenCount}</div>}
 
       {profileImg ? (
-        <div className="org-node-avatar org-node-avatar-photo">
+        <button
+          type="button"
+          className="org-node-avatar org-node-avatar-photo"
+          title={`Open profile for ${name}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenProfile?.();
+          }}
+        >
           <img
             src={profileImg}
             className="org-node-avatar-img"
@@ -138,11 +148,19 @@ const OrgNode = memo(function OrgNode({ data, selected }: NodeProps) {
               image.parentElement?.classList.add('org-node-avatar-initials');
             }}
           />
-        </div>
+        </button>
       ) : (
-        <div className="org-node-avatar org-node-avatar-initials">
+        <button
+          type="button"
+          className="org-node-avatar org-node-avatar-initials"
+          title={`Open profile for ${name}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenProfile?.();
+          }}
+        >
           <img src={initialsAvatar} className="org-node-avatar-img" alt={name} />
-        </div>
+        </button>
       )}
 
       <div className="org-chart-node-name">{name}</div>

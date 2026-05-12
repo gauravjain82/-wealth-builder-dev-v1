@@ -11,6 +11,10 @@ function asYesNo(value: boolean): string {
 interface BuildAssociateColumnsOptions {
   onToggle: (userId: number, field: keyof AssociateTrackerRecord, value: boolean) => void;
   onPatch: (userId: number, field: keyof AssociateTrackerRecord, value: number | string | null) => void;
+  onOpenUserProfile?: (row: AssociateTrackerRecord) => void;
+  onOpenHotRecruits?: (row: AssociateTrackerRecord) => void;
+  onOpenPersonalPoints?: (row: AssociateTrackerRecord) => void;
+  onOpenLicensedUsers?: (row: AssociateTrackerRecord) => void;
   savingKeySet: Set<string>;
   notesByUserId: Record<number, TrackerNote[]>;
   noteDraftByUserId: Record<number, string>;
@@ -184,6 +188,7 @@ export function buildAssociateColumns(
           invitedAt={row.invited_at || row.created_at}
           agencyCode={row.agency_code}
           avatarUrl={row.avatar_url}
+          onAvatarClick={options.onOpenUserProfile ? () => options.onOpenUserProfile?.(row) : undefined}
         />
       ),
     },
@@ -291,7 +296,19 @@ export function buildAssociateColumns(
       sortable: true,
       searchable: true,
       value: (row) => String(row.recruit_9),
-      render: (row) => formatNumber(row.recruit_9),
+      render: (row) => (
+        <button
+          type="button"
+          className="rounded border border-white/15 bg-white/5 px-2 py-1 text-xs font-semibold text-amber-200 hover:bg-white/10"
+          title="View hot recruits"
+          onClick={(event) => {
+            event.stopPropagation();
+            options.onOpenHotRecruits?.(row);
+          }}
+        >
+          {formatNumber(row.recruit_9)}
+        </button>
+      ),
     },
     {
       key: 'personal_points_45k',
@@ -301,7 +318,19 @@ export function buildAssociateColumns(
       sortable: true,
       searchable: true,
       value: (row) => String(row.personal_points_45k),
-      render: (row) => formatNumber(row.personal_points_45k),
+      render: (row) => (
+        <button
+          type="button"
+          className="rounded border border-white/15 bg-white/5 px-2 py-1 text-xs font-semibold text-emerald-200 hover:bg-white/10"
+          title="View client users"
+          onClick={(event) => {
+            event.stopPropagation();
+            options.onOpenPersonalPoints?.(row);
+          }}
+        >
+          {formatNumber(row.personal_points_45k)}
+        </button>
+      ),
     },
     {
       key: 'registration_base_15k',
@@ -311,7 +340,19 @@ export function buildAssociateColumns(
       sortable: true,
       searchable: true,
       value: (row) => String(row.registration_base_15k),
-      render: (row) => formatNumber(row.registration_base_15k),
+      render: (row) => (
+        <button
+          type="button"
+          className="rounded border border-white/15 bg-white/5 px-2 py-1 text-xs font-semibold text-sky-200 hover:bg-white/10"
+          title="View licensed users"
+          onClick={(event) => {
+            event.stopPropagation();
+            options.onOpenLicensedUsers?.(row);
+          }}
+        >
+          {formatNumber(row.registration_base_15k)}
+        </button>
+      ),
     },
     {
       key: 'registrationsBase',

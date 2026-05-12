@@ -15,6 +15,7 @@ interface BuildLicensingColumnsOptions {
     field: keyof LicensingTrackerRecord,
     value: string | boolean | null
   ) => void;
+  onOpenUserProfile?: (row: LicensingTrackerRecord) => void;
   savingKeySet: Set<string>;
   notesByUserId: Record<number, TrackerNote[]>;
   noteDraftByUserId: Record<number, string>;
@@ -110,6 +111,7 @@ export function buildLicensingColumns(
           invitedAt={row.invited_at || row.created_at}
           agencyCode={row.agency_code}
           avatarUrl={row.avatar_url}
+          onAvatarClick={options.onOpenUserProfile ? () => options.onOpenUserProfile?.(row) : undefined}
         />
       ),
     },

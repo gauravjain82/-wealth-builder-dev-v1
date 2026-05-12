@@ -529,6 +529,15 @@
   flex-shrink: 0;
   overflow: hidden;
   margin-top: 2px;
+  padding: 0;
+  background: transparent;
+  appearance: none;
+  border: none;
+  cursor: pointer;
+}
+
+.org-node-avatar:hover {
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.35);
 }
 
 .org-node-avatar-photo {
@@ -1156,10 +1165,16 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   background: white;
+  color: #0f172a;
   font-size: 14px;
   min-width: 250px;
   cursor: pointer;
   transition: border-color 0.2s ease;
+}
+
+.org-toolbar-team-selector option {
+  color: #0f172a;
+  background: #ffffff;
 }
 
 .org-toolbar-team-selector:hover {

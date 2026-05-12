@@ -15,6 +15,8 @@ import orgChartService, {
   type OrgChartUser,
   type OrgViewType,
 } from '../services/org-chart-service';
+import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
+import type { TrackerUserProfile } from '@/features/team/services/tracker-user-profile-service';
 import OrgNode, { type OrgNodeData } from '../components/org-node';
 import OrgToolbar from '../components/org-toolbar';
 import { FILTER_COLORS, FILTER_KEYS } from '../utils/filters';
@@ -26,6 +28,125 @@ const nodeTypes = {
 };
 
 const GLOBAL_MAX_TREE_DEPTH = 20;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const ALL_VIEW_OPTIONS: Array<{ id: OrgViewType; label: string; description: string }> = [
+  { id: 'baseshop', label: 'BaseShop', description: 'Direct organization' },
+  { id: 'superbase', label: 'SuperBase', description: 'Direct SMD team' },
+  { id: 'superteam', label: 'SuperTeam', description: 'Extended SMD team' },
+];
+
+interface SegmentSummaryResponse {
+  accessible_segments?: string[];
+  segments?: Array<{
+    segment?: string;
+    visible?: boolean;
+  }>;
+}
+
+interface TeamOption {
+  id: string;
+  name: string;
+  level: string;
+}
+
+interface BrokerResponseItem {
+  id?: number | string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+  username?: string;
+  level?: {
+    code?: string;
+    name?: string;
+  } | null;
+}
+
+function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem('wb.authToken');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  return {
+    Authorization: `Token ${token}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+function normalizeView(value: string): OrgViewType | null {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'baseshop' || normalized === 'superbase' || normalized === 'superteam') {
+    return normalized;
+  }
+
+  return null;
+}
+
+function toSegmentParam(view: OrgViewType): string {
+  return view.toUpperCase();
+}
+
+function toBrokerOption(item: BrokerResponseItem): TeamOption | null {
+  if (item.id === undefined || item.id === null) {
+    return null;
+  }
+
+  const fullName = item.full_name?.trim();
+  const firstLast = `${item.first_name || ''} ${item.last_name || ''}`.trim();
+  const name = fullName || firstLast || item.username || '';
+
+  return {
+    id: String(item.id),
+    name: name || String(item.id),
+    level: item.level?.code || item.level?.name || 'BROKER',
+  };
+}
+
+async function fetchAvailableViews(): Promise<OrgViewType[]> {
+  const response = await fetch(`${API_BASE_URL}/api/accounts/users/segments/`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch segments: ${response.statusText}`);
+  }
+
+  const payload = (await response.json()) as SegmentSummaryResponse;
+  const accessibleViews = (payload.accessible_segments || [])
+    .map((segment) => normalizeView(segment))
+    .filter((segment): segment is OrgViewType => Boolean(segment));
+
+  if (accessibleViews.length > 0) {
+    return ALL_VIEW_OPTIONS.map((option) => option.id).filter((option) => accessibleViews.includes(option));
+  }
+
+  const visibleViews = (payload.segments || [])
+    .filter((segment) => Boolean(segment.visible))
+    .map((segment) => normalizeView(segment.segment || ''))
+    .filter((segment): segment is OrgViewType => Boolean(segment));
+
+  if (visibleViews.length > 0) {
+    return ALL_VIEW_OPTIONS.map((option) => option.id).filter((option) => visibleViews.includes(option));
+  }
+
+  return ['baseshop'];
+}
+
+async function fetchTeamOptions(view: OrgViewType): Promise<TeamOption[]> {
+  const params = new URLSearchParams({ segment: toSegmentParam(view) });
+  const response = await fetch(`${API_BASE_URL}/api/accounts/users/brokers/?${params.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch brokers: ${response.statusText}`);
+  }
+
+  const payload = (await response.json()) as BrokerResponseItem[];
+  return payload
+    .map((item) => toBrokerOption(item))
+    .filter((item): item is TeamOption => Boolean(item));
+}
 
 function focusOnNodeUtil(nodeId: string, nodes: Node[], reactFlowInstance: ReturnType<typeof useReactFlow>, zoomLevel = 1.2) {
   const position = findNodePosition(nodes, nodeId);
@@ -44,7 +165,11 @@ function OrgChart() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [currentViewType, setCurrentViewType] = useState<OrgViewType>('baseshop');
   const [selectedSMDId, setSelectedSMDId] = useState<string | null>(null);
-  const [smdList, setSmdList] = useState<Array<{ id: string; firstName: string; lastName: string; agentLevel: string }>>([]);
+  const [viewOptions, setViewOptions] = useState<Array<{ id: OrgViewType; label: string; description: string }>>([
+    ALL_VIEW_OPTIONS[0],
+  ]);
+  const [teamOptions, setTeamOptions] = useState<TeamOption[]>([]);
+  const [loadingTeamOptions, setLoadingTeamOptions] = useState(false);
   const [users, setUsers] = useState<OrgChartUser[]>([]);
   const [rootNodeId, setRootNodeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,9 +179,91 @@ function OrgChart() {
   const [expandedDepthOverrideNodes, setExpandedDepthOverrideNodes] = useState<Set<string>>(new Set());
   const [expandDepth, setExpandDepth] = useState<number | null>(1);
   const [apiChildrenMap, setApiChildrenMap] = useState<Record<string, string[]>>({});
-  const [reloadTick, setReloadTick] = useState(0);
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [pendingCenterId, setPendingCenterId] = useState<string | null>(null);
+  const [profileOpenFor, setProfileOpenFor] = useState<{
+    userId: number;
+    userName: string;
+    avatarUrl?: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+
+    const loadViews = async () => {
+      try {
+        const availableViews = await fetchAvailableViews();
+        if (!alive) return;
+
+        const nextOptions = ALL_VIEW_OPTIONS.filter((option) => availableViews.includes(option.id));
+        const resolvedOptions = nextOptions.length > 0 ? nextOptions : [ALL_VIEW_OPTIONS[0]];
+        setViewOptions(resolvedOptions);
+
+        if (!resolvedOptions.some((option) => option.id === currentViewType)) {
+          setCurrentViewType(resolvedOptions[0].id);
+          setSelectedSMDId(null);
+          setSelectedUserId(null);
+          setCollapsedNodes(new Set());
+          setExpandedDepthOverrideNodes(new Set());
+        }
+      } catch {
+        if (!alive) return;
+        setViewOptions([ALL_VIEW_OPTIONS[0]]);
+        if (currentViewType !== 'baseshop') {
+          setCurrentViewType('baseshop');
+          setSelectedSMDId(null);
+          setSelectedUserId(null);
+          setCollapsedNodes(new Set());
+          setExpandedDepthOverrideNodes(new Set());
+        }
+      }
+    };
+
+    void loadViews();
+
+    return () => {
+      alive = false;
+    };
+  }, [currentViewType]);
+
+  useEffect(() => {
+    if (currentViewType === 'baseshop') {
+      setTeamOptions([]);
+      setLoadingTeamOptions(false);
+      return;
+    }
+
+    let alive = true;
+
+    const loadTeamOptions = async () => {
+      setLoadingTeamOptions(true);
+      try {
+        const options = await fetchTeamOptions(currentViewType);
+        if (!alive) return;
+
+        setTeamOptions(options);
+        if (selectedSMDId && !options.some((option) => option.id === selectedSMDId)) {
+          setSelectedSMDId(null);
+          setSelectedUserId(null);
+          setCollapsedNodes(new Set());
+          setExpandedDepthOverrideNodes(new Set());
+        }
+      } catch {
+        if (!alive) return;
+        setTeamOptions([]);
+      } finally {
+        if (alive) {
+          setLoadingTeamOptions(false);
+        }
+      }
+    };
+
+    void loadTeamOptions();
+
+    return () => {
+      alive = false;
+    };
+  }, [currentViewType, selectedSMDId]);
 
   const byId = useMemo(() => {
     const map: Record<string, OrgChartUser> = {};
@@ -80,13 +287,20 @@ function OrgChart() {
     let alive = true;
 
     const fetchData = async () => {
+      const requiresLeaderSelection = currentViewType === 'superbase' || currentViewType === 'superteam';
+      if (requiresLeaderSelection && !selectedSMDId) {
+        if (!alive) return;
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const transformedData = await orgChartService.fetchOrgChartData(currentViewType, selectedSMDId);
         if (!alive) return;
 
         setUsers(transformedData.users);
-        setSmdList(transformedData.smd_list || []);
         setRootNodeId(transformedData.rootId || selectedSMDId || localStorage.getItem('wb.userId') || null);
         setApiChildrenMap(transformedData.childrenMap || {});
         setError(null);
@@ -105,7 +319,7 @@ function OrgChart() {
     return () => {
       alive = false;
     };
-  }, [currentViewType, selectedSMDId, reloadTick]);
+  }, [currentViewType, selectedSMDId]);
 
   const tree = useMemo<TreeNode | null>(() => {
     if (!users.length) return null;
@@ -352,6 +566,15 @@ function OrgChart() {
           setSelectedUserId(node.id);
           focusOnNodeUtil(node.id, rawNodes, reactFlowInstance, 1.5);
         },
+        onOpenProfile: () => {
+          const parsedId = Number.parseInt(node.id, 10);
+          if (!Number.isFinite(parsedId)) return;
+          setProfileOpenFor({
+            userId: parsedId,
+            userName: currentData.name || 'User Profile',
+            avatarUrl: currentData.profilePicture || currentData.photoURL || null,
+          });
+        },
       };
 
       return {
@@ -429,6 +652,33 @@ function OrgChart() {
     setPendingCenterId(tree.id);
   }, [tree]);
 
+  const handleProfileSaved = useCallback((updated: TrackerUserProfile) => {
+    const nextName = updated.full_name?.trim() || `${updated.first_name || ''} ${updated.last_name || ''}`.trim();
+    const nextAgencyCode = updated.agency_code || '';
+
+    setUsers((prev) =>
+      prev.map((entry) =>
+        entry.id === String(updated.id)
+          ? {
+              ...entry,
+              name: nextName || entry.name,
+              email: updated.email || entry.email,
+              agencyCode: nextAgencyCode || entry.agencyCode,
+            }
+          : entry
+      )
+    );
+
+    setProfileOpenFor((prev) => {
+      if (!prev || prev.userId !== updated.id) return prev;
+      return {
+        ...prev,
+        userName: nextName || prev.userName,
+        avatarUrl: updated.avatar_url ?? prev.avatarUrl,
+      };
+    });
+  }, []);
+
   if (loading) {
     return (
       <div className="orgchart-container">
@@ -468,6 +718,8 @@ function OrgChart() {
 
       <OrgToolbar
         currentView={currentViewType}
+        viewOptions={viewOptions}
+        loadingTeamOptions={loadingTeamOptions}
         onViewChange={(view) => {
           setCurrentViewType(view);
           setSelectedSMDId(null);
@@ -489,7 +741,7 @@ function OrgChart() {
             return next;
           });
         }}
-        smdList={smdList}
+        teamOptions={teamOptions}
         selectedSMDId={selectedSMDId}
         onSMDSelect={(smdId) => {
           setSelectedSMDId(smdId);
@@ -507,9 +759,6 @@ function OrgChart() {
           }
         }}
         expandDepth={expandDepth}
-        onRefresh={() => {
-          setReloadTick((value) => value + 1);
-        }}
         users={users}
       />
 
@@ -568,6 +817,15 @@ function OrgChart() {
           </div>
         </div>
       </div>
+
+      <TrackerUserProfileModal
+        open={Boolean(profileOpenFor)}
+        userId={profileOpenFor?.userId ?? null}
+        fallbackName={profileOpenFor?.userName}
+        fallbackAvatarUrl={profileOpenFor?.avatarUrl}
+        onClose={() => setProfileOpenFor(null)}
+        onSaved={handleProfileSaved}
+      />
     </div>
   );
 }

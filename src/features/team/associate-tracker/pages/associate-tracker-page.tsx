@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { Block, Button, ErrorState, LoadingState, TrackerTable } from '@/shared/components';
+import { Block, Button, ErrorState, LoadingState, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { buildAssociateColumns } from '../associate-tracker-columns';
 import {
+  fetchClientUsersForAssociate,
   fetchAssociates,
+  fetchLicensedUsersForAssociate,
+  fetchHotRecruitsForAssociate,
+  type HotRecruitUser,
   type AssociateTrackerRecord,
   type AssociateTrackerQuery,
   resetAssociateBigEvent,
@@ -16,6 +20,10 @@ import {
   type TrackerNote,
 } from '@/features/team/services/tracker-notes-service';
 import { TrackerNotesModal } from '@/features/team/components/tracker-notes-modal';
+import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
+import { AssociateClientUsersModal, AssociateHotRecruitsModal, AssociateLicensedUsersModal } from '@/features/team/components/associate-hot-recruits-modal';
+import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
+import type { TrackerUserProfile } from '@/features/team/services/tracker-user-profile-service';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -58,6 +66,29 @@ export default function AssociateTrackerPage() {
   const [savingNoteUserIdSet, setSavingNoteUserIdSet] = useState<Set<number>>(new Set());
   const [notesOpenFor, setNotesOpenFor] = useState<AssociateTrackerRecord | null>(null);
   const [modalNoteDraft, setModalNoteDraft] = useState('');
+  const [profileOpenFor, setProfileOpenFor] = useState<{
+    userId: number;
+    userName: string;
+    avatarUrl?: string | null;
+  } | null>(null);
+  const [hotRecruitOpenFor, setHotRecruitOpenFor] = useState<{
+    userId: number;
+    userName: string;
+  } | null>(null);
+  const [hotRecruitsLoading, setHotRecruitsLoading] = useState(false);
+  const [hotRecruits, setHotRecruits] = useState<HotRecruitUser[]>([]);
+  const [clientPointsOpenFor, setClientPointsOpenFor] = useState<{
+    userId: number;
+    userName: string;
+  } | null>(null);
+  const [clientUsersLoading, setClientUsersLoading] = useState(false);
+  const [clientUsers, setClientUsers] = useState<HotRecruitUser[]>([]);
+  const [licensedUsersOpenFor, setLicensedUsersOpenFor] = useState<{
+    userId: number;
+    userName: string;
+  } | null>(null);
+  const [licensedUsersLoading, setLicensedUsersLoading] = useState(false);
+  const [licensedUsers, setLicensedUsers] = useState<HotRecruitUser[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -67,11 +98,42 @@ export default function AssociateTrackerPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [dateRangePreset, setDateRangePreset] = useState<DatePresetKey>('all');
+  const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
+  const [teamScopeUserId, setTeamScopeUserId] = useState<string | null>(null);
   const [resettingAction, setResettingAction] = useState<'big-event' | 'training' | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const pageSize = 10;
   const addToast = useToastStore((state) => state.addToast);
+
+  const handleDateRangeChange = useCallback((value: TrackerDateRangeChange) => {
+    setDateRangePreset(value.preset);
+    setFilters((prev) => {
+      const next = { ...prev };
+      delete next.from_date;
+      delete next.to_date;
+
+      if (value.startDate) next.from_date = value.startDate;
+      if (value.endDate) next.to_date = value.endDate;
+
+      return next;
+    });
+  }, []);
+
+  const handleTeamScopeChange = useCallback((next: { scope: TrackerTeamScope; user: { id: string; name: string } | null }) => {
+    setTeamScope(next.scope);
+    setTeamScopeUserId(next.user?.id || null);
+
+    setFilters((prev) => {
+      const updated = { ...prev };
+      delete updated.broker_id;
+      if (next.user?.id) {
+        updated.broker_id = next.user.id;
+      }
+      return updated;
+    });
+  }, []);
 
   const handleToggle = async (userId: number, field: keyof AssociateTrackerRecord, value: boolean) => {
     const savingKey = `${userId}:${String(field)}`;
@@ -179,6 +241,57 @@ export default function AssociateTrackerPage() {
     }
   };
 
+  const handleOpenHotRecruits = useCallback(async (row: AssociateTrackerRecord) => {
+    setHotRecruitOpenFor({ userId: row.user_id, userName: row.user_name });
+    setHotRecruits([]);
+    setHotRecruitsLoading(true);
+    try {
+      const loaded = await fetchHotRecruitsForAssociate(row.user_id);
+      setHotRecruits(loaded);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to load hot recruits.',
+      });
+    } finally {
+      setHotRecruitsLoading(false);
+    }
+  }, [addToast]);
+
+  const handleOpenClientUsers = useCallback(async (row: AssociateTrackerRecord) => {
+    setClientPointsOpenFor({ userId: row.user_id, userName: row.user_name });
+    setClientUsers([]);
+    setClientUsersLoading(true);
+    try {
+      const loaded = await fetchClientUsersForAssociate(row.user_id);
+      setClientUsers(loaded);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to load client users.',
+      });
+    } finally {
+      setClientUsersLoading(false);
+    }
+  }, [addToast]);
+
+  const handleOpenLicensedUsers = useCallback(async (row: AssociateTrackerRecord) => {
+    setLicensedUsersOpenFor({ userId: row.user_id, userName: row.user_name });
+    setLicensedUsers([]);
+    setLicensedUsersLoading(true);
+    try {
+      const loaded = await fetchLicensedUsersForAssociate(row.user_id);
+      setLicensedUsers(loaded);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to load licensed users.',
+      });
+    } finally {
+      setLicensedUsersLoading(false);
+    }
+  }, [addToast]);
+
   const ensureNotesLoaded = async (userId: number) => {
     if (notesByUserId[userId]) return;
     setLoadingNoteUserIdSet((prev) => new Set(prev).add(userId));
@@ -204,6 +317,22 @@ export default function AssociateTrackerPage() {
       buildAssociateColumns({
         onToggle: handleToggle,
         onPatch: handlePatchField,
+        onOpenUserProfile: (row) => {
+          setProfileOpenFor({
+            userId: row.user_id,
+            userName: row.user_name,
+            avatarUrl: row.avatar_url,
+          });
+        },
+        onOpenHotRecruits: (row) => {
+          void handleOpenHotRecruits(row);
+        },
+        onOpenPersonalPoints: (row) => {
+          void handleOpenClientUsers(row);
+        },
+        onOpenLicensedUsers: (row) => {
+          void handleOpenLicensedUsers(row);
+        },
         savingKeySet,
         notesByUserId,
         noteDraftByUserId,
@@ -219,8 +348,51 @@ export default function AssociateTrackerPage() {
           setModalNoteDraft('');
         },
       }),
-    [savingKeySet, notesByUserId, noteDraftByUserId, focusedNoteInputId, savingNoteUserIdSet]
+    [
+      savingKeySet,
+      notesByUserId,
+      noteDraftByUserId,
+      focusedNoteInputId,
+      savingNoteUserIdSet,
+      handleOpenHotRecruits,
+      handleOpenClientUsers,
+      handleOpenLicensedUsers,
+      handleToggle,
+      handlePatchField,
+      handleNoteDraftChange,
+      handleAddInlineNote,
+      ensureNotesLoaded,
+    ]
   );
+
+  const handleProfileSaved = useCallback((updated: TrackerUserProfile) => {
+    const nextName = updated.full_name?.trim() || `${updated.first_name || ''} ${updated.last_name || ''}`.trim();
+
+    setRows((prev) =>
+      prev.map((row) =>
+        row.user_id === updated.id
+          ? {
+              ...row,
+              user_name: nextName || row.user_name,
+              user_email: updated.email || row.user_email,
+              agency_code: updated.agency_code ?? row.agency_code,
+              recruiter_name: updated.recruited_by_name ?? row.recruiter_name,
+              leader_name: updated.leader_name ?? row.leader_name,
+              avatar_url: updated.avatar_url ?? row.avatar_url,
+            }
+          : row
+      )
+    );
+
+    setProfileOpenFor((prev) => {
+      if (!prev || prev.userId !== updated.id) return prev;
+      return {
+        ...prev,
+        userName: nextName || prev.userName,
+        avatarUrl: updated.avatar_url ?? prev.avatarUrl,
+      };
+    });
+  }, []);
 
   const headerGroupRows = useMemo(
     () => [
@@ -383,6 +555,12 @@ export default function AssociateTrackerPage() {
         className="mb-6 flex-shrink-0"
         actions={
           <div className="flex items-center gap-2">
+            <TrackerTeamScopeFilter
+              value={teamScope}
+              selectedUserId={teamScopeUserId}
+              onChange={handleTeamScopeChange}
+            />
+            <TrackerDateRangeFilter value={dateRangePreset} onChange={handleDateRangeChange} />
             <Button
               type="button"
               variant="outline"
@@ -447,6 +625,48 @@ export default function AssociateTrackerPage() {
         onClose={() => setNotesOpenFor(null)}
         onDraftChange={setModalNoteDraft}
         onAddNote={handleAddModalNote}
+      />
+
+      <TrackerUserProfileModal
+        open={Boolean(profileOpenFor)}
+        userId={profileOpenFor?.userId ?? null}
+        fallbackName={profileOpenFor?.userName}
+        fallbackAvatarUrl={profileOpenFor?.avatarUrl}
+        onClose={() => setProfileOpenFor(null)}
+        onSaved={handleProfileSaved}
+      />
+
+      <AssociateHotRecruitsModal
+        open={Boolean(hotRecruitOpenFor)}
+        ownerName={hotRecruitOpenFor?.userName || ''}
+        loading={hotRecruitsLoading}
+        recruits={hotRecruits}
+        onClose={() => {
+          setHotRecruitOpenFor(null);
+          setHotRecruits([]);
+        }}
+      />
+
+      <AssociateClientUsersModal
+        open={Boolean(clientPointsOpenFor)}
+        ownerName={clientPointsOpenFor?.userName || ''}
+        loading={clientUsersLoading}
+        users={clientUsers}
+        onClose={() => {
+          setClientPointsOpenFor(null);
+          setClientUsers([]);
+        }}
+      />
+
+      <AssociateLicensedUsersModal
+        open={Boolean(licensedUsersOpenFor)}
+        ownerName={licensedUsersOpenFor?.userName || ''}
+        loading={licensedUsersLoading}
+        users={licensedUsers}
+        onClose={() => {
+          setLicensedUsersOpenFor(null);
+          setLicensedUsers([]);
+        }}
       />
     </div>
   );

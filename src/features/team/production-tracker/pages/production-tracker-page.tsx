@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Block, ErrorState, LoadingState, TrackerTable } from '@/shared/components';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Block, ErrorState, LoadingState, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { buildProductionColumns } from '../production-columns';
 import {
@@ -14,6 +14,7 @@ import {
   AddProductionModal,
   type AddProductionFormData,
 } from '@/features/team/prospect/components/add-production-modal';
+import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -42,7 +43,38 @@ export default function ProductionTrackerPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [dateRangePreset, setDateRangePreset] = useState<DatePresetKey>('all');
+  const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
+  const [teamScopeUserId, setTeamScopeUserId] = useState<string | null>(null);
   const addToast = useToastStore((state) => state.addToast);
+
+  const handleDateRangeChange = useCallback((value: TrackerDateRangeChange) => {
+    setDateRangePreset(value.preset);
+    setFilters((prev) => {
+      const next = { ...prev };
+      delete next.from_date;
+      delete next.to_date;
+
+      if (value.startDate) next.from_date = value.startDate;
+      if (value.endDate) next.to_date = value.endDate;
+
+      return next;
+    });
+  }, []);
+
+  const handleTeamScopeChange = useCallback((next: { scope: TrackerTeamScope; user: { id: string; name: string } | null }) => {
+    setTeamScope(next.scope);
+    setTeamScopeUserId(next.user?.id || null);
+
+    setFilters((prev) => {
+      const updated = { ...prev };
+      delete updated.broker_id;
+      if (next.user?.id) {
+        updated.broker_id = next.user.id;
+      }
+      return updated;
+    });
+  }, []);
 
   const updateRowInState = (updated: ProductionTrackerRecord) => {
     setRows((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
@@ -232,6 +264,16 @@ export default function ProductionTrackerPage() {
         title={pageHeading}
         description={`${pageDescription} • ${rows.length} total`}
         className="mb-6 flex-shrink-0"
+        actions={
+          <div className="flex items-center gap-2">
+            <TrackerTeamScopeFilter
+              value={teamScope}
+              selectedUserId={teamScopeUserId}
+              onChange={handleTeamScopeChange}
+            />
+            <TrackerDateRangeFilter value={dateRangePreset} onChange={handleDateRangeChange} />
+          </div>
+        }
       />
 
       <div className="flex-1 overflow-hidden">

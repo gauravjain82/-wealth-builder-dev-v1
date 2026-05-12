@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { Block, ErrorState, LoadingState, TrackerTable } from '@/shared/components';
+import { Block, ErrorState, LoadingState, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { build4x4Columns } from '../tracker-4x4-columns';
 import {
@@ -19,6 +19,9 @@ import {
   type AddProductionFormData,
 } from '@/features/team/prospect/components/add-production-modal';
 import { createProductionRecord } from '@/features/team/production-tracker/services/production-tracker-service';
+import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
+import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
+import type { TrackerUserProfile } from '@/features/team/services/tracker-user-profile-service';
 import type { SavingsToggleField, SavingsAmountField } from '../tracker-4x4-columns';
 
 type SortDirection = 'asc' | 'desc';
@@ -65,6 +68,11 @@ export default function Tracker4x4Page() {
   const [addProductionRow, setAddProductionRow] = useState<Tracker4x4Record | null>(null);
   const [addProductionInitialForm, setAddProductionInitialForm] = useState<AddProductionFormData | null>(null);
   const [savingProduction, setSavingProduction] = useState(false);
+  const [profileOpenFor, setProfileOpenFor] = useState<{
+    userId: number;
+    userName: string;
+    avatarUrl?: string | null;
+  } | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -74,10 +82,41 @@ export default function Tracker4x4Page() {
   const [totalCount, setTotalCount] = useState(0);
   const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [dateRangePreset, setDateRangePreset] = useState<DatePresetKey>('all');
+  const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
+  const [teamScopeUserId, setTeamScopeUserId] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const pageSize = 10;
   const addToast = useToastStore((state) => state.addToast);
+
+  const handleDateRangeChange = useCallback((value: TrackerDateRangeChange) => {
+    setDateRangePreset(value.preset);
+    setFilters((prev) => {
+      const next = { ...prev };
+      delete next.from_date;
+      delete next.to_date;
+
+      if (value.startDate) next.from_date = value.startDate;
+      if (value.endDate) next.to_date = value.endDate;
+
+      return next;
+    });
+  }, []);
+
+  const handleTeamScopeChange = useCallback((next: { scope: TrackerTeamScope; user: { id: string; name: string } | null }) => {
+    setTeamScope(next.scope);
+    setTeamScopeUserId(next.user?.id || null);
+
+    setFilters((prev) => {
+      const updated = { ...prev };
+      delete updated.broker_id;
+      if (next.user?.id) {
+        updated.broker_id = next.user.id;
+      }
+      return updated;
+    });
+  }, []);
 
   const handlePatchField = async (
     userId: number,
@@ -316,6 +355,13 @@ export default function Tracker4x4Page() {
         onToggle: handleToggle,
         onPatch: handlePatchField,
         onSaveAndAddProduction: handleSaveAndAddProduction,
+        onOpenUserProfile: (row) => {
+          setProfileOpenFor({
+            userId: row.user_id,
+            userName: row.user_name,
+            avatarUrl: row.avatar_url,
+          });
+        },
         savingKeySet,
         notesByUserId,
         noteDraftByUserId,
@@ -333,6 +379,34 @@ export default function Tracker4x4Page() {
       }),
     [savingKeySet, notesByUserId, noteDraftByUserId, focusedNoteInputId, savingNoteUserIdSet, handleSaveAndAddProduction]
   );
+
+  const handleProfileSaved = useCallback((updated: TrackerUserProfile) => {
+    const nextName = updated.full_name?.trim() || `${updated.first_name || ''} ${updated.last_name || ''}`.trim();
+    setRows((prev) =>
+      prev.map((row) =>
+        row.user_id === updated.id
+          ? {
+              ...row,
+              user_name: nextName || row.user_name,
+              user_email: updated.email || row.user_email,
+              agency_code: updated.agency_code ?? row.agency_code,
+              recruiter_name: updated.recruited_by_name ?? row.recruiter_name,
+              leader_name: updated.leader_name ?? row.leader_name,
+              avatar_url: updated.avatar_url ?? row.avatar_url,
+            }
+          : row
+      )
+    );
+
+    setProfileOpenFor((prev) => {
+      if (!prev || prev.userId !== updated.id) return prev;
+      return {
+        ...prev,
+        userName: nextName || prev.userName,
+        avatarUrl: updated.avatar_url ?? prev.avatarUrl,
+      };
+    });
+  }, []);
 
   const headerGroupRows = useMemo(
     () => [
@@ -466,6 +540,16 @@ export default function Tracker4x4Page() {
         title={pageHeading}
         description={`${pageDescription} • ${totalCount} total`}
         className="mb-6 flex-shrink-0"
+        actions={
+          <div className="flex items-center gap-2">
+            <TrackerTeamScopeFilter
+              value={teamScope}
+              selectedUserId={teamScopeUserId}
+              onChange={handleTeamScopeChange}
+            />
+            <TrackerDateRangeFilter value={dateRangePreset} onChange={handleDateRangeChange} />
+          </div>
+        }
       />
 
       <div className="flex-1 overflow-hidden">
@@ -526,6 +610,15 @@ export default function Tracker4x4Page() {
         onClose={() => setNotesOpenFor(null)}
         onDraftChange={setModalNoteDraft}
         onAddNote={handleAddModalNote}
+      />
+
+      <TrackerUserProfileModal
+        open={Boolean(profileOpenFor)}
+        userId={profileOpenFor?.userId ?? null}
+        fallbackName={profileOpenFor?.userName}
+        fallbackAvatarUrl={profileOpenFor?.avatarUrl}
+        onClose={() => setProfileOpenFor(null)}
+        onSaved={handleProfileSaved}
       />
     </div>
   );

@@ -420,13 +420,10 @@ class OrgChartService {
     return (await response.json()) as T;
   }
 
-  async fetchOrgChartData(viewType: OrgViewType = 'baseshop', selectedSMDId: string | null = null): Promise<OrgChartData> {
+  async fetchOrgChartData(viewType: OrgViewType = 'baseshop', brokerId: string | null = null): Promise<OrgChartData> {
     const params = new URLSearchParams();
-    if (viewType) {
-      params.set('view_type', viewType);
-    }
-    if (selectedSMDId) {
-      params.set('selected_smd', selectedSMDId);
+    if (brokerId) {
+      params.set('broker_id', brokerId);
     }
 
     const queryString = params.toString();
@@ -436,14 +433,14 @@ class OrgChartService {
 
     const payload = await this.fetchJson<unknown>(endpoint);
     const transformed = transformToUsersAndChildrenMap(payload);
-    const rootId = selectedSMDId || transformed.rootId || localStorage.getItem('wb.userId') || transformed.users[0]?.id || null;
+    const rootId = brokerId || transformed.rootId || localStorage.getItem('wb.userId') || transformed.users[0]?.id || null;
     if (!transformed.users.length) {
       return {
         users: [],
         childrenMap: {},
         rootId,
         smd_list: [],
-        selected_smd: selectedSMDId,
+        selected_smd: brokerId,
         view_type: viewType,
       };
     }
@@ -457,7 +454,7 @@ class OrgChartService {
       childrenMap: transformed.childrenMap,
       rootId,
       smd_list: transformed.smdList,
-      selected_smd: selectedSMDId,
+      selected_smd: brokerId,
       view_type: viewType,
     };
   }

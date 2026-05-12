@@ -2,12 +2,6 @@ import { useState } from 'react';
 import { FILTER_COLORS, FILTER_KEYS } from '../utils/filters';
 import type { OrgViewType, OrgChartUser } from '../services/org-chart-service';
 
-const VIEW_OPTIONS: Array<{ id: OrgViewType; label: string; description: string }> = [
-  { id: 'baseshop', label: 'BaseShop', description: 'Direct organization' },
-  { id: 'superbase', label: 'SuperBase', description: 'Direct SMD team' },
-  { id: 'superteam', label: 'SuperTeam', description: 'Extended SMD team' },
-];
-
 const FILTER_OPTIONS = [
   { key: FILTER_KEYS.BPM, label: 'BPM Attendance', color: FILTER_COLORS[FILTER_KEYS.BPM] },
   { key: FILTER_KEYS.BIG_EVENT, label: 'Big Event', color: FILTER_COLORS[FILTER_KEYS.BIG_EVENT] },
@@ -20,32 +14,34 @@ const FILTER_OPTIONS = [
 interface OrgToolbarProps {
   currentView: OrgViewType;
   onViewChange: (view: OrgViewType) => void;
+  viewOptions: Array<{ id: OrgViewType; label: string; description: string }>;
+  loadingTeamOptions?: boolean;
   onSearch: (value: string) => void;
   onCenterOnMe: () => void;
   activeFilters: Set<string>;
   onFilterToggle: (filterKey: string) => void;
-  smdList: Array<{ id: string; firstName: string; lastName: string; agentLevel: string }>;
+  teamOptions: Array<{ id: string; name: string; level: string }>;
   selectedSMDId: string | null;
   onSMDSelect: (smdId: string | null) => void;
   onExpandToDepth: (depth: number | null) => void;
   expandDepth: number | null;
-  onRefresh: () => void;
   users: OrgChartUser[];
 }
 
 export default function OrgToolbar({
   currentView,
   onViewChange,
+  viewOptions,
+  loadingTeamOptions = false,
   onSearch,
   onCenterOnMe,
   activeFilters,
   onFilterToggle,
-  smdList,
+  teamOptions,
   selectedSMDId,
   onSMDSelect,
   onExpandToDepth,
   expandDepth,
-  onRefresh,
   users,
 }: OrgToolbarProps) {
   const [searchValue, setSearchValue] = useState('');
@@ -72,7 +68,7 @@ export default function OrgToolbar({
       <div className="org-toolbar-section">
         <label className="org-toolbar-label">View:</label>
         <div className="org-toolbar-views">
-          {VIEW_OPTIONS.map((view) => (
+          {viewOptions.map((view) => (
             <button
               key={view.id}
               className={`org-toolbar-view-btn ${currentView === view.id ? 'active' : ''}`}
@@ -86,18 +82,21 @@ export default function OrgToolbar({
         </div>
       </div>
 
-      {(currentView === 'superbase' || currentView === 'superteam') && smdList.length > 0 && (
+      {(currentView === 'superbase' || currentView === 'superteam') && (
         <div className="org-toolbar-section">
           <label className="org-toolbar-label">Team:</label>
           <select
             className="org-toolbar-team-selector"
             value={selectedSMDId || ''}
+            disabled={loadingTeamOptions}
             onChange={(event) => onSMDSelect(event.target.value || null)}
           >
-            <option value="">Select Team...</option>
-            {smdList.map((smd) => (
-              <option key={smd.id} value={smd.id}>
-                {smd.firstName} {smd.lastName} ({smd.agentLevel})
+            <option value="">
+              {loadingTeamOptions ? 'Loading teams...' : teamOptions.length > 0 ? 'Select Team...' : 'No teams available'}
+            </option>
+            {teamOptions.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name} ({team.level})
               </option>
             ))}
           </select>
@@ -227,12 +226,6 @@ export default function OrgToolbar({
       <div className="org-toolbar-section">
         <button className="org-toolbar-btn" onClick={onCenterOnMe} type="button">
           Center on Me
-        </button>
-      </div>
-
-      <div className="org-toolbar-section">
-        <button className="org-toolbar-btn" onClick={onRefresh} title="Reload org chart data" type="button">
-          Refresh
         </button>
       </div>
     </div>

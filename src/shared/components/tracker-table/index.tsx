@@ -429,7 +429,7 @@ export function TrackerTable<T>({
                       .join(' ')}
                     style={stickyHeader ? { top: rowIndex * groupRowHeight } : undefined}
                   >
-                    {cell.label || ''}
+                    <span className="tracker-group-th-label">{cell.label || ''}</span>
                   </th>
                 ))}
               </tr>

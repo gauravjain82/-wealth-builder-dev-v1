@@ -14,6 +14,7 @@ interface Build4x4ColumnsOptions {
   onToggle: (userId: number, field: keyof Tracker4x4Record, value: boolean) => void;
   onPatch: (userId: number, field: keyof Tracker4x4Record, value: number | string | boolean | null) => void;
   onSaveAndAddProduction: (row: Tracker4x4Record, savingsField: SavingsToggleField, amountField: SavingsAmountField, amount: number) => void;
+  onOpenUserProfile?: (row: Tracker4x4Record) => void;
   savingKeySet: Set<string>;
   notesByUserId: Record<number, TrackerNote[]>;
   noteDraftByUserId: Record<number, string>;
@@ -338,6 +339,7 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
           invitedAt={row.invited_at || row.created_at}
           agencyCode={row.agency_code}
           avatarUrl={row.avatar_url}
+          onAvatarClick={options.onOpenUserProfile ? () => options.onOpenUserProfile?.(row) : undefined}
         />
       ),
     },
@@ -514,6 +516,16 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
           {row.is_licensed ? 'Yes' : 'No'}
         </span>
       ),
+    },
+    {
+      key: '1_direct_recruit',
+      label: '1 Direct Recruit',
+      width: 120,
+      align: 'center',
+      sortable: true,
+      searchable: true,
+      value: (row) => asYesNo(Boolean(row['1_direct_recruit'])),
+      render: (row) => renderCheckbox(row, '1_direct_recruit', options),
     },
     {
       key: 'notes',

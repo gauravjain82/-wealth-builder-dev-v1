@@ -42,11 +42,64 @@ interface PaginatedTrackerResponse<T> {
   results: T[];
 }
 
+interface PaginatedUsersResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 export interface AssociateTrackerQuery {
   page?: number;
   pageSize?: number;
   sort?: string;
   filters?: Record<string, string>;
+}
+
+export interface HotRecruitUser {
+  id: number;
+  full_name?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  client?: boolean;
+  leader_name?: string | null;
+  recruited_by_name?: string | null;
+  type?: string | null;
+  user_type?: string | null;
+  plan?: string | null;
+  latest_note_text?: string | null;
+  latest_note_created_by_name?: string | null;
+  latest_note_created_at?: string | null;
+  agency_code?: string | null;
+  level?: {
+    id?: number;
+    code?: string;
+    rank?: number;
+    name?: string;
+    description?: string;
+  } | null;
+  profile?: {
+    birthday?: string | null;
+  } | null;
+  agent_meta?: {
+    outcome?: string | null;
+  } | null;
+  prospect_meta?: {
+    hot?: boolean;
+    top25?: boolean;
+  } | null;
+  created_at?: string;
+}
+
+export interface AssociateUserListFilters {
+  hot?: boolean;
+  client?: boolean;
+  licensed?: boolean;
+  top25?: boolean;
+  sort?: string;
+  pageSize?: number;
 }
 
 function getAuthHeaders(): HeadersInit {
@@ -137,4 +190,64 @@ export async function resetAssociateTraining(): Promise<void> {
     '/api/tracker/trackers/associate/reset-training/',
     'Failed to reset associate training'
   );
+}
+
+function resolveNextUrl(nextUrl: string): string {
+  if (nextUrl.startsWith('http://') || nextUrl.startsWith('https://')) {
+    return nextUrl;
+  }
+  return `${API_BASE_URL}${nextUrl}`;
+}
+
+export async function fetchAssociateUsersForAssociate(
+  recruiterUserId: number,
+  filters: AssociateUserListFilters = {}
+): Promise<HotRecruitUser[]> {
+  const params = new URLSearchParams();
+  params.set('recruited_by', String(recruiterUserId));
+  if (filters.hot !== undefined) params.set('hot', String(filters.hot));
+  if (filters.client !== undefined) params.set('client', String(filters.client));
+  if (filters.licensed !== undefined) params.set('is_license', String(filters.licensed));
+  if (filters.top25 !== undefined) params.set('top25', String(filters.top25));
+  params.set('page_size', String(filters.pageSize ?? 200));
+  params.set('sort', filters.sort || '-created_at');
+
+  let nextUrl: string | null = `${API_BASE_URL}/api/accounts/users/?${params.toString()}`;
+  const collected: HotRecruitUser[] = [];
+  let pageSafety = 0;
+
+  while (nextUrl && pageSafety < 10) {
+    const response = await fetch(nextUrl, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch hot recruits: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as PaginatedUsersResponse<HotRecruitUser> | HotRecruitUser[];
+
+    if (Array.isArray(data)) {
+      collected.push(...data);
+      break;
+    }
+
+    collected.push(...(data.results || []));
+    nextUrl = data.next ? resolveNextUrl(data.next) : null;
+    pageSafety += 1;
+  }
+
+  return collected;
+}
+
+export async function fetchHotRecruitsForAssociate(recruiterUserId: number): Promise<HotRecruitUser[]> {
+  return fetchAssociateUsersForAssociate(recruiterUserId, { hot: true });
+}
+
+export async function fetchClientUsersForAssociate(recruiterUserId: number): Promise<HotRecruitUser[]> {
+  return fetchAssociateUsersForAssociate(recruiterUserId, { client: true });
+}
+
+export async function fetchLicensedUsersForAssociate(recruiterUserId: number): Promise<HotRecruitUser[]> {
+  return fetchAssociateUsersForAssociate(recruiterUserId, { licensed: true });
 }
