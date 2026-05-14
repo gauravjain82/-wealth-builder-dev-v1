@@ -28,6 +28,8 @@ const CrashCoursePage = lazy(() => import('@/features/licensing/crash-course/pag
 const TenSystematicToolsPage = lazy(() => import('@/features/systematic-tools/pages/ten-systematic-tools-page'));
 const OnboardingGamePage = lazy(() => import('@/features/team/onboarding-game/pages/onboarding-game-page'));
 const ResetPasswordPage = lazy(() => import('@/features/auth/components/reset-password-page'));
+const TrainingCenterPage = lazy(() => import('@/features/training-center/pages/training-center-page'));
+const TrainingSchedulePage = lazy(() => import('@/features/training-schedule/pages/training-schedule-page'));
 
 // Loading component
 function PageLoader() {
@@ -148,6 +150,14 @@ const router = createBrowserRouter([
       {
         path: 'onboarding-game',
         element: lazyLoad(OnboardingGamePage),
+      },
+      {
+        path: 'training-center',
+        element: lazyLoad(TrainingCenterPage),
+      },
+      {
+        path: 'training-schedule',
+        element: lazyLoad(TrainingSchedulePage),
       },
       {
         path: 'team',

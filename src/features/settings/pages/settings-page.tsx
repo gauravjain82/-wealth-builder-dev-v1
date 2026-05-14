@@ -802,8 +802,8 @@ export default function SettingsPage() {
                     <tr>
                       <th>Request ID</th>
                       <th>User</th>
-                      <th>Current Role</th>
-                      <th>Target Role</th>
+                      <th>Current Plan</th>
+                      <th>Target Plan</th>
                       <th style={{ textAlign: 'center' }}>Status</th>
                       <th>Created</th>
                       <th>Actions</th>

@@ -172,17 +172,17 @@ const OrgNode = memo(function OrgNode({ data, selected }: NodeProps) {
           <div className="level-counts-codes">
             {levelCounts.map((lc) => (
               <span key={lc.levelCode || lc.levelId} className="level-code">
-                {lc.levelCode || lc.levelName?.charAt(0) || ''}
+                {lc.levelCode || lc.levelName?.charAt(0) || ''}({lc.count})
               </span>
             ))}
           </div>
-          <div className="level-counts-values">
+          {/* <div className="level-counts-values">
             {levelCounts.map((lc) => (
               <span key={lc.levelCode || lc.levelId} className="level-count">
                 {lc.count}
               </span>
             ))}
-          </div>
+          </div> */}
         </div>
       )}
 

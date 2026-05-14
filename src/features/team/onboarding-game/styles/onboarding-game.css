@@ -306,7 +306,7 @@
 }
 .og-agent-name {
   position: absolute;
-  left: -8px;
+  left: 8px;
   top: 10px;
   font-weight: bold;
   font-size: 14px;
@@ -332,12 +332,15 @@
   color: #1a1a1a;
   text-align: center;
   line-height: 1.2;
-  max-width: 76px;
+  max-width: 90px;
   min-height: 18px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  word-break: break-word;
+  word-break: normal;
+  overflow-wrap: normal;
+  white-space: nowrap;
 }
 .og-checkbox-col {
   display: flex;

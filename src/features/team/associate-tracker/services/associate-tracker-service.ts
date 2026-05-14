@@ -10,7 +10,9 @@ export interface AssociateTrackerRecord {
   latest_note_created_at?: string | null;
   latest_note_created_by_name?: string | null;
   recruiter_name?: string | null;
+  recruiter_id?: number | null;
   leader_name?: string | null;
+  leader_id?: number | null;
   agency_code?: string | null;
   invited_at?: string | null;
   avatar_url?: string | null;

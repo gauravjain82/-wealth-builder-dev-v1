@@ -8,6 +8,10 @@ interface VideoModalProps {
   title?: string;
 }
 
+function isEmbedUrl(url: string): boolean {
+  return url.includes('vimeo.com') || url.includes('youtube.com') || url.includes('youtu.be');
+}
+
 export function VideoModal({ open, onClose, src, title }: VideoModalProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -24,14 +28,25 @@ export function VideoModal({ open, onClose, src, title }: VideoModalProps) {
           ×
         </button>
         <div className="biz-modal-body">
-          <video
-            src={src}
-            title={title}
-            className="biz-modal-video"
-            controls
-            autoPlay
-            playsInline
-          />
+          {isEmbedUrl(src) ? (
+            <iframe
+              src={src}
+              title={title}
+              className="biz-modal-video"
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+              allowFullScreen
+              loading="lazy"
+            />
+          ) : (
+            <video
+              src={src}
+              title={title}
+              className="biz-modal-video"
+              controls
+              autoPlay
+              playsInline
+            />
+          )}
         </div>
       </div>
     </div>

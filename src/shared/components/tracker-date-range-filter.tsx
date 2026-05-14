@@ -17,6 +17,7 @@ export interface TrackerDateRangeChange {
 interface TrackerDateRangeFilterProps {
   onChange: (value: TrackerDateRangeChange) => void;
   value?: DatePresetKey;
+  selectedRange?: DateRangeValue;
   buttonClassName?: string;
 }
 
@@ -99,6 +100,7 @@ function resolvePresetRange(preset: DatePresetKey): DateRangeValue {
 export function TrackerDateRangeFilter({
   onChange,
   value = 'all',
+  selectedRange,
   buttonClassName,
 }: TrackerDateRangeFilterProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -110,6 +112,13 @@ export function TrackerDateRangeFilter({
   useEffect(() => {
     setPreset(value);
   }, [value]);
+
+  useEffect(() => {
+    if (value !== 'custom') return;
+    if (!selectedRange) return;
+    if (!selectedRange.startDate && !selectedRange.endDate) return;
+    setCustomRange(selectedRange);
+  }, [selectedRange, value]);
 
   useEffect(() => {
     const onWindowClick = (event: MouseEvent) => {
@@ -136,17 +145,6 @@ export function TrackerDateRangeFilter({
     const range = resolvePresetRange(nextPreset);
     onChange({ preset: nextPreset, ...range });
     setOpen(false);
-  };
-
-  const applyCustom = () => {
-    onChange({ preset: 'custom', ...customRange });
-    setOpen(false);
-  };
-
-  const clear = () => {
-    setPreset('all');
-    setCustomRange({ startDate: '', endDate: '' });
-    onChange({ preset: 'all', startDate: '', endDate: '' });
   };
 
   return (
@@ -192,26 +190,22 @@ export function TrackerDateRangeFilter({
             <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
               <DateRangePicker
                 value={customRange}
-                onChange={setCustomRange}
+                onChange={(nextRange) => {
+                  setCustomRange(nextRange);
+                  if (!nextRange.startDate && !nextRange.endDate) {
+                    setPreset('all');
+                    onChange({ preset: 'all', startDate: '', endDate: '' });
+                    return;
+                  }
+                  if (nextRange.startDate && nextRange.endDate) {
+                    setPreset('custom');
+                    onChange({ preset: 'custom', ...nextRange });
+                    setOpen(false);
+                  }
+                }}
                 startLabel="From"
                 endLabel="To"
               />
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  className="rounded border border-white/20 bg-white/5 px-2 py-1 text-xs text-white/85 hover:bg-white/10"
-                  onClick={clear}
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  className="rounded bg-amber-500/80 px-2 py-1 text-xs font-semibold text-black hover:bg-amber-400"
-                  onClick={applyCustom}
-                >
-                  Apply
-                </button>
-              </div>
             </div>
           )}
         </div>

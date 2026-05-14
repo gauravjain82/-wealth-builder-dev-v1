@@ -332,7 +332,7 @@ export function TrackerUserProfileModal({
             <div className="min-w-0">
               <div className="truncate text-lg font-semibold text-white">{displayName}</div>
               <div className="text-xs text-white/70">
-                {profile?.agency_code || 'Unknown agency'} • {profile?.plan || 'No plan'}
+                {profile?.agency_code || 'Unknown agency'} • {profile?.roles?.[0] || 'No plan'}
               </div>
             </div>
           </div>

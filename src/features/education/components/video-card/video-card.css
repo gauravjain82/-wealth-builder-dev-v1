@@ -1,6 +1,6 @@
 /* Video Card Component Styles */
 :root {
-  --cardWidth: 176px;
+  --cardWidth: 300px;
   --cardRadius: 18px;
   --gap: 18px;
   --card: #12151b;

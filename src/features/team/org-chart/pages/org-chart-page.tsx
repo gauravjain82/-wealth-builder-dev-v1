@@ -9,6 +9,7 @@ import {
   type Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { LocateFixed } from 'lucide-react';
 
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import orgChartService, {
@@ -18,7 +19,6 @@ import orgChartService, {
 import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
 import type { TrackerUserProfile } from '@/features/team/services/tracker-user-profile-service';
 import OrgNode, { type OrgNodeData } from '../components/org-node';
-import OrgToolbar from '../components/org-toolbar';
 import { FILTER_COLORS, FILTER_KEYS } from '../utils/filters';
 import { findNodePosition, layoutTree, type TreeNode } from '../utils/layout';
 import '../styles/org-chart.css';
@@ -181,11 +181,14 @@ function OrgChart() {
   const [apiChildrenMap, setApiChildrenMap] = useState<Record<string, string[]>>({});
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [pendingCenterId, setPendingCenterId] = useState<string | null>(null);
+  const [headerSearchValue, setHeaderSearchValue] = useState('');
+  const [showHeaderAutocomplete, setShowHeaderAutocomplete] = useState(false);
   const [profileOpenFor, setProfileOpenFor] = useState<{
     userId: number;
     userName: string;
     avatarUrl?: string | null;
   } | null>(null);
+  const [showDepthMenu, setShowDepthMenu] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -652,6 +655,24 @@ function OrgChart() {
     setPendingCenterId(tree.id);
   }, [tree]);
 
+  const headerFilteredUsers = useMemo(() => {
+    if (headerSearchValue.trim().length < 2) {
+      return [] as OrgChartUser[];
+    }
+
+    const query = headerSearchValue.toLowerCase();
+    return users
+      .filter((candidate) => {
+        const roleQuerySource = candidate.roles.join(' ').toLowerCase();
+        return (
+          candidate.name.toLowerCase().includes(query)
+          || candidate.email.toLowerCase().includes(query)
+          || roleQuerySource.includes(query)
+        );
+      })
+      .slice(0, 8);
+  }, [headerSearchValue, users]);
+
   const handleProfileSaved = useCallback((updated: TrackerUserProfile) => {
     const nextName = updated.full_name?.trim() || `${updated.first_name || ''} ${updated.last_name || ''}`.trim();
     const nextAgencyCode = updated.agency_code || '';
@@ -707,60 +728,228 @@ function OrgChart() {
     );
   }
 
+
   return (
     <div className="orgchart-container">
       <div className="orgchart-header">
-        <h1 className="orgchart-title">Organization Chart</h1>
-        <p className="orgchart-subtitle">
-          {user ? `${user.displayName || user.email}'s organization` : 'Organizational Structure'}
-        </p>
-      </div>
+        <div className="orgchart-header-left">
+          <h1 className="orgchart-title">Organization Chart</h1>
+          <p className="orgchart-subtitle">
+            {user ? `${user.displayName || user.email}'s organization` : 'Organizational Structure'}
+          </p>
+        </div>
+        <div className="orgchart-header-controls">
+          {/* View Controls */}
+          <div className="orgchart-header-group">
+            <select
+              className="orgchart-header-view-select"
+              value={currentViewType}
+              onChange={(event) => {
+                const nextView = event.target.value as OrgViewType;
+                setCurrentViewType(nextView);
+                setSelectedSMDId(null);
+                setSelectedUserId(null);
+                setCollapsedNodes(new Set());
+                setExpandedDepthOverrideNodes(new Set());
+              }}
+              title="Select org view"
+            >
+              {viewOptions.map((view) => (
+                <option key={view.id} value={view.id}>
+                  {view.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <OrgToolbar
-        currentView={currentViewType}
-        viewOptions={viewOptions}
-        loadingTeamOptions={loadingTeamOptions}
-        onViewChange={(view) => {
-          setCurrentViewType(view);
-          setSelectedSMDId(null);
-          setSelectedUserId(null);
-          setCollapsedNodes(new Set());
-          setExpandedDepthOverrideNodes(new Set());
-        }}
-        onSearch={handleSearch}
-        onCenterOnMe={handleCenterOnMe}
-        activeFilters={activeFilters}
-        onFilterToggle={(filterKey) => {
-          setActiveFilters((previous) => {
-            const next = new Set(previous);
-            if (next.has(filterKey)) {
-              next.delete(filterKey);
-            } else {
-              next.add(filterKey);
-            }
-            return next;
-          });
-        }}
-        teamOptions={teamOptions}
-        selectedSMDId={selectedSMDId}
-        onSMDSelect={(smdId) => {
-          setSelectedSMDId(smdId);
-          setSelectedUserId(null);
-          setCollapsedNodes(new Set());
-          setExpandedDepthOverrideNodes(new Set());
-        }}
-        onExpandToDepth={(depth) => {
-          setExpandDepth(depth);
-          setCollapsedNodes(new Set());
-          setExpandedDepthOverrideNodes(new Set());
-          if (tree?.id) {
-            setSelectedUserId(tree.id);
-            setPendingCenterId(tree.id);
-          }
-        }}
-        expandDepth={expandDepth}
-        users={users}
-      />
+          {(currentViewType === 'superbase' || currentViewType === 'superteam') && (
+            <div className="orgchart-header-group">
+              <select
+                className="org-toolbar-team-selector orgchart-header-team-selector"
+                value={selectedSMDId || ''}
+                disabled={loadingTeamOptions}
+                onChange={(event) => {
+                  setSelectedSMDId(event.target.value || null);
+                  setSelectedUserId(null);
+                  setCollapsedNodes(new Set());
+                  setExpandedDepthOverrideNodes(new Set());
+                }}
+              >
+                <option value="">
+                  {loadingTeamOptions ? 'Loading teams...' : teamOptions.length > 0 ? 'Select Team...' : 'No teams available'}
+                </option>
+                {teamOptions.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name} ({team.level})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Expand Controls */}
+          <div className="orgchart-header-group">
+            <div className="orgchart-header-expand-selector">
+              <button
+                className="orgchart-header-expand-btn"
+                onClick={() => setShowDepthMenu((prev) => !prev)}
+                title="Expand to specific depth"
+                type="button"
+              >
+                L{expandDepth !== null ? expandDepth : '∞'}
+              </button>
+              {showDepthMenu && (
+                <div className="orgchart-header-expand-menu">
+                  <button
+                    onClick={() => {
+                      setExpandDepth(null);
+                      setCollapsedNodes(new Set());
+                      setExpandedDepthOverrideNodes(new Set());
+                      if (tree?.id) {
+                        setSelectedUserId(tree.id);
+                        setPendingCenterId(tree.id);
+                      }
+                      setShowDepthMenu(false);
+                    }}
+                    className={expandDepth === null ? 'active' : ''}
+                    type="button"
+                  >
+                    All
+                  </button>
+                  {[1, 2, 3, 4, 5].map((depth) => (
+                    <button
+                      key={depth}
+                      onClick={() => {
+                        setExpandDepth(depth);
+                        setCollapsedNodes(new Set());
+                        setExpandedDepthOverrideNodes(new Set());
+                        if (tree?.id) {
+                          setSelectedUserId(tree.id);
+                          setPendingCenterId(tree.id);
+                        }
+                        setShowDepthMenu(false);
+                      }}
+                      className={expandDepth === depth ? 'active' : ''}
+                      type="button"
+                    >
+                      L{depth}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Filter Pills */}
+          <div className="orgchart-header-group">
+            <div className="orgchart-header-filter-pills">
+              {[
+                { key: FILTER_KEYS.BPM, label: 'BPM Attendance', color: FILTER_COLORS[FILTER_KEYS.BPM] },
+                { key: FILTER_KEYS.BIG_EVENT, label: 'Big Event', color: FILTER_COLORS[FILTER_KEYS.BIG_EVENT] },
+                { key: FILTER_KEYS.KEY_PLAYER, label: 'Key Player', color: FILTER_COLORS[FILTER_KEYS.KEY_PLAYER] },
+                { key: FILTER_KEYS.LICENSED, label: 'Licensed', color: FILTER_COLORS[FILTER_KEYS.LICENSED] },
+                { key: FILTER_KEYS.NET_LICENSED, label: 'Net Licensed', color: FILTER_COLORS[FILTER_KEYS.NET_LICENSED] },
+                { key: FILTER_KEYS.CLIENT, label: 'Client', color: FILTER_COLORS[FILTER_KEYS.CLIENT] },
+              ].map((filter) => {
+                const isActive = activeFilters.has(filter.key);
+                return (
+                  <button
+                    key={filter.key}
+                    className={`orgchart-header-filter-pill ${isActive ? 'active' : ''}`}
+                    style={{
+                      backgroundColor: isActive ? filter.color : 'transparent',
+                      borderColor: filter.color,
+                      color: isActive ? '#fff' : filter.color,
+                    }}
+                    onClick={() => {
+                      setActiveFilters((previous) => {
+                        const next = new Set(previous);
+                        if (next.has(filter.key)) {
+                          next.delete(filter.key);
+                        } else {
+                          next.add(filter.key);
+                        }
+                        return next;
+                      });
+                    }}
+                    title={`Toggle ${filter.label} filter`}
+                    type="button"
+                  >
+                    {filter.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="orgchart-header-group orgchart-header-search-group">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!headerSearchValue.trim()) return;
+                handleSearch(headerSearchValue.trim());
+                setShowHeaderAutocomplete(false);
+              }}
+              className="orgchart-header-search"
+            >
+              <div className="orgchart-header-search-wrapper">
+                <input
+                  type="text"
+                  value={headerSearchValue}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setHeaderSearchValue(value);
+                    setShowHeaderAutocomplete(value.trim().length >= 2);
+                  }}
+                  onFocus={() => {
+                    if (headerFilteredUsers.length > 0) {
+                      setShowHeaderAutocomplete(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setShowHeaderAutocomplete(false), 200);
+                  }}
+                  placeholder="Search by name..."
+                  className="orgchart-header-search-input"
+                  autoComplete="off"
+                />
+                {showHeaderAutocomplete && headerFilteredUsers.length > 0 && (
+                  <div className="orgchart-header-autocomplete">
+                    {headerFilteredUsers.map((candidate) => (
+                      <div
+                        key={candidate.id}
+                        className="orgchart-header-autocomplete-item"
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+                          setHeaderSearchValue(candidate.name);
+                          handleSearch(candidate.name);
+                          setShowHeaderAutocomplete(false);
+                        }}
+                      >
+                        <div className="orgchart-header-autocomplete-name">{candidate.name}</div>
+                        <div className="orgchart-header-autocomplete-meta">
+                          <span className="orgchart-header-autocomplete-type">{candidate.roles[0] || 'Agent'}</span>
+                          {candidate.email && <span className="orgchart-header-autocomplete-email">{candidate.email}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </form>
+
+            <button
+              className="orgchart-header-center-btn"
+              onClick={handleCenterOnMe}
+              type="button"
+              title="Center on me"
+              aria-label="Center on me"
+            >
+              <LocateFixed size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="orgchart-flow-wrapper">
         {nodes.length === 0 ? (

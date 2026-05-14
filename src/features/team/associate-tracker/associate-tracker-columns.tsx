@@ -2,6 +2,10 @@ import type { TrackerTableColumn } from '@/shared/components';
 import { TrackerUserCell } from '@/features/team/components/tracker-user-cell';
 import { TrackerNotesCell } from '@/features/team/components/tracker-notes-cell';
 import type { TrackerNote } from '@/features/team/services/tracker-notes-service';
+import {
+  resolveRelatedTrackerUserId,
+  resolveTrackerUserIdByName,
+} from '@/features/team/services/tracker-user-profile-service';
 import type { AssociateTrackerRecord } from './services/associate-tracker-service';
 
 function asYesNo(value: boolean): string {
@@ -138,6 +142,34 @@ function formatNumber(value: number | string): string {
   return parsed.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+async function openRelatedProfile(
+  row: AssociateTrackerRecord,
+  options: BuildAssociateColumnsOptions,
+  kind: 'recruiter' | 'leader'
+) {
+  if (!options.onOpenUserProfile) return;
+
+  const relatedName = kind === 'recruiter' ? row.recruiter_name : row.leader_name;
+  let userId = kind === 'recruiter' ? row.recruiter_id : row.leader_id;
+
+  if (!userId) {
+    userId = await resolveRelatedTrackerUserId(row.user_id, kind);
+  }
+
+  if (!userId) {
+    userId = await resolveTrackerUserIdByName(relatedName || '');
+  }
+
+  if (!userId) return;
+
+  options.onOpenUserProfile({
+    ...row,
+    user_id: userId,
+    user_name: kind === 'recruiter' ? row.recruiter_name || row.user_name : row.leader_name || row.user_name,
+    avatar_url: null,
+  });
+}
+
 function getRowNotes(
   row: AssociateTrackerRecord,
   notesByUserId: Record<number, TrackerNote[]>
@@ -189,6 +221,7 @@ export function buildAssociateColumns(
           agencyCode={row.agency_code}
           avatarUrl={row.avatar_url}
           onAvatarClick={options.onOpenUserProfile ? () => options.onOpenUserProfile?.(row) : undefined}
+          onNameClick={options.onOpenUserProfile ? () => options.onOpenUserProfile?.(row) : undefined}
         />
       ),
     },
@@ -199,7 +232,21 @@ export function buildAssociateColumns(
       sortable: true,
       searchable: true,
       value: (row) => row.recruiter_name || '',
-      render: (row) => row.recruiter_name || '-',
+      render: (row) =>
+        options.onOpenUserProfile ? (
+          <button
+            type="button"
+            className="w-full text-left text-white/80 hover:text-white hover:underline"
+            onClick={(event) => {
+              event.stopPropagation();
+              void openRelatedProfile(row, options, 'recruiter');
+            }}
+          >
+            {row.recruiter_name || '-'}
+          </button>
+        ) : (
+          row.recruiter_name || '-'
+        ),
     },
     {
       key: 'leader',
@@ -208,7 +255,21 @@ export function buildAssociateColumns(
       sortable: true,
       searchable: true,
       value: (row) => row.leader_name || '',
-      render: (row) => row.leader_name || '-',
+      render: (row) =>
+        options.onOpenUserProfile ? (
+          <button
+            type="button"
+            className="w-full text-left text-white/80 hover:text-white hover:underline"
+            onClick={(event) => {
+              event.stopPropagation();
+              void openRelatedProfile(row, options, 'leader');
+            }}
+          >
+            {row.leader_name || '-'}
+          </button>
+        ) : (
+          row.leader_name || '-'
+        ),
     },
     {
       key: 'finish_1st_recruit',

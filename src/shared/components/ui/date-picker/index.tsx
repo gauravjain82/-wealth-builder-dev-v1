@@ -176,6 +176,10 @@ export function DateRangePicker({
         startDate={start}
         endDate={end}
         onChange={(range) => {
+          if (!range) {
+            onChange({ startDate: '', endDate: '' });
+            return;
+          }
           const [nextStart, nextEnd] = range as [Date | null, Date | null];
           onChange({
             startDate: toDateString(nextStart),
@@ -196,6 +200,7 @@ export function DateRangePicker({
         popperClassName="date-picker-popper"
         calendarClassName="date-picker-calendar"
         showPopperArrow={false}
+        isClearable={Boolean(start || end)}
       />
       <span className="date-input-icon" aria-hidden>
         <Calendar size={16} />

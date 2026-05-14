@@ -34,6 +34,7 @@ interface RawAssociateRecord {
   user_id: number;
   user_name?: string | null;
   user_email?: string | null;
+  // Legacy keys
   m_videos_watched?: boolean;
   milestone_multi_handed?: boolean;
   ten_thre_results_goals?: boolean;
@@ -45,25 +46,61 @@ interface RawAssociateRecord {
   recruit_ttl?: number;
   personal_points?: number;
   licenses_in_ttl?: number;
+  registrations_base?: number;
+  // New keys after tracker schema rename
+  finish_1st_recruit?: boolean;
+  finish_1st_savings?: boolean;
+  big_event_1st?: boolean;
+  observe_4_recruits?: boolean;
+  observe_4_clients?: boolean;
+  is_licensed?: boolean;
+  direct_registration_1st?: boolean;
+  recruit_9?: number;
+  personal_points_45k?: number;
+  registration_base_15k?: number;
+  intro_watched?: boolean;
+  intro_local?: boolean;
+}
+
+function pickBool(...values: Array<boolean | null | undefined>): boolean {
+  for (const value of values) {
+    if (typeof value === 'boolean') return value;
+  }
+  return false;
+}
+
+function pickNumber(...values: Array<number | null | undefined>): number {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+  }
+  return 0;
 }
 
 function mapRecord(r: RawAssociateRecord): OnboardingTrackerData {
+  const introWatched = pickBool(
+    r.m_videos_watched,
+    r.intro_watched,
+    r.intro_local,
+    // Fallback for schemas where intro flag is no longer persisted separately.
+    r.finish_1st_recruit,
+  );
+
   return {
     userId: r.user_id,
     userName: r.user_name ?? '',
     userEmail: r.user_email ?? '',
-    introWatched: r.m_videos_watched ?? false,
-    multiHanded: r.milestone_multi_handed ?? false,
-    tenThreeGoals: r.ten_thre_results_goals ?? false,
-    selfImprovement: r.self_improvement ?? false,
-    observe4Recruits: r.milestone_observe_4_recruits ?? false,
-    observe4Clients: r.milestone_observe_4_clients ?? false,
-    getLicense: r.get_license ?? false,
-    registrationConvention: r.registration_convention ?? false,
-    recruitTtl: r.recruit_ttl ?? 0,
-    personalPoints: r.personal_points ?? 0,
-    licensesInTtl: r.licenses_in_ttl ?? 0,
-    registrationsBase: 0,
+    introWatched,
+    multiHanded: pickBool(r.milestone_multi_handed, r.finish_1st_recruit),
+    tenThreeGoals: pickBool(r.ten_thre_results_goals, r.finish_1st_savings),
+    selfImprovement: pickBool(r.self_improvement, r.big_event_1st),
+    observe4Recruits: pickBool(r.milestone_observe_4_recruits, r.observe_4_recruits),
+    observe4Clients: pickBool(r.milestone_observe_4_clients, r.observe_4_clients),
+    getLicense: pickBool(r.get_license, r.is_licensed),
+    registrationConvention: pickBool(r.registration_convention, r.direct_registration_1st),
+    recruitTtl: pickNumber(r.recruit_ttl, r.recruit_9),
+    personalPoints: pickNumber(r.personal_points, r.personal_points_45k),
+    licensesInTtl: pickNumber(r.licenses_in_ttl, r.registration_base_15k),
+    registrationsBase: pickNumber(r.registrations_base, r.registration_base_15k),
   };
 }
 
@@ -85,13 +122,24 @@ export async function fetchOnboardingData(userId: number): Promise<OnboardingTra
  */
 export async function markIntroWatched(userId: number): Promise<void> {
   const headers = getAuthHeaders();
-  const res = await fetch(`${API_BASE_URL}/api/tracker/trackers/associate/${userId}/`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ m_videos_watched: true }),
-  });
-  if (!res.ok) {
-    const msg = await res.text().catch(() => res.statusText);
-    throw new Error(`Failed to mark intro watched: ${msg}`);
+  const payloads = [
+    { m_videos_watched: true },
+    { intro_watched: true },
+    { intro_local: true },
+    // Final compatibility fallback if intro fields were removed in schema.
+    { finish_1st_recruit: true },
+  ];
+
+  let lastError = '';
+  for (const payload of payloads) {
+    const res = await fetch(`${API_BASE_URL}/api/tracker/trackers/associate/${userId}/`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) return;
+    lastError = await res.text().catch(() => res.statusText);
   }
+
+  throw new Error(`Failed to mark intro watched: ${lastError || 'Unknown error'}`);
 }

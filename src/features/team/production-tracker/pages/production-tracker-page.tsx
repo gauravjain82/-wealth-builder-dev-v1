@@ -76,6 +76,14 @@ export default function ProductionTrackerPage() {
     });
   }, []);
 
+  const selectedDateRange = useMemo(
+    () => ({
+      startDate: filters.from_date || '',
+      endDate: filters.to_date || '',
+    }),
+    [filters.from_date, filters.to_date]
+  );
+
   const updateRowInState = (updated: ProductionTrackerRecord) => {
     setRows((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
   };
@@ -232,7 +240,7 @@ export default function ProductionTrackerPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-2">
         <LoadingState
           pageHeading={pageHeading}
           pageDescription={pageDescription}
@@ -245,7 +253,7 @@ export default function ProductionTrackerPage() {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="p-2">
         <ErrorState
           pageHeading={pageHeading}
           pageDescription={pageDescription}
@@ -259,11 +267,12 @@ export default function ProductionTrackerPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col p-6">
+    <div className="flex h-screen flex-col p-2">
       <Block
         title={pageHeading}
         description={`${pageDescription} • ${rows.length} total`}
-        className="mb-6 flex-shrink-0"
+        className="mb-2 flex-shrink-0"
+        titleVariant="h5"
         actions={
           <div className="flex items-center gap-2">
             <TrackerTeamScopeFilter
@@ -271,7 +280,11 @@ export default function ProductionTrackerPage() {
               selectedUserId={teamScopeUserId}
               onChange={handleTeamScopeChange}
             />
-            <TrackerDateRangeFilter value={dateRangePreset} onChange={handleDateRangeChange} />
+            <TrackerDateRangeFilter
+              value={dateRangePreset}
+              selectedRange={selectedDateRange}
+              onChange={handleDateRangeChange}
+            />
           </div>
         }
       />

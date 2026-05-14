@@ -30,7 +30,7 @@
   padding: 14px 16px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 35px;
   color: #f8fafc;
   list-style: none;
   transition: background 0.2s ease;
@@ -81,7 +81,7 @@
   }
 
   .biz-faq-q {
-    font-size: 14px;
+    font-size: 24px;
   }
 }
 

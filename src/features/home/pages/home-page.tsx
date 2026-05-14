@@ -255,7 +255,7 @@ export default function HomePage() {
         </section>
 
         {/* Leaderboard Section - Paid Users Only */}
-        {isPaid && (
+        {/* {isPaid && (
           <LeaderboardCard
             avatarUrl={AVATAR_URL}
             smdData={mockLeaderboardData.smd}
@@ -263,16 +263,16 @@ export default function HomePage() {
             activeTab={activeTab}
             onTabChange={setActiveTab}
           />
-        )}
+        )} */}
 
         {/* Performance Tracker - Paid Users Only */}
-        {isPaid && (
+        {/* {isPaid && (
           <section className="px-8 md:px-4 pb-16" aria-label="Quick metrics">
             <div className="max-w-7xl mx-auto">
               <PerformanceTable stats={userStats} />
             </div>
           </section>
-        )}
+        )} */}
 
         {/* Lightbox Modal */}
         {lightbox.open && (

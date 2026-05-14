@@ -3,6 +3,10 @@ import type { TrackerTableColumn } from '@/shared/components';
 import { TrackerUserCell } from '@/features/team/components/tracker-user-cell';
 import { TrackerNotesCell } from '@/features/team/components/tracker-notes-cell';
 import type { TrackerNote } from '@/features/team/services/tracker-notes-service';
+import {
+  resolveRelatedTrackerUserId,
+  resolveTrackerUserIdByName,
+} from '@/features/team/services/tracker-user-profile-service';
 import { DatePicker } from '@/shared/components/ui/date-picker';
 import type { Tracker4x4Record } from './services/tracker-4x4-service';
 
@@ -150,6 +154,34 @@ function getRowNotes(
       updated_at: createdAt,
     },
   ];
+}
+
+async function openRelatedProfile(
+  row: Tracker4x4Record,
+  options: Build4x4ColumnsOptions,
+  kind: 'recruiter' | 'leader'
+) {
+  if (!options.onOpenUserProfile) return;
+
+  const relatedName = kind === 'recruiter' ? row.recruiter_name : row.leader_name;
+  let userId = kind === 'recruiter' ? row.recruiter_id : row.leader_id;
+
+  if (!userId) {
+    userId = await resolveRelatedTrackerUserId(row.user_id, kind);
+  }
+
+  if (!userId) {
+    userId = await resolveTrackerUserIdByName(relatedName || '');
+  }
+
+  if (!userId) return;
+
+  options.onOpenUserProfile({
+    ...row,
+    user_id: userId,
+    user_name: kind === 'recruiter' ? row.recruiter_name || row.user_name : row.leader_name || row.user_name,
+    avatar_url: null,
+  });
 }
 
 // Defined before Build4x4ColumnsOptions so the interface can reference them.
@@ -340,6 +372,7 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
           agencyCode={row.agency_code}
           avatarUrl={row.avatar_url}
           onAvatarClick={options.onOpenUserProfile ? () => options.onOpenUserProfile?.(row) : undefined}
+          onNameClick={options.onOpenUserProfile ? () => options.onOpenUserProfile?.(row) : undefined}
         />
       ),
     },
@@ -350,7 +383,21 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
       sortable: true,
       searchable: true,
       value: (row) => row.recruiter_name || '',
-      render: (row) => row.recruiter_name || '-',
+      render: (row) =>
+        options.onOpenUserProfile ? (
+          <button
+            type="button"
+            className="w-full text-left text-white/80 hover:text-white hover:underline"
+            onClick={(event) => {
+              event.stopPropagation();
+              void openRelatedProfile(row, options, 'recruiter');
+            }}
+          >
+            {row.recruiter_name || '-'}
+          </button>
+        ) : (
+          row.recruiter_name || '-'
+        ),
     },
     {
       key: 'leader',
@@ -359,7 +406,21 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
       sortable: true,
       searchable: true,
       value: (row) => row.leader_name || '',
-      render: (row) => row.leader_name || '-',
+      render: (row) =>
+        options.onOpenUserProfile ? (
+          <button
+            type="button"
+            className="w-full text-left text-white/80 hover:text-white hover:underline"
+            onClick={(event) => {
+              event.stopPropagation();
+              void openRelatedProfile(row, options, 'leader');
+            }}
+          >
+            {row.leader_name || '-'}
+          </button>
+        ) : (
+          row.leader_name || '-'
+        ),
     },
     {
       key: 'finish_1st_recruit',

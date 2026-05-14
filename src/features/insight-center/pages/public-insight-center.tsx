@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { fetchInsightCenterVideos } from '@/services/video-config.service';
 import {
   VideoIntro,
@@ -13,23 +14,25 @@ import { Heading, Text } from '@/shared/components';
 const FALLBACK_INTRO = 'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Insight%20center%2Finsight_center_intro_v2.mp4?alt=media&token=b6e04e29-69ca-4dc6-8754-75e5be9e1b5d';
 const FALLBACK_EASTER_EGG = 'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Insight%20center%2FLeadership%20Bonus.mp4?alt=media&token=fe0c09c7-cf66-4d70-b93b-76b7c68d26df';
 
-const NAVIGATION_BUTTONS = [
-  {
-    to: '/learn/business',
-    label: 'Business Education',
-    ariaLabel: 'Learn about Business Education',
-  },
-  {
-    to: '/learn/education',
-    label: 'Financial Education',
-    ariaLabel: 'Learn about Financial Education',
-  },
-];
-
 export default function PublicInsightCenter() {
+  const location = useLocation();
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const [videoData, setVideoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const isPublicInsightCenterRoute = location.pathname === '/public-insight-center';
+  const navigationButtons = [
+    {
+      to: isPublicInsightCenterRoute ? '/learn/public-business' : '/learn/business',
+      label: 'Business Education',
+      ariaLabel: 'Learn about Business Education',
+    },
+    {
+      to: isPublicInsightCenterRoute ? '/learn/public-education' : '/learn/education',
+      label: 'Financial Education',
+      ariaLabel: 'Learn about Financial Education',
+    },
+  ];
 
   useEffect(() => {
     const loadVideos = async () => {
@@ -67,7 +70,7 @@ export default function PublicInsightCenter() {
         You've been invited to discover how we're helping people achieve financial independence
       </Text>
 
-      <ActionButtons buttons={NAVIGATION_BUTTONS} />
+      <ActionButtons buttons={navigationButtons} />
 
       <EasterEggLogo logoSrc={wbLogo} onClick={() => setShowEasterEgg(true)} />
 

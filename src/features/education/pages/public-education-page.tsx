@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { fetchEducationVideos } from '@/services/video-config.service';
 import {
   PageWrapper,
@@ -10,19 +11,6 @@ import { ActionButtons } from '@/features/insight-center/components';
 import { Text } from '@/shared/components';
 
 const FALLBACK_EDUCATION_INTRO = 'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/AI%20videos%2FInsight%20center%2FInsight%20center%20Education.mp4?alt=media&token=23f05108-a432-405d-bcba-6a3e9382e37c';
-
-const NAVIGATION_BUTTONS = [
-  {
-    to: '/learn/business',
-    label: 'Business Education',
-    ariaLabel: 'Learn about Business Education',
-  },
-  {
-    to: '/learn/education',
-    label: 'Financial Education',
-    ariaLabel: 'Learn about Financial Education',
-  },
-];
 
 interface VideoData {
   title: string;
@@ -37,8 +25,23 @@ interface Section {
 }
 
 export default function PublicEducationPage() {
+  const location = useLocation();
   const [videoData, setVideoData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const isPublicLearnRoute = location.pathname.startsWith('/learn/public-');
+  const navigationButtons = [
+    {
+      to: isPublicLearnRoute ? '/learn/public-business' : '/learn/business',
+      label: 'Business Education',
+      ariaLabel: 'Learn about Business Education',
+    },
+    {
+      to: isPublicLearnRoute ? '/learn/public-education' : '/learn/education',
+      label: 'Financial Education',
+      ariaLabel: 'Learn about Financial Education',
+    },
+  ];
 
   useEffect(() => {
     const loadVideos = async () => {
@@ -89,7 +92,7 @@ export default function PublicEducationPage() {
 
   return (
     <PageWrapper>
-      <ActionButtons buttons={NAVIGATION_BUTTONS} />
+      <ActionButtons buttons={navigationButtons} />
       
       <VideoHero videoUrl={heroVideoUrl} title="Education intro video" />
 

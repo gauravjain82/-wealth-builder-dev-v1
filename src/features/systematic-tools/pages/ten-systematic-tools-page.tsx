@@ -117,6 +117,8 @@ export default function TenSystematicToolsPage() {
       'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/NAL%20Thumbnails%2FScreenshot_7.png?alt=media&token=47b3e4b6-d990-4568-9bdb-7a4d22ddf73a',
     trainerManual:
       'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/NAL%20Thumbnails%2FScreenshot_8.png?alt=media&token=fd9ab14d-0f9f-4c80-8167-35c5c59e59d8',
+    dropByPhilosophies:
+      'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Screenshot%202026-04-19%20193745.png?alt=media&token=3a85f65a-bf3a-43d2-8693-6d1774260c4f',
   };
 
   const SLIDE_EMBEDS = {
@@ -134,30 +136,36 @@ export default function TenSystematicToolsPage() {
       'https://docs.google.com/presentation/d/e/2PACX-1vQ5LDIv1q6M9XIZX8IyGH0keFnRKxwELd3F2Be8SXMrGs98fxs4NKDzEexZ3VwSDcDkkpj-KWKv-bc6/pubembed?start=false&loop=false&delayms=60000',
     'smd:main':
       'https://docs.google.com/presentation/d/e/2PACX-1vTnDiDvxbA6TDW42UgkZg_VAJp_j0D5QKJJcjDB59sNM-aueoo7AgNAVP4yLdETmY_6N1AWSXf-N1tZ/pubembed?start=false&loop=false&delayms=3000',
+    'smd:abcs':
+      'https://docs.google.com/presentation/d/e/2PACX-1vR4krZNkSnkDIQP7gTpGaePIggFFIvqvq_TFEq49I-XiGq8zUyyon3cNSU_cODD9tM_3uTwhkQDcf5s/pubembed?start=false&loop=false&delayms=3000',
   };
 
   const PDF_FILES = {
     fourFold:
       'https://drive.google.com/file/d/1-GYpGxZpQm8xSdlQl8qfXLeK0bmq0-eb/preview',
-    reachMarketFaq: '',
+    reachMarketFaq:
+      'https://drive.google.com/file/d/19T5-pcGG2DMPzsxXGCCeRg1Tqteo9-lI/preview',
     machine:
       'https://drive.google.com/file/d/1WNhK2Crwt_zwE2DsBqyCZ_GDk8p_EfDI/preview',
     accountability:
       'https://drive.google.com/file/d/1_V0uXOsHttT1DGNuMAQw_TfdLYQYm6WY/preview',
-    trainerManual: '',
+    trainerManual:
+      'https://drive.google.com/file/d/1oea9UDffzT3lX7NZqQMV3TWT7qvWSLY5/preview',
     businessShowerBlueCards:
       'https://drive.google.com/file/d/11HBseh37Hvjwj093LsuGnNRwM59_YnTn/preview',
     newArtBlueCards:
       'https://drive.google.com/file/d/1l6xx0z2k5vQ6Tm_-mPIcWc1-EmsoOBfN/preview',
+    dropByPhilosophies:
+      'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Philosophies-%20updated-%207%20march.pdf?alt=media&token=05d49767-0779-44ba-9d3a-67de820c8ce0',
   };
 
   const accessMap: Record<Plan, number[]> = {
-    [Plan.NewAgent]: [1, 2, 3, 4, 5, 6, 7],
-    [Plan.Agent]: [1, 2, 3, 4, 5, 6, 7],
-    [Plan.Leader]: [1, 2, 3, 4, 5, 6, 7, 9],
-    [Plan.Broker]: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    [Plan.SeniorBroker]: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    [Plan.Admin]: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    [Plan.NewAgent]: [1, 2, 3, 4, 5, 6, 7, 10],
+    [Plan.Agent]: [1, 2, 3, 4, 5, 6, 7, 10],
+    [Plan.Leader]: [1, 2, 3, 4, 5, 6, 7, 9, 10],
+    [Plan.Broker]: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    [Plan.SeniorBroker]: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    [Plan.Admin]: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
   };
 
   const allowedIndexesForPlan = (planName: Plan) =>
@@ -212,17 +220,31 @@ export default function TenSystematicToolsPage() {
       label: 'Unified System Presentation',
       options: [
         {
-          title: 'Step 1',
+          title: 'Step 1 English',
           thumb:
             'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Thumbnails%2FWhatsApp%20Image%202026-02-01%20at%205.08.37%20AM.jpeg?alt=media&token=73e2c393-1b68-448a-8a2d-ad2df9ca6856',
           embedSrc: SLIDE_EMBEDS.unifiedSystem,
         },
         {
-          title: 'Step 2',
+          title: 'Step 2 English',
           thumb:
             'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Thumbnails%2FWhatsApp%20Image%202026-02-01%20at%205.10.41%20AM.jpeg?alt=media&token=be47716f-c374-4d75-b784-6623a0f4f01d',
           embedSrc:
             'https://docs.google.com/presentation/d/e/2PACX-1vR-U8zstEic_AvvMRDEE_6bX2I4niyU75VALnf0ijKuE3Lt0CaHJMEFd3UW9-xIuurxzhBqU_j9cimo/pubembed?start=false&loop=false&delayms=3000',
+        },
+        {
+          title: 'Step 1 Spanish',
+          thumb:
+            'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Thumbnails%2FWhatsApp%20Image%202026-02-01%20at%205.08.37%20AM.jpeg?alt=media&token=73e2c393-1b68-448a-8a2d-ad2df9ca6856',
+          embedSrc:
+            'https://docs.google.com/presentation/d/e/2PACX-1vRTSEyfCW54MgP3hOVKwubnnuGoxF-TjY6TnPMbcjaFxj9oIChTbI-rwVgQZyqw1xe3-F164MuKEja2/pubembed?start=false&loop=false&delayms=3000',
+        },
+        {
+          title: 'Step 2 Spanish',
+          thumb:
+            'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Thumbnails%2FWhatsApp%20Image%202026-02-01%20at%205.10.41%20AM.jpeg?alt=media&token=be47716f-c374-4d75-b784-6623a0f4f01d',
+          embedSrc:
+            'https://docs.google.com/presentation/d/e/2PACX-1vTdbS4MrgdOkf2YXsiAHZUIfcFEllIiRIN9Rzmm05YH3F_gLSe4IaN3rTABbHA9aMcySujtjRaE9L7h/pubembed?start=false&loop=false&delayms=3000',
         },
       ],
     },
@@ -302,6 +324,13 @@ export default function TenSystematicToolsPage() {
       gateIndex: 5,
       id: 'reach-market-faq',
       label: '3 Ways to reach the Market & FAQ',
+      options: [
+        {
+          title: 'Open PDF',
+          thumb: THUMBS.reachMarketFaq,
+          embedSrc: PDF_FILES.reachMarketFaq,
+        },
+      ],
     },
     {
       gateIndex: 6,
@@ -328,27 +357,64 @@ export default function TenSystematicToolsPage() {
     {
       gateIndex: 8,
       id: 'smd-100k-class',
-      label: 'SMD & 100k Class',
-      singleOption: {
-        title: 'SMD & 100k Class Presentation',
-        thumb:
-          'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/NAL%20Thumbnails%2FScreenshot_77.png?alt=media&token=80b9c316-33e4-4790-9294-98d2f6d4199c',
-        embedSrc: SLIDE_EMBEDS['smd:main'],
-      },
+      label: 'Classes',
+      options: [
+        {
+          title: 'SMD & 100k Class Presentation',
+          thumb:
+            'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/NAL%20Thumbnails%2FScreenshot_77.png?alt=media&token=80b9c316-33e4-4790-9294-98d2f6d4199c',
+          embedSrc: SLIDE_EMBEDS['smd:main'],
+        },
+        {
+          title: '2026 ABCs of Finance',
+          thumb:
+            'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/thumbnails%2FScreenshot%202026-04-09%20212530.png?alt=media&token=000c98b7-f88f-4a94-aec3-74dc6f963b06',
+          embedSrc: SLIDE_EMBEDS['smd:abcs'],
+        },
+      ],
     },
     {
       gateIndex: 9,
       id: 'trainer-manual',
       label: 'Trainer Manual',
+      singleOption: {
+        title: 'Open Trainer Manual (PDF)',
+        thumb: THUMBS.trainerManual,
+        embedSrc: PDF_FILES.trainerManual,
+      },
     },
-    { gateIndex: 10, id: 'boot-camp', label: 'Boot Camp' },
+    {
+      gateIndex: 10,
+      id: 'drop-by',
+      label: 'Drop By',
+      singleOption: {
+        title: 'Philosophies (PDF)',
+        embedSrc: PDF_FILES.dropByPhilosophies,
+        thumb: THUMBS.dropByPhilosophies,
+      },
+    },
+    { gateIndex: 11, id: 'boot-camp', label: 'Boot Camp' },
   ];
 
   const MENU_KEY = 'tenTools:menu';
   const loadMenuFromStorage = () => {
     try {
       const raw = localStorage.getItem(MENU_KEY);
-      return raw ? (JSON.parse(raw) as ToolItem[]) : null;
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw) as ToolItem[];
+      if (!Array.isArray(parsed)) return null;
+
+      const hasDropBy = parsed.some((item) => item.id === 'drop-by');
+      const classesItem = parsed.find((item) => item.id === 'smd-100k-class');
+      const hasAbcsClass = Array.isArray(classesItem?.options) && classesItem.options.length >= 2;
+
+      // Fall back to defaults when old cached menu shape is missing new items.
+      if (!hasDropBy || !hasAbcsClass) {
+        return null;
+      }
+
+      return parsed;
     } catch {
       return null;
     }
@@ -399,10 +465,13 @@ export default function TenSystematicToolsPage() {
   const [showBusinessShowerModal, setShowBusinessShowerModal] = useState(false);
 
   const isSlidesUrl = (src: string) =>
-    src.includes('/pubembed?') || src.includes('/embed?');
+    typeof src === 'string' && (src.includes('/pubembed?') || src.includes('/embed?'));
 
   const isPdfUrl = (src: string) =>
-    src.includes('/preview') || src.includes('drive.google.com');
+    typeof src === 'string' &&
+    (src.includes('/preview') ||
+      src.includes('drive.google.com') ||
+      src.toLowerCase().includes('.pdf'));
 
   const openEmbed = (src: string, title: string) => {
     setPlayerSrc(src);
@@ -632,7 +701,15 @@ export default function TenSystematicToolsPage() {
 
       return (
         <div className="vault-content">
-          <section className="vault-grid">
+          <section
+            className="vault-grid"
+            style={{
+              gridTemplateColumns:
+                activeItem.id === 'unified-system'
+                  ? '300px 300px'
+                  : 'repeat(auto-fill, minmax(260px, 1fr))',
+            }}
+          >
             {currentItems.map((opt) =>
               opt.thumb
                 ? renderCard(opt, () => onOptionActivate(opt, ''))
@@ -801,18 +878,35 @@ export default function TenSystematicToolsPage() {
                   }}
                   allowFullScreen
                 />
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: 80,
-                    height: 60,
-                    zIndex: 10,
-                    pointerEvents: 'auto',
-                    background: 'rgba(0, 0, 0, 0.85)',
-                  }}
-                />
+                {(playerSrc.includes('1oea9UDffzT3lX7NZqQMV3TWT7qvWSLY5') ||
+                  playerSrc.includes('pcGG2DMPzsxXGCCeRg1Tqteo9')) && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      width: 80,
+                      height: 60,
+                      zIndex: 10,
+                      pointerEvents: 'auto',
+                      background: 'rgba(0, 0, 0, 0.85)',
+                    }}
+                  />
+                )}
+                {playerSrc.includes('Philosophies-%20updated-%207%20march.pdf') && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: 60,
+                      zIndex: 10,
+                      pointerEvents: 'auto',
+                      background: 'rgba(0, 0, 0, 0.85)',
+                    }}
+                  />
+                )}
               </div>
             ) : (
               <video

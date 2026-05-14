@@ -2,6 +2,10 @@ import { DatePicker, type TrackerTableColumn } from '@/shared/components';
 import { TrackerUserCell } from '@/features/team/components/tracker-user-cell';
 import { TrackerNotesCell } from '@/features/team/components/tracker-notes-cell';
 import type { TrackerNote } from '@/features/team/services/tracker-notes-service';
+import {
+  resolveRelatedTrackerUserId,
+  resolveTrackerUserIdByName,
+} from '@/features/team/services/tracker-user-profile-service';
 import type { LicensingTrackerRecord } from './services/licensing-tracker-service';
 
 function asYesNo(value: boolean): string {
@@ -86,6 +90,34 @@ function getRowNotes(
   ];
 }
 
+async function openRelatedProfile(
+  row: LicensingTrackerRecord,
+  options: BuildLicensingColumnsOptions,
+  kind: 'recruiter' | 'leader'
+) {
+  if (!options.onOpenUserProfile) return;
+
+  const relatedName = kind === 'recruiter' ? row.recruiter_name : row.leader_name;
+  let userId = kind === 'recruiter' ? row.recruiter_id : row.leader_id;
+
+  if (!userId) {
+    userId = await resolveRelatedTrackerUserId(row.user_id, kind);
+  }
+
+  if (!userId) {
+    userId = await resolveTrackerUserIdByName(relatedName || '');
+  }
+
+  if (!userId) return;
+
+  options.onOpenUserProfile({
+    ...row,
+    user_id: userId,
+    user_name: kind === 'recruiter' ? row.recruiter_name || row.user_name : row.leader_name || row.user_name,
+    avatar_url: null,
+  });
+}
+
 export function buildLicensingColumns(
   options: BuildLicensingColumnsOptions
 ): TrackerTableColumn<LicensingTrackerRecord>[] {
@@ -112,6 +144,7 @@ export function buildLicensingColumns(
           agencyCode={row.agency_code}
           avatarUrl={row.avatar_url}
           onAvatarClick={options.onOpenUserProfile ? () => options.onOpenUserProfile?.(row) : undefined}
+          onNameClick={options.onOpenUserProfile ? () => options.onOpenUserProfile?.(row) : undefined}
         />
       ),
     },
@@ -122,7 +155,21 @@ export function buildLicensingColumns(
       sortable: true,
       searchable: true,
       value: (row) => row.recruiter_name || '',
-      render: (row) => row.recruiter_name || '-',
+      render: (row) =>
+        options.onOpenUserProfile ? (
+          <button
+            type="button"
+            className="w-full text-left text-white/80 hover:text-white hover:underline"
+            onClick={(event) => {
+              event.stopPropagation();
+              void openRelatedProfile(row, options, 'recruiter');
+            }}
+          >
+            {row.recruiter_name || '-'}
+          </button>
+        ) : (
+          row.recruiter_name || '-'
+        ),
     },
     {
       key: 'leader',
@@ -131,7 +178,21 @@ export function buildLicensingColumns(
       sortable: true,
       searchable: true,
       value: (row) => row.leader_name || '',
-      render: (row) => row.leader_name || '-',
+      render: (row) =>
+        options.onOpenUserProfile ? (
+          <button
+            type="button"
+            className="w-full text-left text-white/80 hover:text-white hover:underline"
+            onClick={(event) => {
+              event.stopPropagation();
+              void openRelatedProfile(row, options, 'leader');
+            }}
+          >
+            {row.leader_name || '-'}
+          </button>
+        ) : (
+          row.leader_name || '-'
+        ),
     },
     {
       key: 'is_xcel',

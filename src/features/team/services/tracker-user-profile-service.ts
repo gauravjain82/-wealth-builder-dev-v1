@@ -22,6 +22,7 @@ export interface TrackerUserProfile {
   recruited_by_name?: string | null;
   leader_name?: string | null;
   plan?: string | null;
+  roles?: string[] | null;
   status?: string | null;
   avatar_url?: string | null;
   level?: { id?: number | null; code?: string | null; name?: string | null } | string | null;
@@ -70,6 +71,10 @@ export interface TrackerProfileSnapshots {
   tracker4x4: Tracker4x4Record | null;
   associate: AssociateTrackerRecord | null;
   licensing: LicensingTrackerRecord | null;
+}
+
+interface AccountsUsersListResponse {
+  results?: TrackerUserProfile[];
 }
 
 function getAuthHeaders(): HeadersInit {
@@ -134,4 +139,40 @@ export async function fetchTrackerProfileSnapshots(userId: number): Promise<Trac
   ]);
 
   return { tracker4x4, associate, licensing };
+}
+
+export async function resolveTrackerUserIdByName(name: string): Promise<number | null> {
+  const query = name.trim();
+  if (!query) return null;
+
+  const params = new URLSearchParams();
+  params.set('search', query);
+  params.set('page_size', '25');
+
+  const response = await fetch(`${API_BASE_URL}/api/accounts/users/?${params.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) return null;
+
+  const payload = (await response.json()) as AccountsUsersListResponse | TrackerUserProfile[];
+  const results = Array.isArray(payload) ? payload : payload.results || [];
+  if (!results.length) return null;
+
+  const normalized = query.toLowerCase();
+  const exactMatch = results.find((item) => {
+    const full = (item.full_name || `${item.first_name || ''} ${item.last_name || ''}`).trim().toLowerCase();
+    return full === normalized;
+  });
+
+  if (exactMatch?.id) return exactMatch.id;
+  return results[0]?.id ?? null;
+}
+
+export async function resolveRelatedTrackerUserId(
+  sourceUserId: number,
+  relation: 'recruiter' | 'leader'
+): Promise<number | null> {
+  const profile = await fetchTrackerUserProfile(sourceUserId);
+  return relation === 'recruiter' ? profile.recruited_by ?? null : profile.leader ?? null;
 }

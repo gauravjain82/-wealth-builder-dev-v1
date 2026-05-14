@@ -4,6 +4,7 @@ interface TrackerUserCellProps {
   invitedAt?: string | null;
   avatarUrl?: string | null;
   onAvatarClick?: () => void;
+  onNameClick?: () => void;
 }
 
 function getInitials(fullName: string): string {
@@ -31,6 +32,7 @@ export function TrackerUserCell({
   invitedAt,
   avatarUrl,
   onAvatarClick,
+  onNameClick,
 }: TrackerUserCellProps) {
   const initials = getInitials(fullName);
   const avatarContent = avatarUrl
@@ -58,7 +60,22 @@ export function TrackerUserCell({
         </div>
       )}
       <div className="tracker-user-details">
-        <div className="tracker-user-name">{fullName || '-'}</div>
+        {onNameClick ? (
+          <button
+            type="button"
+            className="tracker-user-name w-full text-left"
+            title={`Open profile for ${fullName || 'user'}`}
+            aria-label={`Open profile for ${fullName || 'user'}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onNameClick();
+            }}
+          >
+            {fullName || '-'}
+          </button>
+        ) : (
+          <div className="tracker-user-name">{fullName || '-'}</div>
+        )}
         <span className="tracker-user-sub"> {formatInvitedDate(invitedAt)} • {agencyCode || '-'}</span>
       </div>
     </div>

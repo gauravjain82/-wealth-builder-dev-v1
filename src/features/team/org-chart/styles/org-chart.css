@@ -13,10 +13,266 @@
 }
 
 .orgchart-header {
-  padding: 1.5rem 2rem;
+  padding: 1.25rem 2rem;
   background: white;
   border-bottom: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.orgchart-header-left {
+  flex: 0 1 auto;
+  min-width: 250px;
+}
+
+.orgchart-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  flex: 0 1 auto;
+}
+
+.orgchart-header-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.orgchart-header-search-group {
+  margin-left: 0.35rem;
+}
+
+.orgchart-header-team-selector {
+  min-width: 112px;
+  max-width: 140px;
+  padding: 0.28rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.orgchart-header-view-select {
+  min-width: 112px;
+  max-width: 140px;
+  padding: 0.28rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #475569;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.orgchart-header-view-select:hover {
+  border-color: #94a3b8;
+}
+
+.orgchart-header-view-select:focus {
+  outline: none;
+  border-color: #d4af37;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.12);
+}
+
+.orgchart-header-expand-selector {
+  position: relative;
+}
+
+.orgchart-header-expand-btn {
+  padding: 0.28rem 0.48rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: white;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  text-align: center;
+}
+
+.orgchart-header-expand-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.orgchart-header-expand-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  min-width: 70px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.orgchart-header-expand-menu button {
+  width: 100%;
+  padding: 0.42rem 0.6rem;
+  background: white;
+  border: none;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.orgchart-header-expand-menu button:last-child {
+  border-bottom: none;
+}
+
+.orgchart-header-expand-menu button:hover {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.orgchart-header-expand-menu button.active {
+  background: #eff6ff;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.orgchart-header-filter-pills {
+  display: flex;
+  gap: 0.28rem;
+  flex-wrap: wrap;
+}
+
+.orgchart-header-filter-pill {
+  padding: 0.24rem 0.48rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1.5px solid;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.orgchart-header-filter-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.orgchart-header-filter-pill.active {
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.orgchart-header-search {
+  display: flex;
+}
+
+.orgchart-header-search-wrapper {
+  position: relative;
+}
+
+.orgchart-header-search-input {
+  padding: 0.28rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  min-width: 165px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  color: #000;
+  background: #fff;
+}
+
+.orgchart-header-search-input:focus {
+  border-color: #d4af37;
+}
+
+.orgchart-header-autocomplete {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.orgchart-header-autocomplete-item {
+  padding: 0.65rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.orgchart-header-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.orgchart-header-autocomplete-item:hover {
+  background: #f8fafc;
+}
+
+.orgchart-header-autocomplete-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.2rem;
+}
+
+.orgchart-header-autocomplete-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+}
+
+.orgchart-header-autocomplete-type {
+  padding: 0.12rem 0.35rem;
+  background: #d4af37;
+  color: white;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.orgchart-header-autocomplete-email {
+  color: #64748b;
+}
+
+.orgchart-header-center-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.orgchart-header-center-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #1e293b;
 }
 
 .orgchart-title {
@@ -42,7 +298,7 @@
 .org-toolbar {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 1.5rem;
   padding: 1rem 2rem;
   background: white;
   border-bottom: 1px solid #e2e8f0;
@@ -322,10 +578,6 @@
 }
 
 /* Filter Pills */
-.org-toolbar-filters {
-  flex-wrap: wrap;
-}
-
 .org-toolbar-filter-pills {
   display: flex;
   gap: 0.5rem;
@@ -626,6 +878,7 @@
   width: 100%;
   margin-top: 2px;
   margin-bottom: 20px;
+  border-top: 1px solid grey;
 }
 
 .level-counts-codes {
@@ -642,6 +895,7 @@
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  margin-left: 4px;
 }
 
 .level-counts-values {
@@ -1185,6 +1439,17 @@
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Header variant: keep Team selector same size as View selector */
+.org-toolbar-team-selector.orgchart-header-team-selector {
+  min-width: 112px;
+  max-width: 140px;
+  width: 140px;
+  padding: 0.28rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
 }
 
 /* SMD Selector (legacy - keeping for backward compatibility) */

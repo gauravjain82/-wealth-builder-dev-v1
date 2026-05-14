@@ -24,6 +24,7 @@ import { AddProspectModal } from '../components/add-prospect-modal';
 import { AddAgencyCodeModal } from '../components/add-agency-code-modal';
 import { AddProductionModal, type AddProductionFormData } from '../components/add-production-modal';
 import { CallLogModal } from '../components/call-log-modal';
+import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
 import { createProductionRecord } from '@/features/team/production-tracker/services/production-tracker-service';
 import { buildProspectColumns } from '../prospect-columns';
 import type { AddAgentFormData, AddProspectFormData } from '../types';
@@ -33,6 +34,10 @@ import {
   type TrackerNote,
 } from '@/features/team/services/tracker-notes-service';
 import { TrackerNotesModal } from '@/features/team/components/tracker-notes-modal';
+import {
+  resolveTrackerUserIdByName,
+  type TrackerUserProfile,
+} from '@/features/team/services/tracker-user-profile-service';
 
 type SortDirection = 'asc' | 'desc';
 type ProspectMark = 'default' | 'client' | 'recruit' | 'both';
@@ -209,6 +214,11 @@ export default function ProspectTrackerPage() {
   const [notesOpenFor, setNotesOpenFor] = useState<Prospect | null>(null);
   const [modalNoteDraft, setModalNoteDraft] = useState('');
   const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
+  const [recruiterProfileOpenFor, setRecruiterProfileOpenFor] = useState<{
+    userId: number;
+    userName: string;
+    avatarUrl?: string | null;
+  } | null>(null);
   const [pendingDeleteProspect, setPendingDeleteProspect] = useState<Prospect | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
@@ -825,6 +835,58 @@ export default function ProspectTrackerPage() {
     }));
   }, []);
 
+  const handleOpenRecruiterProfile = useCallback(async (row: Prospect) => {
+    let recruiterId = row.recruited_by ?? null;
+
+    if (recruiterId == null) {
+      recruiterId = await resolveTrackerUserIdByName(row.recruited_by_name || '');
+    }
+
+    if (recruiterId == null) {
+      addToast({
+        type: 'warning',
+        message: 'Recruiter profile could not be resolved for this row.',
+      });
+      return;
+    }
+
+    setRecruiterProfileOpenFor({
+      userId: recruiterId,
+      userName: row.recruited_by_name || 'Recruiter',
+      avatarUrl: null,
+    });
+  }, [addToast]);
+
+  const handleOpenLeaderProfile = useCallback(async (row: Prospect) => {
+    let leaderId = row.leader ?? null;
+
+    if (leaderId == null) {
+      leaderId = await resolveTrackerUserIdByName(row.leader_name || '');
+    }
+
+    if (leaderId == null) {
+      addToast({
+        type: 'warning',
+        message: 'Leader profile could not be resolved for this row.',
+      });
+      return;
+    }
+
+    setRecruiterProfileOpenFor({
+      userId: leaderId,
+      userName: row.leader_name || 'Leader',
+      avatarUrl: null,
+    });
+  }, [addToast]);
+
+  const handleOpenProspectProfile = useCallback((row: Prospect) => {
+    setRecruiterProfileOpenFor({
+      userId: row.id,
+      userName: row.full_name || `${row.first_name || ''} ${row.last_name || ''}`.trim() || 'User',
+      avatarUrl: null,
+    });
+  }, []);
+
   const handleProfileDraftFieldChange = useCallback(
     (prospectId: number, field: 'howKnown' | 'relationship' | 'occupation' | 'age' | 'whatTold', value: string) => {
       setProfileDraftByProspectId((prev) => ({
@@ -1270,6 +1332,9 @@ export default function ProspectTrackerPage() {
         onToggleProspectMeta: handleToggleProspectMeta,
         onChangeProspectMark: handleChangeProspectMark,
         onChangeProspectOutcome: handleChangeProspectOutcome,
+        onOpenLeaderProfile: handleOpenLeaderProfile,
+        onOpenProspectProfile: handleOpenProspectProfile,
+        onOpenRecruiterProfile: handleOpenRecruiterProfile,
         editingProfileProspectId,
         profileDraftByProspectId,
         onStartProfileEdit: handleStartProfileEdit,
@@ -1293,6 +1358,9 @@ export default function ProspectTrackerPage() {
       handleToggleProspectMeta,
       handleChangeProspectMark,
       handleChangeProspectOutcome,
+      handleOpenLeaderProfile,
+      handleOpenProspectProfile,
+      handleOpenRecruiterProfile,
       editingProfileProspectId,
       profileDraftByProspectId,
       handleStartProfileEdit,
@@ -1340,7 +1408,7 @@ export default function ProspectTrackerPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-2">
         <LoadingState
           pageHeading={pageHeading}
           pageDescription={pageDescription}
@@ -1353,7 +1421,7 @@ export default function ProspectTrackerPage() {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="p-2">
         <ErrorState
           pageHeading={pageHeading}
           pageDescription={pageDescription}
@@ -1367,11 +1435,12 @@ export default function ProspectTrackerPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col p-6">
+    <div className="flex h-screen flex-col p-2">
       <Block
         title={pageHeading}
         description={`${pageDescription} • ${totalCount} total`}
-        className="mb-6 flex-shrink-0"
+        className="mb-2 flex-shrink-0"
+        titleVariant="h5"
         actions={
           <div className="flex items-center gap-2">
             <Button type="button" variant="outline" onClick={() => void handleBulkImportClick()} disabled={importLoading}>
@@ -1557,6 +1626,24 @@ export default function ProspectTrackerPage() {
         onClose={() => setNotesOpenFor(null)}
         onDraftChange={setModalNoteDraft}
         onAddNote={handleAddModalNote}
+      />
+
+      <TrackerUserProfileModal
+        open={Boolean(recruiterProfileOpenFor)}
+        userId={recruiterProfileOpenFor?.userId ?? null}
+        fallbackName={recruiterProfileOpenFor?.userName}
+        fallbackAvatarUrl={recruiterProfileOpenFor?.avatarUrl}
+        onClose={() => setRecruiterProfileOpenFor(null)}
+        onSaved={(updated: TrackerUserProfile) => {
+          setRecruiterProfileOpenFor((prev) => {
+            if (!prev || prev.userId !== updated.id) return prev;
+            return {
+              ...prev,
+              userName: updated.full_name?.trim() || `${updated.first_name || ''} ${updated.last_name || ''}`.trim() || prev.userName,
+              avatarUrl: updated.avatar_url ?? prev.avatarUrl,
+            };
+          });
+        }}
       />
     </div>
   );

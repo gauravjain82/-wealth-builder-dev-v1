@@ -19,6 +19,9 @@ interface ProspectColumnOptions {
   onToggleProspectMeta: (row: Prospect, field: 'top25' | 'hot', value: boolean) => void;
   onChangeProspectMark: (row: Prospect, mark: ProspectMark) => void;
   onChangeProspectOutcome: (row: Prospect, outcome: 'Client' | 'Recruit' | 'Both') => void;
+  onOpenLeaderProfile?: (row: Prospect) => void;
+  onOpenProspectProfile?: (row: Prospect) => void;
+  onOpenRecruiterProfile?: (row: Prospect) => void;
   editingProfileProspectId: number | null;
   profileDraftByProspectId: Record<
     number,
@@ -42,6 +45,27 @@ interface ProspectColumnOptions {
   onSaveProfileEdit: (row: Prospect) => Promise<void>;
   onCancelProfileEdit: () => void;
   getRowIndex: (row: Prospect) => number;
+}
+
+function ClickableName({
+  value,
+  onClick,
+}: {
+  value: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="w-full text-left text-white/80 hover:text-white hover:underline"
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+    >
+      {value || '-'}
+    </button>
+  );
 }
 
 function normalizeMarkValue(row: Prospect): ProspectMark {
@@ -138,7 +162,18 @@ export function buildProspectColumns(
       label: 'Leader',
       width: 180,
       sortable: true,
-      render: (row) => row.leader_name || '-',
+      render: (row) => (
+        <ClickableName
+          value={row.leader_name || ''}
+          onClick={() => {
+            if (options.onOpenLeaderProfile) {
+              options.onOpenLeaderProfile(row);
+              return;
+            }
+            options.onStartProfileEdit(row);
+          }}
+        />
+      ),
       searchable: true,
       searchPlaceholder: 'Search Leader',
     },
@@ -147,7 +182,18 @@ export function buildProspectColumns(
       label: 'Associate',
       width: 180,
       sortable: true,
-      render: (row) => row.recruited_by_name || '-',
+      render: (row) => (
+        <ClickableName
+          value={row.recruited_by_name || ''}
+          onClick={() => {
+            if (options.onOpenRecruiterProfile) {
+              options.onOpenRecruiterProfile(row);
+              return;
+            }
+            options.onStartProfileEdit(row);
+          }}
+        />
+      ),
       searchable: true,
       searchPlaceholder: 'Search Recruiter',
     },
@@ -157,6 +203,18 @@ export function buildProspectColumns(
       width: 240,
       sticky: true,
       sortable: true,
+      render: (row) => (
+        <ClickableName
+          value={row.full_name || ''}
+          onClick={() => {
+            if (options.onOpenProspectProfile) {
+              options.onOpenProspectProfile(row);
+              return;
+            }
+            options.onStartProfileEdit(row);
+          }}
+        />
+      ),
       searchable: true,
       searchPlaceholder: 'Search Name',
     },
