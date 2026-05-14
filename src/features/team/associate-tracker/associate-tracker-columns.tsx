@@ -136,6 +136,82 @@ function NetLicenseAmountCell({
   );
 }
 
+function RegistrationBase15kCell({
+  row,
+  options,
+}: {
+  row: AssociateTrackerRecord;
+  options: BuildAssociateColumnsOptions;
+}) {
+  const field: keyof AssociateTrackerRecord = 'registration_base_15k';
+  const saving = isSaving(row, field, options);
+  const initialValue = row.registration_base_15k == null ? '' : String(row.registration_base_15k);
+  let committedOnEnter = false;
+
+  return (
+    <input
+      className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-center text-xs text-white placeholder-white/50 outline-none focus:border-amber-300/60"
+      type="text"
+      inputMode="numeric"
+      defaultValue={initialValue}
+      disabled={saving}
+      placeholder="0"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const input = e.currentTarget as HTMLInputElement;
+          const raw = input.value.trim();
+          if (!raw) {
+            committedOnEnter = true;
+            options.onPatch(row.user_id, field, null);
+            input.blur();
+            return;
+          }
+
+          const parsed = Number(raw);
+          if (!Number.isFinite(parsed)) {
+            input.value = initialValue;
+            input.blur();
+            return;
+          }
+
+          committedOnEnter = true;
+          options.onPatch(row.user_id, field, parsed);
+          input.blur();
+        }
+      }}
+      onFocus={(e) => {
+        const raw = e.currentTarget.value.trim();
+        if (!raw) return;
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed) && parsed === 0) {
+          e.currentTarget.value = '';
+        }
+      }}
+      onBlur={(e) => {
+        if (committedOnEnter) {
+          committedOnEnter = false;
+          return;
+        }
+
+        const raw = e.currentTarget.value.trim();
+        if (!raw) {
+          options.onPatch(row.user_id, field, null);
+          return;
+        }
+
+        const parsed = Number(raw);
+        if (!Number.isFinite(parsed)) {
+          e.currentTarget.value = initialValue;
+          return;
+        }
+
+        options.onPatch(row.user_id, field, parsed);
+      }}
+    />
+  );
+}
+
 function formatNumber(value: number | string): string {
   const parsed = Number(value);
   if (Number.isNaN(parsed)) return String(value);
@@ -400,7 +476,7 @@ export function buildAssociateColumns(
       align: 'center',
       sortable: true,
       searchable: true,
-      value: (row) => String(row.registration_base_15k),
+      value: (row) => String(row.personal_points_45k),
       render: (row) => (
         <button
           type="button"
@@ -411,7 +487,7 @@ export function buildAssociateColumns(
             options.onOpenLicensedUsers?.(row);
           }}
         >
-          {formatNumber(row.registration_base_15k)}
+          {formatNumber(row.personal_points_45k)}
         </button>
       ),
     },
@@ -423,7 +499,7 @@ export function buildAssociateColumns(
       sortable: true,
       searchable: true,
       value: (row) => String(row.registration_base_15k),
-      render: (row) => formatNumber(row.registration_base_15k),
+      render: (row) => <RegistrationBase15kCell row={row} options={options} />,
     },
     {
       key: 'net_license_amount',

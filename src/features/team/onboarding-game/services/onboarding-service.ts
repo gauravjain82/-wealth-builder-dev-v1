@@ -116,6 +116,110 @@ export async function fetchOnboardingData(userId: number): Promise<OnboardingTra
   return mapRecord(record);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   ONBOARDING VIDEOS API
+   ──────────────────────────────────────────────────────────────────────── */
+
+export interface OnboardingVideoItem {
+  id: number;
+  title: string;
+  url: string;
+  order: number;
+  isPaid: boolean;
+  watched: boolean;
+  watchedAt: string | null;
+}
+
+export type ModuleVideosMap = Record<string, OnboardingVideoItem[]>;
+
+/** Maps backend (group, section) → frontend module ID */
+const SECTION_TO_MODULE: Record<string, Record<string, string>> = {
+  // "initial" is the group used for the very first intro videos
+  initial: {
+    start: 'm0',
+  },
+  believe_philosophy: {
+    start: 'm0',
+    multi_handed: 'm1',
+    three_rules_three_goals: 'm2',
+    self_improvement: 'm3',
+  },
+  follow_system: {
+    three_directs: 'm4',
+    three_clients: 'm5',
+    get_licensed: 'm6',
+    one_direct_registration: 'm7',
+  },
+  build_outlet: {
+    nine_recruits: 'm8',
+    personal_points_45k: 'm9',
+    three_licenses: 'm10',
+    registration_base_15k: 'm11',
+  },
+};
+
+interface RawGroupData {
+  label: string;
+  sections: Record<string, { label: string; videos: RawVideoItem[] }>;
+}
+
+interface RawVideoItem {
+  id: number;
+  title: string;
+  url: string;
+  order: number;
+  is_paid: boolean;
+  watched: boolean;
+  watched_at: string | null;
+}
+
+/**
+ * Fetch all active onboarding videos for a user.
+ * The backend automatically filters free/paid based on the target user's role level.
+ * GET /api/trackers/videos/?user_id={userId}
+ */
+export async function fetchOnboardingVideos(userId?: number | null): Promise<ModuleVideosMap> {
+  const headers = getAuthHeaders();
+  const qs = userId ? `?user_id=${userId}` : '';
+  const res = await fetch(`${API_BASE_URL}/api/tracker/trackers/videos/${qs}`, { headers });
+  if (!res.ok) throw new Error(`Failed to fetch onboarding videos: ${res.statusText}`);
+  const data = (await res.json()) as Record<string, RawGroupData>;
+
+  const map: ModuleVideosMap = {};
+  for (const [groupKey, groupData] of Object.entries(data)) {
+    for (const [sectionKey, sectionData] of Object.entries(groupData.sections)) {
+      const moduleId = SECTION_TO_MODULE[groupKey]?.[sectionKey];
+      if (!moduleId) continue;
+      map[moduleId] = sectionData.videos.map((v) => ({
+        id: v.id,
+        title: v.title,
+        url: v.url,
+        order: v.order,
+        isPaid: v.is_paid,
+        watched: v.watched,
+        watchedAt: v.watched_at,
+      }));
+    }
+  }
+  return map;
+}
+
+/**
+ * Mark a specific onboarding video as watched for a user.
+ * POST /api/trackers/videos/{id}/mark_watched/
+ */
+export async function markVideoWatched(videoId: number, userId?: number | null): Promise<void> {
+  const headers = getAuthHeaders();
+  const body: Record<string, unknown> = {};
+  if (userId) body.user_id = userId;
+  const res = await fetch(`${API_BASE_URL}/api/tracker/trackers/videos/${videoId}/mark_watched/`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to mark video watched: ${res.statusText}`);
+}
+
 /**
  * Mark the intro video as watched for a user.
  * PATCH /api/tracker/trackers/associate/{userId}/

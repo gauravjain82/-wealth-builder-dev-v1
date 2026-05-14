@@ -10,7 +10,14 @@ import {
   type HotRecruitUser,
 } from '@/features/team/associate-tracker/services/associate-tracker-service';
 import { useToastStore } from '@/store';
-import { fetchOnboardingData, markIntroWatched, type OnboardingTrackerData } from '../services/onboarding-service';
+import {
+  fetchOnboardingData,
+  markIntroWatched,
+  fetchOnboardingVideos,
+  markVideoWatched,
+  type OnboardingTrackerData,
+  type ModuleVideosMap,
+} from '../services/onboarding-service';
 import '../styles/onboarding-game.css';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -20,7 +27,7 @@ import '../styles/onboarding-game.css';
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
 
 const ROAD_SCENE_HEIGHT = 350;
-const VIDEO_DOCK_HEIGHT = 80;
+const VIDEO_DOCK_MIN_HEIGHT = 80;
 const CHECKBOX_HEIGHT = 120;
 const TOTAL_POSITIONS = 16;
 
@@ -82,14 +89,7 @@ const SECTIONS: Section[] = [
 const CAR_ANCHOR_INDEX = [0, 2, 5, 10];
 const BLOCKS = [['m0'], ['m1', 'm2', 'm3'], ['m4', 'm5', 'm6', 'm7'], ['m8', 'm9', 'm10', 'm11']];
 
-/* Videos (free tier) */
-const MODULE_VIDEOS: Record<string, Array<{ title: string; url: string }>> = {
-  m0: [{ title: 'Intro',           url: 'https://player.vimeo.com/video/1155086400?h=a96efe5109' }],
-  m1: [{ title: 'Multi Handed',    url: 'https://player.vimeo.com/video/1154890841?h=843c23fbda' }],
-  m2: [{ title: '10%, 3 Rules, 3 Goals', url: 'https://player.vimeo.com/video/1155146645?h=60577b9f8d' }],
-  m3: [{ title: 'Self Improvement', url: 'https://player.vimeo.com/video/1155094518?h=dc042bc51b' }],
-  m4: [{ title: 'System',          url: 'https://player.vimeo.com/video/1055385293?h=e177338da3' }],
-};
+
 
 /* Human-readable labels shown below traffic lights */
 const MODULE_DISPLAY_LABELS: Record<string, string | string[]> = {
@@ -224,6 +224,19 @@ export default function OnboardingGamePage() {
   const { user } = useAuth();
   const addToast = useToastStore((state) => state.addToast);
 
+  const [moduleVideos, setModuleVideos] = useState<ModuleVideosMap>({});
+
+  const videoDockHeight = useMemo(() => {
+    // Tile stack needs vertical room in paid modules (e.g. 3 videos in m1).
+    // 28px tile height + 3px gap, plus top/bottom breathing space.
+    const maxVideosInAnyModule = Math.max(
+      1,
+      ...Object.values(moduleVideos).map((videos) => videos.length),
+    );
+    const requiredHeight = 8 + maxVideosInAnyModule * 28 + (maxVideosInAnyModule - 1) * 3 + 10;
+    return Math.max(VIDEO_DOCK_MIN_HEIGHT, requiredHeight);
+  }, [moduleVideos]);
+
   /* ── User selection (leader/admin can pick any user) ── */
   const [selectedUser, setSelectedUser] = useState<UserAutocompleteOption | null>(null);
 
@@ -233,7 +246,7 @@ export default function OnboardingGamePage() {
   const [error, setError] = useState<string | null>(null);
 
   /* ── Video modal ── */
-  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
+  const [activeVideo, setActiveVideo] = useState<{ moduleId: string; videoIdx: number } | null>(null);
 
   /* ── Tracker progress modal (m11 registrations) ── */
   const [trackerModal, setTrackerModal] = useState<{
@@ -276,7 +289,7 @@ export default function OnboardingGamePage() {
     return () => { window.removeEventListener('resize', handle); clearTimeout(timer); };
   }, []);
 
-  /* ── Fetch data when user changes ── */
+  /* ── Fetch tracker data when user changes ── */
   const loadData = useCallback(async (userId: number | null) => {
     if (!userId) {
       setTrackerData(EMPTY_DATA);
@@ -297,9 +310,20 @@ export default function OnboardingGamePage() {
     }
   }, []);
 
+  /* ── Fetch videos when user changes ── */
+  const loadVideos = useCallback(async (userId: number | null) => {
+    try {
+      const videos = await fetchOnboardingVideos(userId);
+      setModuleVideos(videos);
+    } catch (e) {
+      console.error('Failed to fetch onboarding videos', e);
+    }
+  }, []);
+
   useEffect(() => {
     loadData(activeUserId);
-  }, [activeUserId, loadData]);
+    loadVideos(activeUserId);
+  }, [activeUserId, loadData, loadVideos]);
 
   /* ── Derived state ── */
   const data = trackerData ?? EMPTY_DATA;
@@ -347,27 +371,34 @@ export default function OnboardingGamePage() {
   const progressPct = (completedCount / MODULES.length) * 100;
 
   /* ── Video handling ── */
-  const handleVideoClick = (moduleId: string) => {
+  const handleVideoClick = (moduleId: string, videoIdx: number) => {
     const state = moduleStates[moduleId];
     if (!state?.isUnlocked) return;
     if (moduleId === 'm4' && !(moduleStates['m1']?.isComplete && moduleStates['m2']?.isComplete && moduleStates['m3']?.isComplete)) {
       return; // prerequisites not met
     }
-    setActiveModuleId(moduleId);
+    setActiveVideo({ moduleId, videoIdx });
   };
 
   const handleVideoComplete = async () => {
-    if (!activeModuleId) return;
-    setActiveModuleId(null);
-    // Only intro (m0) is tracked on backend
-    if (activeModuleId === 'm0' && data.userId) {
-      try {
-        await markIntroWatched(data.userId);
-        // Refresh data
-        await loadData(activeUserId);
-      } catch (e) {
-        console.error('Failed to mark intro watched', e);
+    if (!activeVideo) return;
+    const { moduleId, videoIdx } = activeVideo;
+    const video = moduleVideos[moduleId]?.[videoIdx];
+    setActiveVideo(null);
+
+    try {
+      if (video) {
+        await markVideoWatched(video.id, activeUserId);
+        // Refresh videos to update watched status
+        await loadVideos(activeUserId);
       }
+      // For intro (m0), also update the AssociateTracker progress flag
+      if (moduleId === 'm0' && data.userId) {
+        await markIntroWatched(data.userId);
+        await loadData(activeUserId);
+      }
+    } catch (e) {
+      console.error('Failed to mark video watched', e);
     }
   };
 
@@ -450,12 +481,12 @@ export default function OnboardingGamePage() {
       </div>
 
       {/* ── Video modal ──────────────────────────────── */}
-      {activeModuleId && MODULE_VIDEOS[activeModuleId] && (
+      {activeVideo && moduleVideos[activeVideo.moduleId]?.[activeVideo.videoIdx] && (
         <VideoModal
-          video={MODULE_VIDEOS[activeModuleId][0]}
+          video={moduleVideos[activeVideo.moduleId][activeVideo.videoIdx]}
           onComplete={handleVideoComplete}
-          onClose={() => setActiveModuleId(null)}
-          buttonText={activeModuleId === 'm0' ? 'Complete Intro' : 'Done'}
+          onClose={() => setActiveVideo(null)}
+          buttonText={activeVideo.moduleId === 'm0' ? 'Complete Intro' : 'Done'}
         />
       )}
 
@@ -589,7 +620,7 @@ export default function OnboardingGamePage() {
         <div className="og-video-section">
           <div
             className="og-video-dock"
-            style={{ width: trackW, height: VIDEO_DOCK_HEIGHT }}
+            style={{ width: trackW, height: videoDockHeight }}
           >
             {/* START label */}
             <div
@@ -602,7 +633,7 @@ export default function OnboardingGamePage() {
 
             {/* Video tiles */}
             {MODULES.map((module) => {
-              const videos = MODULE_VIDEOS[module.id];
+              const videos = moduleVideos[module.id];
               if (!videos) return null;
 
               const pos = MODULE_POSITIONS[module.id] !== 0 ? MODULE_POSITIONS[module.id] : 1;
@@ -624,21 +655,22 @@ export default function OnboardingGamePage() {
                   className="og-video-col"
                   style={{ left: getPos(pos) }}
                 >
-                  {videos.map((_, vIdx) => {
+                  {videos.map((video, vIdx) => {
                     const canPlay = !!state?.isUnlocked;
-                    const isDone = module.id === 'm0' ? state?.isComplete : false;
+                    const isDone = video.watched;
+                    const isViewingOwnProgress = activeUserId === loggedInUserId;
 
                     return (
                       <button
-                        key={vIdx}
+                        key={video.id}
                         className={[
                           'og-video-tile',
                           !canPlay ? 'locked' : '',
                           isDone ? 'done' : '',
                           module.id === 'm0' && !isIntroComplete ? 'og-intro-pulse' : '',
                         ].filter(Boolean).join(' ')}
-                        onClick={() => handleVideoClick(module.id)}
-                        disabled={!canPlay}
+                        onClick={() => handleVideoClick(module.id, vIdx)}
+                        disabled={!canPlay || !isViewingOwnProgress}
                         aria-label={`${module.title} video`}
                       >
                         <span className="og-video-play">{isDone ? '✓' : '▶'}</span>
