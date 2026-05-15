@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
+import { ExpandableChat } from '@/features/ai/components/expandable-chat';
 import { Header } from './header';
 import { Sidebar } from './sidebar';
 import './main-layout.css';
@@ -24,6 +25,8 @@ export function MainLayout({ children }: MainLayoutProps) {
           </main>
         </div>
       </div>
+
+      <ExpandableChat />
     </div>
   );
 }

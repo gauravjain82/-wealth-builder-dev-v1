@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IconPencil } from '@tabler/icons-react';
+import { IconPencil, IconCalendar } from '@tabler/icons-react';
 import { DatePicker, Modal } from '@/shared/components';
 import type { TrackerTableColumn } from '@/shared/components';
 import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
@@ -10,10 +10,6 @@ import {
 } from './services/production-tracker-service';
 import { PolicyAttachmentsAction } from './components/policy-attachments-action';
 import { PolicyNotesCell } from './components/policy-notes-cell';
-import {
-  PRODUCTION_TABLE_DELIVERY_OPTIONS,
-  PRODUCTION_TABLE_STATUS_OPTIONS,
-} from './production-constants';
 
 interface ProductionColumnActions {
   onPatch: (row: ProductionTrackerRecord, patch: UpdateProductionPayload) => Promise<void>;
@@ -28,7 +24,7 @@ interface ProductionColumnActions {
   onNoteBlur: () => void;
   onAddInlineNote: (userId: number) => Promise<void>;
   onOpenAllNotes: (row: ProductionTrackerRecord) => void;
-  onChargeback: (row: ProductionTrackerRecord, chargebackDate: string) => Promise<void>;
+  onChargeback: (row: ProductionTrackerRecord, chargebackType: string | null) => Promise<void>;
   splitOptions?: readonly string[];
   companyOptions?: readonly string[];
   productsByCompany?: Record<string, string[]>;
@@ -232,36 +228,96 @@ function PointsCell({
   const basePointsLabel = row.base_points ? `${formatPoint(row.base_points)} Pts` : null;
   const forty = row.points_forty;
   const sixty = row.points_sixty;
+  const isSplit = row.split_mode === 'split' && Boolean(row.agent_2);
+
+  const splitCards = [
+    {
+      key: 'agent-1',
+      name: row.agent_1_name || 'Agent 1',
+      percentage: row.agent_1_pct,
+      total: row.agent_1_points_target,
+      forty: row.agent_1_points_forty,
+      sixty: row.agent_1_points_sixty,
+    },
+    {
+      key: 'agent-2',
+      name: row.agent_2_name || 'Agent 2',
+      percentage: row.agent_2_pct,
+      total: row.agent_2_points_target,
+      forty: row.agent_2_points_forty,
+      sixty: row.agent_2_points_sixty,
+    },
+  ];
 
   return (
     <div className="space-y-1">
-      {basePointsLabel && (
-        <div className="flex justify-end">
+      {/* Badges row: Total on left, Base Points on right */}
+      <div className="flex items-center justify-between gap-2">
+        {targetValue && (
+          <span className="inline-flex items-center rounded-full border border-amber-300/25 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-100">
+            {formatPoint(targetValue)} Pts
+          </span>
+        )}
+        {basePointsLabel && (
           <span className="inline-flex items-center rounded-full border border-amber-300/25 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-100">
             {basePointsLabel}
           </span>
+        )}
+      </div>
+
+      {/* Single agent: Total/40/60 inputs; Split agents: hidden */}
+      {!isSplit && (
+        <div className="grid w-full grid-cols-3 gap-1 text-[10px]">
+          <div>
+            <div className="mb-1 text-white/60">Total</div>
+            <input
+              className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-xs"
+              type="number"
+              value={targetValue}
+              onChange={(e) => setTargetValue(e.target.value)}
+              onBlur={() => void onPatch(row, { points_target: normalizedTarget })}
+            />
+          </div>
+          <div>
+            <div className="mb-1 text-white/60">40%</div>
+            <input
+              className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-xs"
+              type="number"
+              value={forty !== null && forty !== undefined ? String(forty) : ''}
+              readOnly
+            />
+          </div>
+          <div>
+            <div className="mb-1 text-white/60">60%</div>
+            <input
+              className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-xs"
+              type="number"
+              value={sixty !== null && sixty !== undefined ? String(sixty) : ''}
+              readOnly
+            />
+          </div>
         </div>
       )}
-      <div className="grid w-full grid-cols-3 gap-1 text-[10px]">
-        <div>
-          <div className="mb-1 text-white/60">Total</div>
-          <input
-            className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-xs"
-            type="number"
-            value={targetValue}
-            onChange={(e) => setTargetValue(e.target.value)}
-            onBlur={() => void onPatch(row, { points_target: normalizedTarget })}
-          />
+
+      {/* Split agents: point values only, no agent names */}
+      {isSplit && (
+        <div className="rounded border border-white/10 bg-white/5 p-1.5">
+          <div className="mb-1 grid grid-cols-3 gap-1 text-[10px] text-white/50">
+            <div>Points</div>
+            <div>40%</div>
+            <div>60%</div>
+          </div>
+          <div className="grid gap-1">
+            {splitCards.map((agent) => (
+              <div key={agent.key} className="grid grid-cols-3 gap-1">
+                <input className="h-7 w-full rounded border border-white/15 bg-black/20 px-2 text-[11px]" value={formatPoint(agent.total ?? 0)} readOnly />
+                <input className="h-7 w-full rounded border border-white/15 bg-black/20 px-2 text-[11px]" value={formatPoint(agent.forty ?? 0)} readOnly />
+                <input className="h-7 w-full rounded border border-white/15 bg-black/20 px-2 text-[11px]" value={formatPoint(agent.sixty ?? 0)} readOnly />
+              </div>
+            ))}
+          </div>
         </div>
-        <div>
-          <div className="mb-1 text-white/60">40%</div>
-          <input className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-xs" value={formatPoint(forty)} readOnly />
-        </div>
-        <div>
-          <div className="mb-1 text-white/60">60%</div>
-          <input className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-xs" value={formatPoint(sixty)} readOnly />
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -314,6 +370,100 @@ function AdvancesCell({
   );
 }
 
+function ChargebackCell({
+  row,
+  onChargeback,
+}: {
+  row: ProductionTrackerRecord;
+  onChargeback: (row: ProductionTrackerRecord, chargebackType: string | null) => Promise<void>;
+}) {
+  const chargebackInfo = row.chargeback_info;
+  
+  if (!chargebackInfo || !chargebackInfo.eligible_options || chargebackInfo.eligible_options.length === 0) {
+    return <div className="text-[10px] text-white/50">No options</div>;
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {chargebackInfo.eligible_options.map((option) => (
+        <label key={option.type} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 px-1.5 py-0.5 rounded">
+          <input
+            type="radio"
+            name={`chargeback-${row.id}`}
+            value={option.type}
+            checked={chargebackInfo.selection === option.type}
+            onClick={(e) => {
+              if (chargebackInfo.selection === option.type) {
+                e.preventDefault();
+                void onChargeback(row, null);
+              }
+            }}
+            onChange={() => {
+              if (chargebackInfo.selection !== option.type) {
+                void onChargeback(row, option.type);
+              }
+            }}
+            className="cursor-pointer"
+          />
+          <span className="text-[10px] text-white/80">{option.label}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function DeliveryStatusCell({
+  row,
+  deliveryFields,
+  onPatch,
+}: {
+  row: ProductionTrackerRecord;
+  deliveryFields: Array<{ label: string; fieldKey: keyof UpdateProductionPayload; value: string | null | undefined }>;
+  onPatch: (row: ProductionTrackerRecord, patch: UpdateProductionPayload) => Promise<void>;
+}) {
+  const [openPickerIndex, setOpenPickerIndex] = useState<number | null>(null);
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {deliveryFields.map((field, index) => (
+        <div key={field.fieldKey} className="flex flex-col gap-0">
+          <div
+            className="grid grid-cols-[1fr_auto_auto] items-center gap-1 px-1.5 py-0 rounded transition-colors"
+            title={field.label}
+          >
+            <span className="text-[10px] leading-tight text-white/70 text-left truncate">
+              {field.label}
+            </span>
+            <span className="text-[10px] leading-tight font-medium text-white/80 text-center min-w-[72px]">
+              {field.value || '—'}
+            </span>
+            <button
+              type="button"
+              className="flex-shrink-0 p-0.5 hover:bg-white/10 rounded transition-colors"
+              onClick={() => setOpenPickerIndex(openPickerIndex === index ? null : index)}
+              title={`Edit ${field.label}`}
+            >
+              <IconCalendar size={12} className="text-white/60 hover:text-amber-400" />
+            </button>
+          </div>
+          
+          {openPickerIndex === index && (
+            <div className="pl-1.5">
+              <DatePicker
+                value={field.value || ''}
+                onChange={(v) => {
+                  void onPatch(row, { [field.fieldKey]: v || null });
+                  setOpenPickerIndex(null);
+                }}
+              />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   complete:    { bg: '#145131', text: '#6ee7b7' },
   completed:   { bg: '#145131', text: '#6ee7b7' },
@@ -340,7 +490,7 @@ export function buildProductionColumns(actions: ProductionColumnActions): Tracke
   return [
     {
       key: 'status',
-      label: 'POLICY STATUS',
+      label: '',
       width: 40,
       minWidth: 40,
       resizable: false,
@@ -371,7 +521,7 @@ export function buildProductionColumns(actions: ProductionColumnActions): Tracke
               </span>
             </div>
             {/* Invisible full-area select for editing */}
-            <select
+            {/* <select
               className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
               value={row.status || 'Pending'}
               onChange={(e) => void actions.onPatch(row, { status: e.target.value })}
@@ -380,7 +530,7 @@ export function buildProductionColumns(actions: ProductionColumnActions): Tracke
               {PRODUCTION_TABLE_STATUS_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
-            </select>
+            </select> */}
           </div>
         );
       },
@@ -472,50 +622,54 @@ export function buildProductionColumns(actions: ProductionColumnActions): Tracke
       render: (row) => <PolicyCell row={row} />,
     },
     {
+      key: 'policy_status',
+      label: 'POLICY STATUS',
+      width: 160,
+      sortable: true,
+      searchable: true,
+      align: 'center',
+      value: (row) => row.policy_status || '',
+      render: (row) => (
+        <div className="flex flex-col gap-2">
+          {['Cancelled', 'Declined', 'Incomplete'].map((status) => (
+            <label key={status} className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="radio"
+                name={`policy-status-${row.id}`}
+                value={status}
+                checked={row.status.toLowerCase() === status.toLowerCase()}
+                onChange={(e) => void actions.onPatch(row, { status: e.target.value.toUpperCase() })}
+                className="cursor-pointer"
+              />
+              <span className="text-white/80">{status}</span>
+            </label>
+          ))}
+        </div>
+      ),
+    },
+    {
       key: 'delivery',
       label: 'DELIVERY STATUS',
-      width: 160,
+      width: 180,
       sortable: true,
       searchable: true,
       align: 'center',
       value: (row) => row.delivery,
       render: (row) => {
-        const deliveryDates: { label: string; value: string | null | undefined }[] = [
-          { label: 'Issued',     value: row.issued_date },
-          { label: 'Approved',   value: row.approved_date },
-          { label: 'Delivered',  value: row.delivery_date },
-          { label: 'PDR',        value: row.pdr_date },
-          { label: 'Sent to TFA', value: row.sent_to_tfa_date },
-        ].filter((d) => d.value);
+        const deliveryFields = [
+          { label: 'Issued',     fieldKey: 'issued_date' as const, value: row.issued_date },
+          { label: 'Approved',   fieldKey: 'approved_date' as const, value: row.approved_date },
+          { label: 'Delivered',  fieldKey: 'delivery_date' as const, value: row.delivery_date },
+          { label: 'PDR',        fieldKey: 'pdr_date' as const, value: row.pdr_date },
+          { label: 'Sent to TFA', fieldKey: 'sent_to_tfa_date' as const, value: row.sent_to_tfa_date },
+        ] satisfies Array<{ label: string; fieldKey: keyof UpdateProductionPayload; value: string | null | undefined }>;
 
         return (
-          <div className="flex flex-col gap-1">
-            {deliveryDates.length > 0 && (
-              <div className="flex flex-col gap-0.5">
-                {deliveryDates.map((d) => (
-                  <div key={d.label} className="flex items-center justify-between gap-1 text-[10px] leading-tight">
-                    <span className="text-white/50">{d.label}</span>
-                    <span className="font-medium text-white/80">{d.value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <select
-              className="h-8 w-full rounded border border-white/15 bg-white/5 px-2 text-xs text-white"
-              style={{ colorScheme: 'dark' }}
-              value={row.delivery || 'Pending'}
-              onChange={(e) => void actions.onPatch(row, { delivery: e.target.value })}
-            >
-              <option value="" style={{ backgroundColor: '#1e2431', color: '#ffffff' }}>
-                Select delivery
-              </option>
-              {PRODUCTION_TABLE_DELIVERY_OPTIONS.map((opt) => (
-                <option key={opt} value={opt} style={{ backgroundColor: '#1e2431', color: '#ffffff' }}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </div>
+          <DeliveryStatusCell
+            row={row}
+            deliveryFields={deliveryFields}
+            onPatch={actions.onPatch}
+          />
         );
       },
     },
@@ -574,20 +728,8 @@ export function buildProductionColumns(actions: ProductionColumnActions): Tracke
       sortable: true,
       searchable: true,
       align: 'center',
-      value: (row) => toYesNo(row.chargeback),
-      render: (row) => (
-        <input
-          type="checkbox"
-          checked={row.chargeback}
-          disabled={row.chargeback}
-          title={row.chargeback ? 'Chargeback recorded — cannot be undone' : 'Mark as chargeback'}
-          onChange={(e) => {
-            if (!e.target.checked || row.chargeback) return;
-            const today = new Date().toISOString().slice(0, 10);
-            void actions.onChargeback(row, today);
-          }}
-        />
-      ),
+      value: (row) => row.chargeback_info?.selection || 'None',
+      render: (row) => <ChargebackCell row={row} onChargeback={actions.onChargeback} />,
     },
     {
       key: 'actions',

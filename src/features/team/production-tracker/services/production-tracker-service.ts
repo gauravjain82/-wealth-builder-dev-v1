@@ -21,6 +21,7 @@ export interface ProductionTrackerRecord {
   delivery: string;
   policy_delivery_mode?: string;
   policy_delivery_status?: string;
+  policy_status?: string;
   status: string;
   status_display?: string;
   notes: string;
@@ -46,15 +47,22 @@ export interface ProductionTrackerRecord {
   agent_1: number | null;
   agent_1_name: string;
   agent_1_pct: number;
+  agent_1_points_target?: number | string | null;
+  agent_1_points_forty?: number | string | null;
+  agent_1_points_sixty?: number | string | null;
   agent_2: number | null;
   agent_2_name: string;
   agent_2_pct: number;
+  agent_2_points_target?: number | string | null;
+  agent_2_points_forty?: number | string | null;
+  agent_2_points_sixty?: number | string | null;
   split_mode: 'split' | 'solo';
   advance_first_date: string | null;
   advance_first_amount: number | string | null;
   advance_second_date: string | null;
   advance_second_amount: number | string | null;
   files: string[];
+  chargeback_info?: ChargebackInfo;
   created_by: number | null;
   created_at: string;
   updated_at: string;
@@ -67,6 +75,9 @@ export interface PolicyAgentSplit {
   agent: number;
   agent_name: string;
   split_percentage: string;
+  calculated_points?: number | string | null;
+  first_advance_points?: number | string | null;
+  second_advance_points?: number | string | null;
   created_at: string;
 }
 
@@ -103,6 +114,18 @@ export interface PolicyAdvance {
   percentage: string;
   paid_date: string;
   created_at: string;
+}
+
+export interface ChargebackOption {
+  type: string;
+  label: string;
+  percentage: number;
+}
+
+export interface ChargebackInfo {
+  months_elapsed: number;
+  eligible_options: ChargebackOption[];
+  selection: string | null;
 }
 
 export interface PolicyAdvancePointsBreakdown {
@@ -370,15 +393,25 @@ function normalizeProductionRecord(record: BackendProductionTrackerRecord): Prod
       agent_1: split1 ? split1.agent : null,
       agent_1_name: split1 ? split1.agent_name : '',
       agent_1_pct: split1 ? Number(split1.split_percentage) : 100,
+      agent_1_points_target: split1?.calculated_points ?? null,
+      agent_1_points_forty: split1?.first_advance_points ?? null,
+      agent_1_points_sixty: split1?.second_advance_points ?? null,
       agent_2: split2 ? split2.agent : null,
       agent_2_name: split2 ? split2.agent_name : '',
       agent_2_pct: split2 ? Number(split2.split_percentage) : 0,
+      agent_2_points_target: split2?.calculated_points ?? null,
+      agent_2_points_forty: split2?.first_advance_points ?? null,
+      agent_2_points_sixty: split2?.second_advance_points ?? null,
       split_mode: splits.length > 1 ? 'split' : 'solo',
       advance_first_date: firstAdvance?.paid_date || toNullableString(record.advance_first_date),
       advance_first_amount: toAdvanceAmount(firstAdvance) ?? (record.advance_first_amount as number | string | null | undefined) ?? null,
       advance_second_date: secondAdvance?.paid_date || toNullableString(record.advance_second_date),
       advance_second_amount: toAdvanceAmount(secondAdvance) ?? (record.advance_second_amount as number | string | null | undefined) ?? null,
       files: Array.isArray(record.files) ? (record.files as string[]) : [],
+      chargeback_info:
+        record.chargeback_info && typeof record.chargeback_info === 'object'
+          ? (record.chargeback_info as ChargebackInfo)
+          : undefined,
       created_by: (record.created_by as number | null | undefined) ?? null,
       created_at: toStringValue(record.created_at),
       updated_at: toStringValue(record.updated_at),
@@ -426,15 +459,25 @@ function normalizeProductionRecord(record: BackendProductionTrackerRecord): Prod
     agent_1: (record.agent_1 as number | null | undefined) ?? null,
     agent_1_name: toStringValue(record.agent_1_name),
     agent_1_pct: Number(record.agent_1_pct ?? 100),
+    agent_1_points_target: (record.agent_1_points_target as number | string | null | undefined) ?? null,
+    agent_1_points_forty: (record.agent_1_points_forty as number | string | null | undefined) ?? null,
+    agent_1_points_sixty: (record.agent_1_points_sixty as number | string | null | undefined) ?? null,
     agent_2: (record.agent_2 as number | null | undefined) ?? null,
     agent_2_name: toStringValue(record.agent_2_name),
     agent_2_pct: Number(record.agent_2_pct ?? 0),
+    agent_2_points_target: (record.agent_2_points_target as number | string | null | undefined) ?? null,
+    agent_2_points_forty: (record.agent_2_points_forty as number | string | null | undefined) ?? null,
+    agent_2_points_sixty: (record.agent_2_points_sixty as number | string | null | undefined) ?? null,
     split_mode: (record.split_mode as 'split' | 'solo' | undefined) || 'solo',
     advance_first_date: toNullableString(record.advance_first_date),
     advance_first_amount: (record.advance_first_amount as number | string | null | undefined) ?? null,
     advance_second_date: toNullableString(record.advance_second_date),
     advance_second_amount: (record.advance_second_amount as number | string | null | undefined) ?? null,
     files: Array.isArray(record.files) ? (record.files as string[]) : [],
+    chargeback_info:
+      record.chargeback_info && typeof record.chargeback_info === 'object'
+        ? (record.chargeback_info as ChargebackInfo)
+        : undefined,
     created_by: (record.created_by as number | null | undefined) ?? null,
     created_at: toStringValue(record.created_at),
     updated_at: toStringValue(record.updated_at),
@@ -470,6 +513,13 @@ function toBackendPayload(payload: CreateProductionPayload | UpdateProductionPay
   if ('advance_second_date' in payload) out.advance_second_date = payload.advance_second_date;
   if ('advance_first_amount' in payload) out.advance_first_amount = payload.advance_first_amount;
   if ('advance_second_amount' in payload) out.advance_second_amount = payload.advance_second_amount;
+
+  // Delivery dates
+  if ('issued_date' in payload) out.issued_date = payload.issued_date;
+  if ('approved_date' in payload) out.approved_date = payload.approved_date;
+  if ('delivery_date' in payload) out.delivery_date = payload.delivery_date;
+  if ('pdr_date' in payload) out.pdr_date = payload.pdr_date;
+  if ('sent_to_tfa_date' in payload) out.sent_to_tfa_date = payload.sent_to_tfa_date;
 
   // Policy number
   if ('policy_number' in payload) out.policy_number = payload.policy_number;
@@ -525,6 +575,7 @@ export interface CreateProductionPayload {
   delivery?: string;
   policy_delivery_mode?: string;
   policy_delivery_status?: string;
+  policy_status?: string;
   status?: string;
   notes?: string;
   trial_app?: boolean;
@@ -549,6 +600,11 @@ export interface CreateProductionPayload {
   advance_first_amount?: number | null;
   advance_second_date?: string | null;
   advance_second_amount?: number | null;
+  issued_date?: string | null;
+  approved_date?: string | null;
+  delivery_date?: string | null;
+  pdr_date?: string | null;
+  sent_to_tfa_date?: string | null;
 }
 
 export type UpdateProductionPayload = Partial<CreateProductionPayload>;
@@ -767,22 +823,40 @@ export async function listPolicyChargebacks(policyId: number): Promise<PolicyCha
 }
 
 /** POST /api/tracker/policies/{id}/chargebacks/
- *  Server auto-calculates months_completed, chargeback_type and creates CHARGEBACK ledger entries.
- *  policy.issued_date must be set first (otherwise 400). */
+ *  Sets or updates chargeback selection based on eligible options
+ *  Accepts chargebackType: string (e.g. 'FULL', 'HALF') or null to remove */
 export async function recordPolicyChargeback(
   policyId: number,
-  chargebackDate: string
-): Promise<PolicyChargeback> {
-  const response = await fetch(`${API_BASE_URL}/api/tracker/policies/${policyId}/chargebacks/`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ chargeback_date: chargebackDate }),
-  });
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Failed to record chargeback: ${text}`);
+  chargebackType: string | null
+): Promise<any> {
+  if (chargebackType === null) {
+    // Backend DELETE requires chargeback id: /chargebacks/{chargeback_id}/
+    const existing = await listPolicyChargebacks(policyId);
+    if (!existing.length) return { success: true };
+
+    const chargebackToDelete = existing[existing.length - 1];
+    const response = await fetch(`${API_BASE_URL}/api/tracker/policies/${policyId}/chargebacks/${chargebackToDelete.id}/`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to remove chargeback: ${text}`);
+    }
+    return { success: true };
+  } else {
+    // POST request to set chargeback
+    const response = await fetch(`${API_BASE_URL}/api/tracker/policies/${policyId}/chargebacks/`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ chargeback_type: chargebackType }),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to set chargeback: ${text}`);
+    }
+    return (await response.json()) as PolicyChargeback;
   }
-  return (await response.json()) as PolicyChargeback;
 }
 
 // ─── Attachments (GCS) ────────────────────────────────────────────────────────

@@ -27,7 +27,6 @@ export const PRODUCTION_TABLE_DELIVERY_OPTIONS = [
   'PDR',
   'Sent to TFA',
   'Pending',
-  'Other',
 ] as const;
 
 export const PRODUCTION_MODAL_DELIVERY_OPTIONS = ['Email', 'Mail', 'In Person', 'Digital'] as const;

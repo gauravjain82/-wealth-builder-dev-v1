@@ -412,16 +412,23 @@ export default function ProductionTrackerPage() {
     }
   };
 
-  const handleChargeback = useCallback(async (row: ProductionTrackerRecord, chargebackDate: string) => {
+  const handleChargeback = useCallback(async (row: ProductionTrackerRecord, chargebackType: string | null) => {
     try {
-      await recordPolicyChargeback(row.id, chargebackDate);
-      // Optimistically mark the row as chargeback
-      updateRowInState({ ...row, chargeback: true, status: 'Chargeback' });
-      addToast({ type: 'success', message: 'Chargeback recorded.' });
+      if (chargebackType === null) {
+        // Remove chargeback selection (DELETE or POST with null)
+        await recordPolicyChargeback(row.id, null);
+        updateRowInState({ ...row, chargeback_info: row.chargeback_info ? { ...row.chargeback_info, selection: null } : undefined });
+        addToast({ type: 'success', message: 'Chargeback option removed.' });
+      } else {
+        // Set chargeback option
+        await recordPolicyChargeback(row.id, chargebackType);
+        updateRowInState({ ...row, chargeback_info: row.chargeback_info ? { ...row.chargeback_info, selection: chargebackType } : undefined });
+        addToast({ type: 'success', message: 'Chargeback option updated.' });
+      }
     } catch (err) {
       addToast({
         type: 'error',
-        message: err instanceof Error ? err.message : 'Failed to record chargeback.',
+        message: err instanceof Error ? err.message : 'Failed to update chargeback option.',
       });
     }
   }, [addToast]);
@@ -445,6 +452,13 @@ export default function ProductionTrackerPage() {
   const toEditForm = (row: ProductionTrackerRecord): AddProductionFormData => {
     const isSplit = row.split_mode === 'split';
     const split = isSplit ? `${row.agent_1_pct || 50}/${row.agent_2_pct || 50}` : '100/0';
+    const targetPointsValue =
+      row.base_points !== null && row.base_points !== undefined && row.base_points !== ''
+        ? String(row.base_points)
+        : row.points_target !== null && row.points_target !== undefined
+        ? String(row.points_target)
+        : '';
+
     return {
       status: row.status || 'Pending',
       dateWritten: row.date_written || '',
@@ -458,7 +472,7 @@ export default function ProductionTrackerPage() {
       agent1Pct: row.agent_1_pct || (isSplit ? 50 : 100),
       agent2Pct: row.agent_2_pct || (isSplit ? 50 : 0),
       split,
-      targetPoints: row.points_target !== null && row.points_target !== undefined ? String(row.points_target) : '',
+      targetPoints: targetPointsValue,
       multiplierPercent: '',
       company: row.policy_company || '',
       product: row.policy_product || '',
