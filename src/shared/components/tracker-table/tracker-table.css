@@ -256,6 +256,13 @@
   outline: none;
 }
 
+.tracker-th.tracker-col-narrow .tracker-search-input,
+.tracker-search-th.tracker-col-narrow .tracker-search-input {
+  min-width: 40px !important;
+  width: 40px !important;
+  max-width: 40px !important;
+}
+
 .tracker-search-clear-btn {
   position: absolute;
   top: 50%;

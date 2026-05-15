@@ -18,7 +18,11 @@ import {
   AddProductionModal,
   type AddProductionFormData,
 } from '@/features/team/prospect/components/add-production-modal';
-import { createProductionRecord } from '@/features/team/production-tracker/services/production-tracker-service';
+import {
+  createProductionRecord,
+  fetchProductionCompanyProducts,
+  fetchProductionSplitPresets,
+} from '@/features/team/production-tracker/services/production-tracker-service';
 import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
 import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
 import type { TrackerUserProfile } from '@/features/team/services/tracker-user-profile-service';
@@ -68,6 +72,15 @@ export default function Tracker4x4Page() {
   const [addProductionRow, setAddProductionRow] = useState<Tracker4x4Record | null>(null);
   const [addProductionInitialForm, setAddProductionInitialForm] = useState<AddProductionFormData | null>(null);
   const [savingProduction, setSavingProduction] = useState(false);
+  const [productionCompanyOptions, setProductionCompanyOptions] = useState<string[]>([]);
+  const [productionProductsByCompany, setProductionProductsByCompany] =
+    useState<Record<string, string[]>>({});
+  const [productionSplitOptions, setProductionSplitOptions] = useState<string[]>([]);
+  const [productionMultiplierTable, setProductionMultiplierTable] =
+    useState<Record<string, number>>({});
+  // Maps "company|product" → CompanyProduct FK id for v2 API
+  const [productionCompanyProductIds, setProductionCompanyProductIds] =
+    useState<Record<string, number>>({});
   const [profileOpenFor, setProfileOpenFor] = useState<{
     userId: number;
     userName: string;
@@ -89,6 +102,74 @@ export default function Tracker4x4Page() {
 
   const pageSize = 10;
   const addToast = useToastStore((state) => state.addToast);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProductionOptions = async () => {
+      try {
+        const [companyProducts, splitPresets] = await Promise.all([
+          fetchProductionCompanyProducts(),
+          fetchProductionSplitPresets(),
+        ]);
+
+        if (!isMounted) return;
+
+        const nextProductsByCompany: Record<string, string[]> = {};
+        const nextMultiplierTable: Record<string, number> = {};
+        const nextCompanyOptions = new Set<string>();
+
+        companyProducts.forEach((item) => {
+          nextCompanyOptions.add(item.company_name);
+          if (!nextProductsByCompany[item.company_name]) {
+            nextProductsByCompany[item.company_name] = [];
+          }
+          if (!nextProductsByCompany[item.company_name].includes(item.product_name)) {
+            nextProductsByCompany[item.company_name] = [
+              ...nextProductsByCompany[item.company_name],
+              item.product_name,
+            ];
+          }
+
+          const multiplier = Number(item.multiplier);
+          nextMultiplierTable[`${item.company_name}|${item.product_name}`] =
+            Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
+        });
+
+        const nextProductIds: Record<string, number> = {};
+        companyProducts.forEach((item) => {
+          nextProductIds[`${item.company_name}|${item.product_name}`] = item.id;
+        });
+
+        const nextSplitOptions = new Set<string>();
+        splitPresets.forEach((preset) => {
+          if (!Array.isArray(preset.splits) || preset.splits.length < 2) return;
+          const option = `${preset.splits[0]}/${preset.splits[1]}`;
+          if (option !== '100/0') {
+            nextSplitOptions.add(option);
+          }
+        });
+
+        setProductionCompanyOptions(Array.from(nextCompanyOptions));
+        setProductionProductsByCompany(nextProductsByCompany);
+        setProductionMultiplierTable(nextMultiplierTable);
+        setProductionCompanyProductIds(nextProductIds);
+        setProductionSplitOptions(Array.from(nextSplitOptions));
+      } catch {
+        if (!isMounted) return;
+        addToast({
+          type: 'error',
+          message: 'Failed to load production company/product options.',
+        });
+      }
+    };
+
+    void loadProductionOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [addToast]);
 
   const handleDateRangeChange = useCallback((value: TrackerDateRangeChange) => {
     setDateRangePreset(value.preset);
@@ -295,44 +376,35 @@ export default function Tracker4x4Page() {
         setSavingProduction(true);
         const [pA, pB] = data.split.split('/').map((v) => parseFloat(v) || 0);
         const base = parseFloat(data.targetPoints) || 0;
+        const isOther = data.company === 'OTHER' || data.product === 'OTHER';
 
-        const MULTIPLIER_TABLE: Record<string, number> = {
-          'TRANSAMERICA|FFIUL II': 1.25,
-          'TRANSAMERICA|TERM LB - 10 YEARS': 1.10,
-          'TRANSAMERICA|TERM LB - 15 YEARS': 1.16,
-          'TRANSAMERICA|TERM LB - 20/25/30 YEARS': 1.26,
-          'TRANSAMERICA|FINAL EXPENSE': 1.10,
-          'NATIONWIDE|NEW HEIGHTS IUL ACCUMULATOR 2020': 1.09,
-          'NORTH AMERICAN|SECURE HORIZON - CLIENT AGE 0-70': 0.062888,
-          'NORTH AMERICAN|SECURE HORIZON - CLIENT AGE 71-75': 0.053496,
-          'NORTH AMERICAN|SECURE HORIZON - CLIENT AGE 76+': 0.040919,
-          'EVEREST|EVEREST': 1.0,
-        };
+        // v2: resolve company_product FK id; null for "OTHER"
+        const company_product_id = isOther
+          ? null
+          : (productionCompanyProductIds[`${data.company}|${data.product}`] ?? null);
 
-        let multiplier = 1;
-        if (data.company === 'OTHER' || data.product === 'OTHER') {
-          const pct = parseFloat(data.multiplierPercent);
-          multiplier = Number.isNaN(pct) ? 1 : pct;
-        } else {
-          multiplier = MULTIPLIER_TABLE[`${data.company}|${data.product}`] ?? 1;
-        }
-
-        const totalPoints = Math.round(base * multiplier * 100) / 100;
+        // v2 expects base_points (raw base before multiplier) for known products.
+        // For OTHER the server has no multiplier_snapshot, so send the pre-multiplied total.
+        const points_target = isOther
+          ? (() => {
+              const pct = parseFloat(data.multiplierPercent);
+              const m = Number.isNaN(pct) ? 1 : pct;
+              return Math.round(base * m * 100) / 100;
+            })()
+          : base;
 
         await createProductionRecord({
           prospect: null,
           client_name: data.client,
+          company_product_id,
           date_written: data.dateWritten || null,
           closure_date: data.closureDate || null,
           delivery: data.delivery,
           status: data.status,
           notes: data.notes,
           trial_app: data.trialApp,
-          policy_company: data.company,
           policy_number: data.policyNumber,
-          policy_product: data.product,
-          policy_other_product: data.otherProduct,
-          points_target: totalPoints,
+          points_target,
           agent_1: data.agent1Id,
           agent_1_name: data.agent1Name,
           agent_1_pct: pA,
@@ -603,6 +675,10 @@ export default function Tracker4x4Page() {
         title="Add to Production"
         submitLabel="Save and Add to Production"
         initialForm={addProductionInitialForm}
+        companyOptions={productionCompanyOptions}
+        productsByCompany={productionProductsByCompany}
+        splitOptions={productionSplitOptions}
+        multiplierTable={productionMultiplierTable}
         onClose={() => {
           setAddProductionRow(null);
           setAddProductionInitialForm(null);

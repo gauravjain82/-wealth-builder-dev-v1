@@ -304,6 +304,10 @@ export function TrackerTable<T>({
   };
 
   const getColumnWidth = (column: TrackerTableColumn<T>): number => {
+    // Non-resizable columns should always use configured width/minWidth, not persisted drag widths.
+    if (column.resizable === false) {
+      return widthToPixels(column.width, column.minWidth ?? 180);
+    }
     return columnWidths[column.key] ?? widthToPixels(column.width, column.minWidth ?? 180);
   };
 
@@ -378,7 +382,9 @@ export function TrackerTable<T>({
       if (!isResizing.current || !resizeState) return;
 
       const delta = e.clientX - resizeState.startX;
-      const newWidth = Math.max(80, resizeState.startWidth + delta);
+      const column = columns.find((col) => col.key === resizeState.columnKey);
+      const minAllowedWidth = column?.minWidth ?? 80;
+      const newWidth = Math.max(minAllowedWidth, resizeState.startWidth + delta);
 
       setColumnWidths((prev) => ({
         ...prev,

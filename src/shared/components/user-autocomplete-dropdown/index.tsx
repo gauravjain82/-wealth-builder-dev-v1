@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface UserAutocompleteOption {
   id: number;
@@ -33,6 +33,7 @@ interface UsersResponse {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const PAGE_SIZE = 10;
 
 function matchesRoleFilter(option: UserAutocompleteOption, roleFilter?: string[]) {
   if (!roleFilter || roleFilter.length === 0) return true;
@@ -57,34 +58,19 @@ function mapUserToOption(user: UsersResponse['results'][number]): UserAutocomple
   };
 }
 
-async function fetchUsersFromApi(): Promise<UserAutocompleteOption[]> {
+async function fetchUsersPage(name: string, url: string | null): Promise<{ options: UserAutocompleteOption[]; next: string | null }> {
   const token = localStorage.getItem('wb.authToken');
-  if (!token) {
-    throw new Error('No authentication token found');
-  }
+  if (!token) throw new Error('No authentication token found');
 
-  const headers: HeadersInit = {
-    Authorization: `Token ${token}`,
-    'Content-Type': 'application/json',
-  };
+  const resolvedUrl = url ?? `${API_BASE_URL}/api/accounts/users/?name=${encodeURIComponent(name)}&page_size=${PAGE_SIZE}`;
 
-  const users: UserAutocompleteOption[] = [];
-  let nextUrl: string | null = `${API_BASE_URL}/api/accounts/users/?page_size=200`;
-  let pageSafety = 0;
+  const response = await fetch(resolvedUrl, {
+    headers: { Authorization: `Token ${token}`, 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) throw new Error(`Failed to fetch users: ${response.statusText}`);
 
-  while (nextUrl && pageSafety < 10) {
-    const response = await fetch(nextUrl, { headers });
-    if (!response.ok) {
-      throw new Error(`Failed to fetch users: ${response.statusText}`);
-    }
-
-    const data = (await response.json()) as UsersResponse;
-    users.push(...data.results.map(mapUserToOption));
-    nextUrl = data.next;
-    pageSafety += 1;
-  }
-
-  return users;
+  const data = (await response.json()) as UsersResponse;
+  return { options: data.results.map(mapUserToOption), next: data.next };
 }
 
 export function UserAutocompleteDropdown({
@@ -102,71 +88,134 @@ export function UserAutocompleteDropdown({
   const [query, setQuery] = useState('');
   const [apiOptions, setApiOptions] = useState<UserAutocompleteOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [nextUrl, setNextUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks which query string the current loaded results belong to
+  const loadedQueryRef = useRef<string>('');
 
-  const sourceOptions = options || apiOptions;
+  const sourceOptions = fetchFromApi ? apiOptions : (options ?? []);
   const effectiveOptions = useMemo(
     () => sourceOptions.filter((item) => matchesRoleFilter(item, roleFilter)),
     [sourceOptions, roleFilter]
   );
 
-  const selectedOption = useMemo(
-    () => effectiveOptions.find((item) => item.id === selectedId) || null,
-    [effectiveOptions, selectedId]
-  );
-
-  const displayLabel = selectedOption?.label || selectedLabel || placeholder;
-
-  const filtered = useMemo(() => {
+  // For static options mode: filter locally; for API mode: results are already filtered server-side
+  const displayed = useMemo(() => {
+    if (fetchFromApi) return effectiveOptions;
     const normalized = query.trim().toLowerCase();
     if (!normalized) return effectiveOptions;
-
     return effectiveOptions.filter((item) => {
       const text = `${item.label} ${item.meta || ''}`.toLowerCase();
       return text.includes(normalized);
     });
-  }, [effectiveOptions, query]);
+  }, [fetchFromApi, effectiveOptions, query]);
 
-  useEffect(() => {
+  const selectedOption = useMemo(
+    () => [...(options ?? []), ...apiOptions].find((item) => item.id === selectedId) || null,
+    [options, apiOptions, selectedId]
+  );
+  const displayLabel = selectedOption?.label || selectedLabel || placeholder;
+
+  const doSearch = useCallback(async (name: string) => {
     if (!fetchFromApi) return;
-    let alive = true;
+    loadedQueryRef.current = name;
+    setLoading(true);
+    setLoadError(null);
+    setApiOptions([]);
+    setNextUrl(null);
+    try {
+      const { options: fetched, next } = await fetchUsersPage(name, null);
+      // Discard stale responses
+      if (loadedQueryRef.current !== name) return;
+      setApiOptions(fetched);
+      setNextUrl(next);
+    } catch (err) {
+      if (loadedQueryRef.current !== name) return;
+      setLoadError(err instanceof Error ? err.message : 'Failed to load users');
+    } finally {
+      if (loadedQueryRef.current === name) setLoading(false);
+    }
+  }, [fetchFromApi]);
 
-    const load = async () => {
-      try {
-        setLoading(true);
-        setLoadError(null);
-        const users = await fetchUsersFromApi();
-        if (!alive) return;
-        setApiOptions(users);
-      } catch (error) {
-        if (!alive) return;
-        setLoadError(error instanceof Error ? error.message : 'Failed to load users');
-      } finally {
-        if (alive) setLoading(false);
+  const loadMore = useCallback(async () => {
+    if (!fetchFromApi || !nextUrl || loadingMore) return;
+    const nameAtStart = loadedQueryRef.current;
+    setLoadingMore(true);
+    try {
+      const { options: fetched, next } = await fetchUsersPage(nameAtStart, nextUrl);
+      if (loadedQueryRef.current !== nameAtStart) return;
+      setApiOptions((prev) => [...prev, ...fetched]);
+      setNextUrl(next);
+    } catch {
+      // silently ignore pagination errors
+    } finally {
+      if (loadedQueryRef.current === nameAtStart) setLoadingMore(false);
+    }
+  }, [fetchFromApi, loadingMore, nextUrl]);
+
+  // Debounce search: trigger after 1st character, 300 ms delay
+  useEffect(() => {
+    if (!fetchFromApi || !open) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (query.length === 0) {
+      setApiOptions([]);
+      setNextUrl(null);
+      setLoadError(null);
+      return;
+    }
+
+    debounceRef.current = setTimeout(() => {
+      void doSearch(query);
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [fetchFromApi, open, query, doSearch]);
+
+  // Infinite scroll inside the list
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el || !fetchFromApi) return;
+
+    const onScroll = () => {
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
+        void loadMore();
       }
     };
 
-    load();
-    return () => {
-      alive = false;
-    };
-  }, [fetchFromApi]);
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [fetchFromApi, loadMore]);
 
+  // Close on outside click
   useEffect(() => {
     if (!open) return;
-
     const onClickOutside = (event: MouseEvent) => {
       if (!containerRef.current) return;
       if (containerRef.current.contains(event.target as Node)) return;
       setOpen(false);
     };
-
     document.addEventListener('mousedown', onClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', onClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', onClickOutside);
   }, [open]);
+
+  // Reset state when dropdown closes
+  useEffect(() => {
+    if (!open) {
+      setQuery('');
+      if (fetchFromApi) {
+        setApiOptions([]);
+        setNextUrl(null);
+        setLoadError(null);
+      }
+    }
+  }, [open, fetchFromApi]);
 
   return (
     <div className="relative" ref={containerRef}>
@@ -186,23 +235,28 @@ export function UserAutocompleteDropdown({
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search user..."
+            placeholder="Type to search users..."
             className="mb-2 h-9 w-full rounded-md border border-white/20 bg-white/5 px-2 text-sm"
           />
-          <div className="max-h-52 overflow-auto rounded-md border border-white/10">
+          <div ref={listRef} className="max-h-52 overflow-auto rounded-md border border-white/10">
             {loading && <div className="px-3 py-2 text-sm text-white/60">Loading users...</div>}
             {loadError && <div className="px-3 py-2 text-sm text-red-300">{loadError}</div>}
-            {filtered.length === 0 && (
+            {!loading && fetchFromApi && query.length === 0 && (
+              <div className="px-3 py-2 text-sm text-white/60">Start typing to search users</div>
+            )}
+            {!loading && !loadError && query.length > 0 && displayed.length === 0 && (
               <div className="px-3 py-2 text-sm text-white/60">No users found</div>
             )}
-            {filtered.map((item) => (
+            {!loading && !fetchFromApi && displayed.length === 0 && (
+              <div className="px-3 py-2 text-sm text-white/60">No users found</div>
+            )}
+            {displayed.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => {
                   onSelect(item);
                   setOpen(false);
-                  setQuery('');
                 }}
                 className="block w-full border-b border-white/10 px-3 py-2 text-left text-sm hover:bg-white/10"
               >
@@ -210,6 +264,9 @@ export function UserAutocompleteDropdown({
                 {item.meta && <div className="truncate text-xs text-white/60">{item.meta}</div>}
               </button>
             ))}
+            {loadingMore && (
+              <div className="px-3 py-2 text-sm text-white/60">Loading more...</div>
+            )}
           </div>
         </div>
       )}

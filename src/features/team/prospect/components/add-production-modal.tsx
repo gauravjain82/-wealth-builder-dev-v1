@@ -15,12 +15,8 @@ import {
   type UserAutocompleteOption,
 } from '@/shared/components';
 import {
-  PRODUCTION_COMPANY_OPTIONS,
   PRODUCTION_MODAL_DELIVERY_OPTIONS,
   PRODUCTION_MODAL_STATUS_OPTIONS,
-  PRODUCTION_MULTIPLIER_TABLE,
-  PRODUCTION_SPLIT_OPTIONS,
-  PRODUCTS_BY_COMPANY,
 } from '@/features/team/production-tracker/production-constants';
 import type { Prospect } from '../services/prospect-service';
 
@@ -55,12 +51,16 @@ interface AddProductionModalProps {
   title?: string;
   submitLabel?: string;
   initialForm?: AddProductionFormData | null;
+  companyOptions?: readonly string[];
+  productsByCompany?: Record<string, string[]>;
+  splitOptions?: readonly string[];
+  multiplierTable?: Record<string, number>;
   onClose: () => void;
   onSubmit: (data: AddProductionFormData) => Promise<void>;
 }
 
 const defaultForm = (): AddProductionFormData => ({
-  status: 'Active',
+  status: 'IN_PROGRESS',
   dateWritten: new Date().toISOString().split('T')[0],
   closureDate: '',
   client: '',
@@ -90,6 +90,10 @@ export function AddProductionModal({
   title = 'Add Production',
   submitLabel = 'Add to Production',
   initialForm,
+  companyOptions = [],
+  productsByCompany = {},
+  splitOptions = [],
+  multiplierTable = {},
   onClose,
   onSubmit,
 }: AddProductionModalProps) {
@@ -135,7 +139,7 @@ export function AddProductionModal({
       const pct = parseFloat(form.multiplierPercent);
       return isNaN(pct) ? 1 : pct;
     }
-    return PRODUCTION_MULTIPLIER_TABLE[`${form.company}|${form.product}`] ?? 1;
+    return multiplierTable[`${form.company}|${form.product}`] ?? 1;
   };
 
   const points = useMemo(() => {
@@ -180,7 +184,7 @@ export function AddProductionModal({
             <Label variant="form">Status</Label>
             <Select value={form.status} onChange={(e) => update('status', e.target.value)}>
               {PRODUCTION_MODAL_STATUS_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </Select>
           </FormRow>
@@ -270,7 +274,7 @@ export function AddProductionModal({
             <FormRow>
               <Label variant="form">Split</Label>
               <Select value={form.split} onChange={(e) => handleSplitChange(e.target.value)}>
-                {PRODUCTION_SPLIT_OPTIONS.map((opt) => (
+                {(splitOptions.length > 0 ? splitOptions : [form.split]).map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </Select>
@@ -296,7 +300,11 @@ export function AddProductionModal({
               }
             >
               <option value="">Select company</option>
-              {PRODUCTION_COMPANY_OPTIONS.map((opt) => (
+              {(companyOptions.length > 0
+                ? companyOptions
+                : form.company
+                ? [form.company]
+                : []).map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </Select>
@@ -305,7 +313,11 @@ export function AddProductionModal({
             <Label variant="form">Product</Label>
             <Select value={form.product} onChange={(e) => update('product', e.target.value)}>
               <option value="">Select product</option>
-              {(PRODUCTS_BY_COMPANY[form.company] || []).map((opt) => (
+              {((productsByCompany[form.company] || []).length > 0
+                ? productsByCompany[form.company]
+                : form.product
+                ? [form.product]
+                : []).map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </Select>

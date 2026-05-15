@@ -25,7 +25,11 @@ import { AddAgencyCodeModal } from '../components/add-agency-code-modal';
 import { AddProductionModal, type AddProductionFormData } from '../components/add-production-modal';
 import { CallLogModal } from '../components/call-log-modal';
 import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
-import { createProductionRecord } from '@/features/team/production-tracker/services/production-tracker-service';
+import {
+  createProductionRecord,
+  fetchProductionCompanyProducts,
+  fetchProductionSplitPresets,
+} from '@/features/team/production-tracker/services/production-tracker-service';
 import { buildProspectColumns } from '../prospect-columns';
 import type { AddAgentFormData, AddProspectFormData } from '../types';
 import {
@@ -190,6 +194,15 @@ export default function ProspectTrackerPage() {
   const [savingProduction, setSavingProduction] = useState(false);
   const [addProspectOpen, setAddProspectOpen] = useState(false);
   const [savingCallLog, setSavingCallLog] = useState(false);
+  const [productionCompanyOptions, setProductionCompanyOptions] = useState<string[]>([]);
+  const [productionProductsByCompany, setProductionProductsByCompany] =
+    useState<Record<string, string[]>>({});
+  const [productionSplitOptions, setProductionSplitOptions] = useState<string[]>([]);
+  const [productionMultiplierTable, setProductionMultiplierTable] =
+    useState<Record<string, number>>({});
+  // Maps "company|product" → CompanyProduct FK id for v2 API
+  const [productionCompanyProductIds, setProductionCompanyProductIds] =
+    useState<Record<string, number>>({});
   const [savingMetaProspectIdSet, setSavingMetaProspectIdSet] = useState<Set<number>>(new Set());
   const [savingNoteProspectIdSet, setSavingNoteProspectIdSet] = useState<Set<number>>(new Set());
   const [loadingNoteProspectIdSet, setLoadingNoteProspectIdSet] = useState<Set<number>>(new Set());
@@ -238,6 +251,74 @@ export default function ProspectTrackerPage() {
     const primaryRole = parseStoredRoles()[0] || null;
     return resolvePlanFromPrimaryRole(primaryRole);
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProductionOptions = async () => {
+      try {
+        const [companyProducts, splitPresets] = await Promise.all([
+          fetchProductionCompanyProducts(),
+          fetchProductionSplitPresets(),
+        ]);
+
+        if (!isMounted) return;
+
+        const nextProductsByCompany: Record<string, string[]> = {};
+        const nextMultiplierTable: Record<string, number> = {};
+        const nextCompanyOptions = new Set<string>();
+
+        companyProducts.forEach((item) => {
+          nextCompanyOptions.add(item.company_name);
+          if (!nextProductsByCompany[item.company_name]) {
+            nextProductsByCompany[item.company_name] = [];
+          }
+          if (!nextProductsByCompany[item.company_name].includes(item.product_name)) {
+            nextProductsByCompany[item.company_name] = [
+              ...nextProductsByCompany[item.company_name],
+              item.product_name,
+            ];
+          }
+
+          const multiplier = Number(item.multiplier);
+          nextMultiplierTable[`${item.company_name}|${item.product_name}`] =
+            Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
+        });
+
+        const nextProductIds: Record<string, number> = {};
+        companyProducts.forEach((item) => {
+          nextProductIds[`${item.company_name}|${item.product_name}`] = item.id;
+        });
+
+        const nextSplitOptions = new Set<string>();
+        splitPresets.forEach((preset) => {
+          if (!Array.isArray(preset.splits) || preset.splits.length < 2) return;
+          const option = `${preset.splits[0]}/${preset.splits[1]}`;
+          if (option !== '100/0') {
+            nextSplitOptions.add(option);
+          }
+        });
+
+        setProductionCompanyOptions(Array.from(nextCompanyOptions));
+        setProductionProductsByCompany(nextProductsByCompany);
+        setProductionMultiplierTable(nextMultiplierTable);
+        setProductionCompanyProductIds(nextProductIds);
+        setProductionSplitOptions(Array.from(nextSplitOptions));
+      } catch {
+        if (!isMounted) return;
+        addToast({
+          type: 'error',
+          message: 'Failed to load production company/product options.',
+        });
+      }
+    };
+
+    void loadProductionOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [addToast]);
 
   const isNewAgent = resolvedPlan === Plan.NewAgent;
   const isAgent = resolvedPlan === Plan.Agent;
@@ -601,43 +682,35 @@ export default function ProspectTrackerPage() {
       setSavingProduction(true);
       const [pA, pB] = data.split.split('/').map((v) => parseFloat(v) || 0);
       const base = parseFloat(data.targetPoints) || 0;
+      const isOther = data.company === 'OTHER' || data.product === 'OTHER';
 
-      const getMultiplier = (): number => {
-        const MULTIPLIER_TABLE: Record<string, number> = {
-          'TRANSAMERICA|FFIUL II': 1.25,
-          'TRANSAMERICA|TERM LB - 10 YEARS': 1.10,
-          'TRANSAMERICA|TERM LB - 15 YEARS': 1.16,
-          'TRANSAMERICA|TERM LB - 20/25/30 YEARS': 1.26,
-          'TRANSAMERICA|FINAL EXPENSE': 1.10,
-          'NATIONWIDE|NEW HEIGHTS IUL ACCUMULATOR 2020': 1.09,
-          'NORTH AMERICAN|SECURE HORIZON - CLIENT AGE 0-70': 0.062888,
-          'NORTH AMERICAN|SECURE HORIZON - CLIENT AGE 71-75': 0.053496,
-          'NORTH AMERICAN|SECURE HORIZON - CLIENT AGE 76+': 0.040919,
-          'EVEREST|EVEREST': 1.0,
-        };
-        if (data.company === 'OTHER' || data.product === 'OTHER') {
-          const pct = parseFloat(data.multiplierPercent);
-          return isNaN(pct) ? 1 : pct;
-        }
-        return MULTIPLIER_TABLE[`${data.company}|${data.product}`] ?? 1;
-      };
+      // v2: resolve company_product FK id; null for "OTHER"
+      const company_product_id = isOther
+        ? null
+        : (productionCompanyProductIds[`${data.company}|${data.product}`] ?? null);
 
-      const totalPoints = Math.round(base * getMultiplier() * 100) / 100;
+      // v2 expects base_points (raw base before multiplier) for known products.
+      // For OTHER the server has no multiplier_snapshot, so send the pre-multiplied total.
+      const points_target = isOther
+        ? (() => {
+            const pct = parseFloat(data.multiplierPercent);
+            const m = isNaN(pct) ? 1 : pct;
+            return Math.round(base * m * 100) / 100;
+          })()
+        : base;
 
       await createProductionRecord({
         prospect: addProductionFor.id,
         client_name: data.client,
+        company_product_id,
         date_written: data.dateWritten || null,
         closure_date: data.closureDate || null,
         delivery: data.delivery,
         status: data.status,
         notes: data.notes,
         trial_app: data.trialApp,
-        policy_company: data.company,
         policy_number: data.policyNumber,
-        policy_product: data.product,
-        policy_other_product: data.otherProduct,
-        points_target: totalPoints,
+        points_target,
         agent_1: data.agent1Id,
         agent_1_name: data.agent1Name,
         agent_1_pct: pA,
@@ -1509,6 +1582,10 @@ export default function ProspectTrackerPage() {
         open={Boolean(addProductionFor)}
         saving={savingProduction}
         prospect={addProductionFor}
+        companyOptions={productionCompanyOptions}
+        productsByCompany={productionProductsByCompany}
+        splitOptions={productionSplitOptions}
+        multiplierTable={productionMultiplierTable}
         onClose={() => setAddProductionFor(null)}
         onSubmit={handleAddProductionSave}
       />
