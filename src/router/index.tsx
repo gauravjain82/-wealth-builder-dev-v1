@@ -31,6 +31,8 @@ const OnboardingGamePage = lazy(() => import('@/features/team/onboarding-game/pa
 const ResetPasswordPage = lazy(() => import('@/features/auth/components/reset-password-page'));
 const TrainingCenterPage = lazy(() => import('@/features/training-center/pages/training-center-page'));
 const TrainingSchedulePage = lazy(() => import('@/features/training-schedule/pages/training-schedule-page'));
+const HelpNeededPage = lazy(() => import('@/features/helpdesk/pages/help-needed-page'));
+const AdminHelpdeskPage = lazy(() => import('@/features/helpdesk/pages/admin-helpdesk-page'));
 
 // Loading component
 function PageLoader() {
@@ -61,6 +63,12 @@ const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+
+  // Public helpdesk page (works without login)
+  {
+    path: '/help-needed',
+    element: lazyLoad(HelpNeededPage),
   },
 
   // Password reset/setup page (email link target)
@@ -199,6 +207,14 @@ const router = createBrowserRouter([
       {
         path: 'settings',
         element: lazyLoad(SettingsPage),
+      },
+      {
+        path: 'helpdesk',
+        element: lazyLoad(HelpNeededPage),
+      },
+      {
+        path: 'admin/helpdesk',
+        element: lazyLoad(AdminHelpdeskPage),
       },
       {
         path: 'components',

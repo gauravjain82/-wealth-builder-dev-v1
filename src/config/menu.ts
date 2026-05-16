@@ -34,11 +34,7 @@ const MENU_ITEMS = {
   TRAINING_SCHEDULE: { label: 'Training Schedule', icon: '📅', path: '/training-schedule' } as MenuItem,
   CALENDAR: { label: 'Calendar', icon: '📆', path: '/calendar' } as MenuItem,
   FILE_VAULT: { label: 'File Vault', icon: '📁', path: '/file-vault' } as MenuItem,
-  HELP_DESK: { 
-    label: 'Help Desk', 
-    icon: '❓', 
-    externalUrl: 'https://wbhelpdesk.netlify.app' 
-  } as MenuItem,
+  HELP_DESK: { label: 'Help Desk', icon: '❓', path: '/helpdesk' } as MenuItem,
   MATCHUP: { label: 'Matchup', icon: '🤝', path: '/matchup' } as MenuItem,
   
   // Licensing items
@@ -73,6 +69,7 @@ const MENU_ITEMS = {
   EVENT_SIGNUP_ADMIN: { label: 'Event Signup', icon: '✍️', path: '/admin/event-signup' } as MenuItem,
   ONBOARDING_VIDEO_MANAGER: { label: 'Onboarding Video Manager', icon: '🎥', path: '/admin/onboarding-videos' } as MenuItem,
   UPGRADE_REQUESTS: { label: 'Upgrade Requests', icon: '⬆️', path: '/admin/upgrade-requests' } as MenuItem,
+  HELPDESK_ADMIN: { label: 'Helpdesk', icon: '🆘', path: '/admin/helpdesk' } as MenuItem,
 };
 
 /**
@@ -322,6 +319,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.EVENT_SIGNUP_ADMIN,
         MENU_ITEMS.ONBOARDING_VIDEO_MANAGER,
         MENU_ITEMS.UPGRADE_REQUESTS,
+        MENU_ITEMS.HELPDESK_ADMIN,
       ],
     },
   ] as MenuItem[],

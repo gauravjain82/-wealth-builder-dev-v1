@@ -1,5 +1,6 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../hooks/use-auth';
 import { Eye, EyeOff } from 'lucide-react';
 import { Heading, Text, Link, Badge, Button, Input, Label } from '@shared/components/ui';
@@ -174,6 +175,9 @@ export function LoginPage() {
             >
               Forgot password?
             </Link>
+            <RouterLink to="/help-needed" className="text-sm text-[#f5d66a] no-underline hover:underline">
+              Help Needed?
+            </RouterLink>
           </div>
         </div>
       </section>
