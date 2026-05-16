@@ -120,7 +120,7 @@ async function parseError(response: Response, fallbackMessage: string): Promise<
 }
 
 function normalizeCurrentUserDetails(user: CurrentUserDetails): CurrentUserDetails {
-  const profileAvatar = user.profile?.photo_blob_thumb;
+  const profileAvatar = user.profile?.photo_url_thumb;
   return {
     ...user,
     avatar_url: user.avatar_url || profileAvatar,

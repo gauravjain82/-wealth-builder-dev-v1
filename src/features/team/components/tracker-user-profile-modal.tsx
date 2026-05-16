@@ -180,7 +180,6 @@ export function TrackerUserProfileModal({
   open,
   userId,
   fallbackName,
-  fallbackAvatarUrl,
   onClose,
   onSaved,
 }: TrackerUserProfileModalProps) {
@@ -189,7 +188,6 @@ export function TrackerUserProfileModal({
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<TrackerUserProfile | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [avatarVersion, setAvatarVersion] = useState(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [snapshots, setSnapshots] = useState<TrackerProfileSnapshots | null>(null);
   const [levels, setLevels] = useState<Level[]>([]);
@@ -238,7 +236,6 @@ export function TrackerUserProfileModal({
       setUploadingPhoto(true);
       const updated = await uploadTrackerUserPhoto(userId, file);
       setProfile((prev) => ({ ...prev, ...updated }));
-      setAvatarVersion(Date.now());
       addToast({ type: 'success', message: 'Profile photo uploaded successfully.' });
     } catch (error) {
       addToast({

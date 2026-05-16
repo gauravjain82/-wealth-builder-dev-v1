@@ -433,7 +433,6 @@ export default function SettingsPage() {
   const [approvalRequests, setApprovalRequests] = useState<SubscriptionApprovalRequestResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [avatarVersion, setAvatarVersion] = useState(0);
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [actionModal, setActionModal] = useState<{
@@ -618,7 +617,6 @@ export default function SettingsPage() {
       setUploadingPhoto(true);
       const updated = await uploadCurrentUserPhoto(userDetails.id, file);
       setUserDetails((prev) => ({ ...prev, ...updated }));
-      setAvatarVersion(Date.now());
       addToast({ type: 'success', message: 'Profile photo uploaded successfully.' });
     } catch (error) {
       addToast({
