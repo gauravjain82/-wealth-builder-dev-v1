@@ -486,6 +486,12 @@ function getStatusStyle(status: string) {
   return STATUS_STYLES[key] ?? { bg: '#374151', text: '#d1d5db' };
 }
 
+function getDisplayStatusLabel(row: ProductionTrackerRecord): string {
+  const rawLabel = row.status_display || row.status || 'Pending';
+  const normalized = rawLabel.trim().toLowerCase();
+  return normalized === 'in progress' || normalized === 'in_progress' ? 'Pending' : rawLabel;
+}
+
 export function buildProductionColumns(actions: ProductionColumnActions): TrackerTableColumn<ProductionTrackerRecord>[] {
   return [
     {
@@ -500,7 +506,7 @@ export function buildProductionColumns(actions: ProductionColumnActions): Tracke
       className: 'tracker-col-narrow',
       value: (row) => row.status,
       render: (row) => {
-        const label = row.status_display || row.status || 'Pending';
+        const label = getDisplayStatusLabel(row);
         const { bg, text } = getStatusStyle(label);
         return (
           <div className="relative flex h-full min-h-[60px] w-full items-stretch">

@@ -1,12 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { IconInfoCircle } from '@tabler/icons-react';
-import { ErrorState, LoadingState, Modal, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
+import { ErrorState, LoadingState, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { TrackerNotesModal } from '@/features/team/components/tracker-notes-modal';
 import type { TrackerNote } from '@/features/team/services/tracker-notes-service';
 import { createTrackerNote, fetchTrackerNotesForUser } from '@/features/team/services/tracker-notes-service';
 import { useToastStore } from '@/store';
 import { buildProductionColumns } from '../production-columns';
+import { ProductionImportModal } from '../components/production-import-modal';
+import { ProductionKpiCard } from '../components/production-kpi-card';
+import { ProductionTrackerToolbar } from '../components/production-tracker-toolbar';
+import { TopProducersModal } from '../components/top-producers-modal';
 import {
+  buildExportCsvContent,
+  downloadCsv,
+  normalizeLookupValue,
+  parseCsvDate,
+  parseCsvNumber,
+  parseImportCsv,
+  type ProductionImportFailure,
+} from '../production-csv';
+import {
+  createProductionRecord,
   deleteProductionRecord,
   fetchProductionCompanyProducts,
   fetchProductionPointsSummary,
@@ -27,9 +40,15 @@ import {
   AddProductionModal,
   type AddProductionFormData,
 } from '@/features/team/prospect/components/add-production-modal';
-import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
+import { type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
 
 type SortDirection = 'asc' | 'desc';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+interface ImportUserResult {
+  id: number;
+  label: string;
+}
 
 function toSortParam(sort: { key: string; direction: SortDirection } | null): string | undefined {
   if (!sort) return undefined;
@@ -159,73 +178,6 @@ function deriveCompanyConfigFromRows(rows: ProductionTrackerRecord[]) {
   };
 }
 
-function KpiCard({
-  label,
-  value,
-  info,
-  onClick,
-}: {
-  label: string;
-  value: string;
-  info: string;
-  onClick?: () => void;
-}) {
-  return (
-    <div
-      className={`rounded-xl border border-[#6d5930] bg-[linear-gradient(135deg,rgba(64,49,16,0.9),rgba(43,32,9,0.92))] px-3 py-4 text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)] ${
-        onClick ? 'cursor-pointer transition-opacity hover:opacity-80' : ''
-      }`}
-      onClick={onClick}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
-    >
-      <div className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#f7f0d3]">
-        <span>{label}</span>
-        <span title={info} className="cursor-help text-[#ddc67a]">
-          <IconInfoCircle size={12} stroke={2} />
-        </span>
-      </div>
-      <div className="mt-2 text-lg font-extrabold text-white">{value}</div>
-    </div>
-  );
-}
-
-function TopProducersModal({
-  open,
-  performers,
-  onClose,
-}: {
-  open: boolean;
-  performers: ProductionTopPerformer[];
-  onClose: () => void;
-}) {
-  const top10 = performers.slice(0, 10);
-  return (
-    <Modal
-      open={open}
-      title="🏆 Top Producers"
-      onClose={onClose}
-      contentClassName="max-w-[480px]"
-    >
-      {top10.length === 0 ? (
-        <p className="py-4 text-center text-sm text-white/50">No data available.</p>
-      ) : (
-        <ol className="space-y-2">
-          {top10.map((p, i) => (
-            <li
-              key={p.user_id}
-              className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-2"
-            >
-              <span className="w-6 text-center text-xs font-bold text-[#f4c95d]">{i + 1}</span>
-              <span className="flex-1 truncate text-sm font-semibold text-white">{p.user_name}</span>
-            </li>
-          ))}
-        </ol>
-      )}
-    </Modal>
-  );
-}
 
 export default function ProductionTrackerPage() {
   const pageHeading = 'Production Tracker';
@@ -239,7 +191,9 @@ export default function ProductionTrackerPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [editingRow, setEditingRow] = useState<ProductionTrackerRecord | null>(null);
+  const [addProductionOpen, setAddProductionOpen] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [savingCreate, setSavingCreate] = useState(false);
   const [notesByUserId, setNotesByUserId] = useState<Record<number, TrackerNote[]>>({});
   const [loadingNoteUserIdSet, setLoadingNoteUserIdSet] = useState<Set<number>>(new Set());
   const [noteDraftByUserId, setNoteDraftByUserId] = useState<Record<number, string>>({});
@@ -248,7 +202,7 @@ export default function ProductionTrackerPage() {
   const [notesOpenFor, setNotesOpenFor] = useState<ProductionTrackerRecord | null>(null);
   const [modalNoteDraft, setModalNoteDraft] = useState('');
   const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filters, setFilters] = useState<Record<string, string>>({ filterkey: 'all' });
   const [dateRangePreset, setDateRangePreset] = useState<DatePresetKey>('all');
   const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
   const [teamScopeUserId, setTeamScopeUserId] = useState<string | null>(null);
@@ -257,9 +211,35 @@ export default function ProductionTrackerPage() {
   const [companyProducts, setCompanyProducts] = useState<ProductionCompanyProduct[]>([]);
   const [splitOptions, setSplitOptions] = useState<string[]>([]);
   const [topProducersOpen, setTopProducersOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importFailures, setImportFailures] = useState<ProductionImportFailure[]>([]);
+  const [importSuccessCount, setImportSuccessCount] = useState(0);
   const pageSize = 15;
   const addToast = useToastStore((state) => state.addToast);
   const currentUserId = useMemo(() => getCurrentUserId(), []);
+  const hasDateFilter = Boolean(filters.from_date || filters.to_date);
+
+  const companyProductIdByKey = useMemo(
+    () =>
+      companyProducts.reduce<Record<string, number>>((acc, item) => {
+        acc[`${item.company_name}|${item.product_name}`] = item.id;
+        return acc;
+      }, {}),
+    [companyProducts]
+  );
+
+  const companyProductsByProductName = useMemo(
+    () =>
+      companyProducts.reduce<Record<string, ProductionCompanyProduct[]>>((acc, item) => {
+        const key = normalizeLookupValue(item.product_name);
+        acc[key] = [...(acc[key] || []), item];
+        return acc;
+      }, {}),
+    [companyProducts]
+  );
 
   const handleDateRangeChange = useCallback((value: TrackerDateRangeChange) => {
     setDateRangePreset(value.preset);
@@ -300,6 +280,91 @@ export default function ProductionTrackerPage() {
   const updateRowInState = (updated: ProductionTrackerRecord) => {
     setRows((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
   };
+
+  const buildCreatePayload = useCallback((form: AddProductionFormData) => {
+    const [pA, pB] = form.split.split('/').map((value) => parseFloat(value) || 0);
+    const base = parseFloat(form.targetPoints) || 0;
+    const isOther = form.company === 'OTHER' || form.product === 'OTHER';
+    const companyProductId = isOther ? null : (companyProductIdByKey[`${form.company}|${form.product}`] ?? null);
+    const pointsTarget = isOther
+      ? (() => {
+          const multiplier = parseFloat(form.multiplierPercent);
+          const safeMultiplier = Number.isNaN(multiplier) ? 1 : multiplier;
+          return Math.round(base * safeMultiplier * 100) / 100;
+        })()
+      : base;
+
+    return {
+      prospect: null,
+      client_name: form.client,
+      company_product_id: companyProductId,
+      date_written: form.dateWritten || null,
+      closure_date: form.closureDate || null,
+      delivery: form.delivery,
+      status: form.status,
+      notes: form.notes,
+      trial_app: form.trialApp,
+      policy_number: form.policyNumber,
+      points_target: pointsTarget,
+      agent_1: form.agent1Id,
+      agent_1_name: form.agent1Name,
+      agent_1_pct: pA,
+      agent_2: form.agentMode === 'split' ? form.agent2Id : null,
+      agent_2_name: form.agentMode === 'split' ? form.agent2Name : '',
+      agent_2_pct: form.agentMode === 'split' ? pB : 0,
+      split_mode: form.agentMode === 'split' ? 'split' as const : 'solo' as const,
+    };
+  }, [companyProductIdByKey]);
+
+  const fetchMatchingUser = useCallback(async (identifier: string): Promise<ImportUserResult | null> => {
+    const normalized = identifier.trim();
+    if (!normalized) return null;
+
+    const token = localStorage.getItem('wb.authToken');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/accounts/users/?name=${encodeURIComponent(normalized)}&page_size=10`,
+      {
+        headers: {
+          Authorization: `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to search users: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as {
+      results: Array<{
+        id: number;
+        full_name?: string;
+        first_name?: string;
+        last_name?: string;
+        username?: string;
+        email?: string;
+      }>;
+    };
+
+    const exactMatch = data.results.find((user) => {
+      const fullName = user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+      return [fullName, user.username || '', user.email || '']
+        .map((value) => normalizeLookupValue(value))
+        .includes(normalizeLookupValue(normalized));
+    });
+
+    const matched = exactMatch || data.results[0];
+    if (!matched) return null;
+
+    return {
+      id: matched.id,
+      label: matched.full_name || `${matched.first_name || ''} ${matched.last_name || ''}`.trim() || matched.email || matched.username || `User #${matched.id}`,
+    };
+  }, []);
 
   const handleNoteDraftChange = useCallback((userId: number, value: string) => {
     setNoteDraftByUserId((prev) => ({ ...prev, [userId]: value }));
@@ -622,8 +687,6 @@ export default function ProductionTrackerPage() {
       handleChargeback,
     ]
   );
-  const hasDateFilter = Boolean(filters.from_date || filters.to_date);
-
   const displayedKpis = useMemo(
     () => summaryToKpis(pointsSummary, topPerformers[0]?.user_name || null),
     [pointsSummary, topPerformers]
@@ -789,6 +852,210 @@ export default function ProductionTrackerPage() {
     [addToast]
   );
 
+  const refreshCurrentView = useCallback(async () => {
+    await loadRows(1, true, sortState, filters);
+
+    try {
+      const summary = await fetchProductionPointsSummary(teamScopeUserId ? Number(teamScopeUserId) : currentUserId);
+      setPointsSummary(summary);
+    } catch {
+      setPointsSummary(null);
+    }
+
+    if (hasDateFilter || teamScopeUserId) {
+      setTopPerformers([]);
+      return;
+    }
+
+    try {
+      const performers = await fetchProductionTopPerformers();
+      setTopPerformers(performers);
+    } catch {
+      setTopPerformers([]);
+    }
+  }, [currentUserId, filters, hasDateFilter, loadRows, sortState, teamScopeUserId]);
+
+  const handleCreateProduction = useCallback(async (form: AddProductionFormData) => {
+    try {
+      setSavingCreate(true);
+      await createProductionRecord(buildCreatePayload(form));
+      await refreshCurrentView();
+      setAddProductionOpen(false);
+      addToast({ type: 'success', message: 'Added to Production Tracker.' });
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to save production record.',
+      });
+    } finally {
+      setSavingCreate(false);
+    }
+  }, [addToast, buildCreatePayload, refreshCurrentView]);
+
+  const handleExportCsv = useCallback(async () => {
+    try {
+      setExporting(true);
+
+      const exportedRows: ProductionTrackerRecord[] = [];
+      let pageNum = 1;
+
+      while (true) {
+        const data = await fetchProductionTracker({
+          page: pageNum,
+          pageSize: 200,
+          sort: toSortParam(sortState),
+          filters: toBackendFilters(filters),
+        });
+
+        exportedRows.push(...data.results);
+        if (!data.next) break;
+        pageNum += 1;
+      }
+
+      downloadCsv('production-tracker-export.csv', buildExportCsvContent(exportedRows));
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to export production tracker records.',
+      });
+    } finally {
+      setExporting(false);
+    }
+  }, [addToast, filters, sortState]);
+
+  const handleImportCsv = useCallback(async () => {
+    if (!importFile) {
+      addToast({ type: 'warning', message: 'Choose a CSV file to import.' });
+      return;
+    }
+
+    try {
+      setImporting(true);
+      setImportFailures([]);
+      setImportSuccessCount(0);
+
+      const fileText = await importFile.text();
+      const importedRows = parseImportCsv(fileText);
+      const failures: ProductionImportFailure[] = [];
+      const userCache = new Map<string, ImportUserResult | null>();
+      let successCount = 0;
+
+      const resolveUser = async (name: string, code: string) => {
+        const candidates = [name, code].map((value) => value.trim()).filter(Boolean);
+
+        for (const candidate of candidates) {
+          const cacheKey = normalizeLookupValue(candidate);
+          if (!userCache.has(cacheKey)) {
+            userCache.set(cacheKey, await fetchMatchingUser(candidate));
+          }
+          const matched = userCache.get(cacheKey) || null;
+          if (matched) return matched;
+        }
+
+        return null;
+      };
+
+      for (const [index, row] of importedRows.entries()) {
+        const rowNumber = index + 3;
+        const clientName = row['client name'] || `Row ${rowNumber}`;
+
+        try {
+          const dateWritten = parseCsvDate(row['written date'] || '');
+          const client = (row['client name'] || '').trim();
+          const productLabel = (row['product'] || '').trim();
+          const targetAmount = parseCsvNumber(row['target amount'] || '');
+
+          if (!dateWritten || !client || !productLabel || targetAmount <= 0) {
+            throw new Error('Missing one of the required fields: Written Date, Client Name, Product, or Target Amount.');
+          }
+
+          const agent1 = await resolveUser(row['1st agent name'] || '', row['1st agent code'] || '');
+          if (!agent1) {
+            throw new Error('Could not match the 1st agent from the CSV row.');
+          }
+
+          const agent2 = await resolveUser(row['2nd agent name'] || '', row['2nd agent code'] || '');
+          const productMatches = companyProductsByProductName[normalizeLookupValue(productLabel)] || [];
+          const normalizedOther = normalizeLookupValue(productLabel) === 'other';
+
+          if (!normalizedOther && productMatches.length === 0) {
+            throw new Error(`Product "${productLabel}" is not configured in Production Tracker.`);
+          }
+
+          if (!normalizedOther && productMatches.length > 1) {
+            throw new Error(`Product "${productLabel}" matches multiple company products. Use the Add Production modal for this row.`);
+          }
+
+          const matchedProduct = productMatches[0] || null;
+          const additionalInfo = (row['additional info'] || '').trim();
+          const approved = normalizeLookupValue(row.approved || '') === 'yes';
+          const issued = normalizeLookupValue(row.issued || '') === 'yes';
+          const printedOrMailed = normalizeLookupValue(row['printed/mailed'] || '') === 'yes';
+          const splitMode = agent2 ? 'split' : 'single';
+
+          const form: AddProductionFormData = {
+            status: issued ? 'ISSUED' : approved ? 'APPROVED' : 'IN_PROGRESS',
+            dateWritten,
+            closureDate: parseCsvDate(row['drop date'] || '') || '',
+            client,
+            agentMode: splitMode,
+            agent1Id: agent1.id,
+            agent1Name: row['1st agent name'] || agent1.label,
+            agent2Id: agent2?.id ?? null,
+            agent2Name: row['2nd agent name'] || agent2?.label || '',
+            agent1Pct: agent2 ? 50 : 100,
+            agent2Pct: agent2 ? 50 : 0,
+            split: agent2 ? '50/50' : '100/0',
+            targetPoints: String(targetAmount),
+            multiplierPercent: normalizedOther ? '1' : '',
+            company: normalizedOther ? 'OTHER' : matchedProduct?.company_name || '',
+            product: normalizedOther ? 'OTHER' : matchedProduct?.product_name || '',
+            otherProduct: normalizedOther ? additionalInfo || productLabel : '',
+            policyNumber: row.policy || '',
+            delivery: printedOrMailed ? 'Mail' : 'Email',
+            trialApp: false,
+            notes: additionalInfo,
+          };
+
+          if (agent2 && (!row['2nd agent name'] || !agent2.label)) {
+            form.agent2Name = agent2.label;
+          }
+
+          await createProductionRecord(buildCreatePayload(form));
+          successCount += 1;
+        } catch (err) {
+          failures.push({
+            rowNumber,
+            clientName,
+            reason: err instanceof Error ? err.message : 'Failed to import row.',
+          });
+        }
+      }
+
+      setImportFailures(failures);
+      setImportSuccessCount(successCount);
+
+      if (successCount > 0) {
+        await refreshCurrentView();
+      }
+
+      addToast({
+        type: failures.length > 0 ? 'warning' : 'success',
+        message:
+          failures.length > 0
+            ? `Imported ${successCount} record${successCount === 1 ? '' : 's'} with ${failures.length} skipped.`
+            : `Imported ${successCount} production record${successCount === 1 ? '' : 's'}.`,
+      });
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to import production CSV.',
+      });
+    } finally {
+      setImporting(false);
+    }
+  }, [addToast, buildCreatePayload, companyProductsByProductName, fetchMatchingUser, importFile, refreshCurrentView]);
+
   useEffect(() => {
     void loadRows(1, true, sortState, filters);
   }, [loadRows, sortState, filters]);
@@ -834,48 +1101,38 @@ export default function ProductionTrackerPage() {
         performers={topPerformers}
         onClose={() => setTopProducersOpen(false)}
       />
-      <div className="rounded-2xl border border-white/10 bg-[#1d2027] px-4 py-5 shadow-[0_20px_45px_rgba(0,0,0,0.28)]">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-semibold text-white">{pageHeading}</h1>
-            <p className="mt-1 text-sm text-white/60">{pageDescription}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <TrackerDateRangeFilter
-              value={dateRangePreset}
-              selectedRange={selectedDateRange}
-              onChange={handleDateRangeChange}
-            />
-            <TrackerTeamScopeFilter
-              value={teamScope}
-              selectedUserId={teamScopeUserId}
-              onChange={handleTeamScopeChange}
-            />
-          </div>
-        </div>
-
-        {/* <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3 rounded-2xl border border-[#806726] bg-[linear-gradient(135deg,rgba(65,50,15,0.94),rgba(42,31,8,0.94))] px-4 py-3 shadow-[0_10px_25px_rgba(0,0,0,0.25)]">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#473a15] text-[#d9be67]">
-              <IconUsers size={20} stroke={1.8} />
-            </div>
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#d7c58a]">Families Helped</div>
-              <div className="text-2xl font-extrabold text-[#ffe59a]">{rows.length}</div>
-            </div>
-          </div>
-        </div> */}
-      </div>
+      <ProductionTrackerToolbar
+        pageHeading={pageHeading}
+        pageDescription={pageDescription}
+        exporting={exporting}
+        dateRangePreset={dateRangePreset}
+        selectedDateRange={selectedDateRange}
+        filterKey={filters.filterkey || 'all'}
+        teamScope={teamScope}
+        teamScopeUserId={teamScopeUserId}
+        onAddProduction={() => setAddProductionOpen(true)}
+        onExport={() => void handleExportCsv()}
+        onImport={() => {
+          setImportOpen(true);
+          setImportFailures([]);
+          setImportSuccessCount(0);
+        }}
+        onFilterKeyChange={(value) => {
+          setFilters((prev) => ({ ...prev, filterkey: value }));
+        }}
+        onDateRangeChange={handleDateRangeChange}
+        onTeamScopeChange={handleTeamScopeChange}
+      />
 
       <div className="grid flex-shrink-0 grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-8">
-        <KpiCard label="Families Helped" value={totalCount.toString()} info="" />
-        <KpiCard label="Baseshop Points" value={displayedKpis.baseshop} info="Direct points written and issued." />
-        <KpiCard label="Baseshop Projected Points" value={displayedKpis.baseshopProj} info="Baseshop points submitted but not fully issued yet." />
-        <KpiCard label="Personal Points" value={displayedKpis.personal} info="Your direct written and issued points." />
-        <KpiCard label="Personal Projected Points" value={displayedKpis.personalProj} info="Your submitted points that are not fully issued yet." />
-        <KpiCard label="Chargebacks" value={displayedKpis.chargebacks} info="Business that was declined, cancelled, or lapsed." />
-        <KpiCard label="NPR" value={displayedKpis.npr} info="Net point ratio equals net issued points divided by gross submitted points." />
-        <KpiCard label="Top Producer" value={displayedKpis.topProducer} info="Highest net point producer in the current baseshop view." onClick={() => setTopProducersOpen(true)} />
+        <ProductionKpiCard label="Families Helped" value={totalCount.toString()} info="" />
+        <ProductionKpiCard label="Baseshop Points" value={displayedKpis.baseshop} info="Direct points written and issued." />
+        <ProductionKpiCard label="Baseshop Projected Points" value={displayedKpis.baseshopProj} info="Baseshop points submitted but not fully issued yet." />
+        <ProductionKpiCard label="Personal Points" value={displayedKpis.personal} info="Your direct written and issued points." />
+        <ProductionKpiCard label="Personal Projected Points" value={displayedKpis.personalProj} info="Your submitted points that are not fully issued yet." />
+        <ProductionKpiCard label="Chargebacks" value={displayedKpis.chargebacks} info="Business that was declined, cancelled, or lapsed." />
+        <ProductionKpiCard label="NPR" value={displayedKpis.npr} info="Net point ratio equals net issued points divided by gross submitted points." />
+        <ProductionKpiCard label="Top Producer" value={displayedKpis.topProducer} info="Highest net point producer in the current baseshop view." onClick={() => setTopProducersOpen(true)} />
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#3c3521] bg-[#171a20] p-2 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
@@ -906,6 +1163,18 @@ export default function ProductionTrackerPage() {
       </div>
 
       <AddProductionModal
+        open={addProductionOpen}
+        saving={savingCreate}
+        prospect={null}
+        companyOptions={mergedProductConfig.companyOptions}
+        productsByCompany={mergedProductConfig.productsByCompany}
+        splitOptions={splitOptions.filter((option) => option !== '100/0')}
+        multiplierTable={mergedProductConfig.multiplierTable}
+        onClose={() => setAddProductionOpen(false)}
+        onSubmit={handleCreateProduction}
+      />
+
+      <AddProductionModal
         open={Boolean(editingRow)}
         saving={savingEdit}
         prospect={null}
@@ -918,6 +1187,25 @@ export default function ProductionTrackerPage() {
         multiplierTable={mergedProductConfig.multiplierTable}
         onClose={() => setEditingRow(null)}
         onSubmit={handleSaveEdit}
+      />
+
+      <ProductionImportModal
+        open={importOpen}
+        importing={importing}
+        importFile={importFile}
+        importFailures={importFailures}
+        importSuccessCount={importSuccessCount}
+        onClose={() => {
+          if (importing) return;
+          setImportOpen(false);
+          setImportFile(null);
+        }}
+        onFileChange={(file) => {
+          setImportFile(file);
+          setImportFailures([]);
+          setImportSuccessCount(0);
+        }}
+        onSubmit={() => void handleImportCsv()}
       />
 
       <TrackerNotesModal

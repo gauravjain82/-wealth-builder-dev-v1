@@ -4,6 +4,7 @@ export interface UserAutocompleteOption {
   id: number;
   label: string;
   meta?: string;
+  agencyCode?: string;
   roles?: string[];
 }
 
@@ -28,6 +29,7 @@ interface UsersResponse {
     full_name?: string;
     username?: string;
     email?: string;
+    agency_code?: string;
     roles?: string[];
   }>;
 }
@@ -53,8 +55,9 @@ function mapUserToOption(user: UsersResponse['results'][number]): UserAutocomple
   return {
     id: user.id,
     label,
+    agencyCode: user.agency_code || '',
     roles: user.roles || [],
-    meta: [user.email, ...(user.roles || [])].filter(Boolean).join(' | '),
+    meta: [user.email, user.agency_code, ...(user.roles || [])].filter(Boolean).join(' | '),
   };
 }
 
