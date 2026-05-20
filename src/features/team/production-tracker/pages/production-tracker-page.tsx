@@ -1095,7 +1095,7 @@ export default function ProductionTrackerPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col gap-3 bg-[#111318] p-2 text-white">
+    <div className="flex h-screen flex-col gap-3 bg-gray-100 p-2 text-gray-900 dark:bg-[#111318] dark:text-white">
       <TopProducersModal
         open={topProducersOpen}
         performers={topPerformers}
@@ -1135,7 +1135,7 @@ export default function ProductionTrackerPage() {
         <ProductionKpiCard label="Top Producer" value={displayedKpis.topProducer} info="Highest net point producer in the current baseshop view." onClick={() => setTopProducersOpen(true)} />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#3c3521] bg-[#171a20] p-2 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:border-[#3c3521] dark:bg-[#171a20] dark:shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
         <TrackerTable
           columns={columns}
           rows={rows}
@@ -1157,7 +1157,7 @@ export default function ProductionTrackerPage() {
       <div className="flex-shrink-0">
         {loadingMore && (
           <div className="flex items-center justify-center py-3">
-            <div className="text-sm text-white/60">Loading more production records...</div>
+            <div className="text-sm text-slate-400 dark:text-white/60">Loading more production records...</div>
           </div>
         )}
       </div>

@@ -59,22 +59,22 @@ export function ProductionTrackerToolbar({
   onTeamScopeChange: (next: { scope: TrackerTeamScope; user: { id: string; name: string } | null }) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#1d2027] px-4 py-5 shadow-[0_20px_45px_rgba(0,0,0,0.28)]">
+    <div className="rounded-2xl border border-gray-200 bg-white px-4 py-5 shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:border-white/10 dark:bg-[#1d2027] dark:shadow-[0_20px_45px_rgba(0,0,0,0.28)]">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-white">{pageHeading}</h1>
-          <p className="mt-1 text-sm text-white/60">{pageDescription}</p>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{pageHeading}</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-white/60">{pageDescription}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <select
             name="filterkey"
             value={filterKey}
             onChange={(event) => onFilterKeyChange(event.target.value)}
-            className="h-9 rounded-md border border-white/20 bg-white/5 px-2 text-sm text-white"
+            className="h-9 rounded-md border border-gray-300 bg-transparent px-2 text-sm text-gray-900 dark:border-white/20 dark:bg-white/5 dark:text-white"
             aria-label="Filter production data"
           >
             {PRODUCTION_FILTER_KEY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value} className="bg-[#1d2027] text-white">
+              <option key={option.value} value={option.value} className="bg-white text-gray-900 dark:bg-[#1d2027] dark:text-white">
                 {option.label}
               </option>
             ))}

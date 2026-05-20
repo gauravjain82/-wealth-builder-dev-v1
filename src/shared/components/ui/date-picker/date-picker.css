@@ -2,6 +2,11 @@
   color-scheme: dark;
 }
 
+html.light .date-input,
+.light .date-input {
+  color-scheme: light;
+}
+
 .date-input-wrap {
   position: relative;
   width: 100%;
@@ -33,9 +38,21 @@
   justify-content: center;
 }
 
+html.light .date-input-icon,
+.light .date-input-icon {
+  color: rgba(15, 23, 42, 0.45);
+}
+
 .date-input::placeholder,
 .date-input-with-icon::placeholder {
   color: rgba(255, 255, 255, 0.6);
+}
+
+html.light .date-input::placeholder,
+html.light .date-input-with-icon::placeholder,
+.light .date-input::placeholder,
+.light .date-input-with-icon::placeholder {
+  color: rgba(15, 23, 42, 0.4);
 }
 
 .date-picker-popper {

@@ -10,14 +10,14 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Old-site primary CTA: soft gold surface with gold text.
-        default: 'border-[rgba(255,215,0,.35)] bg-[rgba(255,215,0,.2)] text-[#ffd700] hover:bg-[rgba(255,215,0,.28)]',
+        default: 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-[rgba(255,215,0,.35)] dark:bg-[rgba(255,215,0,.2)] dark:text-[#ffd700] dark:hover:bg-[rgba(255,215,0,.28)]',
         // Neutral dark surface button from legacy tracker UI.
-        secondary: 'border-[rgba(255,255,255,.18)] bg-[rgba(255,255,255,.08)] text-white hover:bg-[rgba(255,255,255,.12)]',
+        secondary: 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:border-[rgba(255,255,255,.18)] dark:bg-[rgba(255,255,255,.08)] dark:text-white dark:hover:bg-[rgba(255,255,255,.12)]',
         // Legacy ghost button style.
-        outline: 'border-[rgba(255,255,255,.25)] bg-transparent text-white hover:bg-[rgba(255,255,255,.06)]',
-        ghost: 'border-[rgba(255,255,255,.25)] bg-transparent text-white hover:bg-[rgba(255,255,255,.06)]',
-        destructive: 'border-[rgba(239,83,80,.55)] bg-[rgba(239,83,80,.25)] text-white hover:bg-[rgba(239,83,80,.32)]',
-        link: 'border-transparent bg-transparent p-0 text-[#ffd700] underline-offset-4 hover:underline',
+        outline: 'border-gray-300 bg-transparent text-gray-700 hover:bg-gray-100 dark:border-[rgba(255,255,255,.25)] dark:bg-transparent dark:text-white dark:hover:bg-[rgba(255,255,255,.06)]',
+        ghost: 'border-gray-300 bg-transparent text-gray-700 hover:bg-gray-100 dark:border-[rgba(255,255,255,.25)] dark:bg-transparent dark:text-white dark:hover:bg-[rgba(255,255,255,.06)]',
+        destructive: 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100 dark:border-[rgba(239,83,80,.55)] dark:bg-[rgba(239,83,80,.25)] dark:text-white dark:hover:bg-[rgba(239,83,80,.32)]',
+        link: 'border-transparent bg-transparent p-0 text-amber-700 underline-offset-4 hover:underline dark:text-[#ffd700]',
       },
       size: {
         default: 'h-10 px-3 py-2',

@@ -648,12 +648,12 @@ export default function Tracker4x4Page() {
       <div className="mt-4 flex-shrink-0">
         {loadingMore && (
           <div className="flex items-center justify-center py-4">
-            <div className="text-sm text-white/60">Loading more 4x4 records...</div>
+            <div className="text-sm text-slate-400 dark:text-white/60">Loading more 4x4 records...</div>
           </div>
         )}
         {/* {!hasMore && rows.length > 0 && (
           <div className="flex items-center justify-center py-4">
-            <div className="text-sm text-white/60">No more records to load</div>
+            <div className="text-sm text-slate-400 dark:text-white/60">No more records to load</div>
           </div>
         )} */}
       </div>

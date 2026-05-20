@@ -24,6 +24,11 @@ interface BackendUserProfile {
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
+  avatar_url?: string | null;
+  profile?: {
+    photo_url?: string | null;
+    photo_url_thumb?: string | null;
+  } | null;
 }
 
 interface StoredAuthSession {
@@ -104,11 +109,17 @@ function mapBackendUserToProfile(
   const lastName = backendUser.last_name || '';
   const fullName = backendUser.full_name || `${firstName} ${lastName}`.trim() || backendUser.username || fallbackUsername;
 
+  const photoURL =
+    backendUser.profile?.photo_url_thumb ||
+    backendUser.profile?.photo_url ||
+    backendUser.avatar_url ||
+    null;
+
   return {
     id: String(backendUser.id ?? fallbackId),
     email: backendUser.email || fallbackEmail,
     displayName: fullName || fallbackEmail,
-    photoURL: null,
+    photoURL,
     phoneNumber: null,
     emailVerified: true,
     accountType,
@@ -209,6 +220,38 @@ export class AuthRepository {
     return () => {
       // No-op for API-token auth
     };
+  }
+
+  async refreshPhotoURL(): Promise<UserWithProfile | null> {
+    const session = this.getStoredSession();
+    if (!session?.token || !session?.user) return null;
+
+    try {
+      const response = await fetch(buildApiUrl('/api/accounts/users/me/'), {
+        headers: { Authorization: `Token ${session.token}` },
+      });
+      if (!response.ok) return null;
+
+      const data = (await response.json()) as {
+        profile?: { photo_url_thumb?: string | null; photo_url?: string | null } | null;
+        avatar_url?: string | null;
+      };
+
+      const photoURL =
+        data.profile?.photo_url_thumb ||
+        data.profile?.photo_url ||
+        data.avatar_url ||
+        null;
+
+      if (photoURL === session.user.photoURL) return session.user;
+
+      const updatedUser: UserWithProfile = { ...session.user, photoURL };
+      this.persistSession({ token: session.token, user: updatedUser });
+      this.persistToLocalStorage(updatedUser);
+      return updatedUser;
+    } catch {
+      return null;
+    }
   }
 
   private getStoredSession(): StoredAuthSession | null {

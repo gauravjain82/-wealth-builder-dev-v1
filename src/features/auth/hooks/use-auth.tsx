@@ -26,9 +26,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     // Subscribe to auth state changes
-    const unsubscribe = authService.onAuthStateChange((user) => {
-      setUser(user);
+    const unsubscribe = authService.onAuthStateChange((initialUser) => {
+      setUser(initialUser);
       setIsLoading(false);
+
+      // Hydrate photoURL from /me/ for the current session
+      if (initialUser) {
+        authService.refreshPhotoURL().then((updated) => {
+          if (updated && updated.photoURL !== initialUser.photoURL) {
+            setUser(updated);
+          }
+        });
+      }
     });
 
     return () => unsubscribe();

@@ -1547,12 +1547,12 @@ export default function ProspectTrackerPage() {
       <div className="mt-4 flex-shrink-0">
         {loadingMore && (
           <div className="flex items-center justify-center py-4">
-            <div className="text-sm text-white/60">Loading more prospects...</div>
+            <div className="text-sm text-slate-400 dark:text-white/60">Loading more prospects...</div>
           </div>
         )}
         {/* {!hasMore && prospects.length > 0 && (
           <div className="flex items-center justify-center py-4">
-            <div className="text-sm text-white/60">No more prospects to load</div>
+            <div className="text-sm text-slate-400 dark:text-white/60">No more prospects to load</div>
           </div>
         )} */}
       </div>

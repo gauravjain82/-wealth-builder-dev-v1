@@ -425,7 +425,7 @@ export default function LicensingTrackerPage() {
       <div className="mt-4 flex-shrink-0">
         {loadingMore && (
           <div className="flex items-center justify-center py-4">
-            <div className="text-sm text-white/60">Loading more licensing records...</div>
+            <div className="text-sm text-slate-400 dark:text-white/60">Loading more licensing records...</div>
           </div>
         )}
         {/* {!hasMore && rows.length > 0 && (

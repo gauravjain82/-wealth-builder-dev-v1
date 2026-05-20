@@ -153,7 +153,7 @@ export function TrackerDateRangeFilter({
         type="button"
         className={
           buttonClassName ||
-          'inline-flex h-9 items-center rounded-md border border-white/15 bg-white/5 px-3 text-xs font-semibold text-white/85 hover:bg-white/10'
+          'inline-flex h-9 items-center rounded-md border border-gray-300 bg-gray-100 px-3 text-xs font-semibold text-gray-700 hover:bg-gray-200 dark:border-white/15 dark:bg-white/5 dark:text-white/85 dark:hover:bg-white/10'
         }
         onClick={() => setOpen((prev) => !prev)}
       >
@@ -161,13 +161,13 @@ export function TrackerDateRangeFilter({
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-[280px] rounded-xl border border-white/15 bg-[#1b2433] p-2 text-white shadow-2xl backdrop-blur-sm">
+        <div className="absolute right-0 z-50 mt-2 w-[280px] rounded-xl border border-gray-200 bg-white p-2 text-gray-800 shadow-2xl backdrop-blur-sm dark:border-white/15 dark:bg-[#1b2433] dark:text-white">
           <input
             type="text"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Search"
-            className="mb-2 h-9 w-full rounded-md border border-white/15 bg-black/20 px-2 text-xs text-white/90 outline-none placeholder:text-white/45 focus:border-amber-300/60"
+            className="mb-2 h-9 w-full rounded-md border border-gray-300 bg-gray-50 px-2 text-xs text-gray-800 outline-none placeholder:text-gray-400 focus:border-amber-500/60 dark:border-white/15 dark:bg-black/20 dark:text-white/90 dark:placeholder:text-white/45 dark:focus:border-amber-300/60"
           />
 
           <div className="max-h-[220px] overflow-auto">
@@ -175,19 +175,19 @@ export function TrackerDateRangeFilter({
               <button
                 key={item.key}
                 type="button"
-                className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-white/10 ${
-                  preset === item.key ? 'bg-white/10 font-semibold text-amber-200' : 'text-white/85'
+                className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-white/10 ${
+                  preset === item.key ? 'bg-gray-100 font-semibold text-amber-700 dark:bg-white/10 dark:text-amber-200' : 'text-gray-700 dark:text-white/85'
                 }`}
                 onClick={() => applyPreset(item.key)}
               >
                 <span>{item.label}</span>
-                {preset === item.key ? <span className="text-amber-200">✓</span> : null}
+                {preset === item.key ? <span className="text-amber-700 dark:text-amber-200">✓</span> : null}
               </button>
             ))}
           </div>
 
           {preset === 'custom' && (
-            <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
+            <div className="mt-2 space-y-2 border-t border-gray-200 pt-2 dark:border-white/10">
               <DateRangePicker
                 value={customRange}
                 onChange={(nextRange) => {

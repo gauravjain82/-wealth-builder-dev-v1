@@ -265,7 +265,7 @@ export function TrackerTeamScopeFilter({
       <div className="relative">
         <button
           type="button"
-          className="inline-flex h-9 items-center rounded-md border border-white/15 bg-white/5 px-3 text-xs font-semibold text-white/85 hover:bg-white/10"
+          className="inline-flex h-9 items-center rounded-md border border-gray-300 bg-gray-100 px-3 text-xs font-semibold text-gray-700 hover:bg-gray-200 dark:border-white/15 dark:bg-white/5 dark:text-white/85 dark:hover:bg-white/10"
           disabled={loadingScopes}
           onClick={() => setOpen((prev) => !prev)}
         >
@@ -273,13 +273,13 @@ export function TrackerTeamScopeFilter({
         </button>
 
         {open && (
-          <div className="absolute left-0 z-50 mt-2 w-[220px] rounded-xl border border-white/15 bg-[#1b2433] p-2 text-white shadow-2xl">
+          <div className="absolute left-0 z-50 mt-2 w-[220px] rounded-xl border border-gray-200 bg-white p-2 text-gray-800 shadow-2xl dark:border-white/15 dark:bg-[#1b2433] dark:text-white">
             {scopeOptions.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-white/10 ${
-                  scope === item.id ? 'bg-white/10 font-semibold text-amber-200' : 'text-white/85'
+                className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-white/10 ${
+                  scope === item.id ? 'bg-gray-100 font-semibold text-amber-700 dark:bg-white/10 dark:text-amber-200' : 'text-gray-700 dark:text-white/85'
                 }`}
                 onClick={() => {
                   setScope(item.id);
@@ -290,7 +290,7 @@ export function TrackerTeamScopeFilter({
                 }}
               >
                 <span>{item.label}</span>
-                {scope === item.id ? <span className="text-amber-200">✓</span> : null}
+                {scope === item.id ? <span className="text-amber-700 dark:text-amber-200">✓</span> : null}
               </button>
             ))}
           </div>
@@ -305,16 +305,16 @@ export function TrackerTeamScopeFilter({
             onChange={(event) => setSearchTerm(event.target.value)}
             onFocus={() => setOpenUsers(true)}
             placeholder={loadingUsers ? 'Loading users...' : selectedUser ? selectedUser.name : 'Search user'}
-            className="h-9 w-full rounded-md border border-white/15 bg-black/20 px-2 text-xs text-white/90 outline-none placeholder:text-white/45 focus:border-amber-300/60"
+            className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 text-xs text-gray-800 outline-none placeholder:text-gray-400 focus:border-amber-500/60 dark:border-white/15 dark:bg-black/20 dark:text-white/90 dark:placeholder:text-white/45 dark:focus:border-amber-300/60"
           />
           {openUsers && (
-            <div className="absolute left-0 right-0 z-40 mt-1 max-h-[220px] overflow-auto rounded-lg border border-white/15 bg-[#1b2433] p-1 shadow-2xl">
+            <div className="absolute left-0 right-0 z-40 mt-1 max-h-[220px] overflow-auto rounded-lg border border-gray-200 bg-white p-1 shadow-2xl dark:border-white/15 dark:bg-[#1b2433]">
               {filteredUsers.map((item) => (
                 <button
                   key={item.id}
                   type="button"
-                  className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-white/10 ${
-                    selectedUserId === item.id ? 'bg-white/10 text-amber-200' : 'text-white/85'
+                  className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 ${
+                    selectedUserId === item.id ? 'bg-gray-100 text-amber-700 dark:bg-white/10 dark:text-amber-200' : 'text-gray-700 dark:text-white/85'
                   }`}
                   onClick={() => {
                     setSearchTerm(item.name);
@@ -323,11 +323,11 @@ export function TrackerTeamScopeFilter({
                   }}
                 >
                   <span>{item.name}</span>
-                  <span className="text-[11px] text-white/60">{item.level}</span>
+                  <span className="text-[11px] text-gray-400 dark:text-white/60">{item.level}</span>
                 </button>
               ))}
               {!loadingUsers && filteredUsers.length === 0 && (
-                <div className="px-2 py-2 text-xs text-white/60">No users found.</div>
+                <div className="px-2 py-2 text-xs text-gray-400 dark:text-white/60">No users found.</div>
               )}
             </div>
           )}

@@ -144,7 +144,7 @@ export default function TenSystematicToolsPage() {
     fourFold:
       'https://drive.google.com/file/d/1-GYpGxZpQm8xSdlQl8qfXLeK0bmq0-eb/preview',
     reachMarketFaq:
-      'https://drive.google.com/file/d/19T5-pcGG2DMPzsxXGCCeRg1Tqteo9-lI/preview',
+      'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/10%20Systematic%20Tools%2F3%20Ways%20to%20reach-updated.pdf.pdf?alt=media&token=94233500-1771-4665-8260-57a0c6903816',
     machine:
       'https://drive.google.com/file/d/1WNhK2Crwt_zwE2DsBqyCZ_GDk8p_EfDI/preview',
     accountability:

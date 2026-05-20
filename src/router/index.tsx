@@ -22,6 +22,7 @@ const ComponentsShowcase = lazy(() => import('@/features/showcase/pages/componen
 const PublicInsightCenter = lazy(() => import('@/features/insight-center/pages/public-insight-center'));
 const PublicBusinessPage = lazy(() => import('@/features/education/pages/public-business-page'));
 const PublicEducationPage = lazy(() => import('@/features/education/pages/public-education-page'));
+const FileVaultPage = lazy(() => import('@/features/file-vault/pages/file-vault-page'));
 const TrackMyLicensePage = lazy(() => import('@/features/licensing/track-my-license/pages/track-my-license-page'));
 const LicensingDocumentsPage = lazy(() => import('@/features/licensing/licensing-documents/pages/licensing-documents-page'));
 const CrashCoursePage = lazy(() => import('@/features/licensing/crash-course/pages/crash-course-page'));
@@ -172,6 +173,10 @@ const router = createBrowserRouter([
       {
         path: 'training-schedule',
         element: lazyLoad(TrainingSchedulePage),
+      },
+      {
+        path: 'file-vault',
+        element: lazyLoad(FileVaultPage),
       },
       {
         path: 'team',

@@ -16,6 +16,16 @@ export function Header() {
   // Get first name
   const firstName = (user?.displayName || user?.name || user?.email || 'User').split(' ')[0];
 
+  // Avatar: photo URL or initials
+  const avatarUrl = user?.photoURL || null;
+  const initials = (() => {
+    const full = user?.displayName || user?.name || '';
+    const parts = full.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    if (parts[0]) return parts[0].slice(0, 2).toUpperCase();
+    return (user?.email?.[0] ?? 'U').toUpperCase();
+  })();
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -73,10 +83,15 @@ export function Header() {
         <div ref={dropdownRef} className="header__dropdown">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className={`header__profile-button ${dropdownOpen ? 'header__profile-button--active' : ''}`}
+            className={`header__avatar-button ${dropdownOpen ? 'header__avatar-button--active' : ''}`}
             title="User menu"
+            aria-label="Open user menu"
           >
-            Profile
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={firstName} className="header__avatar-img" />
+            ) : (
+              <span className="header__avatar-initials">{initials}</span>
+            )}
           </button>
 
           {dropdownOpen && (

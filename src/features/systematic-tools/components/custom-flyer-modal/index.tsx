@@ -13,7 +13,7 @@ export default function CustomFlyerModal({
 }: CustomFlyerModalProps) {
   const [formData, setFormData] = useState({
     celebrantName: '',
-    birthDate: '',
+    eventDate: '',
     time: '',
     location: '',
     message: '',
@@ -50,10 +50,10 @@ export default function CustomFlyerModal({
 
         pdf.setTextColor(255, 255, 255);
 
-        if (formData.birthDate) {
+        if (formData.eventDate) {
           pdf.setFont('helvetica', 'bold');
           pdf.setFontSize(18);
-          const dateLines = formData.birthDate.split(' ').filter(Boolean);
+          const dateLines = formData.eventDate.split(' ').filter(Boolean);
           pdf.text(dateLines, pageWidth * 0.25 - 14, 168, { align: 'center' });
         }
 
@@ -107,12 +107,12 @@ export default function CustomFlyerModal({
           });
         }
 
-        const fileName = `NAL-Flyer-${formData.celebrantName || 'Birthday'}.pdf`;
+        const fileName = `NAL-Flyer-${formData.celebrantName || 'Event'}.pdf`;
         pdf.save(fileName);
 
         setFormData({
           celebrantName: '',
-          birthDate: '',
+          eventDate: '',
           time: '',
           location: '',
           message: '',
@@ -178,14 +178,14 @@ export default function CustomFlyerModal({
           </div>
 
           <div className="custom-flyer-field">
-            <label htmlFor="birthDate" className="custom-flyer-label-text">
-              Birth Date
+            <label htmlFor="eventDate" className="custom-flyer-label-text">
+              Date of Event
             </label>
             <input
               type="text"
-              id="birthDate"
-              name="birthDate"
-              value={formData.birthDate}
+              id="eventDate"
+              name="eventDate"
+              value={formData.eventDate}
               onChange={handleInputChange}
               placeholder="e.g., Aug 10 2025"
               className="custom-flyer-input custom-flyer-input-simple"

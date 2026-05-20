@@ -79,6 +79,13 @@ export class AuthService {
   onAuthStateChange(callback: (user: UserWithProfile | null) => void) {
     return authRepository.onAuthStateChange(callback);
   }
+
+  /**
+   * Refresh photoURL from /me/ endpoint and update stored user
+   */
+  async refreshPhotoURL(): Promise<UserWithProfile | null> {
+    return authRepository.refreshPhotoURL();
+  }
 }
 
 // Export singleton instance

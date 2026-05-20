@@ -126,33 +126,33 @@ function AgentsCell({
           {agent1Name ? (
             <button
               type="button"
-              className="truncate text-left text-xs text-amber-200 underline-offset-2 hover:underline"
+              className="truncate text-left text-xs text-amber-700 underline-offset-2 hover:underline dark:text-amber-200"
               title={`View profile: ${agent1Name}`}
               onClick={(e) => { e.stopPropagation(); openProfile(row.agent_1, agent1Name); }}
             >
               {agent1Name}
               {row.split_mode === 'split' && (
-                <span className="ml-1 text-white/50">{row.agent_1_pct}%</span>
+                <span className="ml-1 text-gray-400 dark:text-white/50">{row.agent_1_pct}%</span>
               )}
             </button>
           ) : (
-            <span className="text-xs text-white/40">No agent</span>
+            <span className="text-xs text-gray-400 dark:text-white/40">No agent</span>
           )}
           {agent2Name && (
             <button
               type="button"
-              className="truncate text-left text-xs text-sky-200 underline-offset-2 hover:underline"
+              className="truncate text-left text-xs text-sky-700 underline-offset-2 hover:underline dark:text-sky-200"
               title={`View profile: ${agent2Name}`}
               onClick={(e) => { e.stopPropagation(); openProfile(row.agent_2, agent2Name); }}
             >
               {agent2Name}
-              <span className="ml-1 text-white/50">{row.agent_2_pct}%</span>
+              <span className="ml-1 text-gray-400 dark:text-white/50">{row.agent_2_pct}%</span>
             </button>
           )}
         </div>
         <button
           type="button"
-          className="h-6 w-6 flex-shrink-0 rounded border border-white/15 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+          className="h-6 w-6 flex-shrink-0 rounded border border-gray-300 bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-800 dark:border-white/15 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
           title="Edit agents & split"
           onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}
         >
@@ -254,12 +254,12 @@ function PointsCell({
       {/* Badges row: Total on left, Base Points on right */}
       <div className="flex items-center justify-between gap-2">
         {targetValue && (
-          <span className="inline-flex items-center rounded-full border border-amber-300/25 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-100">
+          <span className="inline-flex items-center rounded-full border border-amber-400/50 bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:border-amber-300/25 dark:bg-amber-500/10 dark:text-amber-100">
             {formatPoint(targetValue)} Pts
           </span>
         )}
         {basePointsLabel && (
-          <span className="inline-flex items-center rounded-full border border-amber-300/25 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-100">
+          <span className="inline-flex items-center rounded-full border border-amber-400/50 bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:border-amber-300/25 dark:bg-amber-500/10 dark:text-amber-100">
             {basePointsLabel}
           </span>
         )}
@@ -269,9 +269,9 @@ function PointsCell({
       {!isSplit && (
         <div className="grid w-full grid-cols-3 gap-1 text-[10px]">
           <div>
-            <div className="mb-1 text-white/60">Total</div>
+            <div className="mb-1 text-gray-500 dark:text-white/60">Total</div>
             <input
-              className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-xs"
+              className="h-8 w-full rounded border border-gray-300 bg-gray-50 px-2 text-xs dark:border-white/20 dark:bg-white/5"
               type="number"
               value={targetValue}
               onChange={(e) => setTargetValue(e.target.value)}
@@ -279,18 +279,18 @@ function PointsCell({
             />
           </div>
           <div>
-            <div className="mb-1 text-white/60">40%</div>
+            <div className="mb-1 text-gray-500 dark:text-white/60">40%</div>
             <input
-              className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-xs"
+              className="h-8 w-full rounded border border-gray-300 bg-gray-50 px-2 text-xs dark:border-white/20 dark:bg-white/5"
               type="number"
               value={forty !== null && forty !== undefined ? String(forty) : ''}
               readOnly
             />
           </div>
           <div>
-            <div className="mb-1 text-white/60">60%</div>
+            <div className="mb-1 text-gray-500 dark:text-white/60">60%</div>
             <input
-              className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-xs"
+              className="h-8 w-full rounded border border-gray-300 bg-gray-50 px-2 text-xs dark:border-white/20 dark:bg-white/5"
               type="number"
               value={sixty !== null && sixty !== undefined ? String(sixty) : ''}
               readOnly
@@ -301,8 +301,8 @@ function PointsCell({
 
       {/* Split agents: point values only, no agent names */}
       {isSplit && (
-        <div className="rounded border border-white/10 bg-white/5 p-1.5">
-          <div className="mb-1 grid grid-cols-3 gap-1 text-[10px] text-white/50">
+        <div className="rounded border border-gray-200 bg-gray-50 p-1.5 dark:border-white/10 dark:bg-white/5">
+          <div className="mb-1 grid grid-cols-3 gap-1 text-[10px] text-gray-500 dark:text-white/50">
             <div>Points</div>
             <div>40%</div>
             <div>60%</div>
@@ -310,9 +310,9 @@ function PointsCell({
           <div className="grid gap-1">
             {splitCards.map((agent) => (
               <div key={agent.key} className="grid grid-cols-3 gap-1">
-                <input className="h-7 w-full rounded border border-white/15 bg-black/20 px-2 text-[11px]" value={formatPoint(agent.total ?? 0)} readOnly />
-                <input className="h-7 w-full rounded border border-white/15 bg-black/20 px-2 text-[11px]" value={formatPoint(agent.forty ?? 0)} readOnly />
-                <input className="h-7 w-full rounded border border-white/15 bg-black/20 px-2 text-[11px]" value={formatPoint(agent.sixty ?? 0)} readOnly />
+                <input className="h-7 w-full rounded border border-gray-300 bg-gray-50 px-2 text-[11px] dark:border-white/15 dark:bg-black/20" value={formatPoint(agent.total ?? 0)} readOnly />
+                <input className="h-7 w-full rounded border border-gray-300 bg-gray-50 px-2 text-[11px] dark:border-white/15 dark:bg-black/20" value={formatPoint(agent.forty ?? 0)} readOnly />
+                <input className="h-7 w-full rounded border border-gray-300 bg-gray-50 px-2 text-[11px] dark:border-white/15 dark:bg-black/20" value={formatPoint(agent.sixty ?? 0)} readOnly />
               </div>
             ))}
           </div>
@@ -332,12 +332,12 @@ function PolicyCell({
   const policyNumber = row.policy_number?.trim() || '—';
 
   return (
-    <div className="grid gap-1 rounded border border-white/10 bg-white/5 px-2 py-1.5 text-[11px] leading-4">
-      <div className="text-white/60">Company: {company}</div>
+    <div className="grid gap-1 rounded border border-gray-200 bg-gray-50 px-2 py-1.5 text-[11px] leading-4 dark:border-white/10 dark:bg-white/5">
+      <div className="text-gray-600 dark:text-white/60">Company: {company}</div>
       {/* <div className="truncate text-white" title={company}>{company}</div> */}
-      <div className="mt-1 text-white/60">Product: {product}</div>
+      <div className="mt-1 text-gray-600 dark:text-white/60">Product: {product}</div>
       {/* <div className="truncate text-white" title={product}>{product}</div> */}
-      <div className="mt-1 text-white/60">Policy #: {policyNumber}</div>
+      <div className="mt-1 text-gray-600 dark:text-white/60">Policy #: {policyNumber}</div>
       {/* <div className="truncate font-medium text-white" title={policyNumber}>{policyNumber}</div> */}
     </div>
   );
@@ -353,14 +353,14 @@ function AdvancesCell({
   return (
     <div className="grid w-full grid-cols-2 gap-1 text-[10px]">
       <div>
-        <div className="mb-1 text-white/60">1st Advance</div>
+        <div className="mb-1 text-gray-500 dark:text-white/60">1st Advance</div>
         <DatePicker
           value={row.advance_first_date || ''}
           onChange={(v) => void onPatch(row, { advance_first_date: v || null })}
         />
       </div>
       <div>
-        <div className="mb-1 text-white/60">2nd Advance</div>
+        <div className="mb-1 text-gray-500 dark:text-white/60">2nd Advance</div>
         <DatePicker
           value={row.advance_second_date || ''}
           onChange={(v) => void onPatch(row, { advance_second_date: v || null })}
@@ -380,13 +380,13 @@ function ChargebackCell({
   const chargebackInfo = row.chargeback_info;
   
   if (!chargebackInfo || !chargebackInfo.eligible_options || chargebackInfo.eligible_options.length === 0) {
-    return <div className="text-[10px] text-white/50">No options</div>;
+    return <div className="text-[10px] text-gray-400 dark:text-white/50">No options</div>;
   }
 
   return (
     <div className="flex flex-col gap-1.5">
       {chargebackInfo.eligible_options.map((option) => (
-        <label key={option.type} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 px-1.5 py-0.5 rounded">
+        <label key={option.type} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 px-1.5 py-0.5 rounded dark:hover:bg-white/5">
           <input
             type="radio"
             name={`chargeback-${row.id}`}
@@ -405,7 +405,7 @@ function ChargebackCell({
             }}
             className="cursor-pointer"
           />
-          <span className="text-[10px] text-white/80">{option.label}</span>
+          <span className="text-[10px] text-gray-700 dark:text-white/80">{option.label}</span>
         </label>
       ))}
     </div>
@@ -431,19 +431,19 @@ function DeliveryStatusCell({
             className="grid grid-cols-[1fr_auto_auto] items-center gap-1 px-1.5 py-0 rounded transition-colors"
             title={field.label}
           >
-            <span className="text-[10px] leading-tight text-white/70 text-left truncate">
+            <span className="text-[10px] leading-tight text-gray-600 text-left truncate dark:text-white/70">
               {field.label}
             </span>
-            <span className="text-[10px] leading-tight font-medium text-white/80 text-center min-w-[72px]">
+            <span className="text-[10px] leading-tight font-medium text-gray-700 text-center min-w-[72px] dark:text-white/80">
               {field.value || '—'}
             </span>
             <button
               type="button"
-              className="flex-shrink-0 p-0.5 hover:bg-white/10 rounded transition-colors"
+              className="flex-shrink-0 p-0.5 hover:bg-gray-200 rounded transition-colors dark:hover:bg-white/10"
               onClick={() => setOpenPickerIndex(openPickerIndex === index ? null : index)}
               title={`Edit ${field.label}`}
             >
-              <IconCalendar size={12} className="text-white/60 hover:text-amber-400" />
+              <IconCalendar size={12} className="text-gray-500 hover:text-amber-600 dark:text-white/60 dark:hover:text-amber-400" />
             </button>
           </div>
           
