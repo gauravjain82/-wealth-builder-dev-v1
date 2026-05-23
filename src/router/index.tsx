@@ -35,6 +35,7 @@ const TrainingSchedulePage = lazy(() => import('@/features/training-schedule/pag
 const HelpNeededPage = lazy(() => import('@/features/helpdesk/pages/help-needed-page'));
 const AdminHelpdeskPage = lazy(() => import('@/features/helpdesk/pages/admin-helpdesk-page'));
 const InviteAgentsPage = lazy(() => import('@/features/admin/invite-agents/pages/invite-agents-page'));
+const TerminatedUsersPage = lazy(() => import('@/features/terminated-users/pages/terminated-users-page'));
 
 // Loading component
 function PageLoader() {
@@ -209,6 +210,10 @@ const router = createBrowserRouter([
       {
         path: 'admin/invite-agents',
         element: lazyLoad(InviteAgentsPage),
+      },
+      {
+        path: 'terminated-users',
+        element: lazyLoad(TerminatedUsersPage),
       },
       {
         path: 'reports',

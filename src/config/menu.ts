@@ -50,6 +50,7 @@ const MENU_ITEMS = {
   LICENSING_TRACKER: { label: 'Licensing Tracker', icon: '📝', path: '/team/licensing-tracker' } as MenuItem,
   PRODUCTION_TRACKER: { label: 'Production Tracker', icon: '💰', path: '/team/production-tracker' } as MenuItem,
   INVITE_AGENTS: { label: 'Invite Agents', icon: '📨', path: '/admin/invite-agents' } as MenuItem,
+  TERMINATED_USERS: { label: 'Terminated Users', icon: '🚫', path: '/terminated-users' } as MenuItem,
   
   // Big Event items
   BIG_EVENT_BUILDER: { label: 'Big Event Builder', icon: '🎪', path: '/events/builder' } as MenuItem,
@@ -307,6 +308,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.FILE_VAULT,
     MENU_ITEMS.HELP_DESK,
     MENU_ITEMS.INVITE_AGENTS,
+    MENU_ITEMS.TERMINATED_USERS,
     {
       label: 'Admin',
       icon: '👨‍💼',

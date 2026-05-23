@@ -24,6 +24,7 @@ export interface TrackerUserProfile {
   plan?: string | null;
   roles?: string[] | null;
   status?: string | null;
+  registration_status?: string | null;
   avatar_url?: string | null;
   level?: { id?: number | null; code?: string | null; name?: string | null } | string | null;
   profile?: {
@@ -177,6 +178,24 @@ export async function uploadTrackerUserPhoto(
 
   const raw = (await response.json()) as TrackerUserProfile;
   return normalizeTrackerUserProfile(raw);
+}
+
+export async function terminateTrackerUser(userId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/accounts/users/${userId}/terminate/`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    let message = `Failed to terminate user: ${response.statusText}`;
+    try {
+      const data = await response.json();
+      message = data?.detail || data?.message || message;
+    } catch {
+      // Keep fallback message.
+    }
+    throw new Error(message);
+  }
 }
 
 export async function fetchTrackerProfileSnapshots(userId: number): Promise<TrackerProfileSnapshots> {

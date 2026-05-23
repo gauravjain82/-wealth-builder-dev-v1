@@ -13,6 +13,7 @@ import { fetchLevels, type Level } from '@/features/team/prospect/services/prosp
 import {
   fetchTrackerProfileSnapshots,
   fetchTrackerUserProfile,
+  terminateTrackerUser,
   type TrackerProfileSnapshots,
   type TrackerUserProfile,
   updateTrackerUserProfile,
@@ -185,6 +186,7 @@ export function TrackerUserProfileModal({
 }: TrackerUserProfileModalProps) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [terminating, setTerminating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<TrackerUserProfile | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -226,6 +228,11 @@ export function TrackerUserProfileModal({
   const displayName = useMemo(() => toDisplayName(profile, fallbackName), [profile, fallbackName]);
   const avatarUrl = profile?.profile?.photo_url_thumb || null;
   const avatarSrc = avatarUrl;//avatarUrl ? `${avatarUrl}${avatarUrl.includes('?') ? '&' : '?'}v=${avatarVersion}` : null;
+  const registrationStatus = useMemo(() => {
+    const rawStatus = (profile?.registration_status || profile?.status || '').toString().trim().toLowerCase();
+    if (!rawStatus) return 'Registered';
+    return rawStatus === 'unregistered' ? 'Unregistered' : 'Registered';
+  }, [profile?.registration_status, profile?.status]);
 
 
   const handleUploadPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -324,6 +331,30 @@ export function TrackerUserProfileModal({
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTerminateUser = async () => {
+    if (userId == null || terminating) return;
+
+    const confirmed = window.confirm(`Terminate ${displayName}?`);
+    if (!confirmed) return;
+
+    try {
+      setTerminating(true);
+      await terminateTrackerUser(userId);
+      const refreshedProfile = await fetchTrackerUserProfile(userId);
+      setProfile(refreshedProfile);
+      setForm(mapToForm(refreshedProfile));
+      onSaved?.(refreshedProfile);
+      addToast({ type: 'success', message: 'User terminated successfully.' });
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to terminate user.',
+      });
+    } finally {
+      setTerminating(false);
     }
   };
 
@@ -449,6 +480,12 @@ export function TrackerUserProfileModal({
                         {level.name || level.code}
                       </option>
                     ))}
+                  </Select>
+                </LabeledField>
+                <LabeledField label="Registration Status">
+                  <Select value={registrationStatus} disabled>
+                    <option value="Registered" className="text-black">Registered</option>
+                    <option value="Unregistered" className="text-black">Unregistered</option>
                   </Select>
                 </LabeledField>
                 <LabeledField label="Recruiter">
@@ -581,11 +618,22 @@ export function TrackerUserProfileModal({
             </section>
           </div>
 
-          <div className="flex items-center justify-end gap-2 border-t border-white/10 pt-3">
-            <Button type="button" variant="outline" onClick={onClose}>Close</Button>
-            <Button type="button" onClick={() => void handleSave()} disabled={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
+          <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-3">
+            <Button
+              type="button"
+              variant="destructive"
+              className="min-w-[130px]"
+              onClick={() => void handleTerminateUser()}
+              disabled={terminating || loading || registrationStatus === 'Unregistered'}
+            >
+              {terminating ? 'Terminating...' : 'Terminate User'}
             </Button>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>Close</Button>
+              <Button type="button" onClick={() => void handleSave()} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
           </div>
         </div>
       )}
