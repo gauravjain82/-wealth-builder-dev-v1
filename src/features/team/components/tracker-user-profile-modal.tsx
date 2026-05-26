@@ -8,6 +8,7 @@ import {
   Select,
   UserAutocompleteDropdown,
 } from '@/shared/components';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { useToastStore } from '@/store';
 import { fetchLevels, type Level } from '@/features/team/prospect/services/prospect-service';
 import {
@@ -194,6 +195,7 @@ export function TrackerUserProfileModal({
   const [snapshots, setSnapshots] = useState<TrackerProfileSnapshots | null>(null);
   const [levels, setLevels] = useState<Level[]>([]);
   const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
+  const [confirmTerminateOpen, setConfirmTerminateOpen] = useState(false);
   const addToast = useToastStore((state) => state.addToast);
 
   useEffect(() => {
@@ -336,18 +338,12 @@ export function TrackerUserProfileModal({
 
   const handleTerminateUser = async () => {
     if (userId == null || terminating) return;
-
-    const confirmed = window.confirm(`Terminate ${displayName}?`);
-    if (!confirmed) return;
-
     try {
       setTerminating(true);
       await terminateTrackerUser(userId);
       addToast({ type: 'success', message: 'User terminated successfully.' });
-      // Notify parent to refresh lists and close modal
-      onSaved?.({ ...(profile as TrackerUserProfile), is_active: false });
+      onSaved?.(profile as TrackerUserProfile);
       onClose();
-      // Force a full page reload to update all lists
       window.location.reload();
     } catch (err) {
       addToast({
@@ -624,11 +620,24 @@ export function TrackerUserProfileModal({
               type="button"
               variant="destructive"
               className="min-w-[130px]"
-              onClick={() => void handleTerminateUser()}
+              onClick={() => setConfirmTerminateOpen(true)}
               disabled={terminating || loading || profile?.is_active === false}
             >
               {terminating ? 'Terminating...' : 'Terminate User'}
             </Button>
+            <ConfirmDialog
+              open={confirmTerminateOpen}
+              title="Confirm Termination"
+              message={`Terminate ${displayName}?`}
+              confirmLabel="Terminate"
+              cancelLabel="Cancel"
+              confirmVariant="destructive"
+              onConfirm={() => {
+                setConfirmTerminateOpen(false);
+                void handleTerminateUser();
+              }}
+              onCancel={() => setConfirmTerminateOpen(false)}
+            />
             <div className="flex items-center gap-2">
               <Button type="button" variant="outline" onClick={onClose}>Close</Button>
               <Button type="button" onClick={() => void handleSave()} disabled={saving}>

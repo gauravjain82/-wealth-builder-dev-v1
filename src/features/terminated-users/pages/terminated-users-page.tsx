@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Block, Button, ErrorState, LoadingState } from '@/shared/components';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { useToastStore } from '@/store';
 import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
 import {
@@ -55,10 +56,12 @@ function ActivateToggle({
   const [loading, setLoading] = useState(false);
   const addToast = useToastStore((s) => s.addToast);
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const handleActivate = async () => {
     if (loading) return;
-    const confirmed = window.confirm(`Reactivate ${name}?`);
-    if (!confirmed) return;
+    setConfirmOpen(true);
+  };
+  const handleConfirm = async () => {
     try {
       setLoading(true);
       await reactivateUser(userId);
@@ -71,6 +74,7 @@ function ActivateToggle({
       });
     } finally {
       setLoading(false);
+      setConfirmOpen(false);
     }
   };
 
@@ -96,6 +100,16 @@ function ActivateToggle({
           }`}
         />
       </button>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Confirm Activation"
+        message={`Activate ${name}?`}
+        confirmLabel="Activate"
+        cancelLabel="Cancel"
+        confirmVariant="default"
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }
