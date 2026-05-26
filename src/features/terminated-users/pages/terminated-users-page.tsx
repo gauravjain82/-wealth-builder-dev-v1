@@ -278,10 +278,10 @@ export default function TerminatedUsersPage() {
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
   const [profileName, setProfileName] = useState<string>('');
 
-  const openProfile = useCallback((id: number, name: string) => {
-    setProfileUserId(id);
-    setProfileName(name);
-  }, []);
+  // const openProfile = useCallback((id: number, name: string) => {
+  //   setProfileUserId(id);
+  //   setProfileName(name);
+  // }, []);
 
   const closeProfile = useCallback(() => {
     setProfileUserId(null);

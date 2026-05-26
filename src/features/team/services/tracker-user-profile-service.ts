@@ -22,6 +22,7 @@ export interface TrackerUserProfile {
   recruited_by_name?: string | null;
   leader_name?: string | null;
   plan?: string | null;
+  is_active?: boolean;
   roles?: string[] | null;
   status?: string | null;
   registration_status?: string | null;
