@@ -343,11 +343,12 @@ export function TrackerUserProfileModal({
     try {
       setTerminating(true);
       await terminateTrackerUser(userId);
-      const refreshedProfile = await fetchTrackerUserProfile(userId);
-      setProfile(refreshedProfile);
-      setForm(mapToForm(refreshedProfile));
-      onSaved?.(refreshedProfile);
       addToast({ type: 'success', message: 'User terminated successfully.' });
+      // Notify parent to refresh lists and close modal
+      onSaved?.({ ...(profile as TrackerUserProfile), is_active: false });
+      onClose();
+      // Force a full page reload to update all lists
+      window.location.reload();
     } catch (err) {
       addToast({
         type: 'error',
@@ -624,7 +625,7 @@ export function TrackerUserProfileModal({
               variant="destructive"
               className="min-w-[130px]"
               onClick={() => void handleTerminateUser()}
-              disabled={terminating || loading || registrationStatus === 'Unregistered'}
+              disabled={terminating || loading || profile?.is_active === false}
             >
               {terminating ? 'Terminating...' : 'Terminate User'}
             </Button>
