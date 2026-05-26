@@ -14,7 +14,7 @@ export interface TerminatedUser {
   first_name: string;
   last_name: string;
   full_name?: string | null;
-  email: string;
+  email: string | null;
   phone?: string | null;
   agency_code?: string | null;
   roles?: string[] | null;
@@ -29,12 +29,40 @@ export interface TerminatedUser {
 interface TerminatedUsersResponse {
   results?: TerminatedUser[];
   count?: number;
+  next?: string | null;
+  previous?: string | null;
 }
 
-export async function fetchTerminatedUsers(): Promise<TerminatedUser[]> {
-  const response = await fetch(`${API_BASE_URL}/api/accounts/users/terminated/`, {
-    headers: getAuthHeaders(),
-  });
+export interface TerminatedUsersPage {
+  results: TerminatedUser[];
+  count: number;
+  hasMore: boolean;
+}
+
+export interface FetchTerminatedUsersOptions {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  signal?: AbortSignal;
+}
+
+export async function fetchTerminatedUsers(
+  options: FetchTerminatedUsersOptions = {},
+): Promise<TerminatedUsersPage> {
+  const { page = 1, pageSize = 25, search, signal } = options;
+  const params = new URLSearchParams();
+  params.set('page', String(page));
+  params.set('page_size', String(pageSize));
+  const trimmed = search?.trim();
+  if (trimmed) params.set('search', trimmed);
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/accounts/users/terminated/?${params.toString()}`,
+    {
+      headers: getAuthHeaders(),
+      signal,
+    },
+  );
 
   if (!response.ok) {
     let message = `Failed to fetch terminated users: ${response.statusText}`;
@@ -48,8 +76,15 @@ export async function fetchTerminatedUsers(): Promise<TerminatedUser[]> {
   }
 
   const data = (await response.json()) as TerminatedUsersResponse | TerminatedUser[];
-  if (Array.isArray(data)) return data;
-  return data.results ?? [];
+  if (Array.isArray(data)) {
+    return { results: data, count: data.length, hasMore: false };
+  }
+  const results = data.results ?? [];
+  return {
+    results,
+    count: data.count ?? results.length,
+    hasMore: Boolean(data.next),
+  };
 }
 
 export async function reactivateUser(userId: number): Promise<void> {

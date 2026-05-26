@@ -18,6 +18,7 @@ export interface LicensingTrackerRecord {
   invited_at?: string | null;
   avatar_url?: string | null;
   photo_thumb_url?: string | null;
+  registration_status?: string | null;
   is_agent_agreement_done: boolean;
   agent_approval_date: string | null;
   is_licensed: boolean;

@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Block, Button, ErrorState, LoadingState } from '@/shared/components';
 import { useToastStore } from '@/store';
+import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
 import {
   fetchTerminatedUsers,
   reactivateUser,
   type TerminatedUser,
 } from '../services/terminated-users-service';
+
+const PAGE_SIZE = 25;
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -17,7 +20,8 @@ function initialsFromName(name: string): string {
 function displayName(user: TerminatedUser): string {
   const full = user.full_name?.trim();
   if (full) return full;
-  return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+  const composed = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+  return composed || user.email || 'Unknown';
 }
 
 function UserAvatar({ user }: { user: TerminatedUser }) {
@@ -99,12 +103,20 @@ function ActivateToggle({
 function SearchInput({
   value,
   onChange,
+  onSubmit,
 }: {
   value: string;
   onChange: (v: string) => void;
+  onSubmit: () => void;
 }) {
   return (
-    <div className="relative">
+    <form
+      className="relative"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
+      }}
+    >
       <svg
         className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
         fill="none"
@@ -121,61 +133,162 @@ function SearchInput({
         onChange={(e) => onChange(e.target.value)}
         className="h-9 w-full rounded-lg border border-white/15 bg-white/5 pl-9 pr-3 text-sm text-white placeholder-white/40 outline-none transition focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/30 dark:bg-white/5 dark:text-white"
       />
-    </div>
+    </form>
   );
 }
 
 export default function TerminatedUsersPage() {
   const [users, setUsers] = useState<TerminatedUser[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
   const addToast = useToastStore((s) => s.addToast);
 
-  const load = useCallback(() => {
-    let active = true;
-    setLoading(true);
-    setError(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const requestIdRef = useRef(0);
+  const loadAbortRef = useRef<AbortController | null>(null);
+  const loadMoreAbortRef = useRef<AbortController | null>(null);
 
-    void fetchTerminatedUsers()
+  // Submit search to server on Enter; also reset to all when cleared.
+  useEffect(() => {
+    if (search === '') {
+      setDebouncedSearch('');
+    }
+  }, [search]);
+
+  const handleSearchSubmit = useCallback(() => {
+    setDebouncedSearch(search.trim());
+  }, [search]);
+
+  const load = useCallback(
+    (searchTerm: string) => {
+      const requestId = ++requestIdRef.current;
+      loadAbortRef.current?.abort();
+      loadMoreAbortRef.current?.abort();
+      const controller = new AbortController();
+      loadAbortRef.current = controller;
+
+      setLoading(true);
+      setError(null);
+
+      void fetchTerminatedUsers({
+        page: 1,
+        pageSize: PAGE_SIZE,
+        search: searchTerm,
+        signal: controller.signal,
+      })
+        .then((data) => {
+          if (requestId !== requestIdRef.current) return;
+          setUsers(data.results);
+          setHasMore(data.hasMore);
+          setTotalCount(data.count);
+          setPage(1);
+        })
+        .catch((err) => {
+          if (controller.signal.aborted) return;
+          if (requestId !== requestIdRef.current) return;
+          const msg = err instanceof Error ? err.message : 'Failed to load terminated users.';
+          setError(msg);
+          addToast({ type: 'error', message: msg });
+        })
+        .finally(() => {
+          if (controller.signal.aborted) return;
+          if (requestId !== requestIdRef.current) return;
+          setLoading(false);
+        });
+    },
+    [addToast],
+  );
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || loading || !hasMore) return;
+    const nextPage = page + 1;
+    loadMoreAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadMoreAbortRef.current = controller;
+    setLoadingMore(true);
+    void fetchTerminatedUsers({
+      page: nextPage,
+      pageSize: PAGE_SIZE,
+      search: debouncedSearch,
+      signal: controller.signal,
+    })
       .then((data) => {
-        if (!active) return;
-        setUsers(data);
+        if (controller.signal.aborted) return;
+        setUsers((prev) => {
+          const seen = new Set(prev.map((u) => u.id));
+          const merged = [...prev];
+          for (const u of data.results) {
+            if (!seen.has(u.id)) merged.push(u);
+          }
+          return merged;
+        });
+        setHasMore(data.hasMore);
+        setTotalCount(data.count);
+        setPage(nextPage);
       })
       .catch((err) => {
-        if (!active) return;
-        const msg = err instanceof Error ? err.message : 'Failed to load terminated users.';
-        setError(msg);
+        if (controller.signal.aborted) return;
+        const msg = err instanceof Error ? err.message : 'Failed to load more terminated users.';
         addToast({ type: 'error', message: msg });
       })
       .finally(() => {
-        if (!active) return;
-        setLoading(false);
+        if (controller.signal.aborted) return;
+        setLoadingMore(false);
       });
-
-    return () => {
-      active = false;
-    };
-  }, [addToast]);
+  }, [addToast, debouncedSearch, hasMore, loading, loadingMore, page]);
 
   useEffect(() => {
-    const cleanup = load();
-    return cleanup;
-  }, [load]);
+    load(debouncedSearch);
+  }, [load, debouncedSearch]);
+
+  const refresh = useCallback(() => {
+    load(debouncedSearch);
+  }, [load, debouncedSearch]);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node) return;
+    if (!hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            loadMore();
+          }
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore, users.length]);
 
   const handleActivated = useCallback((id: number) => {
     setUsers((prev) => prev.filter((u) => u.id !== id));
+    setTotalCount((prev) => Math.max(0, prev - 1));
   }, []);
 
-  const filtered = users.filter((u) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      displayName(u).toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      (u.agency_code || '').toLowerCase().includes(q)
-    );
-  });
+  const [profileUserId, setProfileUserId] = useState<number | null>(null);
+  const [profileName, setProfileName] = useState<string>('');
+
+  const openProfile = useCallback((id: number, name: string) => {
+    setProfileUserId(id);
+    setProfileName(name);
+  }, []);
+
+  const closeProfile = useCallback(() => {
+    setProfileUserId(null);
+    setProfileName('');
+  }, []);
+
+  const filtered = users;
 
   return (
     <div className="p-4 sm:p-6">
@@ -183,7 +296,7 @@ export default function TerminatedUsersPage() {
         title="Terminated Users"
         description="Users who have been terminated. Use the toggle to reactivate a user."
         actions={
-          <Button type="button" variant="secondary" size="sm" onClick={load} disabled={loading}>
+          <Button type="button" variant="secondary" size="sm" onClick={refresh} disabled={loading}>
             {loading ? 'Refreshing…' : 'Refresh'}
           </Button>
         }
@@ -193,14 +306,14 @@ export default function TerminatedUsersPage() {
       {/* Search */}
       {!loading && !error && (
         <div className="mb-4 max-w-sm">
-          <SearchInput value={search} onChange={setSearch} />
+          <SearchInput value={search} onChange={setSearch} onSubmit={handleSearchSubmit} />
         </div>
       )}
 
       {loading ? (
         <LoadingState description="Loading terminated users…" />
       ) : error ? (
-        <ErrorState description={error} onRetry={load} />
+        <ErrorState description={error} onRetry={refresh} />
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-white/10 bg-white/5 px-6 py-12 text-center">
           <p className="text-sm text-white/60">
@@ -232,7 +345,15 @@ export default function TerminatedUsersPage() {
 
                   {/* Name */}
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-white">{name}</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // openProfile(user.id, name);
+                      }}
+                      className="block max-w-full truncate text-left text-sm font-medium text-white hover:text-amber-300 focus:outline-none focus-visible:underline"
+                    >
+                      {name}
+                    </button>
                     <div className="truncate text-xs text-white/50">{user.email}</div>
                   </div>
 
@@ -258,13 +379,31 @@ export default function TerminatedUsersPage() {
             })}
           </ul>
 
+          {/* Infinite scroll sentinel */}
+          {hasMore && (
+            <div
+              ref={sentinelRef}
+              className="flex items-center justify-center px-4 py-4 text-xs text-white/50"
+            >
+              {loadingMore ? 'Loading more…' : 'Scroll to load more'}
+            </div>
+          )}
+
           {/* Footer count */}
           <div className="border-t border-white/10 px-4 py-2.5 text-xs text-white/40">
-            {filtered.length} of {users.length} terminated user{users.length !== 1 ? 's' : ''}
+            Showing {filtered.length} of {totalCount} terminated user{totalCount !== 1 ? 's' : ''}
             {search.trim() ? ' matching search' : ''}
           </div>
         </div>
       )}
+
+      {/* Agent profile modal */}
+      <TrackerUserProfileModal
+        open={profileUserId !== null}
+        userId={profileUserId}
+        fallbackName={profileName}
+        onClose={closeProfile}
+      />
     </div>
   );
 }

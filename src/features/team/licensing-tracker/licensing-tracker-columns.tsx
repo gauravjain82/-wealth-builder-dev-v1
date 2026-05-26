@@ -142,7 +142,7 @@ export function buildLicensingColumns(
       searchable: true,
       render: (row) => (
         <TrackerUserCell
-          fullName={row.user_name}
+          fullName={`${row.registration_status === 'UNREGISTERED' ? '*' : ''}${row.user_name}`}
           invitedAt={row.invited_at || row.created_at}
           agencyCode={row.agency_code}
           avatarUrl={row.photo_thumb_url || row.avatar_url}

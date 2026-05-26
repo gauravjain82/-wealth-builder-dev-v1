@@ -17,6 +17,7 @@ export interface AssociateTrackerRecord {
   invited_at?: string | null;
   avatar_url?: string | null;
   photo_thumb_url?: string | null;
+  registration_status?: string | null;
   finish_1st_recruit: boolean;
   finish_1st_savings: boolean;
   savings_1st_amount: number | string | null;
