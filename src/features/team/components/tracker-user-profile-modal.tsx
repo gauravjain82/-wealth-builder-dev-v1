@@ -560,18 +560,18 @@ export function TrackerUserProfileModal({
             <section className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/90">
               <h4 className="text-sm font-semibold text-white">Tracker Summary</h4>
               <div className="space-y-2 rounded-lg border border-white/10 bg-white/5 p-3">
-                <div className="text-xs font-semibold uppercase text-white/70">4x4</div>
-                {snapshots?.tracker4x4 ? (
+                <div className="text-xs font-semibold uppercase text-white/70">Mission</div>
+                {snapshots?.missionTracker ? (
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>1st Recruit: {yesNo(snapshots.tracker4x4.finish_1st_recruit)}</div>
-                    <div>Big Event: {yesNo(snapshots.tracker4x4.big_event_1st)}</div>
-                    <div>1st Savings: {yesNo(snapshots.tracker4x4.finish_1st_savings)}</div>
-                    <div>Savings Amt: {snapshots.tracker4x4.savings_1st_amount ?? '-'}</div>
-                    <div>Pass Exam: {snapshots.tracker4x4.pass_exam_date || '-'}</div>
-                    <div>Sircon/NIPR: {snapshots.tracker4x4.sircon_nipr_date || '-'}</div>
+                    <div>1st Recruit: {yesNo(snapshots.missionTracker.finish_1st_recruit)}</div>
+                    <div>Big Event: {yesNo(snapshots.missionTracker.big_event_1st)}</div>
+                    <div>1st Savings: {yesNo(snapshots.missionTracker.finish_1st_savings)}</div>
+                    <div>Savings Amt: {snapshots.missionTracker.savings_1st_amount ?? '-'}</div>
+                    <div>Pass Exam: {snapshots.missionTracker.pass_exam_date || '-'}</div>
+                    <div>Sircon/NIPR: {snapshots.missionTracker.sircon_nipr_date || '-'}</div>
                   </div>
                 ) : (
-                  <div className="text-xs text-white/60">No 4x4 record.</div>
+                  <div className="text-xs text-white/60">No mission record.</div>
                 )}
               </div>
 

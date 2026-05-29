@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Block, ErrorState, LoadingState, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { buildLicensingColumns } from '@/features/team/licensing-tracker/licensing-tracker-columns';
@@ -66,6 +66,7 @@ export default function LicensingTrackerPage() {
   } | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const hasLoadedOnceRef = useRef(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [nextPageNum, setNextPageNum] = useState(1);
@@ -326,6 +327,7 @@ export default function LicensingTrackerPage() {
         addToast({ type: 'error', message: 'Failed to load licensing tracker.' });
       } finally {
         if (isInitial) {
+          hasLoadedOnceRef.current = true;
           setLoading(false);
         } else {
           setLoadingMore(false);
@@ -353,7 +355,7 @@ export default function LicensingTrackerPage() {
     );
   }, [notesByUserId, notesOpenFor]);
 
-  if (loading) {
+  if (loading && !hasLoadedOnceRef.current) {
     return (
       <div className="p-2">
         <LoadingState
@@ -414,6 +416,7 @@ export default function LicensingTrackerPage() {
           tableId="licensing-tracker"
           emptyMessage="No licensing tracker records found."
           className="h-full"
+          loading={loading}
           serverSort={sortState}
           onServerSortChange={setSortState}
           serverFilters={filters}

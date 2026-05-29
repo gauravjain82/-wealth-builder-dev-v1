@@ -605,8 +605,8 @@ export function TrackerTable<T>({
             </tr>
           </thead>
 
-          <tbody>
-            {loading && (
+          <tbody className={loading ? 'tracker-tbody-loading' : ''}>
+            {loading && visibleRows.length === 0 && (
               <tr>
                 <td colSpan={columns.length} className="tracker-empty-cell">
                   Loading tracker data...
@@ -622,8 +622,7 @@ export function TrackerTable<T>({
               </tr>
             )}
 
-            {!loading &&
-              visibleRows.map((row, rowIndex) => (
+            {visibleRows.map((row, rowIndex) => (
                 <tr
                   key={rowKey(row, rowIndex)}
                   className={`tracker-tr ${onRowClick ? 'tracker-clickable' : ''} ${rowClassName?.(row, rowIndex) || ''}`}
@@ -669,6 +668,14 @@ export function TrackerTable<T>({
           </tbody>
         </table>
       </div>
+      {loading && (
+        <div className="tracker-table-loading-overlay" role="status" aria-live="polite">
+          <div className="tracker-table-loading-card">
+            <span className="tracker-table-spinner" aria-hidden="true" />
+            <span>Loading tracker data...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

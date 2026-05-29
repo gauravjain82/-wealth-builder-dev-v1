@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { roleToPlan } from '@/core/constants/roles';
 import { Plan } from '@/core/types';
 import {
@@ -188,6 +188,7 @@ export default function ProspectTrackerPage() {
 
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoadedOnceRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [activeCallLogProspect, setActiveCallLogProspect] = useState<Prospect | null>(null);
   const [addAgencyCodeFor, setAddAgencyCodeFor] = useState<Prospect | null>(null);
@@ -393,6 +394,9 @@ export default function ProspectTrackerPage() {
       addToast({ type: 'error', message: 'Failed to load prospects.' });
       console.error('Error loading prospects:', err);
     } finally {
+      if (isInitial) {
+        hasLoadedOnceRef.current = true;
+      }
       setLoading(false);
       setLoadingMore(false);
     }
@@ -1478,7 +1482,7 @@ export default function ProspectTrackerPage() {
     }
   }, [filters, hasMore, loading, loadingMore, nextPageNum, prospects.length, sortState]);
 
-  if (loading) {
+  if (loading && !hasLoadedOnceRef.current) {
     return (
       <div className="p-2">
         <LoadingState
@@ -1536,6 +1540,7 @@ export default function ProspectTrackerPage() {
           tableId="prospect-tracker"
           emptyMessage="No prospects found. Add your first prospect to get started!"
           className="h-full"
+          loading={loading}
           serverSort={sortState}
           onServerSortChange={setSortState}
           serverFilters={filters}

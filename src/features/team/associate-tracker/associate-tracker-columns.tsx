@@ -381,56 +381,8 @@ export function buildAssociateColumns(
       render: (row) => renderCheckbox(row, 'big_event_1st', options),
     },
     {
-      key: 'observe_4_recruits',
-      label: 'Observe 4\nrecruits',
-      width: 140,
-      align: 'center',
-      sortable: true,
-      searchable: false,
-      value: (row) => asYesNo(row.observe_4_recruits),
-      render: (row) => (
-        <span className={`text-xs font-semibold ${row.observe_4_recruits ? 'text-emerald-400' : 'text-white/40'}`}>
-          {row.observe_4_recruits ? 'Yes' : 'No'}
-        </span>
-      ),
-    },
-    {
-      key: 'observe_4_clients',
-      label: 'Observe 4\nclients',
-      width: 140,
-      align: 'center',
-      sortable: true,
-      searchable: false,
-      value: (row) => asYesNo(row.observe_4_clients),
-      render: (row) => renderCheckbox(row, 'observe_4_clients', options),
-    },
-    {
-      key: 'is_licensed',
-      label: 'Get licensed',
-      width: 140,
-      align: 'center',
-      sortable: true,
-      searchable: false,
-      value: (row) => asYesNo(row.is_licensed),
-      render: (row) => (
-        <span className={`text-xs font-semibold ${row.is_licensed ? 'text-emerald-400' : 'text-white/40'}`}>
-          {row.is_licensed ? 'Yes' : 'No'}
-        </span>
-      ),
-    },
-    {
-      key: 'direct_registration_1st',
-      label: '1 Direct\nRegistration',
-      width: 140,
-      align: 'center',
-      sortable: true,
-      searchable: false,
-      value: (row) => asYesNo(row.direct_registration_1st),
-      render: (row) => renderCheckbox(row, 'direct_registration_1st', options),
-    },
-    {
       key: 'recruit_9',
-      label: '9 Recruits',
+      label: 'Recruits',
       width: 120,
       align: 'center',
       sortable: true,
@@ -452,7 +404,7 @@ export function buildAssociateColumns(
     },
     {
       key: 'personal_points_45k',
-      label: '45k Personal\nPoints',
+      label: 'Points',
       width: 140,
       align: 'center',
       sortable: true,
@@ -474,7 +426,7 @@ export function buildAssociateColumns(
     },
     {
       key: 'registration_base_15k',
-      label: '3 Licenses',
+      label: 'Licenses',
       width: 120,
       align: 'center',
       sortable: true,
@@ -496,13 +448,27 @@ export function buildAssociateColumns(
     },
     {
       key: 'registrationsBase',
-      label: '15 Registration\nbase',
+      label: 'Registrations',
       width: 140,
       align: 'center',
       sortable: true,
       searchable: false,
       value: (row) => String(row.registration_base_15k),
       render: (row) => <RegistrationBase15kCell row={row} options={options} />,
+    },
+    {
+      key: 'is_licensed',
+      label: 'Licensed',
+      width: 140,
+      align: 'center',
+      sortable: true,
+      searchable: false,
+      value: (row) => asYesNo(row.is_licensed),
+      render: (row) => (
+        <span className={`text-xs font-semibold ${row.is_licensed ? 'text-emerald-400' : 'text-white/40'}`}>
+          {row.is_licensed ? 'Yes' : 'No'}
+        </span>
+      ),
     },
     {
       key: 'net_license_amount',

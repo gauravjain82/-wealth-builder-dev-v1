@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Block, Button, ErrorState, LoadingState, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { buildAssociateColumns } from '../associate-tracker-columns';
@@ -91,6 +91,7 @@ export default function AssociateTrackerPage() {
   const [licensedUsers, setLicensedUsers] = useState<HotRecruitUser[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const hasLoadedOnceRef = useRef(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [nextPageNum, setNextPageNum] = useState(1);
@@ -451,6 +452,7 @@ export default function AssociateTrackerPage() {
         addToast({ type: 'error', message: 'Failed to load associate tracker.' });
       } finally {
         if (isInitial) {
+          hasLoadedOnceRef.current = true;
           setLoading(false);
         } else {
           setLoadingMore(false);
@@ -516,7 +518,7 @@ export default function AssociateTrackerPage() {
     );
   }, [notesByUserId, notesOpenFor]);
 
-  if (loading) {
+  if (loading && !hasLoadedOnceRef.current) {
     return (
       <div className="p-2">
         <LoadingState
@@ -594,6 +596,7 @@ export default function AssociateTrackerPage() {
           tableId="associate-tracker"
           emptyMessage="No associate tracker records found."
           className="h-full"
+          loading={loading}
           serverSort={sortState}
           onServerSortChange={setSortState}
           serverFilters={filters}

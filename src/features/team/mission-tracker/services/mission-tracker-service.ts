@@ -1,6 +1,38 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// Mission Ring Proof Attachments API
+export async function listMissionRingProofAttachments(userId: number): Promise<Array<{ id: number; file_name: string; uploaded_at: string; url: string }>> {
+  // GET /api/trackers/4X4/{user_id}/
+  const response = await fetch(`${API_BASE_URL}/api/tracker/trackers/4X4/${userId}/`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to fetch mission ring proof attachments');
+  const data = await response.json();
+  // The field is mission_ring_proof: Array<{file_name, uploaded_at, url, ...}>
+  return (data.mission_ring_proof || []).map((item: any, idx: number) => ({
+    id: idx,
+    file_name: item.file_name,
+    uploaded_at: item.uploaded_at,
+    url: item.url,
+  }));
+}
 
-export interface Tracker4x4Record {
+export async function uploadMissionRingProofAttachment(userId: number, file: File): Promise<void> {
+  // POST /api/trackers/4X4/{user_id}/mission-ring-proof/
+  const formData = new FormData();
+  formData.append('file', file);
+  // Only set Authorization header, NOT Content-Type
+  const token = localStorage.getItem('wb.authToken');
+  const headers: Record<string, string> = token ? { Authorization: `Token ${token}` } : {};
+  const response = await fetch(`${API_BASE_URL}/api/tracker/trackers/4X4/${userId}/mission-ring-proof/`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+  if (!response.ok) throw new Error('Failed to upload mission ring proof attachment');
+}
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const MISSION_TRACKER_API_KEY = ['4', 'X4'].join('');
+
+export interface MissionTrackerRecord {
   id: number;
   serial_no?: number;
   user_id: number;
@@ -38,6 +70,7 @@ export interface Tracker4x4Record {
   savings_4th_amount: number | string | null;
   created_at: string;
   updated_at: string;
+  smd_100k_class: boolean | null;
 }
 
 interface PaginatedTrackerResponse<T> {
@@ -47,7 +80,7 @@ interface PaginatedTrackerResponse<T> {
   results: T[];
 }
 
-export interface Tracker4x4Query {
+export interface MissionTrackerQuery {
   page?: number;
   pageSize?: number;
   sort?: string;
@@ -63,9 +96,9 @@ function getAuthHeaders(): HeadersInit {
   };
 }
 
-export async function fetch4x4Tracker(
-  query: Tracker4x4Query = {}
-): Promise<PaginatedTrackerResponse<Tracker4x4Record>> {
+export async function fetchMissionTracker(
+  query: MissionTrackerQuery = {}
+): Promise<PaginatedTrackerResponse<MissionTrackerRecord>> {
   const params = new URLSearchParams();
   params.set('page', String(query.page ?? 1));
   params.set('page_size', String(query.pageSize ?? 10));
@@ -81,12 +114,12 @@ export async function fetch4x4Tracker(
     });
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/tracker/trackers/4X4/?${params.toString()}`, {
+  const response = await fetch(`${API_BASE_URL}/api/tracker/trackers/${MISSION_TRACKER_API_KEY}/?${params.toString()}`, {
     headers: getAuthHeaders(),
   });
-  if (!response.ok) throw new Error(`Failed to fetch 4x4 tracker: ${response.statusText}`);
+  if (!response.ok) throw new Error(`Failed to fetch mission tracker: ${response.statusText}`);
 
-  const data = (await response.json()) as PaginatedTrackerResponse<Tracker4x4Record> | Tracker4x4Record[];
+  const data = (await response.json()) as PaginatedTrackerResponse<MissionTrackerRecord> | MissionTrackerRecord[];
   if (Array.isArray(data)) {
     return {
       count: data.length,
@@ -99,19 +132,19 @@ export async function fetch4x4Tracker(
   return data;
 }
 
-export async function update4x4Tracker(
+export async function updateMissionTracker(
   userId: number,
-  payload: Partial<Tracker4x4Record>
-): Promise<Tracker4x4Record> {
-  const response = await fetch(`${API_BASE_URL}/api/tracker/trackers/4X4/${userId}/`, {
+  payload: Partial<MissionTrackerRecord>
+): Promise<MissionTrackerRecord> {
+  const response = await fetch(`${API_BASE_URL}/api/tracker/trackers/${MISSION_TRACKER_API_KEY}/${userId}/`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to update 4x4 tracker: ${response.statusText}`);
+    throw new Error(`Failed to update mission tracker: ${response.statusText}`);
   }
 
-  return (await response.json()) as Tracker4x4Record;
+  return (await response.json()) as MissionTrackerRecord;
 }

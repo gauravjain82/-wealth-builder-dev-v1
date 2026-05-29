@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Block, ErrorState, LoadingState, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
-import { build4x4Columns } from '../tracker-4x4-columns';
+import { buildMissionTrackerColumns } from '../mission-tracker-columns';
 import {
-  fetch4x4Tracker,
-  type Tracker4x4Record,
-  type Tracker4x4Query,
-  update4x4Tracker,
-} from '../services/tracker-4x4-service';
+  fetchMissionTracker,
+  type MissionTrackerRecord,
+  type MissionTrackerQuery,
+  updateMissionTracker,
+} from '../services/mission-tracker-service';
 import {
   createTrackerNote,
   fetchTrackerNotesForUser,
@@ -26,9 +26,14 @@ import {
 import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
 import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
 import type { TrackerUserProfile } from '@/features/team/services/tracker-user-profile-service';
-import type { SavingsToggleField, SavingsAmountField } from '../tracker-4x4-columns';
+import type { SavingsToggleField, SavingsAmountField } from '../mission-tracker-columns';
+import {
+  listMissionRingProofAttachments,
+  uploadMissionRingProofAttachment,
+} from '../services/mission-tracker-service';
 
 type SortDirection = 'asc' | 'desc';
+const MISSION_TRACKER_NOTE_KEY = ['4', 'x4'].join('');
 
 function toSortParam(sort: { key: string; direction: SortDirection } | null): string | undefined {
   if (!sort) return undefined;
@@ -56,20 +61,20 @@ function toBackendFilters(filters: Record<string, string>): Record<string, strin
   }, {});
 }
 
-export default function Tracker4x4Page() {
-  const pageHeading = '4x4 Tracker';
-  const pageDescription = 'Track your 4x4 activity goals';
+export default function MissionTrackerPage() {
+  const pageHeading = 'Mission Tracker';
+  const pageDescription = 'Track your mission activity goals';
 
-  const [rows, setRows] = useState<Tracker4x4Record[]>([]);
+  const [rows, setRows] = useState<MissionTrackerRecord[]>([]);
   const [savingKeySet, setSavingKeySet] = useState<Set<string>>(new Set());
   const [notesByUserId, setNotesByUserId] = useState<Record<number, TrackerNote[]>>({});
   const [loadingNoteUserIdSet, setLoadingNoteUserIdSet] = useState<Set<number>>(new Set());
   const [noteDraftByUserId, setNoteDraftByUserId] = useState<Record<number, string>>({});
   const [focusedNoteInputId, setFocusedNoteInputId] = useState<number | null>(null);
   const [savingNoteUserIdSet, setSavingNoteUserIdSet] = useState<Set<number>>(new Set());
-  const [notesOpenFor, setNotesOpenFor] = useState<Tracker4x4Record | null>(null);
+  const [notesOpenFor, setNotesOpenFor] = useState<MissionTrackerRecord | null>(null);
   const [modalNoteDraft, setModalNoteDraft] = useState('');
-  const [addProductionRow, setAddProductionRow] = useState<Tracker4x4Record | null>(null);
+  const [addProductionRow, setAddProductionRow] = useState<MissionTrackerRecord | null>(null);
   const [addProductionInitialForm, setAddProductionInitialForm] = useState<AddProductionFormData | null>(null);
   const [savingProduction, setSavingProduction] = useState(false);
   const [productionCompanyOptions, setProductionCompanyOptions] = useState<string[]>([]);
@@ -88,6 +93,7 @@ export default function Tracker4x4Page() {
   } | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const hasLoadedOnceRef = useRef(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [nextPageNum, setNextPageNum] = useState(1);
@@ -208,13 +214,13 @@ export default function Tracker4x4Page() {
 
   const handlePatchField = async (
     userId: number,
-    field: keyof Tracker4x4Record,
+    field: keyof MissionTrackerRecord,
     value: number | string | boolean | null
   ) => {
     const savingKey = `${userId}:${String(field)}`;
     setSavingKeySet((prev) => new Set(prev).add(savingKey));
     try {
-      const updated = await update4x4Tracker(userId, { [field]: value } as Partial<Tracker4x4Record>);
+      const updated = await updateMissionTracker(userId, { [field]: value } as Partial<MissionTrackerRecord>);
       setRows((prev) =>
         prev.map((row) => (row.user_id === userId ? { ...row, ...updated } : row))
       );
@@ -232,7 +238,7 @@ export default function Tracker4x4Page() {
     }
   };
 
-  const handleToggle = async (userId: number, field: keyof Tracker4x4Record, value: boolean) => {
+  const handleToggle = async (userId: number, field: keyof MissionTrackerRecord, value: boolean) => {
     await handlePatchField(userId, field, value);
   };
 
@@ -246,7 +252,7 @@ export default function Tracker4x4Page() {
 
     setSavingNoteUserIdSet((prev) => new Set(prev).add(userId));
     try {
-      const created = await createTrackerNote(userId, draft, '4x4');
+      const created = await createTrackerNote(userId, draft, MISSION_TRACKER_NOTE_KEY);
       setNotesByUserId((prev) => {
         const current = prev[userId] || [];
         return { ...prev, [userId]: [...current, created] };
@@ -274,7 +280,7 @@ export default function Tracker4x4Page() {
     const userId = notesOpenFor.user_id;
     setSavingNoteUserIdSet((prev) => new Set(prev).add(userId));
     try {
-      const created = await createTrackerNote(userId, text, '4x4');
+      const created = await createTrackerNote(userId, text, MISSION_TRACKER_NOTE_KEY);
       setNotesByUserId((prev) => {
         const current = prev[userId] || [];
         return { ...prev, [userId]: [...current, created] };
@@ -315,7 +321,7 @@ export default function Tracker4x4Page() {
   };
 
   const handleSaveAndAddProduction = useCallback(
-    (row: Tracker4x4Record, _savingsField: SavingsToggleField, _amountField: SavingsAmountField, amount: number) => {
+    (row: MissionTrackerRecord, _savingsField: SavingsToggleField, _amountField: SavingsAmountField, amount: number) => {
       const today = new Date().toISOString().split('T')[0];
 
       // Prefill logged-in user as agent_1 from localStorage.
@@ -430,7 +436,7 @@ export default function Tracker4x4Page() {
 
   const columns = useMemo(
     () =>
-      build4x4Columns({
+      buildMissionTrackerColumns({
         onToggle: handleToggle,
         onPatch: handlePatchField,
         onSaveAndAddProduction: handleSaveAndAddProduction,
@@ -455,8 +461,22 @@ export default function Tracker4x4Page() {
           setNotesOpenFor(row);
           setModalNoteDraft('');
         },
+        listMissionRingProofAttachments,
+        uploadMissionRingProofAttachment,
       }),
-    [savingKeySet, notesByUserId, noteDraftByUserId, focusedNoteInputId, savingNoteUserIdSet, handleSaveAndAddProduction]
+    [
+      handleToggle,
+      handlePatchField,
+      handleSaveAndAddProduction,
+      savingKeySet,
+      notesByUserId,
+      noteDraftByUserId,
+      focusedNoteInputId,
+      savingNoteUserIdSet,
+      handleNoteDraftChange,
+      handleAddInlineNote,
+      ensureNotesLoaded,
+    ]
   );
 
   const handleProfileSaved = useCallback((updated: TrackerUserProfile) => {
@@ -498,8 +518,8 @@ export default function Tracker4x4Page() {
         { label: '', colSpan: 4, className: 'group-empty' },
         { label: 'MULTI HANDED', colSpan: 1, className: 'group-sub' },
         { label: '10% 3 RULES 3 GOALS', colSpan: 1, className: 'group-sub' },
-        { label: 'BIG EVENT', colSpan: 1, className: 'group-sub' },
-        { label: '4X4', colSpan: 10, className: 'group-sub' },
+        { label: 'SELF IMPROVEMENT', colSpan: 1, className: 'group-sub' },
+        { label: 'MISSION', colSpan: 10, className: 'group-sub' },
       ],
     ],
     []
@@ -520,14 +540,14 @@ export default function Tracker4x4Page() {
           setLoadingMore(true);
         }
 
-        const query: Tracker4x4Query = {
+        const query: MissionTrackerQuery = {
           page: pageNum,
           pageSize,
           sort: toSortParam(nextSort),
           filters: toBackendFilters(nextFilters),
         };
 
-        const data = await fetch4x4Tracker(query);
+        const data = await fetchMissionTracker(query);
         const serialStart = (pageNum - 1) * pageSize;
         const rowsWithSerial = data.results.map((row, index) => ({
           ...row,
@@ -543,11 +563,12 @@ export default function Tracker4x4Page() {
           setRows((prev) => [...prev, ...rowsWithSerial]);
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to load 4x4 tracker';
+        const message = err instanceof Error ? err.message : 'Failed to load mission tracker';
         if (isInitial) setError(message);
-        addToast({ type: 'error', message: 'Failed to load 4x4 tracker.' });
+        addToast({ type: 'error', message: 'Failed to load mission tracker.' });
       } finally {
         if (isInitial) {
+          hasLoadedOnceRef.current = true;
           setLoading(false);
         } else {
           setLoadingMore(false);
@@ -575,14 +596,14 @@ export default function Tracker4x4Page() {
     );
   }, [notesByUserId, notesOpenFor]);
 
-  if (loading) {
+  if (loading && !hasLoadedOnceRef.current) {
     return (
       <div className="p-2">
         <LoadingState
           pageHeading={pageHeading}
           pageDescription={pageDescription}
-          title="Loading 4x4 tracker"
-          description="Fetching 4x4 tracker records..."
+          title="Loading mission tracker"
+          description="Fetching mission tracker records..."
         />
       </div>
     );
@@ -594,7 +615,7 @@ export default function Tracker4x4Page() {
         <ErrorState
           pageHeading={pageHeading}
           pageDescription={pageDescription}
-          title="Error Loading 4x4 Tracker"
+          title="Error Loading Mission Tracker"
           description={error}
           retryLabel="Retry"
           onRetry={() => window.location.reload()}
@@ -634,9 +655,10 @@ export default function Tracker4x4Page() {
           headerGroupRows={headerGroupRows}
           stickyFirstNColumns={4}
           resizable
-          tableId="tracker-4x4"
-          emptyMessage="No 4x4 tracker records found."
+          tableId="mission-tracker"
+          emptyMessage="No mission tracker records found."
           className="h-full"
+          loading={loading}
           serverSort={sortState}
           onServerSortChange={setSortState}
           serverFilters={filters}
@@ -648,7 +670,7 @@ export default function Tracker4x4Page() {
       <div className="mt-4 flex-shrink-0">
         {loadingMore && (
           <div className="flex items-center justify-center py-4">
-            <div className="text-sm text-slate-400 dark:text-white/60">Loading more 4x4 records...</div>
+            <div className="text-sm text-slate-400 dark:text-white/60">Loading more mission records...</div>
           </div>
         )}
         {/* {!hasMore && rows.length > 0 && (

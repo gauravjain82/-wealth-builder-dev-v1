@@ -45,7 +45,7 @@ const MENU_ITEMS = {
   // My Team items
   ORG_CHART: { label: 'Org Chart', icon: '📊', path: '/team/org-chart' } as MenuItem,
   PROSPECT_TRACKER: { label: 'Prospect Tracker', icon: '👥', path: '/team/prospect-tracker' } as MenuItem,
-  TRACKER_4X4: { label: '4x4 Tracker', icon: '📈', path: '/team/4x4-tracker' } as MenuItem,
+  MISSION_TRACKER: { label: 'Mission Tracker', icon: '📈', path: '/team/mission-tracker' } as MenuItem,
   ASSOCIATE_TRACKER: { label: 'Associate Tracker', icon: '👔', path: '/team/associate-tracker' } as MenuItem,
   LICENSING_TRACKER: { label: 'Licensing Tracker', icon: '📝', path: '/team/licensing-tracker' } as MenuItem,
   PRODUCTION_TRACKER: { label: 'Production Tracker', icon: '💰', path: '/team/production-tracker' } as MenuItem,
@@ -156,7 +156,7 @@ export const PLAN_MENUS = {
       children: [
         MENU_ITEMS.ORG_CHART,
         MENU_ITEMS.PROSPECT_TRACKER,
-        MENU_ITEMS.TRACKER_4X4,
+        MENU_ITEMS.MISSION_TRACKER,
         MENU_ITEMS.ASSOCIATE_TRACKER,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
@@ -190,7 +190,7 @@ export const PLAN_MENUS = {
       children: [
         MENU_ITEMS.ORG_CHART,
         MENU_ITEMS.PROSPECT_TRACKER,
-        MENU_ITEMS.TRACKER_4X4,
+        MENU_ITEMS.MISSION_TRACKER,
         MENU_ITEMS.ASSOCIATE_TRACKER,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
@@ -237,7 +237,7 @@ export const PLAN_MENUS = {
       children: [
         MENU_ITEMS.ORG_CHART,
         MENU_ITEMS.PROSPECT_TRACKER,
-        MENU_ITEMS.TRACKER_4X4,
+        MENU_ITEMS.MISSION_TRACKER,
         MENU_ITEMS.ASSOCIATE_TRACKER,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
@@ -283,7 +283,7 @@ export const PLAN_MENUS = {
       children: [
         MENU_ITEMS.ORG_CHART,
         MENU_ITEMS.PROSPECT_TRACKER,
-        MENU_ITEMS.TRACKER_4X4,
+        MENU_ITEMS.MISSION_TRACKER,
         MENU_ITEMS.ASSOCIATE_TRACKER,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,

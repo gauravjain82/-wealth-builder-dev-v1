@@ -50,10 +50,7 @@ const ICON_MAP: Record<string, IconSpec> = {
   'My Team': { icon: IconUsers, color: '#F4A7B9' },
   'Org Chart': { icon: IconSitemap, color: '#F4A7B9' },
   'Prospect Tracker': { icon: IconUserSearch, color: '#1E90FF' },
-  '4x4 Tracker': {
-    imageSrc:
-      'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/4x4logo.png?alt=media&token=4867ff8e-efdd-4933-805d-01f193837337',
-  },
+  'Mission Tracker': { icon: IconTarget, color: '#32CD32' },
   'Associate Tracker': { icon: IconUsers, color: '#F4A7B9' },
   'Licensing Tracker': { icon: IconCertificate, color: '#F5F5F5' },
   'Production Tracker': {

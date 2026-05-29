@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorState, LoadingState, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { TrackerNotesModal } from '@/features/team/components/tracker-notes-modal';
 import type { TrackerNote } from '@/features/team/services/tracker-notes-service';
@@ -185,6 +185,7 @@ export default function ProductionTrackerPage() {
 
   const [rows, setRows] = useState<ProductionTrackerRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoadedOnceRef = useRef(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [nextPageNum, setNextPageNum] = useState(1);
@@ -843,6 +844,7 @@ export default function ProductionTrackerPage() {
         addToast({ type: 'error', message: 'Failed to load production tracker records.' });
       } finally {
         if (isInitial) {
+          hasLoadedOnceRef.current = true;
           setLoading(false);
         } else {
           setLoadingMore(false);
@@ -1066,7 +1068,7 @@ export default function ProductionTrackerPage() {
     }
   }, [filters, hasMore, loadRows, loading, loadingMore, nextPageNum, rows.length, sortState]);
 
-  if (loading) {
+  if (loading && !hasLoadedOnceRef.current) {
     return (
       <div className="p-2">
         <LoadingState
@@ -1145,6 +1147,7 @@ export default function ProductionTrackerPage() {
           tableId="production-tracker"
           emptyMessage="No production records found."
           className="h-full"
+          loading={loading}
           serverSort={sortState}
           onServerSortChange={setSortState}
           serverFilters={filters}

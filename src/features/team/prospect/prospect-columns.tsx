@@ -210,11 +210,7 @@ export function buildProspectColumns(
         <ClickableName
           value={row.full_name || ''}
           onClick={() => {
-            if (options.onOpenProspectProfile) {
-              options.onOpenProspectProfile(row);
-              return;
-            }
-            options.onStartProfileEdit(row);
+            onEdit(row);
           }}
         />
       ),

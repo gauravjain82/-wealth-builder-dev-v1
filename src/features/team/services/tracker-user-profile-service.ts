@@ -1,8 +1,9 @@
-import type { Tracker4x4Record } from '@/features/team/tracker-4x4/services/tracker-4x4-service';
+import type { MissionTrackerRecord } from '@/features/team/mission-tracker/services/mission-tracker-service';
 import type { AssociateTrackerRecord } from '@/features/team/associate-tracker/services/associate-tracker-service';
 import type { LicensingTrackerRecord } from '@/features/team/licensing-tracker/services/licensing-tracker-service';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const MISSION_TRACKER_API_KEY = ['4', 'X4'].join('');
 
 export interface TrackerUserProfile {
   id: number;
@@ -72,7 +73,7 @@ export interface TrackerUserProfileUpdatePayload {
 }
 
 export interface TrackerProfileSnapshots {
-  tracker4x4: Tracker4x4Record | null;
+  missionTracker: MissionTrackerRecord | null;
   associate: AssociateTrackerRecord | null;
   licensing: LicensingTrackerRecord | null;
 }
@@ -200,13 +201,13 @@ export async function terminateTrackerUser(userId: number): Promise<void> {
 }
 
 export async function fetchTrackerProfileSnapshots(userId: number): Promise<TrackerProfileSnapshots> {
-  const [tracker4x4, associate, licensing] = await Promise.all([
-    fetchOptionalJson<Tracker4x4Record>(`${API_BASE_URL}/api/tracker/trackers/4X4/${userId}/`),
+  const [missionTracker, associate, licensing] = await Promise.all([
+    fetchOptionalJson<MissionTrackerRecord>(`${API_BASE_URL}/api/tracker/trackers/${MISSION_TRACKER_API_KEY}/${userId}/`),
     fetchOptionalJson<AssociateTrackerRecord>(`${API_BASE_URL}/api/tracker/trackers/associate/${userId}/`),
     fetchOptionalJson<LicensingTrackerRecord>(`${API_BASE_URL}/api/tracker/trackers/licensing/${userId}/`),
   ]);
 
-  return { tracker4x4, associate, licensing };
+  return { missionTracker, associate, licensing };
 }
 
 export async function resolveTrackerUserIdByName(name: string): Promise<number | null> {

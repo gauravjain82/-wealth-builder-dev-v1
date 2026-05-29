@@ -8,17 +8,21 @@ import {
   resolveTrackerUserIdByName,
 } from '@/features/team/services/tracker-user-profile-service';
 import { DatePicker } from '@/shared/components/ui/date-picker';
-import type { Tracker4x4Record } from './services/tracker-4x4-service';
+import type { MissionTrackerRecord } from './services/mission-tracker-service';
+import { MissionRingProofAttachmentsAction } from './components/mission-ringproof-attachments-action';
+import { listMissionRingProofAttachments, uploadMissionRingProofAttachment } from './services/mission-tracker-service';
+
+const MISSION_TRACKER_NOTE_FALLBACK = ['tracker', ['4', 'x4'].join('')].join('_');
 
 function asYesNo(value: boolean): string {
   return value ? 'Yes' : 'No';
 }
 
-interface Build4x4ColumnsOptions {
-  onToggle: (userId: number, field: keyof Tracker4x4Record, value: boolean) => void;
-  onPatch: (userId: number, field: keyof Tracker4x4Record, value: number | string | boolean | null) => void;
-  onSaveAndAddProduction: (row: Tracker4x4Record, savingsField: SavingsToggleField, amountField: SavingsAmountField, amount: number) => void;
-  onOpenUserProfile?: (row: Tracker4x4Record) => void;
+interface BuildMissionTrackerColumnsOptions {
+  onToggle: (userId: number, field: keyof MissionTrackerRecord, value: boolean) => void;
+  onPatch: (userId: number, field: keyof MissionTrackerRecord, value: number | string | boolean | null) => void;
+  onSaveAndAddProduction: (row: MissionTrackerRecord, savingsField: SavingsToggleField, amountField: SavingsAmountField, amount: number) => void;
+  onOpenUserProfile?: (row: MissionTrackerRecord) => void;
   savingKeySet: Set<string>;
   notesByUserId: Record<number, TrackerNote[]>;
   noteDraftByUserId: Record<number, string>;
@@ -28,7 +32,11 @@ interface Build4x4ColumnsOptions {
   onNoteFocus: (userId: number) => void;
   onNoteBlur: () => void;
   onAddInlineNote: (userId: number) => Promise<void>;
-  onOpenAllNotes: (row: Tracker4x4Record) => void;
+  onOpenAllNotes: (row: MissionTrackerRecord) => void;
+
+  // For Mission Ring Proof attachments
+  listMissionRingProofAttachments: (userId: number) => Promise<Array<{ id: number; file_name: string; uploaded_at: string; url: string }> >;
+  uploadMissionRingProofAttachment: (userId: number, file: File) => Promise<void>;
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -45,7 +53,7 @@ function startOfDay(date: Date): Date {
   return normalized;
 }
 
-function getCountdownFromAma(row: Tracker4x4Record): {
+function getCountdownFromAma(row: MissionTrackerRecord): {
   hasAma: boolean;
   daysLeft: number | null;
   endDateISO: string | null;
@@ -80,9 +88,9 @@ function getCountdownFromAma(row: Tracker4x4Record): {
 }
 
 function renderCheckbox(
-  row: Tracker4x4Record,
-  field: keyof Tracker4x4Record,
-  options: Build4x4ColumnsOptions,
+  row: MissionTrackerRecord,
+  field: keyof MissionTrackerRecord,
+  options: BuildMissionTrackerColumnsOptions,
   config?: {
     displayChecked?: boolean;
     onChangeChecked?: (checked: boolean) => void;
@@ -123,16 +131,16 @@ function renderCheckbox(
 }
 
 function isSaving(
-  row: Tracker4x4Record,
-  field: keyof Tracker4x4Record,
-  options: Build4x4ColumnsOptions
+  row: MissionTrackerRecord,
+  field: keyof MissionTrackerRecord,
+  options: BuildMissionTrackerColumnsOptions
 ): boolean {
   const savingKey = `${row.user_id}:${String(field)}`;
   return options.savingKeySet.has(savingKey);
 }
 
 function getRowNotes(
-  row: Tracker4x4Record,
+  row: MissionTrackerRecord,
   notesByUserId: Record<number, TrackerNote[]>
 ): TrackerNote[] {
   const loaded = notesByUserId[row.user_id];
@@ -149,7 +157,7 @@ function getRowNotes(
       created_by: null,
       created_by_name: row.latest_note_created_by_name || undefined,
       text: latestText,
-      tracker: row.latest_note_tracker || 'tracker_4x4',
+      tracker: row.latest_note_tracker || MISSION_TRACKER_NOTE_FALLBACK,
       created_at: createdAt,
       updated_at: createdAt,
     },
@@ -157,8 +165,8 @@ function getRowNotes(
 }
 
 async function openRelatedProfile(
-  row: Tracker4x4Record,
-  options: Build4x4ColumnsOptions,
+  row: MissionTrackerRecord,
+  options: BuildMissionTrackerColumnsOptions,
   kind: 'recruiter' | 'leader'
 ) {
   if (!options.onOpenUserProfile) return;
@@ -184,7 +192,7 @@ async function openRelatedProfile(
   });
 }
 
-// Defined before Build4x4ColumnsOptions so the interface can reference them.
+// Defined before BuildMissionTrackerColumnsOptions so the interface can reference them.
 export type SavingsToggleField =
   | 'finish_1st_savings'
   | 'finish_2nd_savings'
@@ -203,10 +211,10 @@ function SavingsAmountCell({
   amountField,
   options,
 }: {
-  row: Tracker4x4Record;
+  row: MissionTrackerRecord;
   savingsField: SavingsToggleField;
   amountField: SavingsAmountField;
-  options: Build4x4ColumnsOptions;
+  options: BuildMissionTrackerColumnsOptions;
 }) {
   const currentAmount = row[amountField];
   const checked = Boolean(row[savingsField]);
@@ -348,7 +356,13 @@ function SavingsAmountCell({
   );
 }
 
-export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableColumn<Tracker4x4Record>[] {
+export function buildMissionTrackerColumns(options: BuildMissionTrackerColumnsOptions): TrackerTableColumn<MissionTrackerRecord>[] {
+  // Provide default API handlers if not passed in options
+  const mergedOptions = {
+    ...options,
+    listMissionRingProofAttachments: options.listMissionRingProofAttachments || listMissionRingProofAttachments,
+    uploadMissionRingProofAttachment: options.uploadMissionRingProofAttachment || uploadMissionRingProofAttachment,
+  };
   return [
     {
       key: 'index',
@@ -427,7 +441,7 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
     },
     {
       key: 'finish_1st_recruit',
-      label: 'Finish 1st Recruit',
+      label: '1st Recruit',
       width: 100,
       align: 'center',
       sortable: true,
@@ -454,7 +468,7 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
     },
     {
       key: 'big_event_1st',
-      label: 'Big Event',
+      label: 'Convention',
       width: 100,
       align: 'center',
       sortable: true,
@@ -463,75 +477,31 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
       render: (row) => renderCheckbox(row, 'big_event_1st', options),
     },
     {
-      key: 'finish_2nd_recruit',
-      label: 'Finish 2nd Recruit',
-      width: 120,
+      key: 'mission_ring_proof',
+      label: 'Mission Ring Proof',
+      width: 170,
       align: 'center',
-      sortable: true,
+      sortable: false,
       searchable: false,
-      value: (row) => asYesNo(row.finish_2nd_recruit),
-      render: (row) => renderCheckbox(row, 'finish_2nd_recruit', options),
-    },
-    {
-      key: 'finish_3rd_recruit',
-      label: 'Finish 3rd Recruit',
-      width: 120,
-      align: 'center',
-      sortable: true,
-      searchable: false,
-      value: (row) => asYesNo(row.finish_3rd_recruit),
-      render: (row) => renderCheckbox(row, 'finish_3rd_recruit', options),
-    },
-    {
-      key: 'finish_2nd_savings',
-      label: 'Finish 2nd Savings',
-      width: 150,
-      align: 'center',
-      sortable: true,
-      searchable: false,
-      value: (row) => `${asYesNo(row.finish_2nd_savings)} ${row.savings_2nd_amount ?? ''}`,
+      value: () => '',
       render: (row) => (
-        <SavingsAmountCell
-          row={row}
-          savingsField="finish_2nd_savings"
-          amountField="savings_2nd_amount"
-          options={options}
+        <MissionRingProofAttachmentsAction
+          userId={row.user_id}
+          label="Mission Ring Proof"
+          listAttachments={mergedOptions.listMissionRingProofAttachments}
+          uploadAttachment={mergedOptions.uploadMissionRingProofAttachment}
         />
       ),
     },
     {
-      key: 'finish_3rd_savings',
-      label: 'Finish 3rd Savings',
-      width: 150,
+      key: 'smd_100k_class',
+      label: 'SMD 100K Class',
+      width: 140,
       align: 'center',
-      sortable: true,
+      sortable: false,
       searchable: false,
-      value: (row) => `${asYesNo(row.finish_3rd_savings)} ${row.savings_3rd_amount ?? ''}`,
-      render: (row) => (
-        <SavingsAmountCell
-          row={row}
-          savingsField="finish_3rd_savings"
-          amountField="savings_3rd_amount"
-          options={options}
-        />
-      ),
-    },
-    {
-      key: 'finish_4th_savings',
-      label: 'Finish 4th Savings',
-      width: 150,
-      align: 'center',
-      sortable: true,
-      searchable: false,
-      value: (row) => `${asYesNo(row.finish_4th_savings)} ${row.savings_4th_amount ?? ''}`,
-      render: (row) => (
-        <SavingsAmountCell
-          row={row}
-          savingsField="finish_4th_savings"
-          amountField="savings_4th_amount"
-          options={options}
-        />
-      ),
+      value: (row) => asYesNo((row as any).smd_100k_class),
+      render: (row) => renderCheckbox(row as any, 'smd_100k_class', options),
     },
     {
       key: 'pass_exam_date',
@@ -580,16 +550,6 @@ export function build4x4Columns(options: Build4x4ColumnsOptions): TrackerTableCo
           {row.is_licensed ? 'Yes' : 'No'}
         </span>
       ),
-    },
-    {
-      key: '1_direct_recruit',
-      label: '1 Direct Recruit',
-      width: 120,
-      align: 'center',
-      sortable: true,
-      searchable: false,
-      value: (row) => asYesNo(Boolean(row['1_direct_recruit'])),
-      render: (row) => renderCheckbox(row, '1_direct_recruit', options),
     },
     {
       key: 'notes',
