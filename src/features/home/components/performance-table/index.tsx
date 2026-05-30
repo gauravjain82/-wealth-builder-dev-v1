@@ -24,7 +24,7 @@ const HEADERS = [
 function MetricHeader({ label, info }: { label: string; info: string }) {
   return (
     <div className="performance-table__label">
-      <Text weight="bold" className="text-yellow-400">
+      <Text weight="bold" align="center" className="text-yellow-400">
         {label}
       </Text>
       <Tooltip content={info} position="top" target="hover">
@@ -61,12 +61,12 @@ export function PerformanceTable() {
           <thead>
             <tr className="performance-table__header-row">
               <th colSpan={4} className="performance-table__header-cell performance-table__header-cell--month">
-                <Text weight="bold" className="text-xl tracking-widest text-yellow-400">
+                <Text weight="bold" align="center" className="text-xl tracking-widest text-yellow-400">
                   {currentMonth}
                 </Text>
               </th>
               <th colSpan={3} className="performance-table__header-cell">
-                <Text weight="bold" className="text-xl tracking-widest text-yellow-400">
+                <Text weight="bold" align="center" className="text-xl tracking-widest text-yellow-400">
                   TOTAL
                 </Text>
               </th>
@@ -93,7 +93,7 @@ export function PerformanceTable() {
                     index === 3 ? 'performance-table__cell--bordered' : ''
                   }`}
                 >
-                  <Text weight="bold" className="performance-table__value">
+                  <Text weight="bold" align="center" className="performance-table__value">
                     {isLoading ? '...' : value}
                   </Text>
                 </td>

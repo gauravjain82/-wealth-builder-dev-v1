@@ -19,7 +19,9 @@ import {
 } from '@/features/team/services/tracker-notes-service';
 import { TrackerNotesModal } from '@/features/team/components/tracker-notes-modal';
 import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
-import { AssociateClientUsersModal, AssociateHotRecruitsModal, AssociateLicensedUsersModal } from '@/features/team/components/associate-hot-recruits-modal';
+import { AssociateClientUsersModal, AssociateHotRecruitsModal } from '@/features/team/components/associate-hot-recruits-modal';
+import { LicensingTrackerModal } from '@/features/team/licensing-tracker/components/licensing-tracker-modal';
+import { AssociateTrackerModal } from '@/features/team/associate-tracker/components/associate-tracker-modal';
 import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
 import type { TrackerUserProfile } from '@/features/team/services/tracker-user-profile-service';
 
@@ -101,11 +103,10 @@ export default function AssociateTrackerPage() {
     userId: number;
     userName: string;
   } | null>(null);
-  const [licensedUsersLoading, setLicensedUsersLoading] = useState(false);
-  const [licensedUsersLoadingMore, setLicensedUsersLoadingMore] = useState(false);
-  const [licensedUsersHasMore, setLicensedUsersHasMore] = useState(false);
-  const [licensedUsersNextPage, setLicensedUsersNextPage] = useState(2);
-  const [licensedUsers, setLicensedUsers] = useState<HotRecruitUser[]>([]);
+  const [registrationsOpenFor, setRegistrationsOpenFor] = useState<{
+    userId: number;
+    userName: string;
+  } | null>(null);
 
   const [loading, setLoading] = useState(true);
   const hasLoadedOnceRef = useRef(false);
@@ -322,25 +323,9 @@ export default function AssociateTrackerPage() {
     }
   }, [addToast]);
 
-  const handleOpenLicensedUsers = useCallback(async (row: AssociateTrackerRecord) => {
+  const handleOpenLicensedUsers = useCallback((row: AssociateTrackerRecord) => {
     setLicensedUsersOpenFor({ userId: row.user_id, userName: row.user_name });
-    setLicensedUsers([]);
-    setLicensedUsersHasMore(false);
-    setLicensedUsersLoading(true);
-    try {
-      const loaded = await fetchAssociateUsersForAssociatePage(row.user_id, { licensed: true, pageSize: 20 });
-      setLicensedUsers(loaded.results);
-      setLicensedUsersHasMore(Boolean(loaded.next));
-      setLicensedUsersNextPage(2);
-    } catch (err) {
-      addToast({
-        type: 'error',
-        message: err instanceof Error ? err.message : 'Failed to load licensed users.',
-      });
-    } finally {
-      setLicensedUsersLoading(false);
-    }
-  }, [addToast]);
+  }, []);
 
   const handleReachHotRecruitsEnd = useCallback(async () => {
     if (!hotRecruitOpenFor || !hotRecruitsHasMore || hotRecruitsLoading || hotRecruitsLoadingMore) return;
@@ -379,25 +364,6 @@ export default function AssociateTrackerPage() {
       setClientUsersLoadingMore(false);
     }
   }, [addToast, clientPointsOpenFor, clientUsersHasMore, clientUsersLoading, clientUsersLoadingMore, clientUsersNextPage]);
-
-  const handleReachLicensedUsersEnd = useCallback(async () => {
-    if (!licensedUsersOpenFor || !licensedUsersHasMore || licensedUsersLoading || licensedUsersLoadingMore) return;
-    setLicensedUsersLoadingMore(true);
-    try {
-      const loaded = await fetchAssociateUsersForAssociatePage(licensedUsersOpenFor.userId, {
-        licensed: true,
-        page: licensedUsersNextPage,
-        pageSize: 20,
-      });
-      setLicensedUsers((prev) => [...prev, ...loaded.results]);
-      setLicensedUsersHasMore(Boolean(loaded.next));
-      setLicensedUsersNextPage((prev) => prev + 1);
-    } catch (err) {
-      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load more licensed users.' });
-    } finally {
-      setLicensedUsersLoadingMore(false);
-    }
-  }, [addToast, licensedUsersHasMore, licensedUsersLoading, licensedUsersLoadingMore, licensedUsersNextPage, licensedUsersOpenFor]);
 
   const ensureNotesLoaded = async (userId: number) => {
     if (notesByUserId[userId]) return;
@@ -439,6 +405,9 @@ export default function AssociateTrackerPage() {
         },
         onOpenLicensedUsers: (row) => {
           void handleOpenLicensedUsers(row);
+        },
+        onOpenRegistrations: (row) => {
+          setRegistrationsOpenFor({ userId: row.user_id, userName: row.user_name });
         },
         savingKeySet,
         notesByUserId,
@@ -507,7 +476,7 @@ export default function AssociateTrackerPage() {
         { label: '', colSpan: 3, className: 'group-empty' },
         { label: 'PHILOSOPHY', colSpan: 3, className: 'group-main' },
         { label: 'SYSTEM', colSpan: 4, className: 'group-main' },
-        { label: 'BUILD', colSpan: 10, className: 'group-main' },
+        { label: 'BUILD', colSpan: 9, className: 'group-main' },
       ],
     ],
     []
@@ -536,14 +505,19 @@ export default function AssociateTrackerPage() {
         };
 
         const data = await fetchAssociates(query);
+        const serialStart = (pageNum - 1) * pageSize;
+        const rowsWithSerial = data.results.map((row, index) => ({
+          ...row,
+          serial_no: serialStart + index + 1,
+        }));
 
         setTotalCount(data.count || 0);
         setHasMore(Boolean(data.next));
         setNextPageNum(pageNum + 1);
         if (isInitial) {
-          setRows(data.results);
+          setRows(rowsWithSerial);
         } else {
-          setRows((prev) => [...prev, ...data.results]);
+          setRows((prev) => [...prev, ...rowsWithSerial]);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load associate tracker';
@@ -757,6 +731,7 @@ export default function AssociateTrackerPage() {
 
       <AssociateClientUsersModal
         open={Boolean(clientPointsOpenFor)}
+        ownerUserId={clientPointsOpenFor?.userId ?? null}
         ownerName={clientPointsOpenFor?.userName || ''}
         loading={clientUsersLoading}
         users={clientUsers}
@@ -769,17 +744,19 @@ export default function AssociateTrackerPage() {
         }}
       />
 
-      <AssociateLicensedUsersModal
+      <LicensingTrackerModal
         open={Boolean(licensedUsersOpenFor)}
+        ownerUserId={licensedUsersOpenFor?.userId ?? null}
         ownerName={licensedUsersOpenFor?.userName || ''}
-        loading={licensedUsersLoading}
-        users={licensedUsers}
-        loadingMore={licensedUsersLoadingMore}
-        onReachEnd={() => void handleReachLicensedUsersEnd()}
         onClose={() => {
           setLicensedUsersOpenFor(null);
-          setLicensedUsers([]);
         }}
+      />
+      <AssociateTrackerModal
+        open={Boolean(registrationsOpenFor)}
+        ownerUserId={registrationsOpenFor?.userId ?? null}
+        ownerName={registrationsOpenFor?.userName || ''}
+        onClose={() => setRegistrationsOpenFor(null)}
       />
     </div>
   );

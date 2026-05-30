@@ -41,6 +41,7 @@ import {
   type AddProductionFormData,
 } from '@/features/team/prospect/components/add-production-modal';
 import { type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
+import { useSearchParams } from 'react-router-dom';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -182,6 +183,8 @@ function deriveCompanyConfigFromRows(rows: ProductionTrackerRecord[]) {
 export default function ProductionTrackerPage() {
   const pageHeading = 'Production Tracker';
   const pageDescription = "Monitor your team's production and revenue";
+  const [searchParams] = useSearchParams();
+  const initialBrokerId = searchParams.get('broker_id')?.trim() || '';
 
   const [rows, setRows] = useState<ProductionTrackerRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,10 +206,13 @@ export default function ProductionTrackerPage() {
   const [notesOpenFor, setNotesOpenFor] = useState<ProductionTrackerRecord | null>(null);
   const [modalNoteDraft, setModalNoteDraft] = useState('');
   const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
-  const [filters, setFilters] = useState<Record<string, string>>({ filterkey: 'all' });
+  const [filters, setFilters] = useState<Record<string, string>>(() => ({
+    filterkey: 'all',
+    ...(initialBrokerId ? { broker_id: initialBrokerId } : {}),
+  }));
   const [dateRangePreset, setDateRangePreset] = useState<DatePresetKey>('all');
   const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
-  const [teamScopeUserId, setTeamScopeUserId] = useState<string | null>(null);
+  const [teamScopeUserId, setTeamScopeUserId] = useState<string | null>(initialBrokerId || null);
   const [pointsSummary, setPointsSummary] = useState<ProductionPointsSummary | null>(null);
   const [topPerformers, setTopPerformers] = useState<ProductionTopPerformer[]>([]);
   const [companyProducts, setCompanyProducts] = useState<ProductionCompanyProduct[]>([]);

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { TrackerTableColumn } from '@/shared/components';
 import { TrackerUserCell } from '@/features/team/components/tracker-user-cell';
 import { TrackerNotesCell } from '@/features/team/components/tracker-notes-cell';
@@ -12,6 +13,56 @@ function asYesNo(value: boolean): string {
   return value ? 'Yes' : 'No';
 }
 
+const FRONTEND_BASE_URL = (import.meta.env.VITE_FRONTEND_BASE_URL || window.location.origin).replace(/\/$/, '');
+const ADD_GOALS_URL = `${FRONTEND_BASE_URL}/add-goals`;
+
+function copyText(value: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(value);
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  if (!copied) {
+    return Promise.reject(new Error('Unable to copy link'));
+  }
+  return Promise.resolve();
+}
+
+function GoalHeader() {
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span>Goal</span>
+      <button
+        type="button"
+        className="rounded border border-amber-300/40 bg-amber-300/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-200 hover:bg-amber-300/20"
+        title="Copy add-goal page link"
+        aria-label="Copy add-goal page link"
+        onClick={(event) => {
+          event.stopPropagation();
+          void copyText(ADD_GOALS_URL).then(() => {
+            setCopyState('copied');
+            window.setTimeout(() => setCopyState('idle'), 1600);
+          }).catch(() => {
+            setCopyState('failed');
+            window.setTimeout(() => setCopyState('idle'), 1600);
+          });
+        }}
+      >
+        {copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Retry' : 'Copy Link'}
+      </button>
+    </span>
+  );
+}
+
 interface BuildAssociateColumnsOptions {
   onToggle: (userId: number, field: keyof AssociateTrackerRecord, value: boolean) => void;
   onPatch: (userId: number, field: keyof AssociateTrackerRecord, value: number | string | null) => void;
@@ -19,6 +70,7 @@ interface BuildAssociateColumnsOptions {
   onOpenHotRecruits?: (row: AssociateTrackerRecord) => void;
   onOpenPersonalPoints?: (row: AssociateTrackerRecord) => void;
   onOpenLicensedUsers?: (row: AssociateTrackerRecord) => void;
+  onOpenRegistrations?: (row: AssociateTrackerRecord) => void;
   savingKeySet: Set<string>;
   notesByUserId: Record<number, TrackerNote[]>;
   noteDraftByUserId: Record<number, string>;
@@ -131,6 +183,55 @@ function NetLicenseAmountCell({
         }
 
         options.onPatch(row.user_id, field, parsed);
+      }}
+    />
+  );
+}
+
+function SingleTextInputCell({
+  row,
+  field,
+  options,
+  placeholder,
+}: {
+  row: AssociateTrackerRecord;
+  field: 'why' | 'goal';
+  options: BuildAssociateColumnsOptions;
+  placeholder: string;
+}) {
+  const saving = isSaving(row, field, options);
+  const initialValue = row[field] || '';
+  let committedOnEnter = false;
+
+  const commit = (input: HTMLInputElement) => {
+    const value = input.value.trim();
+    if (value === initialValue) return;
+    options.onPatch(row.user_id, field, value);
+  };
+
+  return (
+    <input
+      key={`${row.user_id}:${field}:${initialValue}`}
+      className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-xs text-white placeholder-white/40 outline-none focus:border-amber-300/60"
+      type="text"
+      defaultValue={initialValue}
+      disabled={saving}
+      placeholder={placeholder}
+      title={initialValue}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          committedOnEnter = true;
+          commit(e.currentTarget);
+          e.currentTarget.blur();
+        }
+      }}
+      onBlur={(e) => {
+        if (committedOnEnter) {
+          committedOnEnter = false;
+          return;
+        }
+        commit(e.currentTarget);
       }}
     />
   );
@@ -372,8 +473,8 @@ export function buildAssociateColumns(
       className: 'tracker-col-narrow',
       align: 'center',
       sortable: false,
-      value: (row) => row.user_id,
-      render: (row) => row.user_id,
+      value: (row) => row.serial_no ?? row.user_id,
+      render: (row) => row.serial_no ?? row.user_id,
     },
     {
       key: 'user_name',
@@ -384,7 +485,7 @@ export function buildAssociateColumns(
       render: (row) => (
         <TrackerUserCell
           fullName={`${row.registration_status === 'UNREGISTERED' ? '*' : ''}${row.user_name}`}
-          invitedAt={row.invited_at || row.created_at}
+          amaDate={row.ama_date}
           agencyCode={row.agency_code}
           avatarUrl={row.photo_thumb_url || row.avatar_url}
           onAvatarClick={options.onOpenUserProfile ? () => options.onOpenUserProfile?.(row) : undefined}
@@ -484,7 +585,7 @@ export function buildAssociateColumns(
           ]}
           colLabels={['PR', 'TR']}
           rowLabels={['3M', '1M']}
-          onCellClick={() => options.onOpenHotRecruits?.(row)}
+          onCellClick={options.onOpenHotRecruits ? () => options.onOpenHotRecruits?.(row) : undefined}
         />
       ),
     },
@@ -505,7 +606,7 @@ export function buildAssociateColumns(
           colLabels={['PR', 'TR']}
           rowLabels={['3M', '1M']}
           fitLargeValues
-          onCellClick={() => options.onOpenPersonalPoints?.(row)}
+          onCellClick={options.onOpenPersonalPoints ? () => options.onOpenPersonalPoints?.(row) : undefined}
         />
       ),
     },
@@ -523,7 +624,7 @@ export function buildAssociateColumns(
           fields={['current_month_licenses', 'total_licenses']}
           labels={['This Month', 'Total']}
           readOnly
-          onCellClick={() => options.onOpenLicensedUsers?.(row)}
+          onCellClick={options.onOpenLicensedUsers ? () => options.onOpenLicensedUsers?.(row) : undefined}
         />
       ),
     },
@@ -540,6 +641,8 @@ export function buildAssociateColumns(
           options={options}
           fields={['current_month_big_event_registrations', 'total_big_event_registrations']}
           labels={['This Month', 'Total']}
+          readOnly
+          onCellClick={options.onOpenRegistrations ? () => options.onOpenRegistrations?.(row) : undefined}
         />
       ),
     },
@@ -602,6 +705,23 @@ export function buildAssociateColumns(
       label: 'Why',
       width: 320,
       searchable: false,
+      value: (row) => row.why,
+      render: (row) => <SingleTextInputCell row={row} field="why" options={options} placeholder="Add why..." />,
+    },
+    {
+      key: 'goal',
+      label: 'Goal',
+      header: <GoalHeader />,
+      width: 320,
+      searchable: false,
+      value: (row) => row.goal,
+      render: (row) => <SingleTextInputCell row={row} field="goal" options={options} placeholder="Add goal..." />,
+    },
+    {
+      key: 'notes',
+      label: 'Notes',
+      width: 320,
+      searchable: false,
       value: (row) => getRowNotes(row, options.notesByUserId).map((note) => note.text).join(' '),
       render: (row) => (
         <TrackerNotesCell
@@ -618,14 +738,6 @@ export function buildAssociateColumns(
           onOpenAllNotes={() => options.onOpenAllNotes(row)}
         />
       ),
-    },
-    {
-      key: 'goal',
-      label: 'Goal',
-      width: 320,
-      searchable: false,
-      value: () => '',
-      render: () => '-',
     },
   ];
 }

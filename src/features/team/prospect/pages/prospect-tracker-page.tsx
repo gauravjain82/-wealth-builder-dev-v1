@@ -676,7 +676,7 @@ export default function ProspectTrackerPage() {
         profile: activated.profile ?? updatedDetails.profile,
       };
       updateProspectInState(updated);
-      setActiveCallLogProspect(updated);
+      setActiveCallLogProspect(null);
       setAddAgencyCodeFor(null);
       addToast({ type: 'success', message: 'Agency code added successfully.' });
     } catch (err) {

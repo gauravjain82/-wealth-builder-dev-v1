@@ -15,6 +15,7 @@ export interface LicensingTrackerRecord {
   leader_name?: string | null;
   leader_id?: number | null;
   agency_code?: string | null;
+  ama_date?: string | null;
   invited_at?: string | null;
   avatar_url?: string | null;
   photo_thumb_url?: string | null;

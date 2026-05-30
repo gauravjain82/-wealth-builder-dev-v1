@@ -143,7 +143,7 @@ export function buildLicensingColumns(
       render: (row) => (
         <TrackerUserCell
           fullName={`${row.registration_status === 'UNREGISTERED' ? '*' : ''}${row.user_name}`}
-          invitedAt={row.invited_at || row.created_at}
+          amaDate={row.ama_date}
           agencyCode={row.agency_code}
           avatarUrl={row.photo_thumb_url || row.avatar_url}
           onAvatarClick={options.onOpenUserProfile ? () => options.onOpenUserProfile?.(row) : undefined}

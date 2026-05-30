@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { UserAutocompleteDropdown, type UserAutocompleteOption } from '@/shared/components';
-import { TrackerProgressModal, type TrackerMetric } from '@/features/team/components/tracker-progress-modal';
-import { AssociateHotRecruitsModal, AssociateClientUsersModal, AssociateLicensedUsersModal } from '@/features/team/components/associate-hot-recruits-modal';
+import type { TrackerMetric } from '@/features/team/components/tracker-progress-modal';
+import { AssociateHotRecruitsModal, AssociateClientUsersModal } from '@/features/team/components/associate-hot-recruits-modal';
+import { LicensingTrackerModal } from '@/features/team/licensing-tracker/components/licensing-tracker-modal';
+import { AssociateTrackerModal } from '@/features/team/associate-tracker/components/associate-tracker-modal';
 import {
-  fetchHotRecruitsForAssociate,
-  fetchClientUsersForAssociate,
-  fetchLicensedUsersForAssociate,
+  fetchAssociateUsersForAssociatePage,
   type HotRecruitUser,
 } from '@/features/team/associate-tracker/services/associate-tracker-service';
 import { useToastStore } from '@/store';
@@ -249,25 +249,23 @@ export default function OnboardingGamePage() {
   const [activeVideo, setActiveVideo] = useState<{ moduleId: string; videoIdx: number } | null>(null);
 
   /* ── Tracker progress modal (m11 registrations) ── */
-  const [trackerModal, setTrackerModal] = useState<{
-    open: boolean;
-    metric: TrackerMetric;
-    current: number;
-    target: number;
-  }>({ open: false, metric: 'recruits', current: 0, target: 9 });
-
   /* ── Associate list modals (m8/m9/m10) ── */
   const [hotRecruitOpenFor, setHotRecruitOpenFor] = useState<{ userId: number; userName: string } | null>(null);
   const [hotRecruits, setHotRecruits] = useState<HotRecruitUser[]>([]);
   const [hotRecruitsLoading, setHotRecruitsLoading] = useState(false);
+  const [hotRecruitsLoadingMore, setHotRecruitsLoadingMore] = useState(false);
+  const [hotRecruitsHasMore, setHotRecruitsHasMore] = useState(false);
+  const [hotRecruitsNextPage, setHotRecruitsNextPage] = useState(2);
 
   const [clientPointsOpenFor, setClientPointsOpenFor] = useState<{ userId: number; userName: string } | null>(null);
   const [clientUsers, setClientUsers] = useState<HotRecruitUser[]>([]);
   const [clientUsersLoading, setClientUsersLoading] = useState(false);
+  const [clientUsersLoadingMore, setClientUsersLoadingMore] = useState(false);
+  const [clientUsersHasMore, setClientUsersHasMore] = useState(false);
+  const [clientUsersNextPage, setClientUsersNextPage] = useState(2);
 
   const [licensedUsersOpenFor, setLicensedUsersOpenFor] = useState<{ userId: number; userName: string } | null>(null);
-  const [licensedUsers, setLicensedUsers] = useState<HotRecruitUser[]>([]);
-  const [licensedUsersLoading, setLicensedUsersLoading] = useState(false);
+  const [registrationsOpenFor, setRegistrationsOpenFor] = useState<{ userId: number; userName: string } | null>(null);
 
   /* ── Cell width (responsive) ── */
   const [cellWidth, setCellWidth] = useState(calculateCellWidth);
@@ -402,17 +400,16 @@ export default function OnboardingGamePage() {
     }
   };
 
-  const openTrackerModal = (metric: TrackerMetric, current: number, target: number) => {
-    setTrackerModal({ open: true, metric, current, target });
-  };
-
   const handleOpenHotRecruits = useCallback(async (userId: number, userName: string) => {
     setHotRecruitOpenFor({ userId, userName });
     setHotRecruits([]);
+    setHotRecruitsHasMore(false);
     setHotRecruitsLoading(true);
     try {
-      const loaded = await fetchHotRecruitsForAssociate(userId);
-      setHotRecruits(loaded);
+      const loaded = await fetchAssociateUsersForAssociatePage(userId, { hot: true, pageSize: 20 });
+      setHotRecruits(loaded.results);
+      setHotRecruitsHasMore(Boolean(loaded.next));
+      setHotRecruitsNextPage(2);
     } catch (err) {
       addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load recruits.' });
     } finally {
@@ -423,10 +420,13 @@ export default function OnboardingGamePage() {
   const handleOpenClientUsers = useCallback(async (userId: number, userName: string) => {
     setClientPointsOpenFor({ userId, userName });
     setClientUsers([]);
+    setClientUsersHasMore(false);
     setClientUsersLoading(true);
     try {
-      const loaded = await fetchClientUsersForAssociate(userId);
-      setClientUsers(loaded);
+      const loaded = await fetchAssociateUsersForAssociatePage(userId, { client: true, pageSize: 20 });
+      setClientUsers(loaded.results);
+      setClientUsersHasMore(Boolean(loaded.next));
+      setClientUsersNextPage(2);
     } catch (err) {
       addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load client users.' });
     } finally {
@@ -434,19 +434,47 @@ export default function OnboardingGamePage() {
     }
   }, [addToast]);
 
-  const handleOpenLicensedUsers = useCallback(async (userId: number, userName: string) => {
+  const handleOpenLicensedUsers = useCallback((userId: number, userName: string) => {
     setLicensedUsersOpenFor({ userId, userName });
-    setLicensedUsers([]);
-    setLicensedUsersLoading(true);
+  }, []);
+
+  const handleReachHotRecruitsEnd = useCallback(async () => {
+    if (!hotRecruitOpenFor || !hotRecruitsHasMore || hotRecruitsLoading || hotRecruitsLoadingMore) return;
+    setHotRecruitsLoadingMore(true);
     try {
-      const loaded = await fetchLicensedUsersForAssociate(userId);
-      setLicensedUsers(loaded);
+      const loaded = await fetchAssociateUsersForAssociatePage(hotRecruitOpenFor.userId, {
+        hot: true,
+        page: hotRecruitsNextPage,
+        pageSize: 20,
+      });
+      setHotRecruits((prev) => [...prev, ...loaded.results]);
+      setHotRecruitsHasMore(Boolean(loaded.next));
+      setHotRecruitsNextPage((prev) => prev + 1);
     } catch (err) {
-      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load licensed users.' });
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load more recruits.' });
     } finally {
-      setLicensedUsersLoading(false);
+      setHotRecruitsLoadingMore(false);
     }
-  }, [addToast]);
+  }, [addToast, hotRecruitOpenFor, hotRecruitsHasMore, hotRecruitsLoading, hotRecruitsLoadingMore, hotRecruitsNextPage]);
+
+  const handleReachClientUsersEnd = useCallback(async () => {
+    if (!clientPointsOpenFor || !clientUsersHasMore || clientUsersLoading || clientUsersLoadingMore) return;
+    setClientUsersLoadingMore(true);
+    try {
+      const loaded = await fetchAssociateUsersForAssociatePage(clientPointsOpenFor.userId, {
+        client: true,
+        page: clientUsersNextPage,
+        pageSize: 20,
+      });
+      setClientUsers((prev) => [...prev, ...loaded.results]);
+      setClientUsersHasMore(Boolean(loaded.next));
+      setClientUsersNextPage((prev) => prev + 1);
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load more client users.' });
+    } finally {
+      setClientUsersLoadingMore(false);
+    }
+  }, [addToast, clientPointsOpenFor, clientUsersHasMore, clientUsersLoading, clientUsersLoadingMore, clientUsersNextPage]);
 
   /* ── Display name ── */
   const displayName =
@@ -491,40 +519,48 @@ export default function OnboardingGamePage() {
       )}
 
       {/* ── Tracker progress modal (m11) ───────────────── */}
-      <TrackerProgressModal
-        open={trackerModal.open}
-        onClose={() => setTrackerModal((s) => ({ ...s, open: false }))}
-        metric={trackerModal.metric}
-        current={trackerModal.current}
-        target={trackerModal.target}
-        userName={displayName}
-      />
-
       {/* ── 9 Recruits modal (m8) ─────────────────────── */}
       <AssociateHotRecruitsModal
         open={hotRecruitOpenFor !== null}
         ownerName={hotRecruitOpenFor?.userName ?? ''}
         loading={hotRecruitsLoading}
         recruits={hotRecruits}
-        onClose={() => setHotRecruitOpenFor(null)}
+        loadingMore={hotRecruitsLoadingMore}
+        onReachEnd={() => void handleReachHotRecruitsEnd()}
+        onClose={() => {
+          setHotRecruitOpenFor(null);
+          setHotRecruits([]);
+        }}
       />
 
       {/* ── 45k Personal Points modal (m9) ─────────────── */}
       <AssociateClientUsersModal
         open={clientPointsOpenFor !== null}
+        ownerUserId={clientPointsOpenFor?.userId ?? null}
         ownerName={clientPointsOpenFor?.userName ?? ''}
         loading={clientUsersLoading}
         users={clientUsers}
-        onClose={() => setClientPointsOpenFor(null)}
+        loadingMore={clientUsersLoadingMore}
+        onReachEnd={() => void handleReachClientUsersEnd()}
+        onClose={() => {
+          setClientPointsOpenFor(null);
+          setClientUsers([]);
+        }}
       />
 
       {/* ── 3 Licenses modal (m10) ────────────────────── */}
-      <AssociateLicensedUsersModal
+      <LicensingTrackerModal
         open={licensedUsersOpenFor !== null}
+        ownerUserId={licensedUsersOpenFor?.userId ?? null}
         ownerName={licensedUsersOpenFor?.userName ?? ''}
-        loading={licensedUsersLoading}
-        users={licensedUsers}
         onClose={() => setLicensedUsersOpenFor(null)}
+      />
+
+      <AssociateTrackerModal
+        open={registrationsOpenFor !== null}
+        ownerUserId={registrationsOpenFor?.userId ?? null}
+        ownerName={registrationsOpenFor?.userName ?? ''}
+        onClose={() => setRegistrationsOpenFor(null)}
       />
 
       {/* ── Scrollable area ──────────────────────────── */}
@@ -767,7 +803,7 @@ export default function OnboardingGamePage() {
                     { id: 'm8',  label: MODULE_DISPLAY_LABELS['m8'],  metric: 'recruits' as TrackerMetric,      current: data.recruitTtl,        target: 9,     onOpen: () => data.userId ? void handleOpenHotRecruits(data.userId, displayName) : undefined },
                     { id: 'm9',  label: MODULE_DISPLAY_LABELS['m9'],  metric: 'points' as TrackerMetric,        current: data.personalPoints,    target: 45000, onOpen: () => data.userId ? void handleOpenClientUsers(data.userId, displayName) : undefined },
                     { id: 'm10', label: MODULE_DISPLAY_LABELS['m10'], metric: 'licenses' as TrackerMetric,      current: data.licensesInTtl,     target: 3,     onOpen: () => data.userId ? void handleOpenLicensedUsers(data.userId, displayName) : undefined },
-                    { id: 'm11', label: MODULE_DISPLAY_LABELS['m11'], metric: 'registrations' as TrackerMetric, current: data.registrationsBase, target: 15,    onOpen: () => openTrackerModal('registrations', data.registrationsBase, 15) },
+                    { id: 'm11', label: MODULE_DISPLAY_LABELS['m11'], metric: 'registrations' as TrackerMetric, current: data.registrationsBase, target: 15,    onOpen: () => data.userId ? setRegistrationsOpenFor({ userId: data.userId, userName: displayName }) : undefined },
                   ] as const
                 ).map((item) => {
                   const isDone = item.current >= item.target;

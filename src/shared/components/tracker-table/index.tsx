@@ -7,6 +7,7 @@ type SortDirection = 'asc' | 'desc';
 export interface TrackerTableColumn<T> {
   key: string;
   label: string;
+  header?: ReactNode;
   width?: number | string;
   minWidth?: number;
   align?: Align;
@@ -504,7 +505,7 @@ export function TrackerTable<T>({
                     }}
                   >
                     <span className="tracker-th-content">
-                      <span>{column.label}</span>
+                      <span>{column.header ?? column.label}</span>
                       {column.sortable && (
                         <button
                           type="button"

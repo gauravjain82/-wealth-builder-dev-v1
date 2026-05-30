@@ -116,6 +116,14 @@ async function fetchOptionalJson<T>(url: string): Promise<T | null> {
   return (await response.json()) as T;
 }
 
+async function fetchOptionalTrackerJson<T>(url: string): Promise<T | null> {
+  try {
+    return await fetchOptionalJson<T>(url);
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchTrackerUserProfile(userId: number): Promise<TrackerUserProfile> {
   const response = await fetch(`${API_BASE_URL}/api/accounts/users/${userId}/`, {
     headers: getAuthHeaders(),
@@ -202,9 +210,9 @@ export async function terminateTrackerUser(userId: number): Promise<void> {
 
 export async function fetchTrackerProfileSnapshots(userId: number): Promise<TrackerProfileSnapshots> {
   const [missionTracker, associate, licensing] = await Promise.all([
-    fetchOptionalJson<MissionTrackerRecord>(`${API_BASE_URL}/api/tracker/trackers/${MISSION_TRACKER_API_KEY}/${userId}/`),
-    fetchOptionalJson<AssociateTrackerRecord>(`${API_BASE_URL}/api/tracker/trackers/associate/${userId}/`),
-    fetchOptionalJson<LicensingTrackerRecord>(`${API_BASE_URL}/api/tracker/trackers/licensing/${userId}/`),
+    fetchOptionalTrackerJson<MissionTrackerRecord>(`${API_BASE_URL}/api/tracker/trackers/${MISSION_TRACKER_API_KEY}/${userId}/`),
+    fetchOptionalTrackerJson<AssociateTrackerRecord>(`${API_BASE_URL}/api/tracker/trackers/associate/${userId}/`),
+    fetchOptionalTrackerJson<LicensingTrackerRecord>(`${API_BASE_URL}/api/tracker/trackers/licensing/${userId}/`),
   ]);
 
   return { missionTracker, associate, licensing };

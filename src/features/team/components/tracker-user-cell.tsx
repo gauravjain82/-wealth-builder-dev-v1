@@ -1,7 +1,7 @@
 interface TrackerUserCellProps {
   fullName: string;
   agencyCode?: string | null;
-  invitedAt?: string | null;
+  amaDate?: string | null;
   avatarUrl?: string | null;
   onAvatarClick?: () => void;
   onNameClick?: () => void;
@@ -19,7 +19,7 @@ function getInitials(fullName: string): string {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-function formatInvitedDate(value?: string | null): string {
+function formatAmaDate(value?: string | null): string {
   if (!value) return '-';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
@@ -29,7 +29,7 @@ function formatInvitedDate(value?: string | null): string {
 export function TrackerUserCell({
   fullName,
   agencyCode,
-  invitedAt,
+  amaDate,
   avatarUrl,
   onAvatarClick,
   onNameClick,
@@ -76,7 +76,7 @@ export function TrackerUserCell({
         ) : (
           <div className="tracker-user-name">{fullName || '-'}</div>
         )}
-        <span className="tracker-user-sub"> {formatInvitedDate(invitedAt)} • {agencyCode || '-'}</span>
+        <span className="tracker-user-sub"> {formatAmaDate(amaDate)} | {agencyCode || '-'}</span>
       </div>
     </div>
   );

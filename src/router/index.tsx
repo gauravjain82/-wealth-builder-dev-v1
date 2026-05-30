@@ -14,6 +14,7 @@ const ProspectTrackerPage = lazy(() => import('@/features/team/prospect/pages/pr
 const OrgChartPage = lazy(() => import('@/features/team/org-chart/pages/org-chart-page'));
 const MissionTrackerPage = lazy(() => import('@/features/team/mission-tracker/pages/mission-tracker-page'));
 const AssociateTrackerPage = lazy(() => import('@/features/team/associate-tracker/pages/associate-tracker-page'));
+const AddGoalsPage = lazy(() => import('@/features/team/associate-tracker/pages/add-goals-page'));
 const LicensingTrackerPage = lazy(() => import('@/features/team/licensing-tracker/pages/licensing-tracker-page'));
 const ProductionTrackerPage = lazy(() => import('@/features/team/production-tracker/pages/production-tracker-page'));
 const ReportsPage = lazy(() => import('@/features/reports/pages/reports-page'));
@@ -105,6 +106,16 @@ const router = createBrowserRouter([
   {
     path: '/learn/public-education',
     element: lazyLoad(PublicEducationPage),
+  },
+
+  // Hidden shareable page. Recipients sign in and update their own associate tracker goals.
+  {
+    path: '/add-goals',
+    element: (
+      <ProtectedRoute>
+        {lazyLoad(AddGoalsPage)}
+      </ProtectedRoute>
+    ),
   },
 
   // Protected routes

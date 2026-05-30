@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { HotRecruitUser } from '@/features/team/associate-tracker/services/associate-tracker-service';
 import {
   ProspectTrackerListModal,
@@ -40,6 +41,7 @@ interface AssociateUserListModalProps {
 
 interface AssociateClientUsersModalProps {
   open: boolean;
+  ownerUserId: number | null;
   ownerName: string;
   loading: boolean;
   users: HotRecruitUser[];
@@ -142,11 +144,13 @@ function PointsSummaryCard({
   personalPoints,
   teamPoints,
   highlight = false,
+  onClick,
 }: {
   title: string;
   personalPoints: number | null | undefined;
   teamPoints: number | null | undefined;
   highlight?: boolean;
+  onClick?: () => void;
 }) {
   const formattedPersonalPoints = formatPoints(personalPoints);
   const formattedTeamPoints = formatPoints(teamPoints);
@@ -155,7 +159,16 @@ function PointsSummaryCard({
     <div
       className={`w-80 rounded-lg bg-black/30 px-4 py-3 shadow-sm ${
         highlight ? 'border border-amber-400/60' : 'border border-white/10'
-      }`}
+      } ${onClick ? 'cursor-pointer transition-colors hover:bg-amber-500/10' : ''}`}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={onClick ? (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick();
+        }
+      } : undefined}
     >
       <div className={`mb-2 text-center text-[10px] uppercase tracking-widest ${highlight ? 'text-amber-300' : 'text-white/60'}`}>
         {title}
@@ -222,6 +235,7 @@ export function AssociateHotRecruitsModal(props: AssociateHotRecruitsModalProps)
 
 export function AssociateClientUsersModal(props: AssociateClientUsersModalProps) {
   const summary = props.pointsSummary;
+  const navigate = useNavigate();
 
   return (
     <AssociateUserListModal
@@ -246,6 +260,7 @@ export function AssociateClientUsersModal(props: AssociateClientUsersModalProps)
               personalPoints={summary.pendingPersonal}
               teamPoints={summary.pendingTeam}
               highlight
+              onClick={props.ownerUserId ? () => navigate(`/team/production-tracker?broker_id=${props.ownerUserId}`) : undefined}
             />
             <PointsSummaryCard
               title="Rolling 3 Months"

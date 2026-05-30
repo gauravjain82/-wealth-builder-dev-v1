@@ -2,6 +2,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 
 export interface AssociateTrackerRecord {
   id: number;
+  serial_no?: number;
   user_id: number;
   user_name: string;
   user_email: string;
@@ -14,6 +15,7 @@ export interface AssociateTrackerRecord {
   leader_name?: string | null;
   leader_id?: number | null;
   agency_code?: string | null;
+  ama_date?: string | null;
   invited_at?: string | null;
   avatar_url?: string | null;
   photo_thumb_url?: string | null;
@@ -33,6 +35,8 @@ export interface AssociateTrackerRecord {
   is_net_licensed: boolean;
   is_key_player: boolean;
   is_training: boolean;
+  why: string;
+  goal: string;
   big_event_2nd: boolean;
   is_big_event_2nd_reset: boolean;
   created_at: string;
@@ -169,6 +173,18 @@ export async function fetchAssociates(
   }
 
   return data;
+}
+
+export async function fetchAssociateTracker(userId: number): Promise<AssociateTrackerRecord> {
+  const response = await fetch(`${API_BASE_URL}/api/tracker/trackers/associate/${userId}/`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch associate tracker: ${response.statusText}`);
+  }
+
+  return (await response.json()) as AssociateTrackerRecord;
 }
 
 export async function updateAssociateTracker(
