@@ -10,6 +10,12 @@ export { Modal } from './ui/modal';
 export { ConfirmationDialog } from './ui/confirmation-dialog';
 export { Label, type LabelProps } from './ui/label';
 export {
+	Tooltip,
+	type TooltipProps,
+	type TooltipPosition,
+	type TooltipTarget,
+} from './ui/tooltip';
+export {
 	Heading,
 	Text,
 	Link,

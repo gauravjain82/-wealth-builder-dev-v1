@@ -93,14 +93,14 @@ export function LeaderboardCard() {
       <CardHeader>
         <div className="leaderboard-card__header">
           <CardTitle className="leaderboard-card__title">Leaderboards</CardTitle>
-          <a
+          {/* <a
             href="https://wbperformance.netlify.app"
             target="_blank"
             rel="noopener noreferrer"
             className="leaderboard-card__link"
           >
             Performance Tracker &rarr;
-          </a>
+          </a> */}
         </div>
       </CardHeader>
       <CardContent>

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { IconInfoCircle } from '@tabler/icons-react';
 import { Text } from '@/shared/components/ui/typography';
+import { Tooltip } from '@/shared/components/ui/tooltip';
 import { fetchHomePerformanceStats } from '@/features/home/services/home-leaderboard-service';
 import './performance-table.css';
 
@@ -26,9 +27,11 @@ function MetricHeader({ label, info }: { label: string; info: string }) {
       <Text weight="bold" className="text-yellow-400">
         {label}
       </Text>
-      <span title={info} className="performance-table__info">
-        <IconInfoCircle size={15} stroke={2} />
-      </span>
+      <Tooltip content={info} position="top" target="hover">
+        <span aria-label={info} className="performance-table__info" tabIndex={0}>
+          <IconInfoCircle size={15} stroke={2} />
+        </span>
+      </Tooltip>
     </div>
   );
 }

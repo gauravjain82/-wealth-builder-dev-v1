@@ -31,6 +31,9 @@ export { Modal } from './modal';
 export { Label } from './label';
 export type { LabelProps } from './label';
 
+export { Tooltip } from './tooltip';
+export type { TooltipProps, TooltipPosition, TooltipTarget } from './tooltip';
+
 export { DatePicker, DateTimePicker, DateRangePicker } from './date-picker';
 export type { DatePickerProps, DateTimePickerProps, DateRangeValue, DateRangePickerProps } from './date-picker';
 
