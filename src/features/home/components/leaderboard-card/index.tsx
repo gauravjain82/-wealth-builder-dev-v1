@@ -10,9 +10,6 @@ import {
 } from '@/features/home/services/home-leaderboard-service';
 import './leaderboard-card.css';
 
-const AVATAR_URL =
-  'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/rec1.png?alt=media&token=df042a0f-924f-487f-a355-85eea6cd8075';
-
 const TAB_CONFIG = [
   { id: 'recruits', label: 'Business Partners' },
   { id: 'points', label: 'Points' },
@@ -26,6 +23,11 @@ function formatValue(row: HomeLeaderboardEntry): string {
   return value.toLocaleString(undefined, {
     maximumFractionDigits: row.metric === 'points' ? 2 : 0,
   });
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).map((part) => part[0]).join('').toUpperCase() || '?';
 }
 
 interface LeaderboardListProps {
@@ -50,7 +52,9 @@ function LeaderboardList({ level, rows }: LeaderboardListProps) {
             <Text as="span" weight="bold" className="leaderboard-card__rank">
               #{row.rank}
             </Text>
-            <img src={AVATAR_URL} alt="" className="leaderboard-card__avatar" />
+            <span className="leaderboard-card__avatar leaderboard-card__avatar--initials">
+              {getInitials(row.user_name)}
+            </span>
             <Text as="span" weight="medium" className="leaderboard-card__name">
               {row.user_name}
             </Text>

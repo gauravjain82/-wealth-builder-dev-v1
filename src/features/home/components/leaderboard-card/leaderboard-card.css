@@ -92,10 +92,20 @@
 }
 
 .leaderboard-card__avatar {
+  display: grid;
+  flex-shrink: 0;
   width: 2.5rem;
   height: 2.5rem;
+  place-items: center;
   border-radius: 9999px;
   border: 2px solid rgba(245, 196, 67, 0.3);
+}
+
+.leaderboard-card__avatar--initials {
+  background: rgba(245, 196, 67, 0.18);
+  color: #fbbf24;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .leaderboard-card__name {
