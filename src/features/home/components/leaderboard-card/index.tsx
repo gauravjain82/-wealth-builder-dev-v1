@@ -52,9 +52,21 @@ function LeaderboardList({ level, rows }: LeaderboardListProps) {
             <Text as="span" weight="bold" className="leaderboard-card__rank">
               #{row.rank}
             </Text>
-            <span className="leaderboard-card__avatar leaderboard-card__avatar--initials">
-              {getInitials(row.user_name)}
-            </span>
+            {row.photo_thumb_url ? (
+              <img
+                src={row.photo_thumb_url}
+                alt={row.user_name}
+                className="leaderboard-card__avatar"
+                style={{ objectFit: 'cover', background: '#f5c4432e' }}
+                width={40}
+                height={40}
+                loading="lazy"
+              />
+            ) : (
+              <span className="leaderboard-card__avatar leaderboard-card__avatar--initials">
+                {getInitials(row.user_name)}
+              </span>
+            )}
             <Text as="span" weight="medium" className="leaderboard-card__name">
               {row.user_name}
             </Text>

@@ -15,6 +15,7 @@ export interface HomeLeaderboardEntry {
   value: number | string;
   base_team_count: number;
   rank: number;
+  photo_thumb_url?: string | null;
 }
 
 export interface HomeLeaderboard {
