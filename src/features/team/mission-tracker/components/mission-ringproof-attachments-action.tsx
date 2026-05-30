@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react';
-import { IconPaperclip } from '@tabler/icons-react';
-import { Modal, Button } from '@/shared/components';
+import { IconFile, IconUpload, IconX } from '@tabler/icons-react';
+import { ConfirmationDialog } from '@/shared/components';
+import { Button } from '@/shared/components';
 // You should implement these API functions in your mission-tracker-service
 // import { listMissionRingProofAttachments, uploadMissionRingProofAttachment } from '../services/mission-tracker-service';
 
 
-interface MissionRingProofAttachment {
-  id: number;
-  file_name: string;
-  uploaded_at: string;
-  url: string;
-}
+import type { MissionRingProofAttachment } from '../services/mission-tracker-service';
+import { deleteMissionRingProofAttachment } from '../services/mission-tracker-service';
 
 interface MissionRingProofAttachmentsActionProps {
   userId: number;
@@ -22,8 +19,34 @@ interface MissionRingProofAttachmentsActionProps {
 
 
 export function MissionRingProofAttachmentsAction({ userId, label = 'Mission Ring Proof', listAttachments, uploadAttachment, missionRingProofList }: MissionRingProofAttachmentsActionProps) {
-  const [open, setOpen] = useState(false);
   const [attachments, setAttachments] = useState<MissionRingProofAttachment[]>(missionRingProofList || []);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<MissionRingProofAttachment | null>(null);
+    // Delete attachment API
+    const deleteAttachment = async (attachment: MissionRingProofAttachment) => {
+      setDeletingId(attachment.id);
+      setError(null);
+      try {
+        let blobName = attachment.blob_name;
+        if (!blobName) {
+          // Try to fetch the latest attachments and match by file_name and uploaded_at
+          const latest = await listAttachments(userId);
+          const match = latest.find(
+            (a) => a.file_name === attachment.file_name && a.uploaded_at === attachment.uploaded_at
+          );
+          blobName = match?.blob_name;
+        }
+        if (!blobName) throw new Error('Missing blob_name for attachment');
+        await deleteMissionRingProofAttachment(userId, blobName);
+        const data = await listAttachments(userId);
+        setAttachments(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to delete attachment.');
+      } finally {
+        setDeletingId(null);
+        setConfirmDelete(null);
+      }
+    };
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,21 +81,16 @@ export function MissionRingProofAttachmentsAction({ userId, label = 'Mission Rin
     }
   };
 
-  const openModal = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    setOpen(true);
-    await loadAttachments();
-  };
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     setUploading(true);
     setError(null);
     try {
       await uploadAttachment(userId, file);
-      await loadAttachments();
+      const data = await listAttachments(userId);
+      setAttachments(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload attachment.');
     } finally {
@@ -84,72 +102,60 @@ export function MissionRingProofAttachmentsAction({ userId, label = 'Mission Rin
 
   const hasAttachments = attachments.length > 0;
   return (
-    <>
-      <Button
-        type="button"
-        variant={hasAttachments ? 'secondary' : 'default'}
-        size="sm"
-        title={hasAttachments ? 'View attachments' : 'Add attachment'}
-        onClick={openModal}
-        className="flex items-center gap-1 justify-center"
-      >
-        <IconPaperclip size={14} /> {hasAttachments ? 'View' : 'Add'}
-      </Button>
-
-      <Modal open={open} onClose={() => setOpen(false)} title={label} contentClassName="max-w-[640px]">
-        <div className="grid gap-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-sm text-white/80">{label}</div>
-            <label className="inline-flex h-9 cursor-pointer items-center rounded border border-sky-300/40 bg-sky-500/10 px-3 text-sm text-sky-200 hover:bg-sky-500/20">
-              <input
-                type="file"
-                className="hidden"
-                onChange={(e) => void handleUpload(e)}
-                disabled={uploading}
-              />
-              {uploading ? 'Uploading...' : 'Upload Attachment'}
-            </label>
-          </div>
-
-          {error ? <div className="rounded border border-red-300/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">{error}</div> : null}
-
-          {loading ? (
-            <div className="text-sm text-white/70">Loading attachments...</div>
-          ) : attachments.length === 0 ? (
-            <div className="text-sm text-white/60">No attachments uploaded yet.</div>
-          ) : (
-            <div className="max-h-[320px] overflow-auto rounded border border-white/10">
-              <table className="w-full text-sm">
-                <thead className="bg-white/5 text-left text-xs uppercase tracking-[0.06em] text-white/60">
-                  <tr>
-                    <th className="px-3 py-2">File</th>
-                    <th className="px-3 py-2">Uploaded</th>
-                    <th className="px-3 py-2 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attachments.map((attachment) => (
-                    <tr key={attachment.id} className="border-t border-white/10">
-                      <td className="px-3 py-2 text-white/90">{attachment.file_name}</td>
-                      <td className="px-3 py-2 text-white/70">{new Date(attachment.uploaded_at).toLocaleString()}</td>
-                      <td className="px-3 py-2 text-right">
-                        <a
-                          href={attachment.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-sky-300 hover:text-sky-200"
-                        >
-                          Open
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+    <div className="flex items-center gap-2">
+      {/* Show file icons for each attachment */}
+      {attachments.map((attachment) => (
+        <div key={attachment.id} className="relative group flex items-center">
+          <a
+            href={attachment.url}
+            target="_blank"
+            rel="noreferrer"
+            title={attachment.file_name}
+            className="text-sky-300 hover:text-sky-200 flex items-center"
+            style={{ pointerEvents: deletingId === attachment.id ? 'none' : undefined, opacity: deletingId === attachment.id ? 0.5 : 1 }}
+          >
+            <IconFile size={24} />
+          </a>
+          {/* Cross icon overlay for delete */}
+          <button
+            type="button"
+            className="absolute -top-1 -right-1 bg-black/80 rounded-full p-0.5 text-red-300 hover:text-red-500 opacity-80 group-hover:opacity-100 border border-white/20"
+            style={{ width: 14, height: 14, lineHeight: 0 }}
+            title="Delete attachment"
+            disabled={deletingId === attachment.id}
+            onClick={(e) => {
+              e.preventDefault();
+              setConfirmDelete(attachment);
+            }}
+          >
+            <IconX size={10} />
+          </button>
         </div>
-      </Modal>
-    </>
+      ))}
+            {/* Confirmation dialog for delete */}
+            <ConfirmationDialog
+              open={!!confirmDelete}
+              title="Delete Attachment"
+              message={`Are you sure you want to delete '${confirmDelete?.file_name || ''}'?`}
+              confirmText="Delete"
+              cancelText="Cancel"
+              loading={!!deletingId}
+              onClose={() => setConfirmDelete(null)}
+              onConfirm={() => confirmDelete && deleteAttachment(confirmDelete)}
+            />
+      {/* Upload icon/button */}
+      <label className="inline-flex items-center cursor-pointer">
+        <input
+          type="file"
+          className="hidden"
+          onChange={handleUpload}
+          disabled={uploading}
+        />
+        <span title={uploading ? 'Uploading...' : 'Upload Attachment'} className="flex items-center text-sky-400 hover:text-sky-200">
+          <IconUpload size={16} />
+        </span>
+      </label>
+      {error && <span className="ml-2 text-xs text-red-300">{error}</span>}
+    </div>
   );
 }

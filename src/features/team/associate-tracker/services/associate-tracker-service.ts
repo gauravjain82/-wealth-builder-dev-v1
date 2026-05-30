@@ -215,6 +215,7 @@ export async function fetchAssociateUsersForAssociate(
   if (filters.top25 !== undefined) params.set('top25', String(filters.top25));
   params.set('page_size', String(filters.pageSize ?? 200));
   params.set('sort', filters.sort || '-created_at');
+  // params.set('recruiter_downline', '1');
 
   let nextUrl: string | null = `${API_BASE_URL}/api/accounts/users/?${params.toString()}`;
   const collected: HotRecruitUser[] = [];

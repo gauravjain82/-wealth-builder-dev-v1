@@ -62,6 +62,7 @@ const MENU_ITEMS = {
   
   // Admin items
   USER_MANAGEMENT: { label: 'User Management', icon: '👨‍💼', path: '/admin/users' } as MenuItem,
+  MISSION_RING_PROOF_ADMIN: { label: 'Mission Ring Proof', icon: '💍', path: '/admin/mission-ring-proof' } as MenuItem,
   UNIFIED_VIDEO_MANAGER: { label: 'Unified Video Manager', icon: '🎬', path: '/admin/unified-videos' } as MenuItem,
   VIDEO_MANAGEMENT: { label: 'Video Management', icon: '📹', path: '/admin/videos' } as MenuItem,
   CAROUSEL_MANAGER: { label: 'Carousel Manager', icon: '🎠', path: '/admin/carousel' } as MenuItem,
@@ -314,6 +315,7 @@ export const PLAN_MENUS = {
       icon: '👨‍💼',
       children: [
         MENU_ITEMS.USER_MANAGEMENT,
+        MENU_ITEMS.MISSION_RING_PROOF_ADMIN,
         MENU_ITEMS.UNIFIED_VIDEO_MANAGER,
         MENU_ITEMS.VIDEO_MANAGEMENT,
         MENU_ITEMS.CAROUSEL_MANAGER,

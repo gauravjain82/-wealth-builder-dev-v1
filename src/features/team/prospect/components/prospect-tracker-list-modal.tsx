@@ -1033,9 +1033,9 @@ export function ProspectTrackerListModal({
           )}
         </div>
 
-        <div className="flex items-center justify-end">
+        {/* <div className="flex items-center justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Close</Button>
-        </div>
+        </div> */}
 
         <CallLogModal
           prospect={activeCallLogProspect}

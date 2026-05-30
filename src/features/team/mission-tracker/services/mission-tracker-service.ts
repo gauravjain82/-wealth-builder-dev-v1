@@ -1,17 +1,36 @@
+// Delete a mission ring proof attachment by blob_name
+export async function deleteMissionRingProofAttachment(userId: number, blobName: string): Promise<void> {
+  const token = localStorage.getItem('wb.authToken');
+  const headers = token ? { Authorization: `Token ${token}` } : {};
+  const resp = await fetch(`${API_BASE_URL}/api/tracker/trackers/4X4/${userId}/mission-ring-proof/?blob_name=${encodeURIComponent(blobName)}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!resp.ok) throw new Error('Failed to delete attachment');
+}
 // Mission Ring Proof Attachments API
-export async function listMissionRingProofAttachments(userId: number): Promise<Array<{ id: number; file_name: string; uploaded_at: string; url: string }>> {
+export interface MissionRingProofAttachment {
+  id: number;
+  file_name: string;
+  uploaded_at: string;
+  url: string;
+  blob_name: string;
+}
+
+export async function listMissionRingProofAttachments(userId: number): Promise<MissionRingProofAttachment[]> {
   // GET /api/trackers/4X4/{user_id}/
   const response = await fetch(`${API_BASE_URL}/api/tracker/trackers/4X4/${userId}/`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch mission ring proof attachments');
   const data = await response.json();
-  // The field is mission_ring_proof: Array<{file_name, uploaded_at, url, ...}>
+  // The field is mission_ring_proof: Array<{file_name, uploaded_at, url, blob_name, ...}>
   return (data.mission_ring_proof || []).map((item: any, idx: number) => ({
     id: idx,
     file_name: item.file_name,
     uploaded_at: item.uploaded_at,
     url: item.url,
+    blob_name: item.blob_name,
   }));
 }
 
