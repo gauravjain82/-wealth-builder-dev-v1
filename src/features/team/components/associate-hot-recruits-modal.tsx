@@ -110,7 +110,7 @@ function RecruitSummaryCard({
   teamRecruits: number | null | undefined;
 }) {
   return (
-    <div className="w-60 rounded-lg border border-white/10 bg-slate-900/80 px-5 py-3 shadow-sm">
+    <div className="w-60 rounded-lg border border-white/10 bg-black/30 px-5 py-3 shadow-sm">
       <div className="mb-2 text-center text-[10px] uppercase tracking-widest text-white/60">{title}</div>
       <div className="grid grid-cols-2 divide-x divide-white/10">
         <div className="pr-3 text-center">
@@ -153,7 +153,7 @@ function PointsSummaryCard({
 
   return (
     <div
-      className={`w-80 rounded-lg bg-slate-900/80 px-4 py-3 shadow-sm ${
+      className={`w-80 rounded-lg bg-black/30 px-4 py-3 shadow-sm ${
         highlight ? 'border border-amber-400/60' : 'border border-white/10'
       }`}
     >

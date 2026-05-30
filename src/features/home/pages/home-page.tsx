@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
-import { VideoHero, CarouselCard } from '@/features/home/components';
+import { VideoHero, CarouselCard, LeaderboardCard, PerformanceTable } from '@/features/home/components';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { useCarouselImages } from '@/hooks/use-carousel-images';
 import { roleToPlan } from '@core/constants/roles';
@@ -219,24 +219,22 @@ export default function HomePage() {
         </section>
 
         {/* Leaderboard Section - Paid Users Only */}
-        {/* {isPaid && (
-          <LeaderboardCard
-            avatarUrl={AVATAR_URL}
-            smdData={mockLeaderboardData.smd}
-            mdData={mockLeaderboardData.md}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-        )} */}
-
-        {/* Performance Tracker - Paid Users Only */}
-        {/* {isPaid && (
-          <section className="px-8 md:px-4 pb-16" aria-label="Quick metrics">
+        {isPaid && (
+          <section className="px-4 pb-16" aria-label="Leaderboards">
             <div className="max-w-7xl mx-auto">
-              <PerformanceTable stats={userStats} />
+              <LeaderboardCard />
             </div>
           </section>
-        )} */}
+        )}
+
+        {/* Performance Tracker - Paid Users Only */}
+        {isPaid && (
+          <section className="px-8 md:px-4 pb-16" aria-label="Quick metrics">
+            <div className="max-w-7xl mx-auto">
+              <PerformanceTable />
+            </div>
+          </section>
+        )}
 
         {/* Lightbox Modal */}
         {lightbox.open && (

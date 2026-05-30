@@ -108,3 +108,13 @@
   color: #fbbf24;
   font-weight: 600;
 }
+
+.leaderboard-card__message {
+  color: rgba(255, 255, 255, 0.6);
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.leaderboard-card__message--error {
+  color: #f87171;
+}

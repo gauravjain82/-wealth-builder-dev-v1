@@ -24,12 +24,15 @@
 
 .main-layout__main {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   background: hsl(var(--background));
   position: relative;
 }
 
 .main-layout__main-inner {
+  box-sizing: border-box;
+  height: 100%;
   padding: 24px;
   min-height: 100%;
 }

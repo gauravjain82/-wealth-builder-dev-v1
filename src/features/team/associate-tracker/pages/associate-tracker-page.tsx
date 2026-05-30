@@ -646,7 +646,7 @@ export default function AssociateTrackerPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col p-2">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden p-2">
       <Block
         title={pageHeading}
         description={`${pageDescription} • ${totalCount} total`}

@@ -202,18 +202,20 @@ function TwoByTwoInputCell({
   colLabels,
   rowLabels,
   onCellClick,
+  fitLargeValues = false,
 }: {
   row: AssociateTrackerRecord;
   fields: [keyof AssociateTrackerRecord, keyof AssociateTrackerRecord, keyof AssociateTrackerRecord, keyof AssociateTrackerRecord];
   colLabels: [string, string];
   rowLabels: [string, string];
   onCellClick?: () => void;
+  fitLargeValues?: boolean;
 }) {
   return (
     <div
       className="inline-block cursor-pointer select-none px-1 py-0.5 rounded border border-white/10 bg-white/5 hover:bg-white/10"
       onClick={onCellClick}
-      style={{ textAlign: 'center', minWidth: 96, maxWidth: 128 }}
+      style={{ textAlign: 'center', minWidth: fitLargeValues ? 136 : 96, maxWidth: fitLargeValues ? 152 : 128 }}
     >
       <div className="mb-0.5 grid grid-cols-2 items-center gap-0.5">
         <span className="text-center text-[10px] font-semibold text-white/70">{colLabels[0]}</span>
@@ -225,12 +227,16 @@ function TwoByTwoInputCell({
             {[0, 1].map((colIdx) => {
               const field = fields[rowIdx * 2 + colIdx];
               const value = formatPointCellValue(row[field]);
+              const valueTextSize = fitLargeValues && value.length > 8
+                ? value.length > 11 ? 'text-[8px]' : 'text-[10px]'
+                : 'text-xs';
               return (
-                <div key={String(field)} className="relative min-w-[2.5rem] max-w-[3.5rem]">
+                <div key={String(field)} className="relative min-w-0">
                   <input
-                    className="h-8 w-full rounded border border-white/20 bg-white/10 px-1 text-center text-xs font-semibold text-white placeholder-white/50 outline-none"
+                    className={`h-8 w-full rounded border border-white/20 bg-white/10 px-0.5 text-center font-semibold tracking-tight text-white placeholder-white/50 outline-none ${valueTextSize}`}
                     type="text"
                     value={value}
+                    title={value}
                     disabled
                     readOnly
                     tabIndex={-1}
@@ -485,7 +491,7 @@ export function buildAssociateColumns(
     {
       key: 'points_inputs',
       label: 'Points',
-      width: 160,
+      width: 190,
       align: 'center',
       sortable: false,
       searchable: false,
@@ -498,6 +504,7 @@ export function buildAssociateColumns(
           ]}
           colLabels={['PR', 'TR']}
           rowLabels={['3M', '1M']}
+          fitLargeValues
           onCellClick={() => options.onOpenPersonalPoints?.(row)}
         />
       ),

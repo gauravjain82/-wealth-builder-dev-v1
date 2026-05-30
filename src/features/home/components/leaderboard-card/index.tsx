@@ -1,35 +1,77 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Heading, Text } from '@/shared/components/ui/typography';
+import {
+  fetchHomeLeaderboard,
+  HomeLeaderboardEntry,
+  HomeLeaderboardMetric,
+} from '@/features/home/services/home-leaderboard-service';
 import './leaderboard-card.css';
 
-interface LeaderboardEntry {
-  name: string;
-  count: number;
-}
-
-interface LeaderboardCardProps {
-  avatarUrl: string;
-  smdData: LeaderboardEntry[];
-  mdData: LeaderboardEntry[];
-  activeTab: string;
-  onTabChange: (tab: string) => void;
-}
+const AVATAR_URL =
+  'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/rec1.png?alt=media&token=df042a0f-924f-487f-a355-85eea6cd8075';
 
 const TAB_CONFIG = [
-  { id: 'bp', label: 'Business Partners' },
-  { id: 'pt', label: 'Points' },
-  { id: 'lic', label: 'Licenses' },
-  { id: 'cv', label: 'Convention' },
-];
+  { id: 'recruits', label: 'Business Partners' },
+  { id: 'points', label: 'Points' },
+  { id: 'licenses', label: 'Licenses' },
+  { id: 'big_event', label: 'Convention' },
+] satisfies Array<{ id: HomeLeaderboardMetric; label: string }>;
 
-export function LeaderboardCard({
-  avatarUrl,
-  smdData,
-  mdData,
-  activeTab,
-  onTabChange,
-}: LeaderboardCardProps) {
+function formatValue(row: HomeLeaderboardEntry): string {
+  const value = Number(row.value);
+  if (!Number.isFinite(value)) return String(row.value);
+  return value.toLocaleString(undefined, {
+    maximumFractionDigits: row.metric === 'points' ? 2 : 0,
+  });
+}
+
+interface LeaderboardListProps {
+  level: 'SMD' | 'MD';
+  rows: HomeLeaderboardEntry[];
+}
+
+function LeaderboardList({ level, rows }: LeaderboardListProps) {
+  return (
+    <div>
+      <Heading as="h3" variant="h5" className="leaderboard-card__column-title">
+        Top 5 {level}
+      </Heading>
+      <div className="leaderboard-card__list">
+        {rows.length === 0 && (
+          <Text as="div" className="leaderboard-card__message">
+            No data available
+          </Text>
+        )}
+        {rows.map((row) => (
+          <div key={`${level}-${row.user_id}`} className="leaderboard-card__item">
+            <Text as="span" weight="bold" className="leaderboard-card__rank">
+              #{row.rank}
+            </Text>
+            <img src={AVATAR_URL} alt="" className="leaderboard-card__avatar" />
+            <Text as="span" weight="medium" className="leaderboard-card__name">
+              {row.user_name}
+            </Text>
+            <Text as="span" weight="semibold" className="leaderboard-card__count">
+              {formatValue(row)}
+            </Text>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function LeaderboardCard() {
+  const [activeTab, setActiveTab] = useState<HomeLeaderboardMetric>('recruits');
+  const userId = localStorage.getItem('wb.userId') || '';
+  const { data, error, isLoading } = useQuery({
+    queryKey: ['home-leaderboard', userId, activeTab],
+    queryFn: () => fetchHomeLeaderboard(activeTab),
+  });
+
   return (
     <Card className="leaderboard-card">
       <CardHeader>
@@ -41,12 +83,11 @@ export function LeaderboardCard({
             rel="noopener noreferrer"
             className="leaderboard-card__link"
           >
-            Performance Tracker →
+            Performance Tracker &rarr;
           </a>
         </div>
       </CardHeader>
       <CardContent>
-        {/* Tab Buttons */}
         <div className="leaderboard-card__tabs">
           {TAB_CONFIG.map((tab) => (
             <Button
@@ -58,61 +99,29 @@ export function LeaderboardCard({
                   ? 'bg-yellow-400/20 text-yellow-400 border-yellow-400/40'
                   : 'bg-black/30 border-white/20 text-white hover:bg-black/50'
               }
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => setActiveTab(tab.id)}
             >
               {tab.label}
             </Button>
           ))}
         </div>
 
-        {/* Leaderboard Content */}
-        <div className="leaderboard-card__columns">
-          {/* SMD Column */}
-          <div>
-            <Heading as="h3" variant="h5" className="leaderboard-card__column-title">
-              Top 5 SMD
-            </Heading>
-            <div className="leaderboard-card__list">
-              {smdData.map((row, idx) => (
-                <div key={`smd-${idx}`} className="leaderboard-card__item">
-                  <Text as="span" weight="bold" className="leaderboard-card__rank">
-                    #{idx + 1}
-                  </Text>
-                  <img src={avatarUrl} alt="" className="leaderboard-card__avatar" />
-                  <Text as="span" weight="medium" className="leaderboard-card__name">
-                    {row.name}
-                  </Text>
-                  <Text as="span" weight="semibold" className="leaderboard-card__count">
-                    {row.count}
-                  </Text>
-                </div>
-              ))}
-            </div>
+        {isLoading && (
+          <Text as="div" className="leaderboard-card__message">
+            Loading leaderboard data...
+          </Text>
+        )}
+        {error && !isLoading && (
+          <Text as="div" className="leaderboard-card__message leaderboard-card__message--error">
+            Unable to load leaderboard data.
+          </Text>
+        )}
+        {data && !isLoading && !error && (
+          <div className="leaderboard-card__columns">
+            <LeaderboardList level="SMD" rows={data.smd} />
+            <LeaderboardList level="MD" rows={data.md} />
           </div>
-
-          {/* MD Column */}
-          <div>
-            <Heading as="h3" variant="h5" className="leaderboard-card__column-title">
-              Top 5 MD
-            </Heading>
-            <div className="leaderboard-card__list">
-              {mdData.map((row, idx) => (
-                <div key={`md-${idx}`} className="leaderboard-card__item">
-                  <Text as="span" weight="bold" className="leaderboard-card__rank">
-                    #{idx + 1}
-                  </Text>
-                  <img src={avatarUrl} alt="" className="leaderboard-card__avatar" />
-                  <Text as="span" weight="medium" className="leaderboard-card__name">
-                    {row.name}
-                  </Text>
-                  <Text as="span" weight="semibold" className="leaderboard-card__count">
-                    {row.count}
-                  </Text>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

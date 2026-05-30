@@ -1097,7 +1097,7 @@ export default function ProductionTrackerPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col gap-3 bg-gray-100 p-2 text-gray-900 dark:bg-[#111318] dark:text-white">
+    <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-gray-100 p-2 text-gray-900 dark:bg-[#111318] dark:text-white">
       <TopProducersModal
         open={topProducersOpen}
         performers={topPerformers}

@@ -81,6 +81,18 @@
   position: relative;
 }
 
+.performance-table__label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.performance-table__info {
+  color: rgba(255, 255, 255, 0.7);
+  cursor: help;
+}
+
 .performance-table__subheader-cell--bordered::after {
   content: '';
   position: absolute;
@@ -142,4 +154,10 @@
   font-weight: 700;
   color: white;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.performance-table__error {
+  padding: 0.75rem;
+  color: #f87171;
+  text-align: center;
 }
