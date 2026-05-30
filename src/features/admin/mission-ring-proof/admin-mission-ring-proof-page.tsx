@@ -1,7 +1,6 @@
 
 
 import { useEffect, useState } from 'react';
-import { MissionRingProofAttachmentsAction } from '@/features/team/mission-tracker/components/mission-ringproof-attachments-action';
 import { fetchMissionRingProofSubmissions, MissionRingProofSubmission } from './mission-ring-proof-service';
 import { Block, Input, Button } from '@/shared/components';
 
@@ -20,8 +19,8 @@ export default function AdminMissionRingProofPage() {
       try {
         const data = await fetchMissionRingProofSubmissions();
         setSubmissions(data);
-      } catch (err: any) {
-        setError(err.message || 'Unknown error');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
       }
@@ -76,6 +75,10 @@ export default function AdminMissionRingProofPage() {
         {loading ? (
           <div className="flex items-center justify-center py-16 text-sm text-white/50">
             Loading submissions…
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-16 text-sm text-red-300">
+            {error}
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-white/50">
