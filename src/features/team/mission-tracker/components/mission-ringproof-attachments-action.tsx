@@ -1,24 +1,17 @@
 import { useState, useEffect } from 'react';
 import { IconFile, IconUpload, IconX } from '@tabler/icons-react';
 import { ConfirmationDialog } from '@/shared/components';
-import { Button } from '@/shared/components';
-// You should implement these API functions in your mission-tracker-service
-// import { listMissionRingProofAttachments, uploadMissionRingProofAttachment } from '../services/mission-tracker-service';
-
-
 import type { MissionRingProofAttachment } from '../services/mission-tracker-service';
 import { deleteMissionRingProofAttachment } from '../services/mission-tracker-service';
 
 interface MissionRingProofAttachmentsActionProps {
   userId: number;
-  label?: string;
   listAttachments: (userId: number) => Promise<MissionRingProofAttachment[]>;
   uploadAttachment: (userId: number, file: File) => Promise<void>;
   missionRingProofList?: MissionRingProofAttachment[];
 }
 
-
-export function MissionRingProofAttachmentsAction({ userId, label = 'Mission Ring Proof', listAttachments, uploadAttachment, missionRingProofList }: MissionRingProofAttachmentsActionProps) {
+export function MissionRingProofAttachmentsAction({ userId, listAttachments, uploadAttachment, missionRingProofList }: MissionRingProofAttachmentsActionProps) {
   const [attachments, setAttachments] = useState<MissionRingProofAttachment[]>(missionRingProofList || []);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<MissionRingProofAttachment | null>(null);
@@ -27,7 +20,7 @@ export function MissionRingProofAttachmentsAction({ userId, label = 'Mission Rin
       setDeletingId(attachment.id);
       setError(null);
       try {
-        let blobName = attachment.blob_name;
+        let blobName: string | undefined = attachment.blob_name;
         if (!blobName) {
           // Try to fetch the latest attachments and match by file_name and uploaded_at
           const latest = await listAttachments(userId);
@@ -47,13 +40,11 @@ export function MissionRingProofAttachmentsAction({ userId, label = 'Mission Rin
         setConfirmDelete(null);
       }
     };
-  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // On mount, if missionRingProofList is provided, use it. Otherwise, fetch.
   useEffect(() => {
-    if (missionRingProofList) {
+    if (missionRingProofList !== undefined) {
       setAttachments(missionRingProofList);
     } else {
       (async () => {
@@ -65,22 +56,7 @@ export function MissionRingProofAttachmentsAction({ userId, label = 'Mission Rin
         }
       })();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
-
-  const loadAttachments = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await listAttachments(userId);
-      setAttachments(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load attachments.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  }, [listAttachments, missionRingProofList, userId]);
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -100,7 +76,6 @@ export function MissionRingProofAttachmentsAction({ userId, label = 'Mission Rin
   };
 
 
-  const hasAttachments = attachments.length > 0;
   return (
     <div className="flex items-center gap-2">
       {/* Show file icons for each attachment */}
@@ -141,7 +116,7 @@ export function MissionRingProofAttachmentsAction({ userId, label = 'Mission Rin
               cancelText="Cancel"
               loading={!!deletingId}
               onClose={() => setConfirmDelete(null)}
-              onConfirm={() => confirmDelete && deleteAttachment(confirmDelete)}
+              onConfirm={() => confirmDelete ? deleteAttachment(confirmDelete) : undefined}
             />
       {/* Upload icon/button */}
       <label className="inline-flex items-center cursor-pointer">

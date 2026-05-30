@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { fetchTeamSegmentSummary } from '@/features/team/services/team-segment-service';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -19,14 +20,6 @@ interface TrackerTeamScopeFilterProps {
   value: TrackerTeamScope;
   selectedUserId: string | null;
   onChange: (next: TrackerTeamScopeChange) => void;
-}
-
-interface SegmentSummaryResponse {
-  accessible_segments?: string[];
-  segments?: Array<{
-    segment?: string;
-    visible?: boolean;
-  }>;
 }
 
 interface BrokerResponseItem {
@@ -70,15 +63,7 @@ function normalizeScope(value: string): TrackerTeamScope | null {
 }
 
 async function fetchAvailableScopes(): Promise<TrackerTeamScope[]> {
-  const response = await fetch(`${API_BASE_URL}/api/accounts/users/segments/`, {
-    headers: getAuthHeaders(),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch segments: ${response.statusText}`);
-  }
-
-  const payload = (await response.json()) as SegmentSummaryResponse;
+  const payload = await fetchTeamSegmentSummary();
   const accessibleScopes = (payload.accessible_segments || [])
     .map((segment) => normalizeScope(segment))
     .filter((segment): segment is TrackerTeamScope => Boolean(segment));

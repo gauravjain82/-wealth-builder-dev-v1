@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, ConfirmationDialog, Modal, TrackerTable } from '@/shared/components';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { ConfirmationDialog, Modal, TrackerTable } from '@/shared/components';
 import {
   activateProspectWithAgencyCode,
   deleteProspect,
@@ -78,6 +78,9 @@ export interface ProspectTrackerListModalProps {
   introText: string;
   loadingText: string;
   emptyText: string;
+  headerContent?: ReactNode;
+  loadingMore?: boolean;
+  onReachEnd?: () => void;
   onClose: () => void;
 }
 
@@ -235,6 +238,9 @@ export function ProspectTrackerListModal({
   introText,
   loadingText,
   emptyText,
+  headerContent,
+  loadingMore = false,
+  onReachEnd,
   onClose,
 }: ProspectTrackerListModalProps) {
   const addToast = useToastStore((state) => state.addToast);
@@ -1013,6 +1019,8 @@ export function ProspectTrackerListModal({
           {introText.replace('{ownerName}', ownerName)}
         </div>
 
+        {headerContent}
+
         <div className="min-h-[420px] flex-1 overflow-hidden rounded-xl border border-white/10 bg-black/20">
           {loading ? (
             <div className="px-4 py-6 text-sm text-white/70">{loadingText}</div>
@@ -1029,9 +1037,16 @@ export function ProspectTrackerListModal({
               emptyMessage={emptyText}
               className="h-full"
               rowClassName={(row) => getProspectRowClassName(row)}
+              onReachEnd={onReachEnd}
             />
           )}
         </div>
+
+        {loadingMore && (
+          <div className="flex items-center justify-center py-1">
+            <div className="text-sm text-slate-400 dark:text-white/60">Loading more records...</div>
+          </div>
+        )}
 
         {/* <div className="flex items-center justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Close</Button>

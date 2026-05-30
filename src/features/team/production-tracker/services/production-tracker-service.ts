@@ -2,6 +2,7 @@ import {
   PRODUCTION_MODAL_DELIVERY_OPTIONS,
   PRODUCTION_TABLE_DELIVERY_OPTIONS,
 } from '../production-constants';
+import { fetchCachedReferenceData } from '@/infrastructure/query/reference-data';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -719,17 +720,21 @@ export async function fetchProductionPointsSummary(userId?: number | null): Prom
 }
 
 export async function fetchProductionCompanyProducts(): Promise<ProductionCompanyProduct[]> {
-  const data = await fetchJson<
-    ProductionCompanyProduct[] | { count: number; results: ProductionCompanyProduct[] }
-  >(`${API_BASE_URL}/api/tracker/company-products/`);
-  return Array.isArray(data) ? data : ((data as { results: ProductionCompanyProduct[] }).results ?? []);
+  return fetchCachedReferenceData('production-company-products', async () => {
+    const data = await fetchJson<
+      ProductionCompanyProduct[] | { count: number; results: ProductionCompanyProduct[] }
+    >(`${API_BASE_URL}/api/tracker/company-products/`);
+    return Array.isArray(data) ? data : ((data as { results: ProductionCompanyProduct[] }).results ?? []);
+  });
 }
 
 export async function fetchProductionSplitPresets(): Promise<ProductionSplitPreset[]> {
-  const data = await fetchJson<
-    ProductionSplitPreset[] | { count: number; results: ProductionSplitPreset[] }
-  >(`${API_BASE_URL}/api/tracker/policies/split_presets/`);
-  return Array.isArray(data) ? data : ((data as { results: ProductionSplitPreset[] }).results ?? []);
+  return fetchCachedReferenceData('production-split-presets', async () => {
+    const data = await fetchJson<
+      ProductionSplitPreset[] | { count: number; results: ProductionSplitPreset[] }
+    >(`${API_BASE_URL}/api/tracker/policies/split_presets/`);
+    return Array.isArray(data) ? data : ((data as { results: ProductionSplitPreset[] }).results ?? []);
+  });
 }
 
 export async function fetchProductionTopPerformers(): Promise<ProductionTopPerformer[]> {

@@ -1,7 +1,7 @@
 // Delete a mission ring proof attachment by blob_name
 export async function deleteMissionRingProofAttachment(userId: number, blobName: string): Promise<void> {
   const token = localStorage.getItem('wb.authToken');
-  const headers = token ? { Authorization: `Token ${token}` } : {};
+  const headers: Record<string, string> = token ? { Authorization: `Token ${token}` } : {};
   const resp = await fetch(`${API_BASE_URL}/api/tracker/trackers/4X4/${userId}/mission-ring-proof/?blob_name=${encodeURIComponent(blobName)}`, {
     method: 'DELETE',
     headers,
@@ -14,7 +14,22 @@ export interface MissionRingProofAttachment {
   file_name: string;
   uploaded_at: string;
   url: string;
-  blob_name: string;
+  blob_name?: string;
+}
+
+export function normalizeMissionRingProofAttachments(value: unknown): MissionRingProofAttachment[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.map((item, idx) => {
+    const attachment = item as Partial<MissionRingProofAttachment>;
+    return {
+      id: attachment.id ?? idx,
+      file_name: attachment.file_name || '',
+      uploaded_at: attachment.uploaded_at || '',
+      url: attachment.url || '',
+      blob_name: attachment.blob_name,
+    };
+  });
 }
 
 export async function listMissionRingProofAttachments(userId: number): Promise<MissionRingProofAttachment[]> {
@@ -25,13 +40,7 @@ export async function listMissionRingProofAttachments(userId: number): Promise<M
   if (!response.ok) throw new Error('Failed to fetch mission ring proof attachments');
   const data = await response.json();
   // The field is mission_ring_proof: Array<{file_name, uploaded_at, url, blob_name, ...}>
-  return (data.mission_ring_proof || []).map((item: any, idx: number) => ({
-    id: idx,
-    file_name: item.file_name,
-    uploaded_at: item.uploaded_at,
-    url: item.url,
-    blob_name: item.blob_name,
-  }));
+  return normalizeMissionRingProofAttachments(data.mission_ring_proof);
 }
 
 export async function uploadMissionRingProofAttachment(userId: number, file: File): Promise<void> {
@@ -90,6 +99,7 @@ export interface MissionTrackerRecord {
   created_at: string;
   updated_at: string;
   smd_100k_class: boolean | null;
+  mission_ring_proof?: MissionRingProofAttachment[];
 }
 
 interface PaginatedTrackerResponse<T> {
@@ -104,6 +114,13 @@ export interface MissionTrackerQuery {
   pageSize?: number;
   sort?: string;
   filters?: Record<string, string>;
+}
+
+function normalizeMissionTrackerRecord(record: MissionTrackerRecord): MissionTrackerRecord {
+  return {
+    ...record,
+    mission_ring_proof: normalizeMissionRingProofAttachments(record.mission_ring_proof),
+  };
 }
 
 function getAuthHeaders(): HeadersInit {
@@ -144,11 +161,14 @@ export async function fetchMissionTracker(
       count: data.length,
       next: null,
       previous: null,
-      results: data,
+      results: data.map(normalizeMissionTrackerRecord),
     };
   }
 
-  return data;
+  return {
+    ...data,
+    results: data.results.map(normalizeMissionTrackerRecord),
+  };
 }
 
 export async function updateMissionTracker(
@@ -165,5 +185,5 @@ export async function updateMissionTracker(
     throw new Error(`Failed to update mission tracker: ${response.statusText}`);
   }
 
-  return (await response.json()) as MissionTrackerRecord;
+  return normalizeMissionTrackerRecord((await response.json()) as MissionTrackerRecord);
 }

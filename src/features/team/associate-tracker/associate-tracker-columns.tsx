@@ -136,88 +136,6 @@ function NetLicenseAmountCell({
   );
 }
 
-function RegistrationBase15kCell({
-  row,
-  options,
-}: {
-  row: AssociateTrackerRecord;
-  options: BuildAssociateColumnsOptions;
-}) {
-  const field: keyof AssociateTrackerRecord = 'registration_base_15k';
-  const saving = isSaving(row, field, options);
-  const initialValue = row.registration_base_15k == null ? '' : String(row.registration_base_15k);
-  let committedOnEnter = false;
-
-  return (
-    <input
-      className="h-8 w-full rounded border border-white/20 bg-white/5 px-2 text-center text-xs text-white placeholder-white/50 outline-none focus:border-amber-300/60"
-      type="text"
-      inputMode="numeric"
-      defaultValue={initialValue}
-      disabled={saving}
-      placeholder="0"
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          const input = e.currentTarget as HTMLInputElement;
-          const raw = input.value.trim();
-          if (!raw) {
-            committedOnEnter = true;
-            options.onPatch(row.user_id, field, null);
-            input.blur();
-            return;
-          }
-
-          const parsed = Number(raw);
-          if (!Number.isFinite(parsed)) {
-            input.value = initialValue;
-            input.blur();
-            return;
-          }
-
-          committedOnEnter = true;
-          options.onPatch(row.user_id, field, parsed);
-          input.blur();
-        }
-      }}
-      onFocus={(e) => {
-        const raw = e.currentTarget.value.trim();
-        if (!raw) return;
-        const parsed = Number(raw);
-        if (Number.isFinite(parsed) && parsed === 0) {
-          e.currentTarget.value = '';
-        }
-      }}
-      onBlur={(e) => {
-        if (committedOnEnter) {
-          committedOnEnter = false;
-          return;
-        }
-
-        const raw = e.currentTarget.value.trim();
-        if (!raw) {
-          options.onPatch(row.user_id, field, null);
-          return;
-        }
-
-        const parsed = Number(raw);
-        if (!Number.isFinite(parsed)) {
-          e.currentTarget.value = initialValue;
-          return;
-        }
-
-        options.onPatch(row.user_id, field, parsed);
-      }}
-    />
-  );
-}
-
-function formatNumber(value: number | string): string {
-  const parsed = Number(value);
-  if (Number.isNaN(parsed)) return String(value);
-  return parsed.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
 async function openRelatedProfile(
   row: AssociateTrackerRecord,
   options: BuildAssociateColumnsOptions,
@@ -270,7 +188,171 @@ function getRowNotes(
     },
   ];
 }
+// 2x2 grid with PR/TR headers and compact 3M/1M labels inside each value box.
+function formatPointCellValue(value: number | string | boolean | null | undefined): string {
+  if (value === null || value === undefined || value === '') return '';
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return String(value);
+  return parsed.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
 
+function TwoByTwoInputCell({
+  row,
+  fields,
+  colLabels,
+  rowLabels,
+  onCellClick,
+}: {
+  row: AssociateTrackerRecord;
+  fields: [keyof AssociateTrackerRecord, keyof AssociateTrackerRecord, keyof AssociateTrackerRecord, keyof AssociateTrackerRecord];
+  colLabels: [string, string];
+  rowLabels: [string, string];
+  onCellClick?: () => void;
+}) {
+  return (
+    <div
+      className="inline-block cursor-pointer select-none px-1 py-0.5 rounded border border-white/10 bg-white/5 hover:bg-white/10"
+      onClick={onCellClick}
+      style={{ textAlign: 'center', minWidth: 96, maxWidth: 128 }}
+    >
+      <div className="mb-0.5 grid grid-cols-2 items-center gap-0.5">
+        <span className="text-center text-[10px] font-semibold text-white/70">{colLabels[0]}</span>
+        <span className="text-center text-[10px] font-semibold text-white/70">{colLabels[1]}</span>
+      </div>
+      <div className="grid grid-rows-2 gap-0.5">
+        {[0, 1].map((rowIdx) => (
+          <div key={rowIdx} className="grid grid-cols-2 items-center gap-0.5">
+            {[0, 1].map((colIdx) => {
+              const field = fields[rowIdx * 2 + colIdx];
+              const value = formatPointCellValue(row[field]);
+              return (
+                <div key={String(field)} className="relative min-w-[2.5rem] max-w-[3.5rem]">
+                  <input
+                    className="h-8 w-full rounded border border-white/20 bg-white/10 px-1 text-center text-xs font-semibold text-white placeholder-white/50 outline-none"
+                    type="text"
+                    value={value}
+                    disabled
+                    readOnly
+                    tabIndex={-1}
+                    style={{ cursor: 'pointer', backgroundColor: 'rgba(255,255,255,0.03)' }}
+                  />
+                  <span className="pointer-events-none absolute bottom-0.5 right-1 text-[8px] leading-none text-white/50">
+                    {rowLabels[rowIdx]}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TwoInputCell({
+  row,
+  fields,
+  options,
+  labels,
+  readOnly = false,
+  onCellClick,
+}: {
+  row: AssociateTrackerRecord;
+  fields: (keyof AssociateTrackerRecord)[];
+  options: BuildAssociateColumnsOptions;
+  labels: string[];
+  readOnly?: boolean;
+  onCellClick?: () => void;
+}) {
+  return (
+    <div
+      className={`relative inline-block select-none rounded border border-white/10 bg-white/5 px-1 py-0.5 ${
+        onCellClick ? 'hover:bg-white/10' : ''
+      }`}
+      style={{ textAlign: 'center', minWidth: 96, maxWidth: 128 }}
+    >
+      <div className="mb-0.5 grid grid-cols-2 items-center gap-0.5">
+        {labels.map((label) => (
+          <span key={label} className="whitespace-nowrap text-center text-[10px] font-semibold text-white/70">
+            {label}
+          </span>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 items-center gap-0.5">
+        {fields.map((field) => {
+          const saving = isSaving(row, field, options);
+          const initialValue = row[field] == null ? '' : String(row[field]);
+          let committedOnEnter = false;
+          return (
+            <input
+              key={String(field)}
+              className="h-8 min-w-0 w-full rounded border border-white/20 bg-white/5 px-1 text-center text-xs font-semibold text-white placeholder-white/50 outline-none focus:border-amber-300/60"
+              type="number"
+              defaultValue={initialValue}
+              disabled={readOnly || saving}
+              placeholder="0"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const input = e.currentTarget as HTMLInputElement;
+                  const raw = input.value.trim();
+                  if (!raw) {
+                    committedOnEnter = true;
+                    options.onPatch(row.user_id, field, null);
+                    input.blur();
+                    return;
+                  }
+                  const parsed = Number(raw);
+                  if (!Number.isFinite(parsed)) {
+                    input.value = initialValue;
+                    input.blur();
+                    return;
+                  }
+                  committedOnEnter = true;
+                  options.onPatch(row.user_id, field, parsed);
+                  input.blur();
+                }
+              }}
+              onFocus={(e) => {
+                const raw = e.currentTarget.value.trim();
+                if (!raw) return;
+                const parsed = Number(raw);
+                if (Number.isFinite(parsed) && parsed === 0) {
+                  e.currentTarget.value = '';
+                }
+              }}
+              onBlur={(e) => {
+                if (committedOnEnter) {
+                  committedOnEnter = false;
+                  return;
+                }
+                const raw = e.currentTarget.value.trim();
+                if (!raw) {
+                  options.onPatch(row.user_id, field, null);
+                  return;
+                }
+                const parsed = Number(raw);
+                if (!Number.isFinite(parsed)) {
+                  e.currentTarget.value = initialValue;
+                  return;
+                }
+                options.onPatch(row.user_id, field, parsed);
+              }}
+            />
+          );
+        })}
+      </div>
+      {onCellClick && (
+        <button
+          type="button"
+          className="absolute inset-0 cursor-pointer rounded"
+          aria-label="View details"
+          onClick={onCellClick}
+        />
+      )}
+    </div>
+  );
+}
 export function buildAssociateColumns(
   options: BuildAssociateColumnsOptions
 ): TrackerTableColumn<AssociateTrackerRecord>[] {
@@ -381,80 +463,78 @@ export function buildAssociateColumns(
       render: (row) => renderCheckbox(row, 'big_event_1st', options),
     },
     {
-      key: 'recruit_9',
+      key: 'recruits_inputs',
       label: 'Recruits',
-      width: 120,
+      width: 160,
       align: 'center',
-      sortable: true,
+      sortable: false,
       searchable: false,
-      value: (row) => String(row.recruit_9),
       render: (row) => (
-        <button
-          type="button"
-          className="rounded border border-white/15 bg-white/5 px-2 py-1 text-xs font-semibold text-amber-200 hover:bg-white/10"
-          title="View hot recruits"
-          onClick={(event) => {
-            event.stopPropagation();
-            options.onOpenHotRecruits?.(row);
-          }}
-        >
-          {formatNumber(row.recruit_9)}
-        </button>
+        <TwoByTwoInputCell
+          row={row}
+          fields={[
+            'last_3_month_personal_recruits', 'last_3_month_team_recruits',
+            'current_month_personal_recruits', 'current_month_team_recruits',
+          ]}
+          colLabels={['PR', 'TR']}
+          rowLabels={['3M', '1M']}
+          onCellClick={() => options.onOpenHotRecruits?.(row)}
+        />
       ),
     },
     {
-      key: 'personal_points_45k',
+      key: 'points_inputs',
       label: 'Points',
-      width: 140,
+      width: 160,
       align: 'center',
-      sortable: true,
+      sortable: false,
       searchable: false,
-      value: (row) => String(row.personal_points_45k),
       render: (row) => (
-        <button
-          type="button"
-          className="rounded border border-white/15 bg-white/5 px-2 py-1 text-xs font-semibold text-emerald-200 hover:bg-white/10"
-          title="View client users"
-          onClick={(event) => {
-            event.stopPropagation();
-            options.onOpenPersonalPoints?.(row);
-          }}
-        >
-          {formatNumber(row.personal_points_45k)}
-        </button>
+        <TwoByTwoInputCell
+          row={row}
+          fields={[
+            'last_3_month_personal_points', 'last_3_month_team_points',
+            'current_month_personal_points', 'current_month_team_points',
+          ]}
+          colLabels={['PR', 'TR']}
+          rowLabels={['3M', '1M']}
+          onCellClick={() => options.onOpenPersonalPoints?.(row)}
+        />
       ),
     },
     {
-      key: 'registration_base_15k',
+      key: 'licenses_inputs',
       label: 'Licenses',
       width: 120,
       align: 'center',
-      sortable: true,
+      sortable: false,
       searchable: false,
-      value: (row) => String(row.personal_points_45k),
       render: (row) => (
-        <button
-          type="button"
-          className="rounded border border-white/15 bg-white/5 px-2 py-1 text-xs font-semibold text-sky-200 hover:bg-white/10"
-          title="View licensed users"
-          onClick={(event) => {
-            event.stopPropagation();
-            options.onOpenLicensedUsers?.(row);
-          }}
-        >
-          {formatNumber(row.personal_points_45k)}
-        </button>
+        <TwoInputCell
+          row={row}
+          options={options}
+          fields={['current_month_licenses', 'total_licenses']}
+          labels={['This Month', 'Total']}
+          readOnly
+          onCellClick={() => options.onOpenLicensedUsers?.(row)}
+        />
       ),
     },
     {
-      key: 'registrationsBase',
+      key: 'registrations_inputs',
       label: 'Registrations',
       width: 140,
       align: 'center',
-      sortable: true,
+      sortable: false,
       searchable: false,
-      value: (row) => String(row.registration_base_15k),
-      render: (row) => <RegistrationBase15kCell row={row} options={options} />,
+      render: (row) => (
+        <TwoInputCell
+          row={row}
+          options={options}
+          fields={['current_month_big_event_registrations', 'total_big_event_registrations']}
+          labels={['This Month', 'Total']}
+        />
+      ),
     },
     {
       key: 'is_licensed',

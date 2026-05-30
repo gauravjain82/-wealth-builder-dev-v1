@@ -46,6 +46,7 @@ interface BackendUser {
   client?: boolean;
   net_license_amount?: number | string | null;
   level_counts?: LevelCountPayload[];
+  photo_thumb_url?: string | null;
   profile?: {
     photo_url?: string | null;
     photo_url_thumb?: string | null;
@@ -183,6 +184,9 @@ function normalizeLevel(user: BackendUser | UnknownRecord): string {
   const levelCode = getString(levelRecord || {}, 'code').trim();
   if (levelCode) return levelCode;
 
+  const levelCodeField = getString(userRecord, 'level_code').trim();
+  if (levelCodeField) return levelCodeField;
+
   const levelNameField = getString(userRecord, 'level_name').trim();
   if (levelNameField) return levelNameField;
 
@@ -285,7 +289,8 @@ function normalizeOrgUser(raw: UnknownRecord, parentIdFromTree: string | null = 
 
   const profile = toRecord(raw.profile);
   const avatarUrl =
-    (typeof raw.avatar_url === 'string' && raw.avatar_url)
+    (typeof raw.photo_thumb_url === 'string' && raw.photo_thumb_url)
+    || (typeof raw.avatar_url === 'string' && raw.avatar_url)
     || (typeof profile?.photo_url_thumb === 'string' && profile.photo_url_thumb)
     || (typeof profile?.photo_url === 'string' && profile.photo_url)
     || '';
@@ -376,7 +381,7 @@ function transformToUsersAndChildrenMap(payload: unknown): {
     .map((item) => walk(item, null))
     .filter((rootId): rootId is string => Boolean(rootId));
 
-  let users = Array.from(userMap.values());
+  const users = Array.from(userMap.values());
   if (!Object.keys(childrenMap).length && users.length) {
     childrenMap = buildChildrenMap(users);
   }

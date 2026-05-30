@@ -1,3 +1,5 @@
+import { fetchCachedReferenceData } from '@/infrastructure/query/reference-data';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const FRONTEND_BASE_URL = import.meta.env.VITE_FRONTEND_BASE_URL || window.location.origin;
 
@@ -186,16 +188,18 @@ export interface Level {
 }
 
 export async function fetchLevels(): Promise<Level[]> {
-  const response = await fetch(`${API_BASE_URL}/api/accounts/levels/`, {
-    headers: getAuthHeaders(),
+  return fetchCachedReferenceData('account-levels', async () => {
+    const response = await fetch(`${API_BASE_URL}/api/accounts/levels/`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch levels: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : (data.results ?? []);
   });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch levels: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return Array.isArray(data) ? data : (data.results ?? []);
 }
 
 export async function saveProspectCallLog(

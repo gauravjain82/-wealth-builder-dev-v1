@@ -18,6 +18,7 @@ import orgChartService, {
 } from '../services/org-chart-service';
 import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
 import type { TrackerUserProfile } from '@/features/team/services/tracker-user-profile-service';
+import { fetchTeamSegmentSummary } from '@/features/team/services/team-segment-service';
 import OrgNode, { type OrgNodeData } from '../components/org-node';
 import { FILTER_COLORS, FILTER_KEYS } from '../utils/filters';
 import { findNodePosition, layoutTree, type TreeNode } from '../utils/layout';
@@ -34,14 +35,6 @@ const ALL_VIEW_OPTIONS: Array<{ id: OrgViewType; label: string; description: str
   { id: 'superbase', label: 'SuperBase', description: 'Direct SMD team' },
   { id: 'superteam', label: 'SuperTeam', description: 'Extended SMD team' },
 ];
-
-interface SegmentSummaryResponse {
-  accessible_segments?: string[];
-  segments?: Array<{
-    segment?: string;
-    visible?: boolean;
-  }>;
-}
 
 interface TeamOption {
   id: string;
@@ -103,15 +96,7 @@ function toBrokerOption(item: BrokerResponseItem): TeamOption | null {
 }
 
 async function fetchAvailableViews(): Promise<OrgViewType[]> {
-  const response = await fetch(`${API_BASE_URL}/api/accounts/users/segments/`, {
-    headers: getAuthHeaders(),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch segments: ${response.statusText}`);
-  }
-
-  const payload = (await response.json()) as SegmentSummaryResponse;
+  const payload = await fetchTeamSegmentSummary();
   const accessibleViews = (payload.accessible_segments || [])
     .map((segment) => normalizeView(segment))
     .filter((segment): segment is OrgViewType => Boolean(segment));
@@ -433,8 +418,8 @@ function OrgChart() {
     if (nodeData.bigEvent) matches.push(FILTER_KEYS.BIG_EVENT);
     if (nodeData.keyPlayer) matches.push(FILTER_KEYS.KEY_PLAYER);
     if (nodeData.licensed) matches.push(FILTER_KEYS.LICENSED);
-    if (Boolean(nodeData.netLicensed)) matches.push(FILTER_KEYS.NET_LICENSED);
-    if (Boolean(nodeData.client) || nodeData.hasProduction) matches.push(FILTER_KEYS.CLIENT);
+    if (nodeData.netLicensed) matches.push(FILTER_KEYS.NET_LICENSED);
+    if (nodeData.client || nodeData.hasProduction) matches.push(FILTER_KEYS.CLIENT);
     return matches;
   }, []);
 

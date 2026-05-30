@@ -8,11 +8,12 @@ import {
   resolveTrackerUserIdByName,
 } from '@/features/team/services/tracker-user-profile-service';
 import { DatePicker } from '@/shared/components/ui/date-picker';
-import type { MissionTrackerRecord } from './services/mission-tracker-service';
+import type { MissionRingProofAttachment, MissionTrackerRecord } from './services/mission-tracker-service';
 import { MissionRingProofAttachmentsAction } from './components/mission-ringproof-attachments-action';
 import { listMissionRingProofAttachments, uploadMissionRingProofAttachment } from './services/mission-tracker-service';
 
 const MISSION_TRACKER_NOTE_FALLBACK = ['tracker', ['4', 'x4'].join('')].join('_');
+const EMPTY_MISSION_RING_PROOF_ATTACHMENTS: MissionRingProofAttachment[] = [];
 
 function asYesNo(value: boolean): string {
   return value ? 'Yes' : 'No';
@@ -35,7 +36,7 @@ interface BuildMissionTrackerColumnsOptions {
   onOpenAllNotes: (row: MissionTrackerRecord) => void;
 
   // For Mission Ring Proof attachments
-  listMissionRingProofAttachments: (userId: number) => Promise<Array<{ id: number; file_name: string; uploaded_at: string; url: string }> >;
+  listMissionRingProofAttachments: (userId: number) => Promise<MissionRingProofAttachment[]>;
   uploadMissionRingProofAttachment: (userId: number, file: File) => Promise<void>;
 }
 
@@ -487,9 +488,9 @@ export function buildMissionTrackerColumns(options: BuildMissionTrackerColumnsOp
       render: (row) => (
         <MissionRingProofAttachmentsAction
           userId={row.user_id}
-          label="Mission Ring Proof"
           listAttachments={mergedOptions.listMissionRingProofAttachments}
           uploadAttachment={mergedOptions.uploadMissionRingProofAttachment}
+          missionRingProofList={row.mission_ring_proof || EMPTY_MISSION_RING_PROOF_ATTACHMENTS}
         />
       ),
     },

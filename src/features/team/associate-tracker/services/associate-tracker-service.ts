@@ -37,6 +37,22 @@ export interface AssociateTrackerRecord {
   is_big_event_2nd_reset: boolean;
   created_at: string;
   updated_at: string;
+
+  // API fields for input boxes
+  current_month_team_recruits?: number | null;
+  current_month_personal_recruits?: number | null;
+  last_3_month_team_recruits?: number | null;
+  last_3_month_personal_recruits?: number | null;
+  current_month_team_points?: number | null;
+  current_month_personal_points?: number | null;
+  last_3_month_team_points?: number | null;
+  last_3_month_personal_points?: number | null;
+  pending_personal_points?: number | null;
+  pending_team_points?: number | null;
+  current_month_licenses?: number | null;
+  total_licenses?: number | null;
+  current_month_big_event_registrations?: number | null;
+  total_big_event_registrations?: number | null;
 }
 
 interface PaginatedTrackerResponse<T> {
@@ -46,7 +62,7 @@ interface PaginatedTrackerResponse<T> {
   results: T[];
 }
 
-interface PaginatedUsersResponse<T> {
+export interface PaginatedUsersResponse<T> {
   count: number;
   next: string | null;
   previous: string | null;
@@ -103,6 +119,7 @@ export interface AssociateUserListFilters {
   licensed?: boolean;
   top25?: boolean;
   sort?: string;
+  page?: number;
   pageSize?: number;
 }
 
@@ -196,53 +213,65 @@ export async function resetAssociateTraining(): Promise<void> {
   );
 }
 
-function resolveNextUrl(nextUrl: string): string {
-  if (nextUrl.startsWith('http://') || nextUrl.startsWith('https://')) {
-    return nextUrl;
-  }
-  return `${API_BASE_URL}${nextUrl}`;
-}
-
 export async function fetchAssociateUsersForAssociate(
   recruiterUserId: number,
   filters: AssociateUserListFilters = {}
 ): Promise<HotRecruitUser[]> {
-  const params = new URLSearchParams();
-  params.set('recruited_by', String(recruiterUserId));
-  if (filters.hot !== undefined) params.set('hot', String(filters.hot));
-  if (filters.client !== undefined) params.set('client', String(filters.client));
-  if (filters.licensed !== undefined) params.set('is_license', String(filters.licensed));
-  if (filters.top25 !== undefined) params.set('top25', String(filters.top25));
-  params.set('page_size', String(filters.pageSize ?? 200));
-  params.set('sort', filters.sort || '-created_at');
-  // params.set('recruiter_downline', '1');
-
-  let nextUrl: string | null = `${API_BASE_URL}/api/accounts/users/?${params.toString()}`;
   const collected: HotRecruitUser[] = [];
+  let page = 1;
+  let hasMore = true;
   let pageSafety = 0;
 
-  while (nextUrl && pageSafety < 10) {
-    const response = await fetch(nextUrl, {
-      headers: getAuthHeaders(),
+  while (hasMore && pageSafety < 10) {
+    const data = await fetchAssociateUsersForAssociatePage(recruiterUserId, {
+      ...filters,
+      page,
+      pageSize: filters.pageSize ?? 200,
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch hot recruits: ${response.statusText}`);
-    }
-
-    const data = (await response.json()) as PaginatedUsersResponse<HotRecruitUser> | HotRecruitUser[];
-
-    if (Array.isArray(data)) {
-      collected.push(...data);
-      break;
-    }
-
-    collected.push(...(data.results || []));
-    nextUrl = data.next ? resolveNextUrl(data.next) : null;
+    collected.push(...data.results);
+    hasMore = Boolean(data.next);
+    page += 1;
     pageSafety += 1;
   }
 
   return collected;
+}
+
+export async function fetchAssociateUsersForAssociatePage(
+  recruiterUserId: number,
+  filters: AssociateUserListFilters = {}
+): Promise<PaginatedUsersResponse<HotRecruitUser>> {
+  const params = new URLSearchParams();
+  // params.set('recruited_by', String(recruiterUserId));
+  if (filters.hot !== undefined) params.set('hot', String(filters.hot));
+  if (filters.client !== undefined) params.set('client', String(filters.client));
+  if (filters.licensed !== undefined) params.set('is_license', String(filters.licensed));
+  if (filters.top25 !== undefined) params.set('top25', String(filters.top25));
+  params.set('page', String(filters.page ?? 1));
+  params.set('page_size', String(filters.pageSize ?? 20));
+  params.set('sort', filters.sort || '-created_at');
+  params.set('recruiter_downline', String(recruiterUserId));
+
+  const response = await fetch(`${API_BASE_URL}/api/accounts/users/?${params.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch associate users: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as PaginatedUsersResponse<HotRecruitUser> | HotRecruitUser[];
+
+  if (Array.isArray(data)) {
+    return {
+      count: data.length,
+      next: null,
+      previous: null,
+      results: data,
+    };
+  }
+
+  return data;
 }
 
 export async function fetchHotRecruitsForAssociate(recruiterUserId: number): Promise<HotRecruitUser[]> {

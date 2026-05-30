@@ -1,3 +1,5 @@
+import { fetchCachedReferenceData } from '@/infrastructure/query/reference-data';
+
 export interface CurrentUserDetails {
   id: number;
   email: string;
@@ -142,17 +144,19 @@ export async function fetchCurrentUserDetails(): Promise<CurrentUserDetails> {
 }
 
 export async function fetchPaymentProducts(): Promise<PaymentProduct[]> {
-  const response = await fetch(`${getApiBaseUrl()}/api/payments/products/?active=true`, {
-    headers: getAuthHeaders(),
+  return fetchCachedReferenceData('payment-products-active', async () => {
+    const response = await fetch(`${getApiBaseUrl()}/api/payments/products/?active=true`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const message = await parseError(response, 'Failed to load payment products.');
+      throw new Error(message);
+    }
+
+    const payload = await response.json();
+    return asList<PaymentProduct>(payload);
   });
-
-  if (!response.ok) {
-    const message = await parseError(response, 'Failed to load payment products.');
-    throw new Error(message);
-  }
-
-  const payload = await response.json();
-  return asList<PaymentProduct>(payload);
 }
 
 export async function createSetupIntent(oldId: string): Promise<SetupIntentResponse> {
@@ -193,17 +197,19 @@ export async function createSubscriptionApprovalRequest(
 }
 
 export async function fetchRoles(): Promise<RoleOption[]> {
-  const response = await fetch(`${getApiBaseUrl()}/api/authz/roles/`, {
-    headers: getAuthHeaders(),
+  return fetchCachedReferenceData('authz-roles', async () => {
+    const response = await fetch(`${getApiBaseUrl()}/api/authz/roles/`, {
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const message = await parseError(response, 'Failed to load role options.');
+      throw new Error(message);
+    }
+
+    const payload = await response.json();
+    return asList<RoleOption>(payload);
   });
-
-  if (!response.ok) {
-    const message = await parseError(response, 'Failed to load role options.');
-    throw new Error(message);
-  }
-
-  const payload = await response.json();
-  return asList<RoleOption>(payload);
 }
 
 export async function fetchMySubscriptionApprovalRequests(

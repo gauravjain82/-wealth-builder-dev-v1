@@ -3,10 +3,8 @@ import { Block, Button, ErrorState, LoadingState, TrackerDateRangeFilter, type D
 import { useToastStore } from '@/store';
 import { buildAssociateColumns } from '../associate-tracker-columns';
 import {
-  fetchClientUsersForAssociate,
+  fetchAssociateUsersForAssociatePage,
   fetchAssociates,
-  fetchLicensedUsersForAssociate,
-  fetchHotRecruitsForAssociate,
   type HotRecruitUser,
   type AssociateTrackerRecord,
   type AssociateTrackerQuery,
@@ -74,20 +72,39 @@ export default function AssociateTrackerPage() {
   const [hotRecruitOpenFor, setHotRecruitOpenFor] = useState<{
     userId: number;
     userName: string;
+    currentMonthPersonal: number | null | undefined;
+    currentMonthTeam: number | null | undefined;
+    rollingThreeMonthPersonal: number | null | undefined;
+    rollingThreeMonthTeam: number | null | undefined;
   } | null>(null);
   const [hotRecruitsLoading, setHotRecruitsLoading] = useState(false);
+  const [hotRecruitsLoadingMore, setHotRecruitsLoadingMore] = useState(false);
+  const [hotRecruitsHasMore, setHotRecruitsHasMore] = useState(false);
+  const [hotRecruitsNextPage, setHotRecruitsNextPage] = useState(2);
   const [hotRecruits, setHotRecruits] = useState<HotRecruitUser[]>([]);
   const [clientPointsOpenFor, setClientPointsOpenFor] = useState<{
     userId: number;
     userName: string;
+    currentMonthPersonal: number | null | undefined;
+    currentMonthTeam: number | null | undefined;
+    pendingPersonal: number | null | undefined;
+    pendingTeam: number | null | undefined;
+    rollingThreeMonthPersonal: number | null | undefined;
+    rollingThreeMonthTeam: number | null | undefined;
   } | null>(null);
   const [clientUsersLoading, setClientUsersLoading] = useState(false);
+  const [clientUsersLoadingMore, setClientUsersLoadingMore] = useState(false);
+  const [clientUsersHasMore, setClientUsersHasMore] = useState(false);
+  const [clientUsersNextPage, setClientUsersNextPage] = useState(2);
   const [clientUsers, setClientUsers] = useState<HotRecruitUser[]>([]);
   const [licensedUsersOpenFor, setLicensedUsersOpenFor] = useState<{
     userId: number;
     userName: string;
   } | null>(null);
   const [licensedUsersLoading, setLicensedUsersLoading] = useState(false);
+  const [licensedUsersLoadingMore, setLicensedUsersLoadingMore] = useState(false);
+  const [licensedUsersHasMore, setLicensedUsersHasMore] = useState(false);
+  const [licensedUsersNextPage, setLicensedUsersNextPage] = useState(2);
   const [licensedUsers, setLicensedUsers] = useState<HotRecruitUser[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -250,12 +267,22 @@ export default function AssociateTrackerPage() {
   };
 
   const handleOpenHotRecruits = useCallback(async (row: AssociateTrackerRecord) => {
-    setHotRecruitOpenFor({ userId: row.user_id, userName: row.user_name });
+    setHotRecruitOpenFor({
+      userId: row.user_id,
+      userName: row.user_name,
+      currentMonthPersonal: row.current_month_personal_recruits,
+      currentMonthTeam: row.current_month_team_recruits,
+      rollingThreeMonthPersonal: row.last_3_month_personal_recruits,
+      rollingThreeMonthTeam: row.last_3_month_team_recruits,
+    });
     setHotRecruits([]);
+    setHotRecruitsHasMore(false);
     setHotRecruitsLoading(true);
     try {
-      const loaded = await fetchHotRecruitsForAssociate(row.user_id);
-      setHotRecruits(loaded);
+      const loaded = await fetchAssociateUsersForAssociatePage(row.user_id, { hot: true, pageSize: 20 });
+      setHotRecruits(loaded.results);
+      setHotRecruitsHasMore(Boolean(loaded.next));
+      setHotRecruitsNextPage(2);
     } catch (err) {
       addToast({
         type: 'error',
@@ -267,12 +294,24 @@ export default function AssociateTrackerPage() {
   }, [addToast]);
 
   const handleOpenClientUsers = useCallback(async (row: AssociateTrackerRecord) => {
-    setClientPointsOpenFor({ userId: row.user_id, userName: row.user_name });
+    setClientPointsOpenFor({
+      userId: row.user_id,
+      userName: row.user_name,
+      currentMonthPersonal: row.current_month_personal_points,
+      currentMonthTeam: row.current_month_team_points,
+      pendingPersonal: row.pending_personal_points,
+      pendingTeam: row.pending_team_points,
+      rollingThreeMonthPersonal: row.last_3_month_personal_points,
+      rollingThreeMonthTeam: row.last_3_month_team_points,
+    });
     setClientUsers([]);
+    setClientUsersHasMore(false);
     setClientUsersLoading(true);
     try {
-      const loaded = await fetchClientUsersForAssociate(row.user_id);
-      setClientUsers(loaded);
+      const loaded = await fetchAssociateUsersForAssociatePage(row.user_id, { client: true, pageSize: 20 });
+      setClientUsers(loaded.results);
+      setClientUsersHasMore(Boolean(loaded.next));
+      setClientUsersNextPage(2);
     } catch (err) {
       addToast({
         type: 'error',
@@ -286,10 +325,13 @@ export default function AssociateTrackerPage() {
   const handleOpenLicensedUsers = useCallback(async (row: AssociateTrackerRecord) => {
     setLicensedUsersOpenFor({ userId: row.user_id, userName: row.user_name });
     setLicensedUsers([]);
+    setLicensedUsersHasMore(false);
     setLicensedUsersLoading(true);
     try {
-      const loaded = await fetchLicensedUsersForAssociate(row.user_id);
-      setLicensedUsers(loaded);
+      const loaded = await fetchAssociateUsersForAssociatePage(row.user_id, { licensed: true, pageSize: 20 });
+      setLicensedUsers(loaded.results);
+      setLicensedUsersHasMore(Boolean(loaded.next));
+      setLicensedUsersNextPage(2);
     } catch (err) {
       addToast({
         type: 'error',
@@ -299,6 +341,63 @@ export default function AssociateTrackerPage() {
       setLicensedUsersLoading(false);
     }
   }, [addToast]);
+
+  const handleReachHotRecruitsEnd = useCallback(async () => {
+    if (!hotRecruitOpenFor || !hotRecruitsHasMore || hotRecruitsLoading || hotRecruitsLoadingMore) return;
+    setHotRecruitsLoadingMore(true);
+    try {
+      const loaded = await fetchAssociateUsersForAssociatePage(hotRecruitOpenFor.userId, {
+        hot: true,
+        page: hotRecruitsNextPage,
+        pageSize: 20,
+      });
+      setHotRecruits((prev) => [...prev, ...loaded.results]);
+      setHotRecruitsHasMore(Boolean(loaded.next));
+      setHotRecruitsNextPage((prev) => prev + 1);
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load more hot recruits.' });
+    } finally {
+      setHotRecruitsLoadingMore(false);
+    }
+  }, [addToast, hotRecruitOpenFor, hotRecruitsHasMore, hotRecruitsLoading, hotRecruitsLoadingMore, hotRecruitsNextPage]);
+
+  const handleReachClientUsersEnd = useCallback(async () => {
+    if (!clientPointsOpenFor || !clientUsersHasMore || clientUsersLoading || clientUsersLoadingMore) return;
+    setClientUsersLoadingMore(true);
+    try {
+      const loaded = await fetchAssociateUsersForAssociatePage(clientPointsOpenFor.userId, {
+        client: true,
+        page: clientUsersNextPage,
+        pageSize: 20,
+      });
+      setClientUsers((prev) => [...prev, ...loaded.results]);
+      setClientUsersHasMore(Boolean(loaded.next));
+      setClientUsersNextPage((prev) => prev + 1);
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load more client users.' });
+    } finally {
+      setClientUsersLoadingMore(false);
+    }
+  }, [addToast, clientPointsOpenFor, clientUsersHasMore, clientUsersLoading, clientUsersLoadingMore, clientUsersNextPage]);
+
+  const handleReachLicensedUsersEnd = useCallback(async () => {
+    if (!licensedUsersOpenFor || !licensedUsersHasMore || licensedUsersLoading || licensedUsersLoadingMore) return;
+    setLicensedUsersLoadingMore(true);
+    try {
+      const loaded = await fetchAssociateUsersForAssociatePage(licensedUsersOpenFor.userId, {
+        licensed: true,
+        page: licensedUsersNextPage,
+        pageSize: 20,
+      });
+      setLicensedUsers((prev) => [...prev, ...loaded.results]);
+      setLicensedUsersHasMore(Boolean(loaded.next));
+      setLicensedUsersNextPage((prev) => prev + 1);
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load more licensed users.' });
+    } finally {
+      setLicensedUsersLoadingMore(false);
+    }
+  }, [addToast, licensedUsersHasMore, licensedUsersLoading, licensedUsersLoadingMore, licensedUsersNextPage, licensedUsersOpenFor]);
 
   const ensureNotesLoaded = async (userId: number) => {
     if (notesByUserId[userId]) return;
@@ -647,6 +746,9 @@ export default function AssociateTrackerPage() {
         ownerName={hotRecruitOpenFor?.userName || ''}
         loading={hotRecruitsLoading}
         recruits={hotRecruits}
+        recruitSummary={hotRecruitOpenFor || undefined}
+        loadingMore={hotRecruitsLoadingMore}
+        onReachEnd={() => void handleReachHotRecruitsEnd()}
         onClose={() => {
           setHotRecruitOpenFor(null);
           setHotRecruits([]);
@@ -658,6 +760,9 @@ export default function AssociateTrackerPage() {
         ownerName={clientPointsOpenFor?.userName || ''}
         loading={clientUsersLoading}
         users={clientUsers}
+        pointsSummary={clientPointsOpenFor || undefined}
+        loadingMore={clientUsersLoadingMore}
+        onReachEnd={() => void handleReachClientUsersEnd()}
         onClose={() => {
           setClientPointsOpenFor(null);
           setClientUsers([]);
@@ -669,6 +774,8 @@ export default function AssociateTrackerPage() {
         ownerName={licensedUsersOpenFor?.userName || ''}
         loading={licensedUsersLoading}
         users={licensedUsers}
+        loadingMore={licensedUsersLoadingMore}
+        onReachEnd={() => void handleReachLicensedUsersEnd()}
         onClose={() => {
           setLicensedUsersOpenFor(null);
           setLicensedUsers([]);
