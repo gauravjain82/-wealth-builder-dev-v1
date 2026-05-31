@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
-import { VideoHero, CarouselCard, LeaderboardCard, PerformanceTable } from '@/features/home/components';
+import { VideoHero, CanvaVideoCard, LeaderboardCard, PerformanceTable } from '@/features/home/components';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { useCarouselImages } from '@/hooks/use-carousel-images';
 import { roleToPlan } from '@core/constants/roles';
 import { Plan } from '@core/types';
 
@@ -22,15 +21,14 @@ function normalizePlanFromRole(role?: string | null): Plan {
 const BACKGROUND_URL =
   'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/ChatGPT%20Image%20Sep%2015%2C%202025%2C%2012_54_37%20AM.png?alt=media&token=2322a57d-447c-4319-888c-8353a34fbfb9';
 const TRAILER_URL =
-  'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/dallas-convention-2025-recap.mp4?alt=media&token=8ba184af-14e7-4744-bfcd-a09cb145e1c6';
-const REGISTER_URL = 'https://wealthbuildersevents.com';
+  'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/IMG_7934.MP4?alt=media&token=597143ab-4dfc-42bb-87f3-428e54c345df';
+const REGISTER_URL = 'https://www.eventbrite.ca/e/infinite-2026-tickets-1979546254134';
+const EVENTS_VIDEO_URL = 'https://www.canva.com/design/DAG6eJasb0c/QMcDazQ53A-DPwBIfKIn-Q/view?embed';
+const RECOGNITION_VIDEO_URL = 'https://www.canva.com/design/DAG-W6V-Uxc/qjp27ftg9x_dXxF9O9WBvA/view?embed';
 
 export default function HomePage() {
   const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  /* ===== Carousel Images from Firestore ===== */
-  const { contestImages, recognitionImages } = useCarouselImages();
 
   /* ===== Video Controls ===== */
   const [muted, setMuted] = useState(true);
@@ -38,65 +36,6 @@ export default function HomePage() {
   /* ===== User Type ===== */
   const currentPlan = normalizePlanFromRole(user?.roles?.[0]);
   const isPaid = currentPlan !== Plan.NewAgent;
-
-  /* ===== Contest slider ===== */
-  const [cIndex, setCIndex] = useState(0);
-  const [autoRollC, setAutoRollC] = useState(true);
-
-  useEffect(() => {
-    if (!autoRollC || contestImages.length === 0) return;
-    const id = setInterval(
-      () => setCIndex((i) => (i + 1) % contestImages.length),
-      5000
-    );
-    return () => clearInterval(id);
-  }, [autoRollC, contestImages.length]);
-
-  /* ===== Recognition slider ===== */
-  const [rIndex, setRIndex] = useState(0);
-  const [autoRollR, setAutoRollR] = useState(true);
-
-  useEffect(() => {
-    if (!autoRollR || recognitionImages.length === 0) return;
-    const id = setInterval(
-      () => setRIndex((i) => (i + 1) % recognitionImages.length),
-      5000
-    );
-    return () => clearInterval(id);
-  }, [autoRollR, recognitionImages.length]);
-
-  /* ===== Lightbox ===== */
-  const [lightbox, setLightbox] = useState({
-    open: false,
-    type: null as 'contest' | 'recognition' | null,
-    index: 0,
-  });
-  const openLightbox = (type: 'contest' | 'recognition', index = 0) =>
-    setLightbox({ open: true, type, index });
-  const closeLightbox = () =>
-    setLightbox({ open: false, type: null, index: 0 });
-
-  // Contest controls
-  const nextContest = () => {
-    setAutoRollC(false);
-    setCIndex((i) => (i + 1) % contestImages.length);
-  };
-  const prevContest = () => {
-    setAutoRollC(false);
-    setCIndex((i) => (i - 1 + contestImages.length) % contestImages.length);
-  };
-
-  // Recognition controls
-  const nextRec = () => {
-    setAutoRollR(false);
-    setRIndex((i) => (i + 1) % recognitionImages.length);
-  };
-  const prevRec = () => {
-    setAutoRollR(false);
-    setRIndex(
-      (i) => (i - 1 + recognitionImages.length) % recognitionImages.length
-    );
-  };
 
   return (
     <div data-modern-homepage="true" className="w-full relative min-h-full" style={{ margin: '-24px' }}>
@@ -124,7 +63,7 @@ export default function HomePage() {
         {/* Hero Section */}
         <VideoHero
           videoUrl={TRAILER_URL}
-          title="BREAKING BARRIERS OCT 9–11 | SALT LAKE CITY, UTAH"
+          title="INFINITE 2026 June 25-27 | Rogers Place Edmonton, AB"
           registerUrl={REGISTER_URL}
           muted={muted}
           onMuteToggle={() => setMuted((m) => !m)}
@@ -192,27 +131,15 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* Event & Contests Card */}
-              <CarouselCard
+              <CanvaVideoCard
                 title="Event & Contests"
-                images={contestImages}
-                currentIndex={cIndex}
-                autoPlay={autoRollC}
-                onToggleAutoPlay={() => setAutoRollC((v) => !v)}
-                onFullscreen={() => openLightbox('contest', cIndex)}
-                onNext={nextContest}
-                onPrevious={prevContest}
+                videoUrl={EVENTS_VIDEO_URL}
               />
 
               {/* Recognition Card */}
-              <CarouselCard
+              <CanvaVideoCard
                 title="Recognition"
-                images={recognitionImages}
-                currentIndex={rIndex}
-                autoPlay={autoRollR}
-                onToggleAutoPlay={() => setAutoRollR((v) => !v)}
-                onFullscreen={() => openLightbox('recognition', rIndex)}
-                onNext={nextRec}
-                onPrevious={prevRec}
+                videoUrl={RECOGNITION_VIDEO_URL}
               />
             </div>
           </div>
@@ -236,32 +163,6 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* Lightbox Modal */}
-        {lightbox.open && (
-          <div
-            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={closeLightbox}
-          >
-            <div className="relative max-w-6xl w-full">
-              <button
-                onClick={closeLightbox}
-                className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full border border-white/20"
-              >
-                ✕
-              </button>
-              <img
-                src={
-                  lightbox.type === 'contest'
-                    ? contestImages[lightbox.index]
-                    : recognitionImages[lightbox.index]
-                }
-                alt="Full size"
-                className="w-full h-auto rounded-lg"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

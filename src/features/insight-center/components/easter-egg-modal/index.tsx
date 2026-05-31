@@ -11,6 +11,16 @@ function isEmbedUrl(url: string): boolean {
   return url.includes('vimeo.com') || url.includes('youtube.com') || url.includes('youtu.be');
 }
 
+function withAutoplay(url: string): string {
+  if (!url.includes('vimeo.com')) return url;
+  const parsed = new URL(url);
+  if (parsed.pathname === '/video/931170735' && !parsed.searchParams.has('h')) {
+    parsed.searchParams.set('h', 'd171159b83');
+  }
+  parsed.searchParams.set('autoplay', '1');
+  return parsed.toString();
+}
+
 export function EasterEggModal({ isOpen, videoUrl, onClose, title = 'Easter Egg Video' }: EasterEggModalProps) {
   if (!isOpen) return null;
 
@@ -23,7 +33,7 @@ export function EasterEggModal({ isOpen, videoUrl, onClose, title = 'Easter Egg 
         <div className="ic-modal-video">
           {isEmbedUrl(videoUrl) ? (
             <iframe
-              src={videoUrl}
+              src={withAutoplay(videoUrl)}
               title={title}
               className="ic-modal-embed"
               allow="autoplay; fullscreen; picture-in-picture; encrypted-media"

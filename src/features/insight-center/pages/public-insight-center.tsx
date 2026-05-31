@@ -12,7 +12,7 @@ import wbLogo from '@/assets/images/wealthbuilderslogo.png';
 import { Heading, Text } from '@/shared/components';
 
 const FALLBACK_INTRO = 'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Insight%20center%2Finsight_center_intro_v2.mp4?alt=media&token=b6e04e29-69ca-4dc6-8754-75e5be9e1b5d';
-const FALLBACK_EASTER_EGG = 'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Insight%20center%2FLeadership%20Bonus.mp4?alt=media&token=fe0c09c7-cf66-4d70-b93b-76b7c68d26df';
+const FALLBACK_EASTER_EGG = 'https://player.vimeo.com/video/931170735?h=d171159b83';
 
 export default function PublicInsightCenter() {
   const location = useLocation();

@@ -14,6 +14,11 @@ interface CarouselCardProps {
   onPrevious: () => void;
 }
 
+interface CanvaVideoCardProps {
+  title: string;
+  videoUrl: string;
+}
+
 export function CarouselCard({
   title,
   images,
@@ -75,6 +80,29 @@ export function CarouselCard({
           >
             <ChevronRight size={20} />
           </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function CanvaVideoCard({ title, videoUrl }: CanvaVideoCardProps) {
+  return (
+    <Card className="carousel-card">
+      <CardHeader>
+        <div className="carousel-card__header">
+          <CardTitle className="carousel-card__title">{title}</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="carousel-card__image-container">
+          <iframe
+            src={videoUrl}
+            title={`${title} video`}
+            className="carousel-card__video"
+            allow="autoplay; fullscreen"
+            allowFullScreen
+          />
         </div>
       </CardContent>
     </Card>

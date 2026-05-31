@@ -13,6 +13,24 @@
   margin-top: -6px;
 }
 
+.ic-back-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.ic-back-link:hover,
+.ic-back-link:focus-visible {
+  color: #ffd700;
+  outline: none;
+}
+
 /* Buttons */
 .ic-btn {
   --ic-btn-bg1: rgba(255, 215, 0, 0.18);

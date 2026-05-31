@@ -55,6 +55,7 @@
   background: #000;
 }
 
+.ic-modal-video iframe,
 .ic-modal-video video {
   position: absolute;
   top: 0;

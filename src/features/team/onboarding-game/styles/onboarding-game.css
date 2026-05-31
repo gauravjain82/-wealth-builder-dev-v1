@@ -356,43 +356,38 @@
 }
 .og-cb:disabled { cursor: not-allowed; }
 
-/* Rolling 3 months header */
-.og-rolling-header {
-  position: absolute;
-  font-size: 9px;
-  font-weight: 800;
-  color: #d32f2f;
-  text-align: center;
-  letter-spacing: 1px;
-  white-space: nowrap;
-  transform: translateX(-50%);
-  top: -4px;
-}
-
 /* Value inputs (clickable numbers for m8/m9/m10/m11) */
 .og-value-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
 }
 .og-value-btn {
-  width: 58px;
-  height: 22px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  width: 76px;
+  height: 17px;
+  text-align: right;
   border-radius: 4px;
   background: white;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   cursor: pointer;
-  padding: 1px 3px;
+  padding: 1px 2px;
   border: 1px solid #cbd5e1;
   transition: all 0.18s;
   line-height: 1;
   color: #1a1a1a;
 }
+.og-value-label {
+  color: #64748b;
+  font-size: 7px;
+  white-space: nowrap;
+}
 .og-value-btn:hover { border-color: #6366f1; background: #f5f3ff; }
-.og-value-btn.done  { background: #dcfce7; border-color: #16a34a; color: #166534; }
 
 /* ── Video modal ──────────────────────────────────────────────────── */
 .og-video-modal-overlay {

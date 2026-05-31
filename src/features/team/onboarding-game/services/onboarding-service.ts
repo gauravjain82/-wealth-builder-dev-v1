@@ -27,6 +27,20 @@ export interface OnboardingTrackerData {
   personalPoints: number;      // m9 — personal_points (need >= 45000)
   licensesInTtl: number;       // m10 — licenses_in_ttl (need >= 3)
   registrationsBase: number;   // m11 — no backend field (always 0)
+  currentMonthPersonalRecruits: number;
+  currentMonthTeamRecruits: number;
+  last3MonthPersonalRecruits: number;
+  last3MonthTeamRecruits: number;
+  currentMonthPersonalPoints: number;
+  currentMonthTeamPoints: number;
+  pendingPersonalPoints: number;
+  pendingTeamPoints: number;
+  last3MonthPersonalPoints: number;
+  last3MonthTeamPoints: number;
+  currentMonthLicenses: number;
+  totalLicenses: number;
+  currentMonthRegistrations: number;
+  totalRegistrations: number;
 }
 
 interface RawAssociateRecord {
@@ -58,6 +72,20 @@ interface RawAssociateRecord {
   recruit_9?: number;
   personal_points_45k?: number;
   registration_base_15k?: number;
+  current_month_personal_recruits?: number;
+  current_month_team_recruits?: number;
+  last_3_month_personal_recruits?: number;
+  last_3_month_team_recruits?: number;
+  current_month_personal_points?: number | string;
+  current_month_team_points?: number | string;
+  pending_personal_points?: number | string;
+  pending_team_points?: number | string;
+  last_3_month_personal_points?: number | string;
+  last_3_month_team_points?: number | string;
+  current_month_licenses?: number;
+  total_licenses?: number;
+  current_month_big_event_registrations?: number;
+  total_big_event_registrations?: number;
   intro_watched?: boolean;
   intro_local?: boolean;
 }
@@ -69,9 +97,10 @@ function pickBool(...values: Array<boolean | null | undefined>): boolean {
   return false;
 }
 
-function pickNumber(...values: Array<number | null | undefined>): number {
+function pickNumber(...values: Array<number | string | null | undefined>): number {
   for (const value of values) {
-    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    const parsed = Number(value);
+    if (value !== null && value !== undefined && value !== '' && Number.isFinite(parsed)) return parsed;
   }
   return 0;
 }
@@ -99,8 +128,22 @@ function mapRecord(r: RawAssociateRecord): OnboardingTrackerData {
     registrationConvention: pickBool(r.registration_convention, r.direct_registration_1st),
     recruitTtl: pickNumber(r.recruit_ttl, r.recruit_9),
     personalPoints: pickNumber(r.personal_points, r.personal_points_45k),
-    licensesInTtl: pickNumber(r.licenses_in_ttl, r.registration_base_15k),
+    licensesInTtl: pickNumber(r.licenses_in_ttl, r.total_licenses),
     registrationsBase: pickNumber(r.registrations_base, r.registration_base_15k),
+    currentMonthPersonalRecruits: pickNumber(r.current_month_personal_recruits),
+    currentMonthTeamRecruits: pickNumber(r.current_month_team_recruits),
+    last3MonthPersonalRecruits: pickNumber(r.last_3_month_personal_recruits),
+    last3MonthTeamRecruits: pickNumber(r.last_3_month_team_recruits),
+    currentMonthPersonalPoints: pickNumber(r.current_month_personal_points),
+    currentMonthTeamPoints: pickNumber(r.current_month_team_points),
+    pendingPersonalPoints: pickNumber(r.pending_personal_points),
+    pendingTeamPoints: pickNumber(r.pending_team_points),
+    last3MonthPersonalPoints: pickNumber(r.last_3_month_personal_points),
+    last3MonthTeamPoints: pickNumber(r.last_3_month_team_points),
+    currentMonthLicenses: pickNumber(r.current_month_licenses),
+    totalLicenses: pickNumber(r.total_licenses),
+    currentMonthRegistrations: pickNumber(r.current_month_big_event_registrations),
+    totalRegistrations: pickNumber(r.total_big_event_registrations),
   };
 }
 

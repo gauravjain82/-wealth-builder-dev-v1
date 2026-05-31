@@ -10,11 +10,22 @@ interface ButtonConfig {
 interface ActionButtonsProps {
   buttons: ButtonConfig[];
   className?: string;
+  leadingLink?: ButtonConfig;
 }
 
-export function ActionButtons({ buttons, className = '' }: ActionButtonsProps) {
+export function ActionButtons({ buttons, className = '', leadingLink }: ActionButtonsProps) {
   return (
     <div className={`ic-btn-row ${className}`}>
+      {leadingLink && (
+        <Link
+          className="ic-back-link"
+          to={leadingLink.to}
+          aria-label={leadingLink.ariaLabel}
+        >
+          <span aria-hidden="true">&larr;</span>
+          <span>{leadingLink.label}</span>
+        </Link>
+      )}
       {buttons.map((button, index) => (
         <Link
           key={index}

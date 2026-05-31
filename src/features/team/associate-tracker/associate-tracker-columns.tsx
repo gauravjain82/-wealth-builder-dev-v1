@@ -603,7 +603,7 @@ export function buildAssociateColumns(
             'last_3_month_personal_points', 'last_3_month_team_points',
             'current_month_personal_points', 'current_month_team_points',
           ]}
-          colLabels={['PR', 'TR']}
+          colLabels={['PP', 'TP']}
           rowLabels={['3M', '1M']}
           fitLargeValues
           onCellClick={options.onOpenPersonalPoints ? () => options.onOpenPersonalPoints?.(row) : undefined}

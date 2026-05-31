@@ -87,7 +87,14 @@ export default function PublicBusinessPage() {
 
   return (
     <PageWrapper>
-      <ActionButtons buttons={navigationButtons} />
+      <ActionButtons
+        buttons={navigationButtons}
+        leadingLink={isPublicLearnRoute ? {
+          to: '/public-insight-center',
+          label: 'Back',
+          ariaLabel: 'Back to Insight Center',
+        } : undefined}
+      />
       
       <VideoHero videoUrl={heroVideoUrl} title="Business intro video" />
 

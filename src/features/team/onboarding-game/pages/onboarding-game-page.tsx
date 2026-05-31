@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { UserAutocompleteDropdown, type UserAutocompleteOption } from '@/shared/components';
-import type { TrackerMetric } from '@/features/team/components/tracker-progress-modal';
 import { AssociateHotRecruitsModal, AssociateClientUsersModal } from '@/features/team/components/associate-hot-recruits-modal';
 import { LicensingTrackerModal } from '@/features/team/licensing-tracker/components/licensing-tracker-modal';
 import { AssociateTrackerModal } from '@/features/team/associate-tracker/components/associate-tracker-modal';
@@ -46,10 +45,10 @@ const MODULES: Module[] = [
   { id: 'm5',  title: 'Observe 4 Clients',           section: 'followSystem' },
   { id: 'm6',  title: 'Get License',                 section: 'followSystem' },
   { id: 'm7',  title: '1 Direct Registration',       section: 'followSystem' },
-  { id: 'm8',  title: '9 Recruits',                  section: 'buildOutlet' },
-  { id: 'm9',  title: '45,000 Personal Points',      section: 'buildOutlet' },
-  { id: 'm10', title: '3 Licenses',                  section: 'buildOutlet' },
-  { id: 'm11', title: '15 Registrations on Base',    section: 'buildOutlet' },
+  { id: 'm8',  title: 'Recruits',                    section: 'buildOutlet' },
+  { id: 'm9',  title: 'Points',                      section: 'buildOutlet' },
+  { id: 'm10', title: 'Licenses',                    section: 'buildOutlet' },
+  { id: 'm11', title: 'Registrations',               section: 'buildOutlet' },
 ];
 
 const MODULE_POSITIONS: Record<string, number> = {
@@ -100,10 +99,10 @@ const MODULE_DISPLAY_LABELS: Record<string, string | string[]> = {
   m5: '3 CLIENTS',
   m6: 'GET LICENSED',
   m7: ['1 DIRECT', 'REGISTRATION'],
-  m8: '9 RECRUITS',
-  m9: ['45K PERSONAL', 'POINTS'],
-  m10: '3 LICENSES',
-  m11: ['15 REGISTRATION', 'BASE'],
+  m8: 'RECRUITS',
+  m9: 'POINTS',
+  m10: 'LICENSES',
+  m11: 'REGISTRATIONS',
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -218,6 +217,13 @@ const EMPTY_DATA: OnboardingTrackerData = {
   selfImprovement: false, observe4Recruits: false, observe4Clients: false,
   getLicense: false, registrationConvention: false,
   recruitTtl: 0, personalPoints: 0, licensesInTtl: 0, registrationsBase: 0,
+  currentMonthPersonalRecruits: 0, currentMonthTeamRecruits: 0,
+  last3MonthPersonalRecruits: 0, last3MonthTeamRecruits: 0,
+  currentMonthPersonalPoints: 0, currentMonthTeamPoints: 0,
+  pendingPersonalPoints: 0, pendingTeamPoints: 0,
+  last3MonthPersonalPoints: 0, last3MonthTeamPoints: 0,
+  currentMonthLicenses: 0, totalLicenses: 0,
+  currentMonthRegistrations: 0, totalRegistrations: 0,
 };
 
 export default function OnboardingGamePage() {
@@ -525,6 +531,12 @@ export default function OnboardingGamePage() {
         ownerName={hotRecruitOpenFor?.userName ?? ''}
         loading={hotRecruitsLoading}
         recruits={hotRecruits}
+        recruitSummary={{
+          currentMonthPersonal: data.currentMonthPersonalRecruits,
+          currentMonthTeam: data.currentMonthTeamRecruits,
+          rollingThreeMonthPersonal: data.last3MonthPersonalRecruits,
+          rollingThreeMonthTeam: data.last3MonthTeamRecruits,
+        }}
         loadingMore={hotRecruitsLoadingMore}
         onReachEnd={() => void handleReachHotRecruitsEnd()}
         onClose={() => {
@@ -540,6 +552,14 @@ export default function OnboardingGamePage() {
         ownerName={clientPointsOpenFor?.userName ?? ''}
         loading={clientUsersLoading}
         users={clientUsers}
+        pointsSummary={{
+          currentMonthPersonal: data.currentMonthPersonalPoints,
+          currentMonthTeam: data.currentMonthTeamPoints,
+          pendingPersonal: data.pendingPersonalPoints,
+          pendingTeam: data.pendingTeamPoints,
+          rollingThreeMonthPersonal: data.last3MonthPersonalPoints,
+          rollingThreeMonthTeam: data.last3MonthTeamPoints,
+        }}
         loadingMore={clientUsersLoadingMore}
         onReachEnd={() => void handleReachClientUsersEnd()}
         onClose={() => {
@@ -786,27 +806,49 @@ export default function OnboardingGamePage() {
               );
             })}
 
-            {/* Rolling 3 months — m8/m9/m10/m11 */}
+            {/* Associate tracker counts — m8/m9/m10/m11 */}
             {unlockedSections.has('buildOutlet') && (
               <>
-                <div
-                  className="og-rolling-header"
-                  style={{
-                    left: (getPos(MODULE_POSITIONS['m9']) + getPos(MODULE_POSITIONS['m10'])) / 2,
-                  }}
-                >
-                  ROLLING 3 MONTHS
-                </div>
-
                 {(
                   [
-                    { id: 'm8',  label: MODULE_DISPLAY_LABELS['m8'],  metric: 'recruits' as TrackerMetric,      current: data.recruitTtl,        target: 9,     onOpen: () => data.userId ? void handleOpenHotRecruits(data.userId, displayName) : undefined },
-                    { id: 'm9',  label: MODULE_DISPLAY_LABELS['m9'],  metric: 'points' as TrackerMetric,        current: data.personalPoints,    target: 45000, onOpen: () => data.userId ? void handleOpenClientUsers(data.userId, displayName) : undefined },
-                    { id: 'm10', label: MODULE_DISPLAY_LABELS['m10'], metric: 'licenses' as TrackerMetric,      current: data.licensesInTtl,     target: 3,     onOpen: () => data.userId ? void handleOpenLicensedUsers(data.userId, displayName) : undefined },
-                    { id: 'm11', label: MODULE_DISPLAY_LABELS['m11'], metric: 'registrations' as TrackerMetric, current: data.registrationsBase, target: 15,    onOpen: () => data.userId ? setRegistrationsOpenFor({ userId: data.userId, userName: displayName }) : undefined },
+                    {
+                      id: 'm8', label: MODULE_DISPLAY_LABELS['m8'], metric: 'recruits',
+                      values: [
+                        { label: '3M PR', value: data.last3MonthPersonalRecruits },
+                        { label: '3M TR', value: data.last3MonthTeamRecruits },
+                        { label: '1M PR', value: data.currentMonthPersonalRecruits },
+                        { label: '1M TR', value: data.currentMonthTeamRecruits },
+                      ],
+                      onOpen: () => data.userId ? void handleOpenHotRecruits(data.userId, displayName) : undefined,
+                    },
+                    {
+                      id: 'm9', label: MODULE_DISPLAY_LABELS['m9'], metric: 'points',
+                      values: [
+                        { label: '3M PP', value: data.last3MonthPersonalPoints },
+                        { label: '3M TP', value: data.last3MonthTeamPoints },
+                        { label: '1M PP', value: data.currentMonthPersonalPoints },
+                        { label: '1M TP', value: data.currentMonthTeamPoints },
+                      ],
+                      onOpen: () => data.userId ? void handleOpenClientUsers(data.userId, displayName) : undefined,
+                    },
+                    {
+                      id: 'm10', label: MODULE_DISPLAY_LABELS['m10'], metric: 'licenses',
+                      values: [
+                        { label: 'This Month', value: data.currentMonthLicenses },
+                        { label: 'Total', value: data.totalLicenses },
+                      ],
+                      onOpen: () => data.userId ? void handleOpenLicensedUsers(data.userId, displayName) : undefined,
+                    },
+                    {
+                      id: 'm11', label: MODULE_DISPLAY_LABELS['m11'], metric: 'registrations',
+                      values: [
+                        { label: 'This Month', value: data.currentMonthRegistrations },
+                        { label: 'Total', value: data.totalRegistrations },
+                      ],
+                      onOpen: () => data.userId ? setRegistrationsOpenFor({ userId: data.userId, userName: displayName }) : undefined,
+                    },
                   ] as const
                 ).map((item) => {
-                  const isDone = item.current >= item.target;
                   return (
                     <div
                       key={item.id}
@@ -819,13 +861,17 @@ export default function OnboardingGamePage() {
                           : item.label}
                       </div>
                       <div className="og-value-wrap">
-                        <button
-                          className={`og-value-btn${isDone ? ' done' : ''}`}
-                          onClick={item.onOpen}
-                          title={`Click to view ${item.metric} details`}
-                        >
-                          {item.current.toLocaleString()}
-                        </button>
+                        {item.values.map((count) => (
+                          <button
+                            key={count.label}
+                            className="og-value-btn"
+                            onClick={item.onOpen}
+                            title={`Click to view ${item.metric} details`}
+                          >
+                            <span className="og-value-label">{count.label}</span>
+                            <span>{count.value.toLocaleString()}</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   );
