@@ -47,7 +47,7 @@ async function fetchLeaderboardLevel(
   level: HomeLeaderboardLevel,
   metric: HomeLeaderboardMetric
 ): Promise<HomeLeaderboardEntry[]> {
-  const params = new URLSearchParams({ level, metric, limit: '5' });
+  const params = new URLSearchParams({ level, metric, limit: '5', months: '1' });
   const response = await fetch(
     `${API_BASE_URL}/api/tracker/policies/top_base_team_leaders/?${params.toString()}`,
     { headers: getAuthHeaders() }
