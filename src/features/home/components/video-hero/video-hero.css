@@ -63,7 +63,7 @@
 }
 
 .video-hero__cta-bar {
-  width: min(840px, 64vw);
+  /* width: min(840px, 64vw); */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -114,7 +114,7 @@
 @media (max-width: 768px) {
   .video-hero__frame,
   .video-hero__cta-bar {
-    width: min(840px, 90vw);
+    /* width: min(840px, 90vw); */
   }
 
   .video-hero__cta-bar {
