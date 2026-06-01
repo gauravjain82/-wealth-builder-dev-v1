@@ -331,18 +331,25 @@ export default function OnboardingGamePage() {
 
   /* ── Derived state ── */
   const data = trackerData ?? EMPTY_DATA;
-  const unlockedSections = useMemo(() => computeUnlockedSections(data), [data]);
+  const progressData = useMemo(() => {
+    const hasWatchedIntroVideo = moduleVideos.m0?.some((video) => video.watched) ?? false;
+    return hasWatchedIntroVideo && !data.introWatched
+      ? { ...data, introWatched: true }
+      : data;
+  }, [data, moduleVideos]);
+
+  const unlockedSections = useMemo(() => computeUnlockedSections(progressData), [progressData]);
 
   const moduleStates = useMemo(() => {
     const result: Record<string, { isComplete: boolean; isUnlocked: boolean }> = {};
     MODULES.forEach((m) => {
       result[m.id] = {
-        isComplete: getIsComplete(m.id, data),
+        isComplete: getIsComplete(m.id, progressData),
         isUnlocked: unlockedSections.has(m.section),
       };
     });
     return result;
-  }, [data, unlockedSections]);
+  }, [progressData, unlockedSections]);
 
   const completedCount = useMemo(
     () => MODULES.filter((m) => moduleStates[m.id]?.isComplete).length,
@@ -367,9 +374,7 @@ export default function OnboardingGamePage() {
   const carTop = Math.max(trafficRowTop + 120, Math.round(ROAD_SCENE_HEIGHT * 0.74));
   const carLeft = useMemo(() => {
     const anchorIdx = CAR_ANCHOR_INDEX[carIndex];
-    const base = leftMargin + anchorIdx * cellWidth;
-    const offset = carIndex === 1 ? Math.round(cellWidth * 0.2) + 25 : 0;
-    return base - offset;
+    return leftMargin + anchorIdx * cellWidth;
   }, [carIndex, cellWidth, leftMargin]);
 
   const progressPct = (completedCount / MODULES.length) * 100;
