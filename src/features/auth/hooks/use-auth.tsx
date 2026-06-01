@@ -7,6 +7,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   signIn: (credentials: LoginCredentials) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<string>;
   signUp: (credentials: SignupCredentials) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -49,6 +50,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       const user = await authService.signIn(credentials);
       setUser(user);
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const requestPasswordReset = async (email: string) => {
+    try {
+      setError(null);
+      setIsLoading(true);
+      return await authService.requestPasswordReset(email);
     } catch (err: any) {
       setError(err.message);
       throw err;
@@ -101,6 +115,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     isAuthenticated: !!user,
     signIn,
+    requestPasswordReset,
     signUp,
     signInWithGoogle,
     signOut,

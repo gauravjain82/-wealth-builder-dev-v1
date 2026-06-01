@@ -19,6 +19,20 @@ export class AuthService {
     }
   }
 
+  async requestPasswordReset(email: string): Promise<string> {
+    try {
+      return await authRepository.requestPasswordReset(email);
+    } catch (error) {
+      console.error('Password reset request error:', error);
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      throw new Error('Unable to request a password reset. Please try again later.');
+    }
+  }
+
   /**
    * Sign up new user
    */

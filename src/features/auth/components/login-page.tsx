@@ -3,20 +3,23 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../hooks/use-auth';
 import { Eye, EyeOff } from 'lucide-react';
-import { Heading, Text, Link, Badge, Button, Input, Label } from '@shared/components/ui';
+import { Heading, Text, Badge, Button, Input, Label } from '@shared/components/ui';
 
 const GIF_URL = 'https://files2.edgagement.com/sites/wb/images/login.gif';
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_RESET_CONFIRMATION = 'Reset password link has been sent to your email.';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [error, setError] = useState('');
   const [resetMessage, setResetMessage] = useState('');
   const [gifLoaded, setGifLoaded] = useState(false);
 
-  const { signIn, isAuthenticated } = useAuth();
+  const { signIn, requestPasswordReset, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as any)?.from || '/home';
@@ -56,7 +59,27 @@ export function LoginPage() {
     setError('');
     setResetMessage('');
 
-    setResetMessage('Use the reset link from your email. After opening the link, you can set your password and update your details.');
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      setError('Enter the email address you want to reset first.');
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      setError('Enter a valid email address first.');
+      return;
+    }
+
+    setIsResettingPassword(true);
+
+    try {
+      await requestPasswordReset(normalizedEmail);
+      setResetMessage(PASSWORD_RESET_CONFIRMATION);
+    } catch (err: any) {
+      setError(err?.message || 'Unable to request a password reset. Please try again.');
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   return (
@@ -91,7 +114,7 @@ export function LoginPage() {
               </Label>
               <Input
                 id="email"
-                // type="email"
+                type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -166,15 +189,15 @@ export function LoginPage() {
           </form>
 
           <div className="mt-1.5 flex justify-between gap-3">
-            <Link
-              href="#"
+            <Button
+              type="button"
+              variant="link"
               onClick={handleForgotPassword as any}
-              variant="discrete"
-              size="sm"
-              className="text-[#f5d66a]"
+              disabled={isLoading || isResettingPassword}
+              className="h-auto p-0 text-[#f5d66a] no-underline hover:bg-transparent hover:underline disabled:opacity-50"
             >
-              Forgot password?
-            </Link>
+              {isResettingPassword ? 'Sending reset link…' : 'Forgot password?'}
+            </Button>
             <RouterLink to="/help-needed" className="text-sm text-[#f5d66a] no-underline hover:underline">
               Help Needed?
             </RouterLink>

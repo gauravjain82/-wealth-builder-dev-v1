@@ -103,7 +103,7 @@ export default function AdminHelpdeskPage() {
     };
 
     void loadTickets();
-  }, [addToast, canAccess, categoryFilter, priorityFilter, selectedTicketNumber, statusFilter]);
+  }, [addToast, canAccess, categoryFilter, priorityFilter, statusFilter]);
 
   useEffect(() => {
     if (!canAccess || !selectedTicketNumber) return;

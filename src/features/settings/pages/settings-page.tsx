@@ -111,6 +111,18 @@ function normalizePlan(value?: string | null): Plan {
   return Plan.NewAgent;
 }
 
+function resolveLevelLabel(level: CurrentUserDetails['level']): string {
+  if (typeof level === 'string') {
+    const normalized = level.trim();
+    return normalized || '-';
+  }
+
+  if (!level) return '-';
+
+  const label = level.name || level.code || '';
+  return label.trim() || '-';
+}
+
 function formatDate(value?: string | null): string {
   if (!value) return '-';
   const parsed = new Date(value);
@@ -597,6 +609,8 @@ export default function SettingsPage() {
   };
 
   const currentPlan = normalizePlan(userDetails?.roles?.[0]);
+  const currentLevel = resolveLevelLabel(userDetails?.level);
+  const agencyCode = userDetails?.agency_code?.trim() || '-';
   const nextPlan = UPGRADE_PLANS.find((plan) => PLAN_ORDER[plan] > PLAN_ORDER[currentPlan]) || null;
   const displayName =
     userDetails?.full_name
@@ -685,14 +699,18 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="field-row">
+                <div className="field-row field-row-three">
                   <div className="field-group">
                     <label>Current Plan</label>
                     <input className="input-field" value={currentPlan || '-'} disabled />
                   </div>
                   <div className="field-group">
+                    <label>Level</label>
+                    <input className="input-field" value={currentLevel} disabled />
+                  </div>
+                  <div className="field-group">
                     <label>Agency Code</label>
-                    <input className="input-field" value={userDetails?.agency_code || '-'} disabled />
+                    <input className="input-field" value={agencyCode} disabled />
                   </div>
                 </div>
               </div>

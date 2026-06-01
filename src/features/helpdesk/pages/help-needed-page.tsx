@@ -138,6 +138,17 @@ export default function HelpNeededPage() {
           )}
         </div>
 
+        <div className="mb-6 rounded-xl border border-amber-300/20 bg-amber-500/10 p-4 text-sm text-amber-50">
+          For high-priority issues that require escalation, please email your <strong>ticket number</strong>,{' '}
+          <strong>phone number</strong>, and a brief description of the issue to{' '}
+          <a href="mailto:website@iamawealthbuilder.com" className="font-semibold text-[#f5d66a] underline underline-offset-2">
+            website@iamawealthbuilder.com
+          </a>.
+          <p className="mt-2">
+            Our team will review the request, prioritize it accordingly, and contact you as soon as possible.
+          </p>
+        </div>
+
         <div className="grid gap-6 lg:grid-cols-2">
           <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <h2 className="mb-4 text-lg font-semibold">Create Help Request</h2>

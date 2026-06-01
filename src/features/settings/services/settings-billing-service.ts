@@ -9,6 +9,7 @@ export interface CurrentUserDetails {
   old_id?: string | null;
   plan?: string;
   roles?: string[];
+  level?: { id?: number | null; code?: string | null; name?: string | null } | string | null;
   agency_code?: string | null;
   avatar_url?: string | null;
   profile?: {

@@ -13,6 +13,11 @@ interface LoginResponse {
   username: string;
 }
 
+interface ApiMessageResponse {
+  detail?: string;
+  message?: string;
+}
+
 interface BackendUserProfile {
   id: number;
   username?: string;
@@ -138,7 +143,7 @@ function mapBackendUserToProfile(
 
 async function parseError(response: Response): Promise<string> {
   try {
-    const data = await response.json();
+    const data = (await response.json()) as ApiMessageResponse;
     return data?.detail || data?.message || 'Authentication failed';
   } catch {
     return 'Authentication failed';
@@ -195,6 +200,33 @@ export class AuthRepository {
     this.persistToLocalStorage(userProfile);
 
     return userProfile;
+  }
+
+  async requestPasswordReset(email: string): Promise<string> {
+    const response = await fetch(buildApiUrl('/api/accounts/password-reset-request/'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    let data: ApiMessageResponse | null = null;
+    try {
+      data = (await response.json()) as ApiMessageResponse;
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Email ID does not exist in our system.');
+      }
+
+      throw new Error(data?.detail || data?.message || 'Unable to request a password reset');
+    }
+
+    return data?.detail || 'If the email exists in our system, a reset link has been queued.';
   }
 
   async signUp(_credentials: SignupCredentials): Promise<UserWithProfile> {

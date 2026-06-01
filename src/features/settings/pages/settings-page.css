@@ -178,6 +178,10 @@
   gap: 20px;
 }
 
+.settings-profile-page .field-row.field-row-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .settings-profile-page .field-group {
   display: flex;
   flex-direction: column;
