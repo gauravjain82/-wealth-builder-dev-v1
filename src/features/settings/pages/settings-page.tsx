@@ -102,7 +102,7 @@ function normalizePlanToRoleName(plan: Plan): string {
 }
 
 function normalizePlan(value?: string | null): Plan {
-  const raw = (value || '').trim().toLowerCase();
+  const raw = (value || '').trim().toLowerCase().replace(/[_-]+/g, ' ');
   if (raw === Plan.Agent.toLowerCase()) return Plan.Agent;
   if (raw === Plan.Leader.toLowerCase()) return Plan.Leader;
   if (raw === Plan.Broker.toLowerCase()) return Plan.Broker;
