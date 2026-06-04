@@ -73,11 +73,11 @@ const PLAN_CARDS: Array<{
     priceLabel: '$99.99/month',
     features: ['Everything in Broker', 'White Label Options', 'API Access', 'Priority Support'],
   },
-  {
-    plan: Plan.Admin,
-    priceLabel: 'Enterprise',
-    features: ['Everything in Senior Broker', 'User Management', 'Admin Dashboard', 'Full API Access'],
-  },
+  // {
+  //   plan: Plan.Admin,
+  //   priceLabel: 'Enterprise',
+  //   features: ['Everything in Senior Broker', 'User Management', 'Admin Dashboard', 'Full API Access'],
+  // },
 ];
 
 const CARD_ELEMENT_OPTIONS = {

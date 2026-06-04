@@ -79,6 +79,28 @@ function toSegmentParam(view: OrgViewType): string {
   return view.toUpperCase();
 }
 
+function collectSubtreeIds(rootId: string, childrenMap: Record<string, string[]>): Set<string> {
+  const visited = new Set<string>();
+  const stack = [rootId];
+
+  while (stack.length > 0) {
+    const currentId = stack.pop();
+    if (!currentId || visited.has(currentId)) {
+      continue;
+    }
+
+    visited.add(currentId);
+    const children = childrenMap[currentId] || [];
+    children.forEach((childId) => {
+      if (!visited.has(childId)) {
+        stack.push(childId);
+      }
+    });
+  }
+
+  return visited;
+}
+
 function toBrokerOption(item: BrokerResponseItem): TeamOption | null {
   if (item.id === undefined || item.id === null) {
     return null;
@@ -165,6 +187,10 @@ function OrgChart() {
   const [expandDepth, setExpandDepth] = useState<number | null>(1);
   const [apiChildrenMap, setApiChildrenMap] = useState<Record<string, string[]>>({});
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  // fetchedNodeIds: nodes whose downline has already been loaded from the API (no re-fetch needed)
+  const [fetchedNodeIds, setFetchedNodeIds] = useState<Set<string>>(new Set());
+  // loadingNodeIds: nodes currently being lazy-fetched (shows spinner on expand button)
+  const [loadingNodeIds, setLoadingNodeIds] = useState<Set<string>>(new Set());
   const [pendingCenterId, setPendingCenterId] = useState<string | null>(null);
   // Anchoring state: when the user toggles expand/collapse on a node, we remember
   // its current screen position. After dagre re-runs, we shift every node by the
@@ -198,6 +224,9 @@ function OrgChart() {
           setSelectedUserId(null);
           setCollapsedNodes(new Set());
           setExpandedDepthOverrideNodes(new Set());
+          setFetchedNodeIds(new Set());
+          setLoadingNodeIds(new Set());
+          orgChartService.clearDownlineCache();
         }
       } catch {
         if (!alive) return;
@@ -208,6 +237,9 @@ function OrgChart() {
           setSelectedUserId(null);
           setCollapsedNodes(new Set());
           setExpandedDepthOverrideNodes(new Set());
+          setFetchedNodeIds(new Set());
+          setLoadingNodeIds(new Set());
+          orgChartService.clearDownlineCache();
         }
       }
     };
@@ -240,6 +272,9 @@ function OrgChart() {
           setSelectedUserId(null);
           setCollapsedNodes(new Set());
           setExpandedDepthOverrideNodes(new Set());
+          setFetchedNodeIds(new Set());
+          setLoadingNodeIds(new Set());
+          orgChartService.clearDownlineCache();
         }
       } catch {
         if (!alive) return;
@@ -290,12 +325,18 @@ function OrgChart() {
 
       try {
         setLoading(true);
-        const transformedData = await orgChartService.fetchOrgChartData(currentViewType, selectedSMDId);
+        const transformedData = await orgChartService.fetchOrgChartInitial(currentViewType, selectedSMDId);
         if (!alive) return;
 
+        const rootId = transformedData.fetchedRootId || selectedSMDId || localStorage.getItem('wb.userId') || null;
         setUsers(transformedData.users);
-        setRootNodeId(transformedData.rootId || selectedSMDId || localStorage.getItem('wb.userId') || null);
+        setRootNodeId(rootId);
         setApiChildrenMap(transformedData.childrenMap || {});
+        // Mark root as already fetched so expanding it won't re-fetch
+        if (rootId) {
+          setFetchedNodeIds(new Set([rootId]));
+        }
+        setLoadingNodeIds(new Set());
         setError(null);
       } catch (fetchError) {
         if (!alive) return;
@@ -453,9 +494,66 @@ function OrgChart() {
     // Anchor the toggled node so its on-screen position is preserved across
     // the upcoming layout recompute.
     anchorNodeIdRef.current = nodeId;
-    const isCurrentlyCollapsed = collapsedNodes.has(nodeId) || isDepthLimited;
+    const hasLoadedChildren = (apiChildrenMap[nodeId] || []).length > 0;
+    const isNotFetchedYet = !fetchedNodeIds.has(nodeId) && !hasLoadedChildren;
+    const isCurrentlyCollapsed = collapsedNodes.has(nodeId) || isDepthLimited || isNotFetchedYet;
 
     if (isCurrentlyCollapsed) {
+      // Lazy-fetch downline if we haven't loaded this node's children yet
+      if (!fetchedNodeIds.has(nodeId) && !loadingNodeIds.has(nodeId)) {
+        setLoadingNodeIds((previous) => {
+          const next = new Set(previous);
+          next.add(nodeId);
+          return next;
+        });
+
+        orgChartService.fetchDownline(nodeId).then(({ users: downlineUsers, childrenMap: downlineChildrenMap }) => {
+          const subtreeIds = collectSubtreeIds(nodeId, downlineChildrenMap);
+
+          setUsers((prev) => {
+            const existingIds = new Set(prev.map((u) => u.id));
+            const newUsers = downlineUsers.filter((u) => !existingIds.has(u.id));
+            return newUsers.length > 0 ? [...prev, ...newUsers] : prev;
+          });
+          setApiChildrenMap((prev) => {
+            const merged = { ...prev };
+            for (const [parentId, childIds] of Object.entries(downlineChildrenMap)) {
+              merged[parentId] = Array.from(new Set([...(merged[parentId] || []), ...childIds]));
+            }
+            return merged;
+          });
+          setFetchedNodeIds((previous) => {
+            const next = new Set(previous);
+            subtreeIds.forEach((id) => next.add(id));
+            Object.keys(downlineChildrenMap).forEach((id) => next.add(id));
+            return next;
+          });
+          setLoadingNodeIds((previous) => {
+            const next = new Set(previous);
+            next.delete(nodeId);
+            return next;
+          });
+          // Full-tree fetch: expand the clicked node and keep all returned descendants open.
+          setExpandedDepthOverrideNodes((previous) => {
+            const next = new Set(previous);
+            next.add(nodeId);
+            return next;
+          });
+          setCollapsedNodes((previous) => {
+            const next = new Set(previous);
+            subtreeIds.forEach((id) => next.delete(id));
+            return next;
+          });
+        }).catch(() => {
+          setLoadingNodeIds((previous) => {
+            const next = new Set(previous);
+            next.delete(nodeId);
+            return next;
+          });
+        });
+        return;
+      }
+
       if (isDepthLimited) {
         setExpandedDepthOverrideNodes((previous) => {
           const next = new Set(previous);
@@ -489,7 +587,7 @@ function OrgChart() {
       next.add(nodeId);
       return next;
     });
-  }, [collapsedNodes]);
+  }, [apiChildrenMap, collapsedNodes, fetchedNodeIds, loadingNodeIds]);
 
   // Stage 1: compute layout. Only depends on tree shape and collapse/depth state.
   // Clicking a node (selectedUserId / filters) must NOT recompute this — otherwise
@@ -601,15 +699,20 @@ function OrgChart() {
           && depth >= expandDepth
           && hasChildrenNode
           && depthLimitedNodeIds.has(node.id);
+        const hasLoadedChildren = (apiChildrenMap[node.id] || []).length > 0;
+        const isNotFetchedYet = hasChildrenNode && !fetchedNodeIds.has(node.id) && !hasLoadedChildren;
+        const isNodeCollapsed = collapsedNodes.has(node.id) || isDepthLimited || isNotFetchedYet;
 
         const updatedData: OrgNodeData = {
           ...currentData,
           filterBackground: getNodeFilterBackground(currentData),
-          isCollapsed: collapsedNodes.has(node.id) || isDepthLimited,
+          isCollapsed: isNodeCollapsed,
           hasChildren: hasChildrenNode,
+          isExpanding: loadingNodeIds.has(node.id),
           childrenCount: getDescendantCount(node.id, tree),
           onToggleCollapse: () => {
             void handleToggleCollapse(node.id, isDepthLimited);
+            setSelectedUserId(node.id);
             setPendingCenterId(node.id);
           },
           onClick: () => {
@@ -640,13 +743,16 @@ function OrgChart() {
       edges: rawEdges.filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target)),
     };
   }, [
+    apiChildrenMap,
     layout,
     collapsedNodes,
     expandDepth,
+    fetchedNodeIds,
     getDescendantCount,
     getNodeFilterBackground,
     handleToggleCollapse,
     hasChildren,
+    loadingNodeIds,
     reactFlowInstance,
     selectedUserId,
     tree,
@@ -800,6 +906,9 @@ function OrgChart() {
                 setSelectedUserId(null);
                 setCollapsedNodes(new Set());
                 setExpandedDepthOverrideNodes(new Set());
+                setFetchedNodeIds(new Set());
+                setLoadingNodeIds(new Set());
+                orgChartService.clearDownlineCache();
               }}
               title="Select org view"
             >
@@ -822,6 +931,9 @@ function OrgChart() {
                   setSelectedUserId(null);
                   setCollapsedNodes(new Set());
                   setExpandedDepthOverrideNodes(new Set());
+                  setFetchedNodeIds(new Set());
+                  setLoadingNodeIds(new Set());
+                  orgChartService.clearDownlineCache();
                 }}
               >
                 <option value="">
@@ -854,6 +966,9 @@ function OrgChart() {
                       setExpandDepth(null);
                       setCollapsedNodes(new Set());
                       setExpandedDepthOverrideNodes(new Set());
+                      setFetchedNodeIds(new Set());
+                      setLoadingNodeIds(new Set());
+                      orgChartService.clearDownlineCache();
                       if (tree?.id) {
                         setSelectedUserId(tree.id);
                         setPendingCenterId(tree.id);
@@ -872,6 +987,9 @@ function OrgChart() {
                         setExpandDepth(depth);
                         setCollapsedNodes(new Set());
                         setExpandedDepthOverrideNodes(new Set());
+                        setFetchedNodeIds(new Set());
+                        setLoadingNodeIds(new Set());
+                        orgChartService.clearDownlineCache();
                         if (tree?.id) {
                           setSelectedUserId(tree.id);
                           setPendingCenterId(tree.id);

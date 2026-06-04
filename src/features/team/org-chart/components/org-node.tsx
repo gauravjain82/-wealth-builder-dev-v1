@@ -50,6 +50,7 @@ export interface OrgNodeData {
   isDimmed?: boolean;
   isCollapsed?: boolean;
   hasChildren?: boolean;
+  isExpanding?: boolean;
   onToggleCollapse?: () => void;
   onClick?: () => void;
   onOpenProfile?: () => void;
@@ -74,6 +75,7 @@ const OrgNode = memo(function OrgNode({ data, selected }: NodeProps) {
     isDimmed = false,
     isCollapsed = false,
     hasChildren = false,
+    isExpanding = false,
     onToggleCollapse,
     onClick,
     onOpenProfile,
@@ -193,12 +195,13 @@ const OrgNode = memo(function OrgNode({ data, selected }: NodeProps) {
           className="org-node-expand-btn"
           onClick={(event) => {
             event.stopPropagation();
-            onToggleCollapse?.();
+            if (!isExpanding) onToggleCollapse?.();
           }}
-          title={isCollapsed ? 'Expand' : 'Collapse'}
+          title={isExpanding ? 'Loading...' : isCollapsed ? 'Expand' : 'Collapse'}
           type="button"
+          disabled={isExpanding}
         >
-          {isCollapsed ? '+' : '-'}
+          {isExpanding ? '…' : isCollapsed ? '+' : '-'}
         </button>
       )}
     </div>

@@ -102,6 +102,17 @@ function normalizeOutcomeValue(value?: string | null): ProspectOutcome {
   return 'Both';
 }
 
+function markAfterAgencyCodeAssignment(value?: string | null): ProspectMark {
+  const current = normalizeMarkValue(value);
+  return current === 'client' || current === 'both' ? 'both' : 'recruit';
+}
+
+function markAfterProductionAssignment(prospect: Prospect): ProspectMark {
+  const current = normalizeMarkValue(prospect.prospect_meta?.mark);
+  const hasAgencyCode = Boolean(prospect.agency_code?.trim());
+  return hasAgencyCode || current === 'recruit' || current === 'both' ? 'both' : 'client';
+}
+
 function ageFromBirthday(value?: string | null): string {
   if (!value) return '';
   const birth = new Date(value);
@@ -674,6 +685,18 @@ export default function ProspectTrackerPage() {
         ...updatedDetails,
         ...activated,
         profile: activated.profile ?? updatedDetails.profile,
+        prospect_meta: {
+          ...(updatedDetails.prospect_meta || addAgencyCodeFor.prospect_meta || {
+            notes: '',
+            hot: false,
+            top25: false,
+            outcome: '',
+            files: [],
+            source_date: null,
+          }),
+          ...(activated.prospect_meta || {}),
+          mark: markAfterAgencyCodeAssignment(addAgencyCodeFor.prospect_meta?.mark),
+        },
       };
       updateProspectInState(updated);
       setActiveCallLogProspect(null);
@@ -733,6 +756,20 @@ export default function ProspectTrackerPage() {
         split_mode: data.agentMode === 'split' ? 'split' : 'solo',
       });
 
+      updateProspectInState({
+        ...addProductionFor,
+        prospect_meta: {
+          ...(addProductionFor.prospect_meta || {
+            notes: '',
+            hot: false,
+            top25: false,
+            outcome: '',
+            files: [],
+            source_date: null,
+          }),
+          mark: markAfterProductionAssignment(addProductionFor),
+        },
+      });
       setAddProductionFor(null);
       addToast({ type: 'success', message: 'Added to Production Tracker.' });
     } catch (err) {

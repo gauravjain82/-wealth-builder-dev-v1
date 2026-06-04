@@ -429,6 +429,8 @@ function transformToUsersAndChildrenMap(payload: unknown): {
 }
 
 class OrgChartService {
+  private downlineCache = new Map<string, Promise<{ users: OrgChartUser[]; childrenMap: Record<string, string[]> }>>();
+
   private async fetchJson<T>(url: string): Promise<T> {
     const headers = getAuthHeaders();
     const response = await fetch(url, { headers });
@@ -438,20 +440,20 @@ class OrgChartService {
     return (await response.json()) as T;
   }
 
-  async fetchOrgChartData(viewType: OrgViewType = 'baseshop', brokerId: string | null = null): Promise<OrgChartData> {
-    const params = new URLSearchParams();
-    if (brokerId) {
-      params.set('broker_id', brokerId);
-    }
-
-    const queryString = params.toString();
-    const endpoint = queryString
-      ? `${API_BASE_URL}/api/accounts/users/direct_team/?${queryString}`
-      : `${API_BASE_URL}/api/accounts/users/direct_team/`;
+  /**
+   * Initial load: fetches root user + direct children only.
+   * - baseshop (no brokerId): GET /api/accounts/users/org-chart/root/
+   * - superbase/superteam with brokerId: GET /api/accounts/users/{brokerId}/org-chart/downline/
+   */
+  async fetchOrgChartInitial(viewType: OrgViewType = 'baseshop', brokerId: string | null = null): Promise<OrgChartData & { fetchedRootId: string | null }> {
+    const endpoint = brokerId
+      ? `${API_BASE_URL}/api/accounts/users/${encodeURIComponent(brokerId)}/org-chart/downline/`
+      : `${API_BASE_URL}/api/accounts/users/org-chart/root/`;
 
     const payload = await this.fetchJson<unknown>(endpoint);
     const transformed = transformToUsersAndChildrenMap(payload);
     const rootId = brokerId || transformed.rootId || localStorage.getItem('wb.userId') || transformed.users[0]?.id || null;
+
     if (!transformed.users.length) {
       return {
         users: [],
@@ -460,11 +462,8 @@ class OrgChartService {
         smd_list: [],
         selected_smd: brokerId,
         view_type: viewType,
+        fetchedRootId: rootId,
       };
-    }
-
-    if (rootId && !transformed.childrenMap[rootId]) {
-      transformed.childrenMap[rootId] = transformed.users.map((user) => user.id);
     }
 
     return {
@@ -474,7 +473,46 @@ class OrgChartService {
       smd_list: transformed.smdList,
       selected_smd: brokerId,
       view_type: viewType,
+      fetchedRootId: rootId,
     };
+  }
+
+  /**
+   * Lazy-loads direct children for a node on demand (called when user clicks expand).
+   * Results are cached per userId — a cached promise is reused for concurrent calls,
+   * and removed on failure so the next attempt will retry.
+   */
+  fetchDownline(userId: string): Promise<{ users: OrgChartUser[]; childrenMap: Record<string, string[]> }> {
+    if (!this.downlineCache.has(userId)) {
+      const params = new URLSearchParams({
+        full_tree: 'true',
+        max_depth: '5',
+      });
+      const promise = this.fetchJson<unknown>(
+        `${API_BASE_URL}/api/accounts/users/${encodeURIComponent(userId)}/org-chart/downline/?${params.toString()}`
+      )
+        .then((payload) => {
+          const transformed = transformToUsersAndChildrenMap(payload);
+          return { users: transformed.users, childrenMap: transformed.childrenMap };
+        })
+        .catch((error: unknown) => {
+          this.downlineCache.delete(userId);
+          throw error;
+        });
+      this.downlineCache.set(userId, promise);
+    }
+    return this.downlineCache.get(userId)!;
+  }
+
+  /** Clear the downline cache — call when the user switches view or SMD. */
+  clearDownlineCache(): void {
+    this.downlineCache.clear();
+  }
+
+  /** @deprecated Use fetchOrgChartInitial instead. */
+  async fetchOrgChartData(viewType: OrgViewType = 'baseshop', brokerId: string | null = null): Promise<OrgChartData> {
+    const result = await this.fetchOrgChartInitial(viewType, brokerId);
+    return result;
   }
 
 }
