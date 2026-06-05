@@ -18,7 +18,7 @@ interface ProspectColumnOptions {
   onOpenAllNotes: (row: Prospect) => void;
   onToggleProspectMeta: (row: Prospect, field: 'top25' | 'hot', value: boolean) => void;
   onChangeProspectMark: (row: Prospect, mark: ProspectMark) => void;
-  onChangeProspectOutcome: (row: Prospect, outcome: 'Client' | 'Recruit' | 'Both') => void;
+  onChangeProspectOutcome: (row: Prospect, outcome: '' | 'Client' | 'Recruit' | 'Both') => void;
   onOpenLeaderProfile?: (row: Prospect) => void;
   onOpenProspectProfile?: (row: Prospect) => void;
   onOpenRecruiterProfile?: (row: Prospect) => void;
@@ -260,7 +260,7 @@ export function buildProspectColumns(
       sortable: true,
       value: (row) => row.prospect_meta?.outcome || '',
       render: (row) => {
-        const current = row.prospect_meta?.outcome || 'Both';
+        const current = row.prospect_meta?.outcome || '';
         return (
           <select
             className="h-8 w-full rounded border border-white/15 bg-white/5 px-2 text-xs text-white outline-none focus:border-amber-300/50"
@@ -269,7 +269,7 @@ export function buildProspectColumns(
             onChange={(e) =>
               options.onChangeProspectOutcome(
                 row,
-                (e.target.value as 'Client' | 'Recruit' | 'Both') || '-'
+                e.target.value as '' | 'Client' | 'Recruit' | 'Both'
               )
             }
           >

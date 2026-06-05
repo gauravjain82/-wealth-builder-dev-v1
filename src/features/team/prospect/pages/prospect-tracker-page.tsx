@@ -46,7 +46,7 @@ import {
 
 type SortDirection = 'asc' | 'desc';
 type ProspectMark = 'default' | 'client' | 'recruit' | 'both';
-type ProspectOutcome = 'Client' | 'Recruit' | 'Both';
+type ProspectOutcome = '' | 'Client' | 'Recruit' | 'Both';
 
 function parseStoredRoles(): string[] {
   try {
@@ -1286,7 +1286,7 @@ export default function ProspectTrackerPage() {
         notes: previous?.notes || '',
         hot: Boolean(previous?.hot),
         top25: Boolean(previous?.top25),
-        outcome: normalizeOutcomeValue(outcome),
+        outcome: outcome ? normalizeOutcomeValue(outcome) : '',
         mark: normalizeMarkValue(previous?.mark),
         files: previous?.files || [],
         source_date: previous?.source_date ?? null,

@@ -36,7 +36,7 @@ import { TrackerUserProfileModal } from '@/features/team/components/tracker-user
 import { useToastStore } from '@/store';
 
 type ProspectMark = 'default' | 'client' | 'recruit' | 'both';
-type ProspectOutcome = 'Client' | 'Recruit' | 'Both';
+type ProspectOutcome = '' | 'Client' | 'Recruit' | 'Both';
 
 export interface ProspectTrackerListUser {
   id: number;
@@ -564,7 +564,7 @@ export function ProspectTrackerListModal({
         notes: previous?.notes || '',
         hot: Boolean(previous?.hot),
         top25: Boolean(previous?.top25),
-        outcome: normalizeOutcomeValue(outcome),
+        outcome: outcome ? normalizeOutcomeValue(outcome) : '',
         mark: normalizeMarkValue(previous?.mark),
         files: previous?.files || [],
         source_date: previous?.source_date ?? null,

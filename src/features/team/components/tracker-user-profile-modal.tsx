@@ -166,13 +166,17 @@ function yesNo(value: boolean | null | undefined): string {
 interface LabeledFieldProps {
   label: string;
   className?: string;
+  required?: boolean;
   children: React.ReactNode;
 }
 
-function LabeledField({ label, className = '', children }: LabeledFieldProps) {
+function LabeledField({ label, className = '', required = false, children }: LabeledFieldProps) {
   return (
     <div className={className}>
-      <div className="mb-1 text-xs text-white/70">{label}</div>
+      <div className="mb-1 text-xs text-white/70">
+        {label}
+        {required && <span className="text-red-400"> *</span>}
+      </div>
       {children}
     </div>
   );
@@ -509,7 +513,7 @@ export function TrackerUserProfileModal({
                     }}
                   />
                 </LabeledField>
-                <LabeledField label="Birthday">
+                <LabeledField label="Birthday" required>
                   <DatePicker value={form.birthday} onChange={(value) => updateField('birthday', value)} className="h-10" />
                 </LabeledField>
                 <LabeledField label="State">
