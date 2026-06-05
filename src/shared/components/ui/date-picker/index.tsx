@@ -28,6 +28,15 @@ const dateVariantClasses: Record<NonNullable<BaseDateProps['variant']>, string> 
 
 function toDate(value?: string) {
   if (!value) return null;
+  // A date-only string ("yyyy-MM-dd") is parsed by `new Date()` as UTC
+  // midnight, which rolls back to the previous day in timezones behind UTC
+  // (e.g. the Americas). Parse it as a local date so the chosen day is
+  // preserved in every region.
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (dateOnly) {
+    const [, year, month, day] = dateOnly;
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  }
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }

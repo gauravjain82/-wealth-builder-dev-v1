@@ -185,8 +185,9 @@ export default function TenSystematicToolsPage() {
     if (planName !== Plan.NewAgent) return item;
 
     if (item.id === 'unified-system') {
+      // New agents only get the Step 1 presentations (English + Spanish).
       const filteredOptions = (item.options || []).filter((opt) =>
-        opt.title.includes('Unified System Slides')
+        opt.title.startsWith('Step 1')
       );
       return { ...item, options: filteredOptions };
     }
