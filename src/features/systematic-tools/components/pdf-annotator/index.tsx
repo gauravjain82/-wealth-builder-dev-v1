@@ -9,6 +9,100 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
+// Width of the left thumbnail ("contents") panel.
+const THUMB_PANEL_WIDTH = 200;
+const THUMB_WIDTH = 150;
+
+/**
+ * A single page thumbnail in the left contents panel. The actual <Page> only
+ * renders once it scrolls near view, so a long document doesn't render dozens
+ * of thumbnails up front. Must be rendered inside a <Document>.
+ */
+function PdfThumbnail({
+  pageNumber,
+  isActive,
+  onClick,
+}: {
+  pageNumber: number;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const ref = useRef<HTMLButtonElement | null>(null);
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShow(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '400px 0px 400px 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <button
+      ref={ref}
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 4,
+        width: '100%',
+        padding: '8px 0',
+        border: 'none',
+        background: 'transparent',
+        cursor: 'pointer',
+      }}
+      title={`Go to page ${pageNumber}`}
+    >
+      <div
+        style={{
+          width: THUMB_WIDTH,
+          minHeight: Math.round(THUMB_WIDTH * 1.294),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#fff',
+          border: isActive
+            ? '2px solid #4aa3ff'
+            : '1px solid rgba(255,255,255,0.25)',
+          boxShadow: isActive ? '0 0 0 2px rgba(74,163,255,0.4)' : 'none',
+          overflow: 'hidden',
+        }}
+      >
+        {show ? (
+          <Page
+            pageNumber={pageNumber}
+            width={THUMB_WIDTH}
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
+            loading={<div style={{ height: Math.round(THUMB_WIDTH * 1.294) }} />}
+          />
+        ) : (
+          <div style={{ height: Math.round(THUMB_WIDTH * 1.294) }} />
+        )}
+      </div>
+      <span
+        style={{
+          fontSize: 12,
+          color: isActive ? '#fff' : '#cfcfcf',
+          fontWeight: isActive ? 600 : 400,
+        }}
+      >
+        {pageNumber}
+      </span>
+    </button>
+  );
+}
+
 interface PdfAnnotatorProps {
   src: string;
 }
@@ -38,8 +132,14 @@ export default function PdfAnnotator({ src }: PdfAnnotatorProps) {
     new Map()
   );
   const annotationsRef = useRef<Map<number, PageAnnotations>>(new Map());
+  // Wrapper element per page so the table of contents can scroll to a page.
+  const pageWrapperRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
 
   const [numPages, setNumPages] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activePage, setActivePage] = useState(1);
+  // Virtualization: only the pages near the viewport are actually rendered.
+  const [visiblePages, setVisiblePages] = useState<Set<number>>(new Set());
   const [pageWidth, setPageWidth] = useState(900);
   const [scale, setScale] = useState(1);
   // Track previous scale so we can rescale stored annotations when zoom changes.
@@ -65,13 +165,14 @@ export default function PdfAnnotator({ src }: PdfAnnotatorProps) {
     const updateWidth = () => {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const padded = Math.max(320, rect.width - 32);
+      const sidebarWidth = numPages > 0 && sidebarOpen ? THUMB_PANEL_WIDTH : 0;
+      const padded = Math.max(320, rect.width - sidebarWidth - 32);
       setPageWidth(padded);
     };
     updateWidth();
     window.addEventListener('resize', updateWidth);
     return () => window.removeEventListener('resize', updateWidth);
-  }, []);
+  }, [numPages, sidebarOpen]);
 
   // When the user zooms, scale all stored annotations by the same ratio so
   // they stay attached to the same logical spot on the page.
@@ -90,6 +191,14 @@ export default function PdfAnnotator({ src }: PdfAnnotatorProps) {
           textItem.x *= ratio;
           textItem.y *= ratio;
           textItem.size *= ratio;
+        });
+      });
+      // Keep cached page sizes proportional so placeholder heights for
+      // not-yet-rendered pages stay accurate after zooming.
+      pageSizeRef.current.forEach((size, pageNumber) => {
+        pageSizeRef.current.set(pageNumber, {
+          width: size.width * ratio,
+          height: size.height * ratio,
         });
       });
     }
@@ -144,6 +253,77 @@ export default function PdfAnnotator({ src }: PdfAnnotatorProps) {
       ctx.fillText(textItem.value, textItem.x, textItem.y);
     });
   };
+
+  // Smoothly scroll a page into view inside the scroll container.
+  const scrollToPage = (pageNumber: number) => {
+    const wrapper = pageWrapperRefs.current.get(pageNumber);
+    if (wrapper) {
+      wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActivePage(pageNumber);
+    }
+  };
+
+  // Track which page is currently in view to highlight it in the sidebar.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || numPages === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) {
+          const pageNumber = Number(
+            (visible.target as HTMLElement).dataset.pageNumber
+          );
+          if (pageNumber) setActivePage(pageNumber);
+        }
+      },
+      { root: container, threshold: [0.25, 0.5, 0.75] }
+    );
+    pageWrapperRefs.current.forEach((node) => {
+      if (node) observer.observe(node);
+    });
+    return () => observer.disconnect();
+  }, [numPages]);
+
+  // Virtualize rendering: only mount the PDF pages near the viewport so large
+  // documents (e.g. an 80-page manual) stay fast. Off-screen pages collapse to
+  // a lightweight placeholder of the right height to preserve scroll position.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || numPages === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        setVisiblePages((prev) => {
+          const next = new Set(prev);
+          let changed = false;
+          for (const entry of entries) {
+            const pageNumber = Number(
+              (entry.target as HTMLElement).dataset.pageNumber
+            );
+            if (!pageNumber) continue;
+            if (entry.isIntersecting) {
+              if (!next.has(pageNumber)) {
+                next.add(pageNumber);
+                changed = true;
+              }
+            } else if (next.has(pageNumber)) {
+              next.delete(pageNumber);
+              changed = true;
+            }
+          }
+          return changed ? next : prev;
+        });
+      },
+      // Preload a screenful above/below so scrolling stays smooth.
+      { root: container, rootMargin: '1200px 0px 1200px 0px', threshold: 0 }
+    );
+    pageWrapperRefs.current.forEach((node) => {
+      if (node) observer.observe(node);
+    });
+    return () => observer.disconnect();
+  }, [numPages]);
 
   const getPageAnnotations = (pageNumber: number): PageAnnotations => {
     let annotations = annotationsRef.current.get(pageNumber);
@@ -236,8 +416,11 @@ export default function PdfAnnotator({ src }: PdfAnnotatorProps) {
 
   const toolbarBaseStyle: React.CSSProperties = {
     position: 'fixed',
-    top: 60,
-    left: 12,
+    // When the panel is open, sit right of the thumbnail strip. When it's
+    // collapsed, drop below the floating "Contents" button so they stack
+    // vertically instead of overlapping.
+    top: numPages > 0 && !sidebarOpen ? 100 : 60,
+    left: numPages > 0 && sidebarOpen ? THUMB_PANEL_WIDTH + 12 : 12,
     zIndex: 10002,
     display: 'flex',
     gap: 8,
@@ -278,6 +461,7 @@ export default function PdfAnnotator({ src }: PdfAnnotatorProps) {
         flexDirection: 'column',
         alignItems: 'center',
         padding: '16px 0',
+        paddingLeft: numPages > 0 && sidebarOpen ? THUMB_PANEL_WIDTH : 0,
         userSelect: 'none',
       }}
     >
@@ -382,8 +566,8 @@ export default function PdfAnnotator({ src }: PdfAnnotatorProps) {
           onClick={() => setToolbarVisible(true)}
           style={{
             position: 'fixed',
-            top: 60,
-            left: 12,
+            top: numPages > 0 && !sidebarOpen ? 100 : 60,
+            left: numPages > 0 && sidebarOpen ? THUMB_PANEL_WIDTH + 12 : 12,
             zIndex: 10002,
             padding: '6px 10px',
             borderRadius: 999,
@@ -399,9 +583,35 @@ export default function PdfAnnotator({ src }: PdfAnnotatorProps) {
         </button>
       )}
 
+      {/* Contents toggle. The open thumbnail panel is rendered inside
+          <Document> below so each thumbnail can use the loaded PDF. */}
+      {numPages > 0 && !sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          style={{
+            position: 'fixed',
+            top: 60,
+            left: 12,
+            zIndex: 10002,
+            padding: '6px 10px',
+            borderRadius: 999,
+            border: '1px solid rgba(255,255,255,0.2)',
+            background: 'rgba(18,18,18,0.7)',
+            color: '#fff',
+            fontSize: 12,
+            cursor: 'pointer',
+          }}
+          title="Show contents"
+        >
+          📑 Contents
+        </button>
+      )}
+
       <Document
         file={src}
-        onLoadSuccess={(pdf) => setNumPages(pdf.numPages)}
+        onLoadSuccess={(pdf) => {
+          setNumPages(pdf.numPages);
+        }}
         onLoadError={(error) => {
           // eslint-disable-next-line no-console
           console.error('PDF load failed:', error);
@@ -416,80 +626,165 @@ export default function PdfAnnotator({ src }: PdfAnnotatorProps) {
           </div>
         }
       >
+        {/* Left contents panel: page thumbnails (like the native viewer). */}
+        {numPages > 0 && sidebarOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: THUMB_PANEL_WIDTH,
+              maxWidth: '60vw',
+              zIndex: 10002,
+              background: 'rgba(18,18,18,0.92)',
+              backdropFilter: 'blur(6px)',
+              color: '#fff',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '2px 0 12px rgba(0,0,0,0.4)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 12px',
+                borderBottom: '1px solid rgba(255,255,255,0.12)',
+              }}
+            >
+              <span style={{ fontWeight: 600, fontSize: 14 }}>Contents</span>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                style={{ ...toolButtonStyle, padding: '4px 10px', fontSize: 12 }}
+                title="Hide contents"
+              >
+                Hide
+              </button>
+            </div>
+            <div style={{ overflowY: 'auto', padding: '6px 0' }}>
+              {Array.from({ length: numPages }, (_, index) => {
+                const pageNumber = index + 1;
+                return (
+                  <PdfThumbnail
+                    key={pageNumber}
+                    pageNumber={pageNumber}
+                    isActive={pageNumber === activePage}
+                    onClick={() => scrollToPage(pageNumber)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {Array.from({ length: numPages }, (_, index) => {
           const pageNumber = index + 1;
+          const cachedSize = pageSizeRef.current.get(pageNumber);
+          // Best estimate of the rendered page height so the placeholder
+          // reserves the right amount of space (US Letter ratio fallback).
+          const estimatedHeight =
+            cachedSize?.height ?? Math.round(pageWidth * scale * 1.294);
+          const isRendered = visiblePages.has(pageNumber);
           return (
             <div
               key={pageNumber}
+              data-page-number={pageNumber}
+              ref={(node) => {
+                if (node) pageWrapperRefs.current.set(pageNumber, node);
+                else pageWrapperRefs.current.delete(pageNumber);
+              }}
               style={{
                 position: 'relative',
                 marginBottom: 16,
+                width: pageWidth * scale,
+                minHeight: estimatedHeight,
                 boxShadow: '0 2px 12px rgba(0,0,0,0.45)',
               }}
             >
-              <Page
-                pageNumber={pageNumber}
-                width={pageWidth * scale}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                onRenderSuccess={(page) => {
-                  const viewport = page.getViewport({
-                    scale: (pageWidth * scale) / page.view[2],
-                  });
-                  pageSizeRef.current.set(pageNumber, {
-                    width: viewport.width,
-                    height: viewport.height,
-                  });
-                  syncCanvas(pageNumber);
-                }}
-              />
-              <canvas
-                ref={(node) => {
-                  if (node) canvasRefs.current.set(pageNumber, node);
-                  else canvasRefs.current.delete(pageNumber);
-                }}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  pointerEvents: drawMode || textMode ? 'auto' : 'none',
-                  cursor: textMode ? 'text' : drawMode ? 'crosshair' : 'default',
-                  touchAction: 'none',
-                }}
-                onClick={(e) => handleCanvasClick(pageNumber, e)}
-                onMouseDown={(e) => startDraw(pageNumber, e)}
-                onMouseMove={(e) => moveDraw(pageNumber, e)}
-                onMouseUp={endDraw}
-                onMouseLeave={endDraw}
-                onTouchStart={(e) => startDraw(pageNumber, e)}
-                onTouchMove={(e) => moveDraw(pageNumber, e)}
-                onTouchEnd={endDraw}
-              />
-              {pendingText && pendingText.pageNumber === pageNumber && (
-                <input
-                  autoFocus
-                  value={pendingText.value}
-                  onChange={(e) =>
-                    setPendingText((prev) =>
-                      prev ? { ...prev, value: e.target.value } : prev
-                    )
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitText();
-                    if (e.key === 'Escape') setPendingText(null);
-                  }}
-                  onBlur={commitText}
+              {isRendered ? (
+                <>
+                  <Page
+                    pageNumber={pageNumber}
+                    width={pageWidth * scale}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                    onRenderSuccess={(page) => {
+                      const viewport = page.getViewport({
+                        scale: (pageWidth * scale) / page.view[2],
+                      });
+                      pageSizeRef.current.set(pageNumber, {
+                        width: viewport.width,
+                        height: viewport.height,
+                      });
+                      syncCanvas(pageNumber);
+                    }}
+                  />
+                  <canvas
+                    ref={(node) => {
+                      if (node) canvasRefs.current.set(pageNumber, node);
+                      else canvasRefs.current.delete(pageNumber);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      pointerEvents: drawMode || textMode ? 'auto' : 'none',
+                      cursor: textMode ? 'text' : drawMode ? 'crosshair' : 'default',
+                      touchAction: 'none',
+                    }}
+                    onClick={(e) => handleCanvasClick(pageNumber, e)}
+                    onMouseDown={(e) => startDraw(pageNumber, e)}
+                    onMouseMove={(e) => moveDraw(pageNumber, e)}
+                    onMouseUp={endDraw}
+                    onMouseLeave={endDraw}
+                    onTouchStart={(e) => startDraw(pageNumber, e)}
+                    onTouchMove={(e) => moveDraw(pageNumber, e)}
+                    onTouchEnd={endDraw}
+                  />
+                  {pendingText && pendingText.pageNumber === pageNumber && (
+                    <input
+                      autoFocus
+                      value={pendingText.value}
+                      onChange={(e) =>
+                        setPendingText((prev) =>
+                          prev ? { ...prev, value: e.target.value } : prev
+                        )
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitText();
+                        if (e.key === 'Escape') setPendingText(null);
+                      }}
+                      onBlur={commitText}
+                      style={{
+                        position: 'absolute',
+                        left: pendingText.x,
+                        top: pendingText.y,
+                        fontSize,
+                        color: brushColor,
+                        border: '1px dashed rgba(0,0,0,0.4)',
+                        background: 'rgba(255,255,255,0.9)',
+                        padding: '2px 4px',
+                        outline: 'none',
+                      }}
+                    />
+                  )}
+                </>
+              ) : (
+                <div
                   style={{
-                    position: 'absolute',
-                    left: pendingText.x,
-                    top: pendingText.y,
-                    fontSize,
-                    color: brushColor,
-                    border: '1px dashed rgba(0,0,0,0.4)',
-                    background: 'rgba(255,255,255,0.9)',
-                    padding: '2px 4px',
-                    outline: 'none',
+                    width: '100%',
+                    height: estimatedHeight,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#3a3d40',
+                    color: '#9a9a9a',
+                    fontSize: 13,
                   }}
-                />
+                >
+                  Page {pageNumber}
+                </div>
               )}
             </div>
           );
