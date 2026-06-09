@@ -1118,13 +1118,13 @@ export default function ProductionTrackerPage() {
         filterKey={filters.filterkey || 'all'}
         teamScope={teamScope}
         teamScopeUserId={teamScopeUserId}
-        onAddProduction={() => setAddProductionOpen(true)}
+        // onAddProduction={() => setAddProductionOpen(true)}
         onExport={() => void handleExportCsv()}
-        onImport={() => {
-          setImportOpen(true);
-          setImportFailures([]);
-          setImportSuccessCount(0);
-        }}
+        // onImport={() => {
+        //   setImportOpen(true);
+        //   setImportFailures([]);
+        //   setImportSuccessCount(0);
+        // }}
         onFilterKeyChange={(value) => {
           setFilters((prev) => ({ ...prev, filterkey: value }));
         }}

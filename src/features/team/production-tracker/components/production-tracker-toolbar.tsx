@@ -36,9 +36,9 @@ export function ProductionTrackerToolbar({
   filterKey,
   teamScope,
   teamScopeUserId,
-  onAddProduction,
+  // onAddProduction,
   onExport,
-  onImport,
+  // onImport,
   onFilterKeyChange,
   onDateRangeChange,
   onTeamScopeChange,
@@ -51,9 +51,9 @@ export function ProductionTrackerToolbar({
   filterKey: string;
   teamScope: TrackerTeamScope;
   teamScopeUserId: string | null;
-  onAddProduction: () => void;
+  // onAddProduction: () => void;
   onExport: () => void;
-  onImport: () => void;
+  // onImport: () => void;
   onFilterKeyChange: (value: string) => void;
   onDateRangeChange: (value: TrackerDateRangeChange) => void;
   onTeamScopeChange: (next: { scope: TrackerTeamScope; user: { id: string; name: string } | null }) => void;
@@ -89,15 +89,15 @@ export function ProductionTrackerToolbar({
             selectedUserId={teamScopeUserId}
             onChange={onTeamScopeChange}
           />
-          <Button type="button" size="sm" onClick={onAddProduction}>
+          {/* <Button type="button" size="sm" onClick={onAddProduction}>
             Add Production
-          </Button>
+          </Button> */}
           <Button type="button" size="sm" variant="secondary" onClick={onExport} disabled={exporting}>
             {exporting ? 'Exporting...' : 'Export CSV'}
           </Button>
-          <Button type="button" size="sm" variant="outline" onClick={onImport}>
+          {/* <Button type="button" size="sm" variant="outline" onClick={onImport}>
             Import CSV
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>
