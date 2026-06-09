@@ -57,10 +57,14 @@ function toSortParam(sort: { key: string; direction: SortDirection } | null): st
 }
 
 function toBackendFilters(filters: Record<string, string>): Record<string, string> {
+  const keyMap: Record<string, string> = {
+    from_date: 'date_written_from',
+    to_date: 'date_written_to',
+  };
   return Object.entries(filters).reduce<Record<string, string>>((acc, [key, value]) => {
     const normalized = value.trim();
     if (!normalized) return acc;
-    acc[key] = normalized;
+    acc[keyMap[key] || key] = normalized;
     return acc;
   }, {});
 }
