@@ -1570,7 +1570,7 @@ export default function ProspectTrackerPage() {
         <TrackerTable
           columns={columns}
           rows={prospects}
-          rowKey={(row) => String(row.id)}
+          rowKey={(row, index) => `${row.id}-${index}`}
           rowClassName={(row) => getProspectRowClassName(row)}
           stickyFirstNColumns={3}
           resizable

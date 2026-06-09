@@ -663,7 +663,7 @@ export default function AssociateTrackerPage() {
         <TrackerTable
           columns={columns}
           rows={rows}
-          rowKey={(row) => String(row.id)}
+          rowKey={(row, index) => `${row.id}-${index}`}
           headerGroupRows={headerGroupRows}
           stickyFirstNColumns={3}
           resizable

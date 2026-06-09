@@ -651,7 +651,7 @@ export default function MissionTrackerPage() {
         <TrackerTable
           columns={columns}
           rows={rows}
-          rowKey={(row) => String(row.id)}
+          rowKey={(row, index) => `${row.id}-${index}`}
           headerGroupRows={headerGroupRows}
           stickyFirstNColumns={4}
           resizable

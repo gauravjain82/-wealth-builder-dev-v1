@@ -243,7 +243,7 @@ export function LicensingTrackerModal({
         <TrackerTable
           columns={columns}
           rows={rows}
-          rowKey={(row) => String(row.id)}
+          rowKey={(row, index) => `${row.id}-${index}`}
           stickyFirstNColumns={4}
           resizable
           tableId="associate-licensing-tracker-modal"

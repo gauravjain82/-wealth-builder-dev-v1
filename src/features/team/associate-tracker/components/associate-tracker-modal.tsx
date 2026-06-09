@@ -268,7 +268,7 @@ export function AssociateTrackerModal({
         <TrackerTable
           columns={columns}
           rows={rows}
-          rowKey={(row) => String(row.id)}
+          rowKey={(row, index) => `${row.id}-${index}`}
           stickyFirstNColumns={3}
           resizable
           tableId="associate-registrations-tracker-modal"

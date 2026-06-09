@@ -505,7 +505,10 @@ export default function ProductionTrackerPage() {
 
         const [refreshed, refreshedSummary, refreshedTopPerformers] = await Promise.all([
           fetchProductionTracker(query),
-          fetchProductionPointsSummary(summaryUserId),
+          fetchProductionPointsSummary(summaryUserId, {
+            fromDate: filters.from_date,
+            toDate: filters.to_date,
+          }),
           shouldRefreshTopPerformers ? fetchProductionTopPerformers() : Promise.resolve(null),
         ]);
 
@@ -763,7 +766,10 @@ export default function ProductionTrackerPage() {
 
     const loadSummary = async () => {
       try {
-        const summary = await fetchProductionPointsSummary(teamScopeUserId ? Number(teamScopeUserId) : currentUserId);
+        const summary = await fetchProductionPointsSummary(
+          teamScopeUserId ? Number(teamScopeUserId) : currentUserId,
+          { fromDate: filters.from_date, toDate: filters.to_date }
+        );
         if (isMounted) {
           setPointsSummary(summary);
         }
@@ -779,7 +785,7 @@ export default function ProductionTrackerPage() {
     return () => {
       isMounted = false;
     };
-  }, [currentUserId, teamScopeUserId]);
+  }, [currentUserId, teamScopeUserId, filters.from_date, filters.to_date]);
 
   useEffect(() => {
     let isMounted = true;
@@ -864,7 +870,10 @@ export default function ProductionTrackerPage() {
     await loadRows(1, true, sortState, filters);
 
     try {
-      const summary = await fetchProductionPointsSummary(teamScopeUserId ? Number(teamScopeUserId) : currentUserId);
+      const summary = await fetchProductionPointsSummary(
+        teamScopeUserId ? Number(teamScopeUserId) : currentUserId,
+        { fromDate: filters.from_date, toDate: filters.to_date }
+      );
       setPointsSummary(summary);
     } catch {
       setPointsSummary(null);
@@ -1147,7 +1156,7 @@ export default function ProductionTrackerPage() {
         <TrackerTable
           columns={columns}
           rows={rows}
-          rowKey={(row) => String(row.id)}
+          rowKey={(row, index) => `${row.id}-${index}`}
           stickyFirstNColumns={4}
           resizable
           tableId="production-tracker"

@@ -710,10 +710,19 @@ export async function deleteProductionRecord(recordId: number): Promise<void> {
   }
 }
 
-export async function fetchProductionPointsSummary(userId?: number | null): Promise<ProductionPointsSummary> {
+export async function fetchProductionPointsSummary(
+  userId?: number | null,
+  options?: { fromDate?: string | null; toDate?: string | null }
+): Promise<ProductionPointsSummary> {
   const params = new URLSearchParams();
   if (userId) {
     params.set('user_id', String(userId));
+  }
+  if (options?.fromDate) {
+    params.set('from_date', options.fromDate);
+  }
+  if (options?.toDate) {
+    params.set('to_date', options.toDate);
   }
   const suffix = params.toString() ? `?${params.toString()}` : '';
   return fetchJson<ProductionPointsSummary>(`${API_BASE_URL}/api/tracker/policies/points_summary/${suffix}`);

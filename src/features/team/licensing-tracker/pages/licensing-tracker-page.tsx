@@ -410,7 +410,7 @@ export default function LicensingTrackerPage() {
         <TrackerTable
           columns={columns}
           rows={rows}
-          rowKey={(row) => String(row.id)}
+          rowKey={(row, index) => `${row.id}-${index}`}
           stickyFirstNColumns={4}
           resizable
           tableId="licensing-tracker"
