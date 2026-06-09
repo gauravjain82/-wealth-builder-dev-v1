@@ -280,7 +280,7 @@ export default function AssociateTrackerPage() {
     setHotRecruitsHasMore(false);
     setHotRecruitsLoading(true);
     try {
-      const loaded = await fetchAssociateUsersForAssociatePage(row.user_id, { hot: true, pageSize: 20 });
+      const loaded = await fetchAssociateUsersForAssociatePage(row.user_id, { hot: true, isProspect: 1, pageSize: 20 });
       setHotRecruits(loaded.results);
       setHotRecruitsHasMore(Boolean(loaded.next));
       setHotRecruitsNextPage(2);
@@ -333,6 +333,7 @@ export default function AssociateTrackerPage() {
     try {
       const loaded = await fetchAssociateUsersForAssociatePage(hotRecruitOpenFor.userId, {
         hot: true,
+        isProspect: 1,
         page: hotRecruitsNextPage,
         pageSize: 20,
       });

@@ -122,6 +122,7 @@ export interface AssociateUserListFilters {
   client?: boolean;
   licensed?: boolean;
   top25?: boolean;
+  isProspect?: string | number;
   sort?: string;
   page?: number;
   pageSize?: number;
@@ -263,6 +264,7 @@ export async function fetchAssociateUsersForAssociatePage(
   if (filters.client !== undefined) params.set('client', String(filters.client));
   if (filters.licensed !== undefined) params.set('is_license', String(filters.licensed));
   if (filters.top25 !== undefined) params.set('top25', String(filters.top25));
+  if (filters.isProspect !== undefined) params.set('prospect', String(filters.isProspect));
   params.set('page', String(filters.page ?? 1));
   params.set('page_size', String(filters.pageSize ?? 20));
   params.set('sort', filters.sort || '-created_at');
@@ -291,7 +293,7 @@ export async function fetchAssociateUsersForAssociatePage(
 }
 
 export async function fetchHotRecruitsForAssociate(recruiterUserId: number): Promise<HotRecruitUser[]> {
-  return fetchAssociateUsersForAssociate(recruiterUserId, { hot: true });
+  return fetchAssociateUsersForAssociate(recruiterUserId, { hot: true, isProspect: 1 });
 }
 
 export async function fetchClientUsersForAssociate(recruiterUserId: number): Promise<HotRecruitUser[]> {
