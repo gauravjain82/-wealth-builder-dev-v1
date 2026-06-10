@@ -49,6 +49,10 @@ interface ProfileFormState {
   leaderLabel: string;
   birthday: string;
   state: string;
+  homeAddress: string;
+  homeAddress2: string;
+  homeCity: string;
+  homeZip: string;
   gender: string;
   occupation: string;
   howKnown: string;
@@ -77,6 +81,10 @@ const EMPTY_FORM: ProfileFormState = {
   leaderLabel: '',
   birthday: '',
   state: '',
+  homeAddress: '',
+  homeAddress2: '',
+  homeCity: '',
+  homeZip: '',
   gender: '',
   occupation: '',
   howKnown: '',
@@ -131,6 +139,10 @@ function mapToForm(user: TrackerUserProfile): ProfileFormState {
     leaderLabel: user.leader_name || '',
     birthday: user.profile?.birthday || '',
     state: user.profile?.state || '',
+    homeAddress: user.profile?.home_address || '',
+    homeAddress2: user.profile?.home_address2 || '',
+    homeCity: user.profile?.home_city || '',
+    homeZip: user.profile?.home_zip || '',
     gender: user.profile?.gender || '',
     occupation: user.profile?.occupation || '',
     howKnown: user.profile?.how_known || '',
@@ -296,6 +308,10 @@ export function TrackerUserProfileModal({
         profile: {
           birthday: form.birthday || '',
           state: form.state || '',
+          home_address: form.homeAddress || '',
+          home_address2: form.homeAddress2 || '',
+          home_city: form.homeCity || '',
+          home_zip: form.homeZip || '',
           gender: form.gender || '',
           occupation: form.occupation || '',
           how_known: form.howKnown || '',
@@ -514,7 +530,12 @@ export function TrackerUserProfileModal({
                   />
                 </LabeledField>
                 <LabeledField label="Birthday" required>
-                  <DatePicker value={form.birthday} onChange={(value) => updateField('birthday', value)} className="h-10" />
+                  <DatePicker
+                    value={form.birthday}
+                    onChange={(value) => updateField('birthday', value)}
+                    className="h-10"
+                    monthDayOnly
+                  />
                 </LabeledField>
                 <LabeledField label="State">
                   <Select value={form.state} onChange={(e) => updateField('state', e.target.value)}>
@@ -523,6 +544,18 @@ export function TrackerUserProfileModal({
                       <option key={state} value={state} className="text-black">{state}</option>
                     ))}
                   </Select>
+                </LabeledField>
+                <LabeledField label="Address">
+                  <Input variant="surface" value={form.homeAddress} onChange={(e) => updateField('homeAddress', e.target.value)} placeholder="Street address" />
+                </LabeledField>
+                <LabeledField label="Address 2">
+                  <Input variant="surface" value={form.homeAddress2} onChange={(e) => updateField('homeAddress2', e.target.value)} placeholder="Apartment, suite, unit" />
+                </LabeledField>
+                <LabeledField label="City">
+                  <Input variant="surface" value={form.homeCity} onChange={(e) => updateField('homeCity', e.target.value)} placeholder="City" />
+                </LabeledField>
+                <LabeledField label="Zip">
+                  <Input variant="surface" value={form.homeZip} onChange={(e) => updateField('homeZip', e.target.value)} placeholder="Zip code" />
                 </LabeledField>
                 <LabeledField label="Gender">
                   <Select value={form.gender} onChange={(e) => updateField('gender', e.target.value)}>

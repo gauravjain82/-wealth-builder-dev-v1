@@ -31,6 +31,10 @@ export interface AddProspectFormData {
   leaderId: number | null;
   gender: string;
   state: string;
+  homeAddress: string;
+  homeAddress2: string;
+  homeCity: string;
+  homeZip: string;
   birthday: string;
   howKnown: string;
   relationship: string;
@@ -78,6 +82,10 @@ export const defaultAddProspectForm: AddProspectFormData = {
   leaderId: null,
   gender: '',
   state: '',
+  homeAddress: '',
+  homeAddress2: '',
+  homeCity: '',
+  homeZip: '',
   birthday: '',
   howKnown: '',
   relationship: '',

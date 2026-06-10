@@ -34,6 +34,10 @@ export interface TrackerUserProfile {
     photo_url?: string | null;
     photo_url_thumb?: string | null;
     state?: string;
+    home_address?: string;
+    home_address2?: string;
+    home_city?: string;
+    home_zip?: string;
     gender?: string;
     occupation?: string;
     how_known?: string;
@@ -62,6 +66,10 @@ export interface TrackerUserProfileUpdatePayload {
   profile?: {
     birthday?: string;
     state?: string;
+    home_address?: string;
+    home_address2?: string;
+    home_city?: string;
+    home_zip?: string;
     gender?: string;
     occupation?: string;
     how_known?: string;

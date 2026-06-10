@@ -17,6 +17,10 @@ export interface UserProfile {
   birthday: string | null;
   city: string;
   state: string;
+  home_address: string;
+  home_address2: string;
+  home_city: string;
+  home_zip: string;
   phone: string;
   gender: string;
   occupation: string;
@@ -277,6 +281,10 @@ interface UpdateProspectPayload {
   leader?: number | null;
   profile?: {
     state?: string;
+    home_address?: string;
+    home_address2?: string;
+    home_city?: string;
+    home_zip?: string;
     birthday?: string;
     gender?: string;
     occupation?: string;
@@ -346,12 +354,20 @@ export interface CreateProspectPayload {
   last_name: string;
   email?: string;
   phone?: string;
+  home_address?: string;
+  home_address2?: string;
+  home_city?: string;
+  home_zip?: string;
   recruited_by?: number | null;
   leader?: number | null;
   parent?: number | null;
   plan?: string;
   profile?: {
     state?: string;
+    home_address?: string;
+    home_address2?: string;
+    home_city?: string;
+    home_zip?: string;
     birthday?: string;
     gender?: string;
     occupation?: string;
@@ -411,7 +427,15 @@ export async function createProspect(payload: CreateProspectPayload): Promise<Pr
       leader: payload.leader ?? null,
       parent: payload.parent ?? payload.recruited_by ?? null,
       plan: payload.plan || 'New Agent',
-      profile: payload.profile || {},
+      profile: payload.profile
+        ? {
+            ...payload.profile,
+            home_address: payload.profile.home_address ?? '',
+            home_address2: payload.profile.home_address2 ?? '',
+            home_city: payload.profile.home_city ?? '',
+            home_zip: payload.profile.home_zip ?? '',
+          }
+        : {},
       prospect_meta: {
         notes: payload.prospect_meta?.notes || '',
         hot: payload.prospect_meta?.hot ?? false,

@@ -19,6 +19,7 @@ interface BaseDateProps {
   id?: string;
   minDate?: Date;
   maxDate?: Date;
+  monthDayOnly?: boolean;
 }
 
 const dateVariantClasses: Record<NonNullable<BaseDateProps['variant']>, string> = {
@@ -72,15 +73,19 @@ export function DatePicker({
   id,
   minDate,
   maxDate,
+  monthDayOnly = false,
 }: DatePickerProps) {
+  const dateFormat = monthDayOnly ? 'MMM dd' : 'yyyy-MM-dd';
+  const placeholderText = placeholder || (monthDayOnly ? 'Select month and day' : 'Select date');
+
   return (
     <div className="date-input-wrap">
       <DatePickerLib
         selected={toDate(value)}
         onChange={(selected: Date | null) => onChange?.(toDateString(selected))}
-        dateFormat="yyyy-MM-dd"
+        dateFormat={dateFormat}
         showMonthDropdown
-        showYearDropdown
+        showYearDropdown={!monthDayOnly}
         dropdownMode="select"
         scrollableYearDropdown
         yearDropdownItemNumber={100}
@@ -94,7 +99,7 @@ export function DatePicker({
         disabled={disabled}
         required={required}
         autoFocus={autoFocus}
-        placeholderText={placeholder || 'Select date'}
+        placeholderText={placeholderText}
         name={name}
         id={id}
         minDate={minDate}

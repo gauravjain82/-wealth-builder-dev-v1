@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Button,
   Checkbox,
@@ -58,6 +58,8 @@ export function AddProspectModal({
   onSubmit,
 }: AddProspectModalProps) {
   const [form, setForm] = useState<AddProspectFormData>(defaultAddProspectForm);
+  const lastOpenRef = useRef(false);
+  const lastInitialKeyRef = useRef('');
   const addToast = useToastStore((state) => state.addToast);
 
   const getDefaultRecruiter = () => {
@@ -93,21 +95,44 @@ export function AddProspectModal({
 
   useEffect(() => {
     if (!open) {
+      lastOpenRef.current = false;
+      lastInitialKeyRef.current = '';
       setForm(defaultAddProspectForm);
       return;
     }
 
-    if (initialForm) {
-      setForm(initialForm);
-      return;
-    }
+    const initialKey = initialForm
+      ? [
+          initialForm.firstName,
+          initialForm.lastName,
+          initialForm.email,
+          initialForm.phone,
+          initialForm.recruiterId ?? '',
+          initialForm.leaderId ?? '',
+          initialForm.state,
+          initialForm.homeAddress,
+          initialForm.homeAddress2,
+          initialForm.homeCity,
+          initialForm.homeZip,
+          initialForm.birthday,
+        ].join('|')
+      : 'default';
 
-    const defaultRecruiter = getDefaultRecruiter();
-    setForm({
-      ...defaultAddProspectForm,
-      recruiter: defaultRecruiter.recruiter,
-      recruiterId: defaultRecruiter.recruiterId,
-    });
+    if (!lastOpenRef.current || lastInitialKeyRef.current !== initialKey) {
+      if (initialForm) {
+        setForm(initialForm);
+      } else {
+        const defaultRecruiter = getDefaultRecruiter();
+        setForm({
+          ...defaultAddProspectForm,
+          recruiter: defaultRecruiter.recruiter,
+          recruiterId: defaultRecruiter.recruiterId,
+        });
+      }
+
+      lastOpenRef.current = true;
+      lastInitialKeyRef.current = initialKey;
+    }
   }, [open, initialForm]);
 
   if (!open) return null;
@@ -219,6 +244,49 @@ export function AddProspectModal({
               <DatePicker
                 value={form.birthday}
                 onChange={(value) => updateField('birthday', value)}
+                monthDayOnly
+              />
+            </FormRow>
+          </FormRowGroup>
+
+          <FormRowGroup>
+            <FormRow>
+              <Label variant="form">Address</Label>
+              <Input
+                variant="surface"
+                value={form.homeAddress}
+                onChange={(e) => updateField('homeAddress', e.target.value)}
+                placeholder="Street address"
+              />
+            </FormRow>
+            <FormRow>
+              <Label variant="form">Address 2</Label>
+              <Input
+                variant="surface"
+                value={form.homeAddress2}
+                onChange={(e) => updateField('homeAddress2', e.target.value)}
+                placeholder="Apartment, suite, unit"
+              />
+            </FormRow>
+          </FormRowGroup>
+
+          <FormRowGroup>
+            <FormRow>
+              <Label variant="form">City</Label>
+              <Input
+                variant="surface"
+                value={form.homeCity}
+                onChange={(e) => updateField('homeCity', e.target.value)}
+                placeholder="City"
+              />
+            </FormRow>
+            <FormRow>
+              <Label variant="form">Zip</Label>
+              <Input
+                variant="surface"
+                value={form.homeZip}
+                onChange={(e) => updateField('homeZip', e.target.value)}
+                placeholder="Zip code"
               />
             </FormRow>
           </FormRowGroup>

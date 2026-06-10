@@ -103,7 +103,11 @@ export function AddAgencyCodeModal({
             </FormRow>
             <FormRow>
               <Label variant="form">Date of Birth*</Label>
-              <DatePicker value={form.dateOfBirth} onChange={(value) => updateField('dateOfBirth', value)} />
+              <DatePicker
+                value={form.dateOfBirth}
+                onChange={(value) => updateField('dateOfBirth', value)}
+                monthDayOnly
+              />
             </FormRow>
           </FormRowGroup>
 

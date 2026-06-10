@@ -123,7 +123,11 @@ export function TrackerDateRangeFilter({
   useEffect(() => {
     const onWindowClick = (event: MouseEvent) => {
       if (!rootRef.current) return;
-      if (rootRef.current.contains(event.target as Node)) return;
+      const target = event.target as Node | null;
+      if (target && rootRef.current.contains(target)) return;
+
+      if (target instanceof HTMLElement && target.closest('.date-picker-popper')) return;
+
       setOpen(false);
     };
 
