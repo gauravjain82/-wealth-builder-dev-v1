@@ -54,6 +54,8 @@ export default function AdminHelpdeskPage() {
   const [statusFilter, setStatusFilter] = useState<HelpdeskStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<HelpdeskPriority | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<HelpdeskCategory | ''>('');
+  const [ticketFilter, setTicketFilter] = useState('');
+  const [emailFilter, setEmailFilter] = useState('');
 
   const [tickets, setTickets] = useState<AdminTicketListItem[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
@@ -79,6 +81,8 @@ export default function AdminHelpdeskPage() {
       setLoadingTickets(true);
       try {
         const loaded = await fetchAdminHelpdeskTickets({
+          ticket: ticketFilter,
+          email: emailFilter,
           status: statusFilter,
           priority: priorityFilter,
           category: categoryFilter,
@@ -103,7 +107,7 @@ export default function AdminHelpdeskPage() {
     };
 
     void loadTickets();
-  }, [addToast, canAccess, categoryFilter, priorityFilter, statusFilter]);
+  }, [addToast, canAccess, categoryFilter, emailFilter, priorityFilter, statusFilter, ticketFilter]);
 
   useEffect(() => {
     if (!canAccess || !selectedTicketNumber) return;
@@ -130,6 +134,8 @@ export default function AdminHelpdeskPage() {
 
   const refreshTickets = async () => {
     const loaded = await fetchAdminHelpdeskTickets({
+      ticket: ticketFilter,
+      email: emailFilter,
       status: statusFilter,
       priority: priorityFilter,
       category: categoryFilter,
@@ -224,7 +230,21 @@ export default function AdminHelpdeskPage() {
         </div>
       </div>
 
-      <div className="grid gap-2 rounded-xl border border-white/10 bg-white/5 p-3 md:grid-cols-3">
+      <div className="grid gap-2 rounded-xl border border-white/10 bg-white/5 p-3 md:grid-cols-2 xl:grid-cols-5">
+        <input
+          type="text"
+          value={ticketFilter}
+          onChange={(e) => setTicketFilter(e.target.value)}
+          placeholder="Ticket # (e.g. HD-001)"
+          className="rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm"
+        />
+        <input
+          type="email"
+          value={emailFilter}
+          onChange={(e) => setEmailFilter(e.target.value)}
+          placeholder="Email"
+          className="rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm"
+        />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as HelpdeskStatus | '')}

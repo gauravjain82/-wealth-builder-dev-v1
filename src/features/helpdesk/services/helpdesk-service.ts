@@ -123,11 +123,15 @@ export async function lookupHelpdeskTicket(ticket: string, email: string): Promi
 }
 
 export async function fetchAdminHelpdeskTickets(filters: {
+  ticket?: string;
+  email?: string;
   status?: HelpdeskStatus | '';
   category?: HelpdeskCategory | '';
   priority?: HelpdeskPriority | '';
 } = {}): Promise<AdminTicketListItem[]> {
   const params = new URLSearchParams();
+  if (filters.ticket?.trim()) params.set('ticket', filters.ticket.trim());
+  if (filters.email?.trim()) params.set('email', filters.email.trim());
   if (filters.status) params.set('status', filters.status);
   if (filters.category) params.set('category', filters.category);
   if (filters.priority) params.set('priority', filters.priority);
