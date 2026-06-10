@@ -69,6 +69,10 @@ function toBackendFilters(filters: Record<string, string>): Record<string, strin
   }, {});
 }
 
+function toSegmentParam(scope: TrackerTeamScope): string {
+  return scope.toUpperCase();
+}
+
 function getCurrentUserId(): number | null {
   const raw = localStorage.getItem('wb.userId');
   const parsed = Number(raw);
@@ -502,6 +506,7 @@ export default function ProductionTrackerPage() {
           page: 1,
           pageSize,
           sort: toSortParam(sortState),
+          segment: toSegmentParam(teamScope),
           filters: toBackendFilters(filters),
         };
         const summaryUserId = teamScopeUserId ? Number(teamScopeUserId) : currentUserId;
@@ -510,6 +515,7 @@ export default function ProductionTrackerPage() {
         const [refreshed, refreshedSummary, refreshedTopPerformers] = await Promise.all([
           fetchProductionTracker(query),
           fetchProductionPointsSummary(summaryUserId, {
+            segment: toSegmentParam(teamScope),
             fromDate: filters.from_date,
             toDate: filters.to_date,
           }),
@@ -772,7 +778,11 @@ export default function ProductionTrackerPage() {
       try {
         const summary = await fetchProductionPointsSummary(
           teamScopeUserId ? Number(teamScopeUserId) : currentUserId,
-          { fromDate: filters.from_date, toDate: filters.to_date }
+          {
+            segment: toSegmentParam(teamScope),
+            fromDate: filters.from_date,
+            toDate: filters.to_date,
+          }
         );
         if (isMounted) {
           setPointsSummary(summary);
@@ -789,7 +799,7 @@ export default function ProductionTrackerPage() {
     return () => {
       isMounted = false;
     };
-  }, [currentUserId, teamScopeUserId, filters.from_date, filters.to_date]);
+  }, [currentUserId, teamScope, teamScopeUserId, filters.from_date, filters.to_date]);
 
   useEffect(() => {
     let isMounted = true;
@@ -838,6 +848,7 @@ export default function ProductionTrackerPage() {
           page: pageNum,
           pageSize,
           sort: toSortParam(nextSort),
+          segment: toSegmentParam(teamScope),
           filters: toBackendFilters(nextFilters),
         };
 
@@ -867,7 +878,7 @@ export default function ProductionTrackerPage() {
         }
       }
     },
-    [addToast]
+    [addToast, teamScope]
   );
 
   const refreshCurrentView = useCallback(async () => {
@@ -876,7 +887,11 @@ export default function ProductionTrackerPage() {
     try {
       const summary = await fetchProductionPointsSummary(
         teamScopeUserId ? Number(teamScopeUserId) : currentUserId,
-        { fromDate: filters.from_date, toDate: filters.to_date }
+        {
+          segment: toSegmentParam(teamScope),
+          fromDate: filters.from_date,
+          toDate: filters.to_date,
+        }
       );
       setPointsSummary(summary);
     } catch {
@@ -894,7 +909,7 @@ export default function ProductionTrackerPage() {
     } catch {
       setTopPerformers([]);
     }
-  }, [currentUserId, filters, hasDateFilter, loadRows, sortState, teamScopeUserId]);
+  }, [currentUserId, filters, hasDateFilter, loadRows, sortState, teamScope, teamScopeUserId]);
 
   const handleCreateProduction = useCallback(async (form: AddProductionFormData) => {
     try {
@@ -925,6 +940,7 @@ export default function ProductionTrackerPage() {
           page: pageNum,
           pageSize: 200,
           sort: toSortParam(sortState),
+          segment: toSegmentParam(teamScope),
           filters: toBackendFilters(filters),
         });
 
@@ -942,7 +958,7 @@ export default function ProductionTrackerPage() {
     } finally {
       setExporting(false);
     }
-  }, [addToast, filters, sortState]);
+  }, [addToast, filters, sortState, teamScope]);
 
   const handleImportCsv = useCallback(async () => {
     if (!importFile) {

@@ -59,7 +59,7 @@ export function ProductionTrackerToolbar({
   onTeamScopeChange: (next: { scope: TrackerTeamScope; user: { id: string; name: string } | null }) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white px-4 py-5 shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:border-white/10 dark:bg-[#1d2027] dark:shadow-[0_20px_45px_rgba(0,0,0,0.28)]">
+    <div className="relative z-[200] overflow-visible rounded-2xl border border-gray-200 bg-white px-4 py-5 shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:border-white/10 dark:bg-[#1d2027] dark:shadow-[0_20px_45px_rgba(0,0,0,0.28)]">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{pageHeading}</h1>

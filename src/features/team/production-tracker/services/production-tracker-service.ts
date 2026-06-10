@@ -236,6 +236,7 @@ export interface ProductionTrackerQuery {
   page?: number;
   pageSize?: number;
   sort?: string;
+  segment?: string;
   filters?: Record<string, string>;
 }
 
@@ -645,6 +646,9 @@ export async function fetchProductionTracker(
   if (query.sort) {
     params.set('sort', mapSortKey(query.sort) || query.sort);
   }
+  if (query.segment) {
+    params.set('segment', query.segment);
+  }
   if (query.filters) {
     Object.entries(query.filters).forEach(([key, value]) => {
       const normalized = value?.trim();
@@ -712,11 +716,14 @@ export async function deleteProductionRecord(recordId: number): Promise<void> {
 
 export async function fetchProductionPointsSummary(
   userId?: number | null,
-  options?: { fromDate?: string | null; toDate?: string | null }
+  options?: { fromDate?: string | null; toDate?: string | null; segment?: string | null }
 ): Promise<ProductionPointsSummary> {
   const params = new URLSearchParams();
   if (userId) {
     params.set('user_id', String(userId));
+  }
+  if (options?.segment) {
+    params.set('segment', options.segment);
   }
   if (options?.fromDate) {
     params.set('from_date', options.fromDate);

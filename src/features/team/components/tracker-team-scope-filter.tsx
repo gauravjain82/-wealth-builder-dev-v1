@@ -258,7 +258,7 @@ export function TrackerTeamScopeFilter({
         </button>
 
         {open && (
-          <div className="absolute left-0 z-50 mt-2 w-[220px] rounded-xl border border-gray-200 bg-white p-2 text-gray-800 shadow-2xl dark:border-white/15 dark:bg-[#1b2433] dark:text-white">
+          <div className="absolute left-0 z-[1200] mt-2 w-[220px] rounded-xl border border-gray-200 bg-white p-2 text-gray-800 shadow-2xl dark:border-white/15 dark:bg-[#1b2433] dark:text-white">
             {scopeOptions.map((item) => (
               <button
                 key={item.id}
@@ -293,7 +293,7 @@ export function TrackerTeamScopeFilter({
             className="h-9 w-full rounded-md border border-gray-300 bg-white px-2 text-xs text-gray-800 outline-none placeholder:text-gray-400 focus:border-amber-500/60 dark:border-white/15 dark:bg-black/20 dark:text-white/90 dark:placeholder:text-white/45 dark:focus:border-amber-300/60"
           />
           {openUsers && (
-            <div className="absolute left-0 right-0 z-40 mt-1 max-h-[220px] overflow-auto rounded-lg border border-gray-200 bg-white p-1 shadow-2xl dark:border-white/15 dark:bg-[#1b2433]">
+            <div className="absolute left-0 right-0 z-[1200] mt-1 max-h-[220px] overflow-auto rounded-lg border border-gray-200 bg-white p-1 shadow-2xl dark:border-white/15 dark:bg-[#1b2433]">
               {filteredUsers.map((item) => (
                 <button
                   key={item.id}

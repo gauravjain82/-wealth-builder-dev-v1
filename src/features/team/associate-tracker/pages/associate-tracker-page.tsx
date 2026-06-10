@@ -53,6 +53,14 @@ function toBackendFilters(filters: Record<string, string>): Record<string, strin
   }, {});
 }
 
+function toSegmentParam(scope: TrackerTeamScope): string {
+  return scope.toUpperCase();
+}
+
+function shouldDeferTeamScopeFetch(scope: TrackerTeamScope, teamScopeUserId: string | null): boolean {
+  return scope !== 'baseshop' && !teamScopeUserId;
+}
+
 export default function AssociateTrackerPage() {
   const pageHeading = 'Associate Tracker';
   const pageDescription = "Monitor your associates' activity and progress";
@@ -502,6 +510,7 @@ export default function AssociateTrackerPage() {
           page: pageNum,
           pageSize,
           sort: toSortParam(nextSort),
+          segment: toSegmentParam(teamScope),
           filters: toBackendFilters(nextFilters),
         };
 
@@ -533,7 +542,7 @@ export default function AssociateTrackerPage() {
         }
       }
     },
-    [addToast]
+    [addToast, teamScope]
   );
 
   const handleResetAction = useCallback(
@@ -575,14 +584,24 @@ export default function AssociateTrackerPage() {
   );
 
   useEffect(() => {
+    if (shouldDeferTeamScopeFetch(teamScope, teamScopeUserId)) {
+      setError(null);
+      hasLoadedOnceRef.current = true;
+      setLoading(false);
+      setLoadingMore(false);
+      return;
+    }
     void loadRows(1, true, sortState, filters);
-  }, [loadRows, sortState, filters]);
+  }, [filters, loadRows, sortState, teamScope, teamScopeUserId]);
 
   const handleReachEnd = useCallback(() => {
+    if (shouldDeferTeamScopeFetch(teamScope, teamScopeUserId)) {
+      return;
+    }
     if (hasMore && !loadingMore && !loading && rows.length > 0) {
       void loadRows(nextPageNum, false, sortState, filters);
     }
-  }, [filters, hasMore, loadRows, loading, loadingMore, nextPageNum, rows.length, sortState]);
+  }, [filters, hasMore, loadRows, loading, loadingMore, nextPageNum, rows.length, sortState, teamScope, teamScopeUserId]);
 
   const notesForOpenUser = useMemo(() => {
     if (!notesOpenFor) return [];

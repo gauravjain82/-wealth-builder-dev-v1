@@ -114,6 +114,7 @@ export interface MissionTrackerQuery {
   page?: number;
   pageSize?: number;
   sort?: string;
+  segment?: string;
   filters?: Record<string, string>;
 }
 
@@ -141,6 +142,9 @@ export async function fetchMissionTracker(
   params.set('page_size', String(query.pageSize ?? 10));
   if (query.sort) {
     params.set('sort', query.sort);
+  }
+  if (query.segment) {
+    params.set('segment', query.segment);
   }
 
   if (query.filters) {
