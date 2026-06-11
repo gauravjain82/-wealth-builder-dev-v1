@@ -290,7 +290,7 @@ export function TrackerUserProfileModal({
       setSaving(true);
       const relationshipNumber = Number.parseInt(form.relationship, 10);
 
-      const updated = await updateTrackerUserProfile(userId, {
+      await updateTrackerUserProfile(userId, {
         first_name: form.firstName.trim(),
         last_name: form.lastName.trim(),
         full_name: `${form.firstName} ${form.lastName}`.trim(),
@@ -325,6 +325,8 @@ export function TrackerUserProfileModal({
           },
         },
       });
+
+      const updated = await fetchTrackerUserProfile(userId);
 
       const normalizedUpdated: TrackerUserProfile = {
         ...updated,

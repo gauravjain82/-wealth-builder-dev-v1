@@ -713,7 +713,7 @@ export default function SettingsPage() {
 
     try {
       setSavingProfile(true);
-      const updated = await updateCurrentUserDetails(userDetails.id, {
+      await updateCurrentUserDetails(userDetails.id, {
         email: normalizedEmail,
         polo_size: profileForm.poloSize.trim(),
         spouse_name: profileForm.spouseName.trim(),
@@ -729,7 +729,8 @@ export default function SettingsPage() {
           home_city: profileForm.homeCity.trim(),
         },
       });
-      setUserDetails((prev) => ({ ...prev, ...updated }));
+      const refreshed = await fetchCurrentUserDetails();
+      setUserDetails(refreshed);
       addToast({ type: 'success', message: 'Profile updated successfully.' });
     } catch (error) {
       addToast({
