@@ -4,6 +4,11 @@ export interface AddAgentFormData {
   amaDate: string;
   agencyCode: string;
   dateOfBirth: string;
+  state: string;
+  homeAddress: string;
+  homeAddress2: string;
+  homeCity: string;
+  homeZip: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -55,6 +60,11 @@ export const defaultAddAgentForm: AddAgentFormData = {
   amaDate: new Date().toISOString().split('T')[0],
   agencyCode: '',
   dateOfBirth: '',
+  state: '',
+  homeAddress: '',
+  homeAddress2: '',
+  homeCity: '',
+  homeZip: '',
   firstName: '',
   lastName: '',
   phone: '',

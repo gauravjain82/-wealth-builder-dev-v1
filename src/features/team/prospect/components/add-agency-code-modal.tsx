@@ -13,9 +13,17 @@ import {
   Select,
   UserAutocompleteDropdown,
 } from '@/shared/components';
+import { useToastStore } from '@/store';
 import type { Level, Prospect } from '../services/prospect-service';
 import { fetchLevels } from '../services/prospect-service';
 import { defaultAddAgentForm, type AddAgentFormData } from '../types';
+
+const US_STATES = [
+  'AB', 'AK', 'AL', 'AR', 'AZ', 'BC', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'IA', 'ID', 'IL',
+  'IN', 'KS', 'KY', 'LA', 'MA', 'MB', 'MD', 'ME', 'MI', 'MN', 'MO', 'MS', 'MT', 'NB', 'NC', 'ND',
+  'NE', 'NH', 'NJ', 'NL', 'NM', 'NS', 'NT', 'NU', 'NV', 'NY', 'OH', 'OK', 'ON', 'OR', 'PA', 'PE',
+  'QC', 'RI', 'SC', 'SD', 'SK', 'TN', 'TX', 'UT', 'VA', 'VT', 'WA', 'WI', 'WV', 'WY', 'YT',
+];
 
 interface AddAgencyCodeModalProps {
   prospect: Prospect | null;
@@ -32,6 +40,7 @@ export function AddAgencyCodeModal({
 }: AddAgencyCodeModalProps) {
   const [form, setForm] = useState<AddAgentFormData>(defaultAddAgentForm);
   const [levels, setLevels] = useState<Level[]>([]);
+  const addToast = useToastStore((state) => state.addToast);
 
   useEffect(() => {
     fetchLevels()
@@ -47,6 +56,11 @@ export function AddAgencyCodeModal({
       firstName: prospect.first_name || prospect.full_name?.split(' ')[0] || '',
       lastName: prospect.last_name || prospect.full_name?.split(' ').slice(1).join(' ') || '',
       dateOfBirth: prospect.profile?.birthday?.split('T')[0] || '',
+      state: prospect.profile?.state || '',
+      homeAddress: prospect.profile?.home_address || '',
+      homeAddress2: prospect.profile?.home_address2 || '',
+      homeCity: prospect.profile?.home_city || '',
+      homeZip: prospect.profile?.home_zip || '',
       phone: prospect.phone || '',
       email: prospect.email || '',
       recruiter: prospect.recruited_by_name || '',
@@ -65,11 +79,31 @@ export function AddAgencyCodeModal({
 
   const handleSubmit = async () => {
     if (!form.agencyCode.trim()) {
-      window.alert('Agency Code is required');
+      addToast({ type: 'warning', message: 'Agency Code is required.' });
+      return;
+    }
+    if (!form.state.trim()) {
+      addToast({ type: 'warning', message: 'State Located is required.' });
+      return;
+    }
+    if (!form.homeAddress.trim()) {
+      addToast({ type: 'warning', message: 'Address is required.' });
+      return;
+    }
+    if (!form.homeAddress2.trim()) {
+      addToast({ type: 'warning', message: 'Address 2 is required.' });
+      return;
+    }
+    if (!form.homeCity.trim()) {
+      addToast({ type: 'warning', message: 'City is required.' });
+      return;
+    }
+    if (!form.homeZip.trim()) {
+      addToast({ type: 'warning', message: 'Zip is required.' });
       return;
     }
     if (!form.dateOfBirth.trim()) {
-      window.alert('Date of Birth is required');
+      addToast({ type: 'warning', message: 'Date of Birth is required.' });
       return;
     }
     await onSubmit(form);
@@ -110,6 +144,60 @@ export function AddAgencyCodeModal({
               />
             </FormRow>
           </FormRowGroup>
+
+          <FormRowGroup>
+            <FormRow>
+              <Label variant="form">State Located*</Label>
+              <Select value={form.state} onChange={(e) => updateField('state', e.target.value)}>
+                <option value="">Select State</option>
+                {US_STATES.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </Select>
+            </FormRow>
+            <FormRow>
+              <Label variant="form">Zip*</Label>
+              <Input
+                variant="surface"
+                value={form.homeZip}
+                onChange={(e) => updateField('homeZip', e.target.value)}
+                placeholder="Zip code"
+              />
+            </FormRow>
+          </FormRowGroup>
+
+          <FormRowGroup>
+            <FormRow>
+              <Label variant="form">Address*</Label>
+              <Input
+                variant="surface"
+                value={form.homeAddress}
+                onChange={(e) => updateField('homeAddress', e.target.value)}
+                placeholder="Street address"
+              />
+            </FormRow>
+            <FormRow>
+              <Label variant="form">Address 2*</Label>
+              <Input
+                variant="surface"
+                value={form.homeAddress2}
+                onChange={(e) => updateField('homeAddress2', e.target.value)}
+                placeholder="Apartment, suite, unit"
+              />
+            </FormRow>
+          </FormRowGroup>
+
+          <FormRow>
+            <Label variant="form">City*</Label>
+            <Input
+              variant="surface"
+              value={form.homeCity}
+              onChange={(e) => updateField('homeCity', e.target.value)}
+              placeholder="City"
+            />
+          </FormRow>
 
           <FormRowGroup>
             <FormRow>
