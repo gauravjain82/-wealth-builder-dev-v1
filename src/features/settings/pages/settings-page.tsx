@@ -4,12 +4,13 @@ import { CardElement, Elements, useElements, useStripe } from '@stripe/react-str
 import { useAuth } from '@/features/auth';
 import { config } from '@/core/config';
 import { Plan } from '@/core/types';
-import { Modal, Text } from '@/shared/components';
+import { DatePicker, Modal, Text } from '@/shared/components';
 import { useToastStore } from '@/store';
 import {
   createSetupIntent,
   createSubscriptionApprovalRequest,
   fetchCurrentUserDetails,
+  updateCurrentUserDetails,
   uploadCurrentUserPhoto,
   fetchMySubscriptionApprovalRequests,
   fetchPaymentProducts,
@@ -23,6 +24,48 @@ import {
   type SubscriptionApprovalRequestResponse,
 } from '../services/settings-billing-service';
 import './settings-page.css';
+
+const US_STATES = [
+  'AB', 'AK', 'AL', 'AR', 'AZ', 'BC', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'IA', 'ID', 'IL',
+  'IN', 'KS', 'KY', 'LA', 'MA', 'MB', 'MD', 'ME', 'MI', 'MN', 'MO', 'MS', 'MT', 'NB', 'NC', 'ND',
+  'NE', 'NH', 'NJ', 'NL', 'NM', 'NS', 'NT', 'NU', 'NV', 'NY', 'OH', 'OK', 'ON', 'OR', 'PA', 'PE',
+  'QC', 'RI', 'SC', 'SD', 'SK', 'TN', 'TX', 'UT', 'VA', 'VT', 'WA', 'WI', 'WV', 'WY', 'YT',
+];
+
+const GENDERS = ['', 'Male', 'Female'];
+
+const POLO_SIZES = [
+  '', 'Male XS', 'Male S', 'Male M', 'Male L', 'Male XL', 'Male 2XL', 'Male 3XL',
+  'Female XS', 'Female S', 'Female M', 'Female L', 'Female XL', 'Female 2XL', 'Female 3XL',
+];
+
+interface ProfileFormState {
+  state: string;
+  gender: string;
+  homeZip: string;
+  homeAddress: string;
+  homeAddress2: string;
+  homeCity: string;
+  poloSize: string;
+  spouseName: string;
+  spousePhone: string;
+  spousePoloSize: string;
+  dateOfBirth: string;
+}
+
+const DEFAULT_PROFILE_FORM: ProfileFormState = {
+  state: '',
+  gender: '',
+  homeZip: '',
+  homeAddress: '',
+  homeAddress2: '',
+  homeCity: '',
+  poloSize: '',
+  spouseName: '',
+  spousePhone: '',
+  spousePoloSize: '',
+  dateOfBirth: '',
+};
 
 const stripePromise = config.stripe.publishableKey ? loadStripe(config.stripe.publishableKey) : null;
 
@@ -445,6 +488,9 @@ export default function SettingsPage() {
   const [approvalRequests, setApprovalRequests] = useState<SubscriptionApprovalRequestResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profileForm, setProfileForm] = useState<ProfileFormState>(DEFAULT_PROFILE_FORM);
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [actionModal, setActionModal] = useState<{
@@ -510,6 +556,29 @@ export default function SettingsPage() {
   useEffect(() => {
     void loadData();
   }, []);
+
+  useEffect(() => {
+    if (!userDetails) {
+      setProfileEmail('');
+      setProfileForm(DEFAULT_PROFILE_FORM);
+      return;
+    }
+
+    setProfileEmail(userDetails.email || '');
+    setProfileForm({
+      state: userDetails.profile?.state || '',
+      gender: userDetails.profile?.gender || '',
+      homeZip: userDetails.profile?.home_zip || '',
+      homeAddress: userDetails.profile?.home_address || '',
+      homeAddress2: userDetails.profile?.home_address2 || '',
+      homeCity: userDetails.profile?.home_city || '',
+      poloSize: userDetails.polo_size || '',
+      spouseName: userDetails.spouse_name || '',
+      spousePhone: userDetails.spouse_phone || '',
+      spousePoloSize: userDetails.spouse_polo_size || '',
+      dateOfBirth: userDetails.profile?.birthday?.split('T')[0] || '',
+    });
+  }, [userDetails]);
 
   const onRequestCreated = (created: SubscriptionApprovalRequestResponse) => {
     setRequests((prev) => [created, ...prev]);
@@ -608,6 +677,70 @@ export default function SettingsPage() {
     }
   };
 
+  const updateProfileField = <K extends keyof ProfileFormState>(key: K, value: ProfileFormState[K]) => {
+    setProfileForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveProfile = async () => {
+    if (!userDetails?.id) return;
+
+    const normalizedEmail = profileEmail.trim();
+    if (!normalizedEmail) {
+      addToast({ type: 'warning', message: 'Email is required.' });
+      return;
+    }
+
+    if (!profileForm.homeZip.trim()) {
+      addToast({ type: 'warning', message: 'Zip is required.' });
+      return;
+    }
+    if (!profileForm.homeAddress.trim()) {
+      addToast({ type: 'warning', message: 'Address is required.' });
+      return;
+    }
+    if (!profileForm.homeAddress2.trim()) {
+      addToast({ type: 'warning', message: 'Address 2 is required.' });
+      return;
+    }
+    if (!profileForm.homeCity.trim()) {
+      addToast({ type: 'warning', message: 'City is required.' });
+      return;
+    }
+    if (!profileForm.dateOfBirth.trim()) {
+      addToast({ type: 'warning', message: 'Date of Birth is required.' });
+      return;
+    }
+
+    try {
+      setSavingProfile(true);
+      const updated = await updateCurrentUserDetails(userDetails.id, {
+        email: normalizedEmail,
+        polo_size: profileForm.poloSize.trim(),
+        spouse_name: profileForm.spouseName.trim(),
+        spouse_phone: profileForm.spousePhone.trim(),
+        spouse_polo_size: profileForm.spousePoloSize.trim(),
+        profile: {
+          birthday: profileForm.dateOfBirth,
+          state: profileForm.state.trim(),
+          gender: profileForm.gender.trim(),
+          home_zip: profileForm.homeZip.trim(),
+          home_address: profileForm.homeAddress.trim(),
+          home_address2: profileForm.homeAddress2.trim(),
+          home_city: profileForm.homeCity.trim(),
+        },
+      });
+      setUserDetails((prev) => ({ ...prev, ...updated }));
+      addToast({ type: 'success', message: 'Profile updated successfully.' });
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to update profile.',
+      });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const currentPlan = normalizePlan(userDetails?.roles?.[0]);
   const currentLevel = resolveLevelLabel(userDetails?.level);
   const agencyCode = userDetails?.agency_code?.trim() || '-';
@@ -695,11 +828,16 @@ export default function SettingsPage() {
                   </div>
                   <div className="field-group">
                     <label>Email</label>
-                    <input className="input-field" value={userDetails?.email || '-'} disabled />
+                    <input
+                      className="input-field"
+                      value={profileEmail}
+                      onChange={(e) => setProfileEmail(e.target.value)}
+                      disabled={savingProfile || loading}
+                    />
                   </div>
                 </div>
 
-                <div className="field-row field-row-three">
+                <div className="field-row field-row-four">
                   <div className="field-group">
                     <label>Current Plan</label>
                     <input className="input-field" value={currentPlan || '-'} disabled />
@@ -712,6 +850,151 @@ export default function SettingsPage() {
                     <label>Agency Code</label>
                     <input className="input-field" value={agencyCode} disabled />
                   </div>
+                  <div className="field-group">
+                    <label>Date of Birth*</label>
+                    <DatePicker
+                      value={profileForm.dateOfBirth}
+                      onChange={(value) => updateProfileField('dateOfBirth', value)}
+                      monthDayOnly
+                      className="h-11"
+                      disabled={savingProfile}
+                    />
+                  </div>
+                </div>
+
+                <div className="field-row field-row-four">
+                  <div className="field-group">
+                    <label>Gender</label>
+                    <select
+                      className="input-field"
+                      value={profileForm.gender}
+                      onChange={(e) => updateProfileField('gender', e.target.value)}
+                      disabled={savingProfile}
+                    >
+                      {GENDERS.map((gender) => (
+                        <option key={gender || 'empty'} value={gender}>
+                          {gender || 'Select gender'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field-group">
+                    <label>State Located</label>
+                    <select
+                      className="input-field"
+                      value={profileForm.state}
+                      onChange={(e) => updateProfileField('state', e.target.value)}
+                      disabled={savingProfile}
+                    >
+                      <option value="">Select State</option>
+                      {US_STATES.map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field-group">
+                    <label>City*</label>
+                    <input
+                      className="input-field"
+                      value={profileForm.homeCity}
+                      onChange={(e) => updateProfileField('homeCity', e.target.value)}
+                      disabled={savingProfile}
+                    />
+                  </div>
+                  <div className="field-group">
+                    <label>Zip*</label>
+                    <input
+                      className="input-field"
+                      value={profileForm.homeZip}
+                      onChange={(e) => updateProfileField('homeZip', e.target.value)}
+                      disabled={savingProfile}
+                    />
+                  </div>
+                </div>
+
+                <div className="field-row field-row-four">
+                  <div className="field-group">
+                    <label>Address*</label>
+                    <input
+                      className="input-field"
+                      value={profileForm.homeAddress}
+                      onChange={(e) => updateProfileField('homeAddress', e.target.value)}
+                      disabled={savingProfile}
+                    />
+                  </div>
+                  <div className="field-group">
+                    <label>Address 2*</label>
+                    <input
+                      className="input-field"
+                      value={profileForm.homeAddress2}
+                      onChange={(e) => updateProfileField('homeAddress2', e.target.value)}
+                      disabled={savingProfile}
+                    />
+                  </div>
+                  <div className="field-group">
+                    <label>Poloshirt Size</label>
+                    <select
+                      className="input-field"
+                      value={profileForm.poloSize}
+                      onChange={(e) => updateProfileField('poloSize', e.target.value)}
+                      disabled={savingProfile}
+                    >
+                      {POLO_SIZES.map((size) => (
+                        <option key={size || 'empty'} value={size}>
+                          {size || 'Select size'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field-group">
+                    <label>Spouse Full Name</label>
+                    <input
+                      className="input-field"
+                      value={profileForm.spouseName}
+                      onChange={(e) => updateProfileField('spouseName', e.target.value)}
+                      disabled={savingProfile}
+                    />
+                  </div>
+                </div>
+
+                <div className="field-row field-row-four">
+                  <div className="field-group">
+                    <label>Spouse Phone</label>
+                    <input
+                      className="input-field"
+                      value={profileForm.spousePhone}
+                      onChange={(e) => updateProfileField('spousePhone', e.target.value)}
+                      disabled={savingProfile}
+                    />
+                  </div>
+                  <div className="field-group">
+                    <label>Spouse Poloshirt Size</label>
+                    <select
+                      className="input-field"
+                      value={profileForm.spousePoloSize}
+                      onChange={(e) => updateProfileField('spousePoloSize', e.target.value)}
+                      disabled={savingProfile}
+                    >
+                      {POLO_SIZES.map((size) => (
+                        <option key={`sp-${size || 'empty'}`} value={size}>
+                          {size || 'Select size'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="button-group">
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => void handleSaveProfile()}
+                    disabled={savingProfile || loading}
+                  >
+                    {savingProfile ? 'Saving...' : 'Save Profile'}
+                  </button>
                 </div>
               </div>
             </div>

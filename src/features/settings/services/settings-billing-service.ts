@@ -11,12 +11,40 @@ export interface CurrentUserDetails {
   roles?: string[];
   level?: { id?: number | null; code?: string | null; name?: string | null } | string | null;
   agency_code?: string | null;
+  polo_size?: string | null;
+  spouse_name?: string | null;
+  spouse_phone?: string | null;
+  spouse_polo_size?: string | null;
   avatar_url?: string | null;
   profile?: {
     photo_url?: string | null;
     photo_url_thumb?: string | null;
+    birthday?: string | null;
+    state?: string;
+    gender?: string;
+    home_address?: string;
+    home_address2?: string;
+    home_city?: string;
+    home_zip?: string;
   } | null;
   updated_at?: string;
+}
+
+export interface CurrentUserProfileUpdatePayload {
+  email?: string;
+  polo_size?: string;
+  spouse_name?: string;
+  spouse_phone?: string;
+  spouse_polo_size?: string;
+  profile?: {
+    birthday?: string;
+    state?: string;
+    gender?: string;
+    home_address?: string;
+    home_address2?: string;
+    home_city?: string;
+    home_zip?: string;
+  };
 }
 
 export interface PaymentProduct {
@@ -330,6 +358,25 @@ export async function uploadCurrentUserPhoto(userId: number, photo: File): Promi
 
   if (!response.ok) {
     const message = await parseError(response, 'Failed to upload profile photo.');
+    throw new Error(message);
+  }
+
+  const raw = (await response.json()) as CurrentUserDetails;
+  return normalizeCurrentUserDetails(raw);
+}
+
+export async function updateCurrentUserDetails(
+  userId: number,
+  payload: CurrentUserProfileUpdatePayload
+): Promise<CurrentUserDetails> {
+  const response = await fetch(`${getApiBaseUrl()}/api/accounts/users/${userId}/`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const message = await parseError(response, 'Failed to update profile settings.');
     throw new Error(message);
   }
 
