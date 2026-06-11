@@ -61,11 +61,11 @@ function mapUserToOption(user: UsersResponse['results'][number]): UserAutocomple
   };
 }
 
-async function fetchUsersPage(name: string, url: string | null): Promise<{ options: UserAutocompleteOption[]; next: string | null }> {
+async function fetchUsersPage(search: string, url: string | null): Promise<{ options: UserAutocompleteOption[]; next: string | null }> {
   const token = localStorage.getItem('wb.authToken');
   if (!token) throw new Error('No authentication token found');
 
-  const resolvedUrl = url ?? `${API_BASE_URL}/api/accounts/users/?name=${encodeURIComponent(name)}&page_size=${PAGE_SIZE}`;
+  const resolvedUrl = url ?? `${API_BASE_URL}/api/accounts/users/?has_agency_code=true&page_size=${PAGE_SIZE}&search=${encodeURIComponent(search)}`;
 
   const response = await fetch(resolvedUrl, {
     headers: { Authorization: `Token ${token}`, 'Content-Type': 'application/json' },
