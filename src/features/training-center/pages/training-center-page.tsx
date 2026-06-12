@@ -161,6 +161,7 @@ const SECTION_ACCESS: Record<Plan, string[]> = {
   [PLAN.Broker]: ALL_SECTION_IDS,
   [PLAN.SeniorBroker]: ALL_SECTION_IDS,
   [PLAN.Admin]: ALL_SECTION_IDS,
+  [PLAN.SuperAdmin]: ALL_SECTION_IDS,
 };
 
 // ─── URL helpers ──────────────────────────────────────────────────────────────
