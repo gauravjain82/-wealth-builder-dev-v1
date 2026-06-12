@@ -44,6 +44,7 @@ export interface Prospect {
   username: string;
   email: string;
   phone: string;
+  ama_date?: string | null;
   first_name: string;
   last_name: string;
   full_name: string;

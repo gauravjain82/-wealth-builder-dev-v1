@@ -57,7 +57,7 @@ export interface AddProspectFormData {
 }
 
 export const defaultAddAgentForm: AddAgentFormData = {
-  amaDate: new Date().toISOString().split('T')[0],
+  amaDate: '',
   agencyCode: '',
   dateOfBirth: '',
   state: '',

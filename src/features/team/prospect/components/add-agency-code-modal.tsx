@@ -50,8 +50,9 @@ export function AddAgencyCodeModal({
 
   useEffect(() => {
     if (!prospect) return;
-    setForm((prev) => ({
-      ...prev,
+    setForm({
+      ...defaultAddAgentForm,
+      amaDate: prospect.ama_date?.split('T')[0] || '',
       agencyCode: prospect.agency_code || '',
       firstName: prospect.first_name || prospect.full_name?.split(' ')[0] || '',
       lastName: prospect.last_name || prospect.full_name?.split(' ').slice(1).join(' ') || '',
@@ -68,7 +69,7 @@ export function AddAgencyCodeModal({
       leader: prospect.leader_name || '',
       leaderId: prospect.leader,
       level: prospect.level?.id ?? null,
-    }));
+    });
   }, [prospect]);
 
   if (!prospect) return null;
