@@ -75,6 +75,7 @@ const UPGRADE_PLANS: Plan[] = [
   Plan.Broker,
   Plan.SeniorBroker,
   Plan.Admin,
+  Plan.SuperAdmin,
 ];
 
 const PLAN_ORDER: Record<Plan, number> = {
@@ -84,6 +85,7 @@ const PLAN_ORDER: Record<Plan, number> = {
   [Plan.Broker]: 3,
   [Plan.SeniorBroker]: 4,
   [Plan.Admin]: 5,
+  [Plan.SuperAdmin]: 6,
 };
 
 const PLAN_CARDS: Array<{
@@ -141,6 +143,7 @@ const CARD_ELEMENT_OPTIONS = {
 function normalizePlanToRoleName(plan: Plan): string {
   if (plan === Plan.NewAgent) return 'NEW_AGENT';
   if (plan === Plan.SeniorBroker) return 'SENIOR_BROKER';
+  if (plan === Plan.SuperAdmin) return 'SUPER_ADMIN';
   return plan.toUpperCase().replace(/ /g, '_');
 }
 
@@ -151,6 +154,7 @@ function normalizePlan(value?: string | null): Plan {
   if (raw === Plan.Broker.toLowerCase()) return Plan.Broker;
   if (raw === Plan.SeniorBroker.toLowerCase()) return Plan.SeniorBroker;
   if (raw === Plan.Admin.toLowerCase()) return Plan.Admin;
+  if (raw === Plan.SuperAdmin.toLowerCase()) return Plan.SuperAdmin;
   return Plan.NewAgent;
 }
 

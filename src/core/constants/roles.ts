@@ -9,7 +9,7 @@ import { Plan } from '../types';
  * Valid roles that can be assigned to users.
  * These must match the backend RoleChoices enum.
  */
-export const VALID_ROLES = ['NEW_AGENT', 'AGENT', 'LEADER', 'BROKER', 'SENIOR_BROKER', 'ADMIN'] as const;
+export const VALID_ROLES = ['NEW_AGENT', 'AGENT', 'LEADER', 'BROKER', 'SENIOR_BROKER', 'ADMIN', 'SUPER_ADMIN'] as const;
 
 export type ValidRole = (typeof VALID_ROLES)[number];
 
@@ -24,6 +24,7 @@ export const ROLE_TO_PLAN_MAP: Record<ValidRole, Plan> = {
   BROKER: Plan.Broker,
   SENIOR_BROKER: Plan.SeniorBroker,
   ADMIN: Plan.Admin,
+  SUPER_ADMIN: Plan.SuperAdmin,
 };
 
 /**

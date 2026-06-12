@@ -14,6 +14,7 @@ export enum Plan {
   Broker = 'Broker',
   SeniorBroker = 'Senior Broker',
   Admin = 'Admin',
+  SuperAdmin = 'Super Admin',
 }
 
 // User Types

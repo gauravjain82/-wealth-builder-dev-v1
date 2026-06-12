@@ -86,6 +86,7 @@ function normalizeAccountTypeFromRoles(raw: unknown): AccountType {
     if (lower === Plan.Broker.toLowerCase()) return Plan.Broker;
     if (lower === Plan.SeniorBroker.toLowerCase()) return Plan.SeniorBroker;
     if (lower === Plan.Admin.toLowerCase()) return Plan.Admin;
+    if (lower === Plan.SuperAdmin.toLowerCase()) return Plan.SuperAdmin;
   }
 
   return DEFAULT_ACCOUNT_TYPE;

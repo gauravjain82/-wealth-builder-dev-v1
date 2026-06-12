@@ -329,6 +329,72 @@ export const PLAN_MENUS = {
       ],
     },
   ] as MenuItem[],
+
+  [Plan.SuperAdmin]: [
+    MENU_ITEMS.HOME,
+    MENU_ITEMS.INSIGHT_CENTER,
+    MENU_ITEMS.ONBOARDING_GAME,
+    {
+      label: 'Licensing',
+      icon: '📜',
+      children: [
+        MENU_ITEMS.TRACK_LICENSE,
+        MENU_ITEMS.LICENSING_DOCS,
+        MENU_ITEMS.CRASH_COURSE,
+      ],
+    },
+    MENU_ITEMS.SYSTEMATIC_TOOLS,
+    {
+      label: 'My Team',
+      icon: '👥',
+      children: [
+        MENU_ITEMS.ORG_CHART,
+        MENU_ITEMS.PROSPECT_TRACKER,
+        MENU_ITEMS.MISSION_TRACKER,
+        MENU_ITEMS.ASSOCIATE_TRACKER,
+        MENU_ITEMS.LICENSING_TRACKER,
+        MENU_ITEMS.PRODUCTION_TRACKER,
+      ],
+    },
+    MENU_ITEMS.MATCHUP,
+    {
+      label: 'Big Event',
+      icon: '🎪',
+      children: [
+        MENU_ITEMS.BIG_EVENT_BUILDER,
+        MENU_ITEMS.PURCHASES,
+        MENU_ITEMS.CHECK_IN,
+        MENU_ITEMS.PERMISSIONS,
+        MENU_ITEMS.RECOGNITION_ORDERS,
+        MENU_ITEMS.EVENT_REPORTS,
+      ],
+    },
+    MENU_ITEMS.TRAINING_CENTER,
+    MENU_ITEMS.TRAINING_SCHEDULE,
+    MENU_ITEMS.CALENDAR,
+    MENU_ITEMS.FILE_VAULT,
+    MENU_ITEMS.HELP_DESK,
+    MENU_ITEMS.INVITE_AGENTS,
+    MENU_ITEMS.TERMINATED_USERS,
+    {
+      label: 'Admin',
+      icon: '👨‍💼',
+      children: [
+        MENU_ITEMS.USER_MANAGEMENT,
+        MENU_ITEMS.MISSION_RING_PROOF_ADMIN,
+        MENU_ITEMS.UNIFIED_VIDEO_MANAGER,
+        MENU_ITEMS.VIDEO_MANAGEMENT,
+        MENU_ITEMS.CAROUSEL_MANAGER,
+        MENU_ITEMS.PAGE_BUILDER,
+        MENU_ITEMS.SITE_SETTINGS,
+        MENU_ITEMS.ANALYTICS_DASHBOARD,
+        MENU_ITEMS.EVENT_SIGNUP_ADMIN,
+        MENU_ITEMS.ONBOARDING_VIDEO_MANAGER,
+        MENU_ITEMS.UPGRADE_REQUESTS,
+        MENU_ITEMS.HELPDESK_ADMIN,
+      ],
+    },
+  ] as MenuItem[],
 };
 
 /**
