@@ -30,6 +30,7 @@ export interface HomePerformanceStats {
   current_month_team_points: number | string;
   current_month_licenses: number;
   net_license_amount: number | string;
+  current_month_net_licensed_count: number;
   total_licenses: number;
   total_big_event_registrations: number;
 }
@@ -47,7 +48,7 @@ async function fetchLeaderboardLevel(
   level: HomeLeaderboardLevel,
   metric: HomeLeaderboardMetric
 ): Promise<HomeLeaderboardEntry[]> {
-  const params = new URLSearchParams({ level, metric, limit: '5', months: '1' });
+  const params = new URLSearchParams({ level, metric, limit: '5', months: '1', global: 'true' });
   const response = await fetch(
     `${API_BASE_URL}/api/tracker/policies/top_base_team_leaders/?${params.toString()}`,
     { headers: getAuthHeaders() }

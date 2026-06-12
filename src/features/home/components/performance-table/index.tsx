@@ -47,7 +47,7 @@ export function PerformanceTable() {
     `${formatValue(data?.current_month_personal_recruits)} / ${formatValue(data?.current_month_team_recruits)}`,
     `${formatValue(data?.current_month_personal_points)} / ${formatValue(data?.current_month_team_points)}`,
     formatValue(data?.current_month_licenses),
-    formatValue(data?.net_license_amount),
+    formatValue(data?.current_month_net_licensed_count),
     formatValue(data?.total_licenses),
     '0',
     formatValue(data?.total_big_event_registrations),
