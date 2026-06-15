@@ -205,3 +205,31 @@
     max-width: 360px;
   }
 }
+
+/* Light theme overrides */
+html:not(.dark) .lic-docs-page {
+  --text: #0f172a;
+  --muted: #475569;
+  --card: #ffffff;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 50%, #f8fafc 100%);
+}
+
+html:not(.dark) .lic-docs-page .doc-card-glass {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #dbe3ee;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(241, 190, 59, 0.12);
+}
+
+html:not(.dark) .lic-docs-page .doc-card-glass::before {
+  background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.06), transparent);
+}
+
+html:not(.dark) .lic-docs-page .doc-card-glass .doc-title {
+  color: #0f172a;
+}
+
+html:not(.dark) .lic-docs-page .doc-card-glass .doc-desc {
+  color: #475569;
+}

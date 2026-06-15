@@ -226,32 +226,32 @@ export function UserAutocompleteDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className="flex h-11 w-full items-center justify-between rounded-lg border border-white/20 bg-white/5 px-3 text-left disabled:opacity-60"
+        className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 text-left text-slate-900 disabled:opacity-60 dark:border-white/20 dark:bg-white/5 dark:text-white"
       >
         <span className="truncate pr-2 text-sm">{displayLabel}</span>
-        <span className="rounded-md border border-white/25 bg-white/5 px-2 py-1 text-xs">{buttonText}</span>
+        <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-700 dark:border-white/25 dark:bg-white/5 dark:text-white">{buttonText}</span>
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-[1200] mt-2 w-full rounded-lg border border-white/20 bg-[#1f2430] p-2 shadow-xl">
+        <div className="absolute left-0 top-full z-[1200] mt-2 w-full rounded-lg border border-slate-300 bg-white p-2 shadow-xl dark:border-white/20 dark:bg-[#1f2430]">
           <input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type to search users..."
-            className="mb-2 h-9 w-full rounded-md border border-white/20 bg-white/5 px-2 text-sm"
+            className="mb-2 h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-white/5 dark:text-white dark:placeholder:text-white/50"
           />
-          <div ref={listRef} className="max-h-52 overflow-auto rounded-md border border-white/10">
-            {loading && <div className="px-3 py-2 text-sm text-white/60">Loading users...</div>}
+          <div ref={listRef} className="max-h-52 overflow-auto rounded-md border border-slate-200 dark:border-white/10">
+            {loading && <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">Loading users...</div>}
             {loadError && <div className="px-3 py-2 text-sm text-red-300">{loadError}</div>}
             {!loading && fetchFromApi && query.length === 0 && (
-              <div className="px-3 py-2 text-sm text-white/60">Start typing to search users</div>
+              <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">Start typing to search users</div>
             )}
             {!loading && !loadError && query.length > 0 && displayed.length === 0 && (
-              <div className="px-3 py-2 text-sm text-white/60">No users found</div>
+              <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">No users found</div>
             )}
             {!loading && !fetchFromApi && displayed.length === 0 && (
-              <div className="px-3 py-2 text-sm text-white/60">No users found</div>
+              <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">No users found</div>
             )}
             {displayed.map((item) => (
               <button
@@ -261,14 +261,14 @@ export function UserAutocompleteDropdown({
                   onSelect(item);
                   setOpen(false);
                 }}
-                className="block w-full border-b border-white/10 px-3 py-2 text-left text-sm hover:bg-white/10"
+                className="block w-full border-b border-slate-200 px-3 py-2 text-left text-sm text-slate-900 hover:bg-slate-100 dark:border-white/10 dark:text-white dark:hover:bg-white/10"
               >
                 <div className="truncate">{item.label}</div>
-                {item.meta && <div className="truncate text-xs text-white/60">{item.meta}</div>}
+                {item.meta && <div className="truncate text-xs text-slate-500 dark:text-white/60">{item.meta}</div>}
               </button>
             ))}
             {loadingMore && (
-              <div className="px-3 py-2 text-sm text-white/60">Loading more...</div>
+              <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">Loading more...</div>
             )}
           </div>
         </div>

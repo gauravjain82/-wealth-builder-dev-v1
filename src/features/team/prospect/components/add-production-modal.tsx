@@ -422,7 +422,7 @@ export function AddProductionModal({
         </div>
 
         {/* Pinned footer */}
-        <div className="mt-4 flex-shrink-0 border-t border-white/10 pt-4">
+        <div className="mt-4 flex-shrink-0 border-t border-slate-200 pt-4 dark:border-white/10">
           <FormActions>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel

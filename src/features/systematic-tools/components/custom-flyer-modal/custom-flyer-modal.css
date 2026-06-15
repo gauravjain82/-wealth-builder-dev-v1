@@ -287,3 +287,48 @@
     font-size: 13px;
   }
 }
+
+/* Light theme overrides */
+html:not(.dark) .custom-flyer-modal-overlay {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+html:not(.dark) .custom-flyer-modal {
+  background: #ffffff;
+  border-color: #dbe3ee;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+}
+
+html:not(.dark) .custom-flyer-close {
+  color: #64748b;
+}
+
+html:not(.dark) .custom-flyer-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+html:not(.dark) .custom-flyer-subtitle,
+html:not(.dark) .custom-flyer-label,
+html:not(.dark) .custom-flyer-label-text {
+  color: #475569;
+}
+
+html:not(.dark) .custom-flyer-input,
+html:not(.dark) .custom-flyer-textarea,
+html:not(.dark) .custom-flyer-file-input {
+  background: #ffffff;
+  border-color: #cfd8e4;
+  color: #0f172a;
+}
+
+html:not(.dark) .custom-flyer-input::placeholder,
+html:not(.dark) .custom-flyer-textarea::placeholder {
+  color: #94a3b8;
+}
+
+html:not(.dark) .custom-flyer-input:focus,
+html:not(.dark) .custom-flyer-textarea:focus,
+html:not(.dark) .custom-flyer-file-input:focus {
+  background: #ffffff;
+}

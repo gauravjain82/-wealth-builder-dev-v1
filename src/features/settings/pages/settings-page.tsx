@@ -826,23 +826,15 @@ export default function SettingsPage() {
               </div>
 
               <div className="profile-fields">
-                <div className="field-row">
+                <div className="field-row field-row-four">
                   <div className="field-group">
                     <label>Full Name</label>
                     <input className="input-field" value={displayName || '-'} disabled />
                   </div>
                   <div className="field-group">
-                    <label>Email</label>
-                    <input
-                      className="input-field"
-                      value={profileEmail}
-                      onChange={(e) => setProfileEmail(e.target.value)}
-                      disabled={savingProfile || loading}
-                    />
+                    <label>Agency Code</label>
+                    <input className="input-field" value={agencyCode} disabled />
                   </div>
-                </div>
-
-                <div className="field-row field-row-four">
                   <div className="field-group">
                     <label>Current Plan</label>
                     <input className="input-field" value={currentPlan || '-'} disabled />
@@ -851,9 +843,17 @@ export default function SettingsPage() {
                     <label>Level</label>
                     <input className="input-field" value={currentLevel} disabled />
                   </div>
+                </div>
+
+                <div className="field-row field-row-four">
                   <div className="field-group">
-                    <label>Agency Code</label>
-                    <input className="input-field" value={agencyCode} disabled />
+                    <label>Email</label>
+                    <input
+                      className="input-field"
+                      value={profileEmail}
+                      onChange={(e) => setProfileEmail(e.target.value)}
+                      disabled={savingProfile || loading}
+                    />
                   </div>
                   <div className="field-group">
                     <label>Date of Birth*</label>
@@ -865,9 +865,6 @@ export default function SettingsPage() {
                       disabled={savingProfile}
                     />
                   </div>
-                </div>
-
-                <div className="field-row field-row-four">
                   <div className="field-group">
                     <label>Gender</label>
                     <select
@@ -882,6 +879,39 @@ export default function SettingsPage() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                  <div className="field-group">
+                    <label>Address*</label>
+                    <input
+                      className="input-field"
+                      value={profileForm.homeAddress}
+                      onChange={(e) => updateProfileField('homeAddress', e.target.value)}
+                      disabled={savingProfile}
+                    />
+                  </div>
+                </div>
+
+                <div className="field-row field-row-four">
+                  <div className="field-group">
+                    <label>Address 2*</label>
+                    <input
+                      className="input-field"
+                      value={profileForm.homeAddress2}
+                      onChange={(e) => updateProfileField('homeAddress2', e.target.value)}
+                      disabled={savingProfile}
+                    />
+                  </div>
+                </div>
+
+                <div className="field-row field-row-four">
+                  <div className="field-group">
+                    <label>City*</label>
+                    <input
+                      className="input-field"
+                      value={profileForm.homeCity}
+                      onChange={(e) => updateProfileField('homeCity', e.target.value)}
+                      disabled={savingProfile}
+                    />
                   </div>
                   <div className="field-group">
                     <label>State Located</label>
@@ -900,15 +930,6 @@ export default function SettingsPage() {
                     </select>
                   </div>
                   <div className="field-group">
-                    <label>City*</label>
-                    <input
-                      className="input-field"
-                      value={profileForm.homeCity}
-                      onChange={(e) => updateProfileField('homeCity', e.target.value)}
-                      disabled={savingProfile}
-                    />
-                  </div>
-                  <div className="field-group">
                     <label>Zip*</label>
                     <input
                       className="input-field"
@@ -920,24 +941,6 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="field-row field-row-four">
-                  <div className="field-group">
-                    <label>Address*</label>
-                    <input
-                      className="input-field"
-                      value={profileForm.homeAddress}
-                      onChange={(e) => updateProfileField('homeAddress', e.target.value)}
-                      disabled={savingProfile}
-                    />
-                  </div>
-                  <div className="field-group">
-                    <label>Address 2*</label>
-                    <input
-                      className="input-field"
-                      value={profileForm.homeAddress2}
-                      onChange={(e) => updateProfileField('homeAddress2', e.target.value)}
-                      disabled={savingProfile}
-                    />
-                  </div>
                   <div className="field-group">
                     <label>Poloshirt Size</label>
                     <select
@@ -953,6 +956,9 @@ export default function SettingsPage() {
                       ))}
                     </select>
                   </div>
+                </div>
+
+                <div className="field-row field-row-four">
                   <div className="field-group">
                     <label>Spouse Full Name</label>
                     <input
@@ -962,9 +968,6 @@ export default function SettingsPage() {
                       disabled={savingProfile}
                     />
                   </div>
-                </div>
-
-                <div className="field-row field-row-four">
                   <div className="field-group">
                     <label>Spouse Phone</label>
                     <input

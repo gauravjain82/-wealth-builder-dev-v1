@@ -28,11 +28,11 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       open={open}
       onClose={onCancel}
       title={title}
-      contentClassName="max-w-sm rounded-lg bg-[#232733] shadow-xl border border-white/10 p-0"
+      contentClassName="max-w-sm rounded-lg border border-slate-200 bg-white p-0 shadow-xl dark:border-white/10 dark:bg-[#232733]"
     >
       <div className="flex flex-col px-6 pt-4 pb-2">
         {/* <div className="text-[16px] font-semibold text-white mb-1 text-left">{title}</div> */}
-        <div className="text-[15px] text-white/80 mb-4 text-left">{message}</div>
+        <div className="mb-4 text-left text-[15px] text-slate-700 dark:text-white/80">{message}</div>
       </div>
       <div className="flex flex-row justify-end gap-2 px-6 pb-0">
         <Button type="button" size="sm" variant="outline" className="min-w-[90px]" onClick={onCancel}>{cancelLabel}</Button>

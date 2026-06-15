@@ -8,7 +8,8 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 const inputVariantClasses: Record<NonNullable<InputProps['variant']>, string> = {
   default: '',
-  surface: 'h-11 w-full rounded-lg border border-white/20 bg-white/5 px-3 text-white',
+  surface:
+    'h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-white/5 dark:text-white dark:placeholder:text-white/50',
 };
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(

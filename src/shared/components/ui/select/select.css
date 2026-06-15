@@ -1,10 +1,19 @@
 .select {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 .select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.dark .select {
+  color-scheme: dark;
+}
+
+.dark .select option {
   background: #1e2431;
-  color: #fff;
+  color: #ffffff;
 }
 
 .select:focus {

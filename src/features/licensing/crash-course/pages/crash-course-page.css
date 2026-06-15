@@ -468,3 +468,44 @@
 .cc-btn-wide {
   width: 100%;
 }
+
+/* Light theme overrides */
+html:not(.dark) .cc-wrap {
+  --text: #0f172a;
+  --muted: #475569;
+  --card: #ffffff;
+  --border: #d9e1ea;
+}
+
+html:not(.dark) .cc-progress-glass {
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 50%, #f8fafc 100%);
+  border-bottom: 1px solid rgba(241, 190, 59, 0.2);
+}
+
+html:not(.dark) .cc-progress-oneliner {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: #dbe3ee;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+html:not(.dark) .cc-card {
+  background: #ffffff;
+  border-color: #dbe3ee;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+}
+
+html:not(.dark) .cc-main-media.video,
+html:not(.dark) .cc-card-media.netflix {
+  background: linear-gradient(135deg, #eef2f7 0%, #dde5ef 100%);
+}
+
+html:not(.dark) .cc-meta-chip {
+  background: #f8fafc;
+  border-color: #dbe3ee;
+  color: #0f172a;
+}
+
+html:not(.dark) .cc-mini-progress {
+  background: #e8eef5;
+  border-color: #dbe3ee;
+}

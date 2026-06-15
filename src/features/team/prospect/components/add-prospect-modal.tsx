@@ -295,7 +295,7 @@ export function AddProspectModal({
             <Label variant="form" className="mb-2">Profile</Label>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
               {PROFILE_FLAGS.map((item) => (
-                <label key={item.key} className="flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm">
+                <label key={item.key} className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5">
                   <Checkbox
                     checked={Boolean(form[item.key])}
                     onChange={(e) => updateField(item.key, e.target.checked)}
@@ -378,7 +378,7 @@ export function AddProspectModal({
           </div>
         </div>
 
-        <div className="mt-4 flex-shrink-0 border-t border-white/10 pt-4">
+        <div className="mt-4 flex-shrink-0 border-t border-slate-200 pt-4 dark:border-white/10">
           <FormActions>
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
               Cancel

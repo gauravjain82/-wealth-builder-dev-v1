@@ -119,6 +119,7 @@
 .settings-profile-page .button-group {
   display: flex;
   gap: 10px;
+  grid-column: 1 / -1;
 }
 
 .settings-profile-page .profile-content {
@@ -167,15 +168,13 @@
 }
 
 .settings-profile-page .profile-fields {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
 
 .settings-profile-page .field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  display: contents;
 }
 
 .settings-profile-page .field-row.field-row-three {
@@ -280,15 +279,13 @@
 }
 
 @media (max-width: 1400px) {
-  .settings-profile-page .field-row.field-row-four {
+  .settings-profile-page .profile-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 760px) {
-  .settings-profile-page .field-row,
-  .settings-profile-page .field-row.field-row-three,
-  .settings-profile-page .field-row.field-row-four {
+  .settings-profile-page .profile-fields {
     grid-template-columns: 1fr;
   }
 }
@@ -805,4 +802,268 @@
 .settings-profile-page .btn-secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ===== LIGHT THEME OVERRIDES ===== */
+html:not(.dark) .settings-profile-page .page-subtitle {
+  color: #64748b;
+}
+
+html:not(.dark) .settings-profile-page .glass-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+html:not(.dark) .settings-profile-page .glass-section::before {
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.4), transparent);
+}
+
+html:not(.dark) .settings-profile-page .section-header {
+  border-bottom-color: #e2e8f0;
+}
+
+html:not(.dark) .settings-profile-page .section-title {
+  color: #1e293b;
+}
+
+html:not(.dark) .settings-profile-page .field-group label {
+  color: #475569;
+}
+
+html:not(.dark) .settings-profile-page .input-field {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+html:not(.dark) .settings-profile-page .input-field:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
+}
+
+html:not(.dark) .settings-profile-page .input-field:disabled {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+html:not(.dark) .settings-profile-page .profile-photo {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+  border-color: rgba(212, 175, 55, 0.5);
+}
+
+html:not(.dark) .settings-profile-page .level-badge {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 100%);
+  border-color: rgba(212, 175, 55, 0.5);
+}
+
+html:not(.dark) .settings-profile-page .level-description {
+  color: #64748b;
+}
+
+html:not(.dark) .settings-profile-page .upgrade-section,
+html:not(.dark) .settings-profile-page .max-level-info,
+html:not(.dark) .settings-profile-page .admin-level-info {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+html:not(.dark) .settings-profile-page .admin-level-info p {
+  color: #475569;
+}
+
+html:not(.dark) .settings-profile-page .next-level {
+  color: #475569;
+}
+
+html:not(.dark) .settings-profile-page .plan-card {
+  background: #f8fafc;
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+html:not(.dark) .settings-profile-page .plan-card.current {
+  background: rgba(212, 175, 55, 0.06);
+}
+
+html:not(.dark) .settings-profile-page .plan-name {
+  color: #1e293b;
+  -webkit-text-fill-color: #1e293b;
+  background: none;
+}
+
+html:not(.dark) .settings-profile-page .plan-divider {
+  background: #e2e8f0;
+}
+
+html:not(.dark) .settings-profile-page .plan-features {
+  color: #475569;
+}
+
+html:not(.dark) .settings-profile-page .card-element-wrapper {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+html:not(.dark) .settings-profile-page .payment-notice {
+  background: rgba(212, 175, 55, 0.06);
+  border-color: rgba(212, 175, 55, 0.25);
+}
+
+html:not(.dark) .settings-profile-page .payment-notice p {
+  color: #475569;
+}
+
+html:not(.dark) .settings-profile-page .saved-card-title {
+  color: #475569;
+}
+
+html:not(.dark) .settings-profile-page .card-display {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 100%);
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+html:not(.dark) .settings-profile-page .card-number {
+  color: #1e293b;
+}
+
+html:not(.dark) .settings-profile-page .card-expiry {
+  color: #64748b;
+}
+
+html:not(.dark) .settings-profile-page .ticket-card {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+html:not(.dark) .settings-profile-page .ticket-event {
+  color: #b8860b;
+}
+
+html:not(.dark) .settings-profile-page .detail-label {
+  color: #64748b;
+}
+
+html:not(.dark) .settings-profile-page .detail-value {
+  color: #1e293b;
+}
+
+html:not(.dark) .settings-profile-page .status-badge {
+  color: #1e293b;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+html:not(.dark) .settings-profile-page .status-pending {
+  background: rgba(255, 193, 7, 0.12);
+  color: #92650a;
+  border-color: rgba(255, 193, 7, 0.35);
+}
+
+html:not(.dark) .settings-profile-page .status-approved {
+  background: rgba(34, 197, 94, 0.12);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+html:not(.dark) .settings-profile-page .status-rejected,
+html:not(.dark) .settings-profile-page .status-failed {
+  background: rgba(239, 68, 68, 0.12);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+html:not(.dark) .settings-profile-page .empty-state,
+html:not(.dark) .settings-profile-page .loading-state {
+  color: #64748b;
+}
+
+html:not(.dark) .settings-profile-page .approvals-table thead {
+  background: rgba(212, 175, 55, 0.07);
+  border-bottom-color: #e2e8f0;
+}
+
+html:not(.dark) .settings-profile-page .approvals-table th {
+  color: #b8860b;
+}
+
+html:not(.dark) .settings-profile-page .approvals-table td {
+  border-bottom-color: #f1f5f9;
+  color: #334155;
+}
+
+html:not(.dark) .settings-profile-page .approvals-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+html:not(.dark) .settings-profile-page .approvals-table .request-id {
+  color: #b8860b;
+}
+
+html:not(.dark) .settings-profile-page .approvals-table .user-info {
+  color: #475569;
+}
+
+html:not(.dark) .settings-profile-page .approvals-table .created-date {
+  color: #64748b;
+}
+
+html:not(.dark) .settings-profile-page .btn-approve-small {
+  background: rgba(34, 197, 94, 0.1);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+html:not(.dark) .settings-profile-page .btn-approve-small:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.2);
+  color: #14532d;
+}
+
+html:not(.dark) .settings-profile-page .btn-reject-small {
+  background: rgba(239, 68, 68, 0.1);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+html:not(.dark) .settings-profile-page .btn-reject-small:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  color: #7f1d1d;
+}
+
+html:not(.dark) .settings-profile-page .status-text {
+  color: #64748b;
+}
+
+html:not(.dark) .settings-profile-page .modal-description {
+  color: #475569;
+}
+
+html:not(.dark) .settings-profile-page .form-group label {
+  color: #334155;
+}
+
+html:not(.dark) .settings-profile-page .textarea-field {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+html:not(.dark) .settings-profile-page .textarea-field:focus {
+  background: #ffffff;
+  border-color: #d4af37;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.12);
+}
+
+html:not(.dark) .settings-profile-page .textarea-field::placeholder {
+  color: #94a3b8;
+}
+
+html:not(.dark) .settings-profile-page .btn-secondary {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+html:not(.dark) .settings-profile-page .btn-secondary:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #1e293b;
 }

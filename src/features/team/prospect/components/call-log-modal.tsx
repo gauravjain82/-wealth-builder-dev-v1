@@ -51,7 +51,7 @@ export function CallLogModal({
     >
       <div className="mb-4 flex flex-wrap items-center gap-3">
           <Select
-            className="h-10 min-w-[160px] rounded-lg border border-white/20 bg-white/5 px-3 text-sm"
+            className="h-10 min-w-[160px] rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 dark:border-white/20 dark:bg-white/5 dark:text-white"
             value={outcome}
             onChange={(e) => setOutcome(e.target.value)}
           >
@@ -63,7 +63,7 @@ export function CallLogModal({
           </Select>
           <Input
             type="text"
-            className="h-10 flex-1 rounded-lg border border-white/20 bg-white/5 px-3 text-sm"
+            className="h-10 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-white/5 dark:text-white dark:placeholder:text-white/50"
             placeholder="Note"
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -86,7 +86,7 @@ export function CallLogModal({
                 onClick={() => onInvite(prospect)}
                 disabled={saving}
                 variant="outline"
-                className="rounded-lg border-[#b59a0a] bg-[#3b3524] px-3 py-2 text-xs font-semibold tracking-wide text-[#ffdd45] hover:bg-[#4a422b]"
+                className="rounded-lg border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold tracking-wide text-amber-700 hover:bg-amber-100 dark:border-[#b59a0a] dark:bg-[#3b3524] dark:text-[#ffdd45] dark:hover:bg-[#4a422b]"
               >
                 INVITE
               </Button>
@@ -95,7 +95,7 @@ export function CallLogModal({
               type="button"
               onClick={() => onRequestTrainer(prospect)}
               variant="outline"
-              className="rounded-lg border-[#b59a0a] bg-[#3b3524] px-3 py-2 text-xs font-semibold tracking-wide text-[#ffdd45] hover:bg-[#4a422b]"
+              className="rounded-lg border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold tracking-wide text-amber-700 hover:bg-amber-100 dark:border-[#b59a0a] dark:bg-[#3b3524] dark:text-[#ffdd45] dark:hover:bg-[#4a422b]"
             >
               REQUEST TRAINER
             </Button>
@@ -103,7 +103,7 @@ export function CallLogModal({
               type="button"
               onClick={() => onAddAppointment(prospect)}
               variant="outline"
-              className="rounded-lg border-[#b59a0a] bg-[#3b3524] px-3 py-2 text-xs font-semibold tracking-wide text-[#ffdd45] hover:bg-[#4a422b]"
+              className="rounded-lg border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold tracking-wide text-amber-700 hover:bg-amber-100 dark:border-[#b59a0a] dark:bg-[#3b3524] dark:text-[#ffdd45] dark:hover:bg-[#4a422b]"
             >
               ADD APPOINTMENT
             </Button>
@@ -112,7 +112,7 @@ export function CallLogModal({
                 type="button"
                 onClick={() => onAddProduction(prospect)}
                 variant="outline"
-                className="rounded-lg border-[#b59a0a] bg-[#3b3524] px-3 py-2 text-xs font-semibold tracking-wide text-[#ffdd45] hover:bg-[#4a422b]"
+                className="rounded-lg border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold tracking-wide text-amber-700 hover:bg-amber-100 dark:border-[#b59a0a] dark:bg-[#3b3524] dark:text-[#ffdd45] dark:hover:bg-[#4a422b]"
               >
                 ADD PRODUCTION
               </Button>
@@ -122,7 +122,7 @@ export function CallLogModal({
                 type="button"
                 onClick={() => onAddAgencyCode(prospect)}
                 variant="outline"
-                className="rounded-lg border-[#b59a0a] bg-[#3b3524] px-3 py-2 text-xs font-semibold tracking-wide text-[#ffdd45] hover:bg-[#4a422b]"
+                className="rounded-lg border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold tracking-wide text-amber-700 hover:bg-amber-100 dark:border-[#b59a0a] dark:bg-[#3b3524] dark:text-[#ffdd45] dark:hover:bg-[#4a422b]"
               >
                 ADD AGENCY CODE
               </Button>

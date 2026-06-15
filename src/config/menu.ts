@@ -169,6 +169,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.CALENDAR,
     MENU_ITEMS.FILE_VAULT,
     MENU_ITEMS.HELP_DESK,
+    MENU_ITEMS.INVITE_AGENTS,
   ] as MenuItem[],
   
   [Plan.Broker]: [
@@ -215,6 +216,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.CALENDAR,
     MENU_ITEMS.FILE_VAULT,
     MENU_ITEMS.HELP_DESK,
+    MENU_ITEMS.INVITE_AGENTS,
   ] as MenuItem[],
   
   // Senior Broker uses same menu as Broker
@@ -262,6 +264,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.CALENDAR,
     MENU_ITEMS.FILE_VAULT,
     MENU_ITEMS.HELP_DESK,
+    MENU_ITEMS.INVITE_AGENTS,
   ] as MenuItem[],
   
   [Plan.Admin]: [

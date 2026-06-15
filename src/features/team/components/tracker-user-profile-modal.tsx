@@ -185,7 +185,7 @@ interface LabeledFieldProps {
 function LabeledField({ label, className = '', required = false, children }: LabeledFieldProps) {
   return (
     <div className={className}>
-      <div className="mb-1 text-xs text-white/70">
+      <div className="mb-1 text-xs text-slate-600 dark:text-white/70">
         {label}
         {required && <span className="text-red-400"> *</span>}
       </div>
@@ -385,26 +385,26 @@ export function TrackerUserProfileModal({
       contentClassName="max-w-[1100px] max-h-[92vh] flex flex-col"
     >
       {loading ? (
-        <div className="py-10 text-center text-sm text-white/80">Loading user details...</div>
+        <div className="py-10 text-center text-sm text-slate-600 dark:text-white/80">Loading user details...</div>
       ) : error ? (
-        <div className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+        <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-200">
           {error}
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-4">
-          <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4">
-            <div className="h-16 w-16 overflow-hidden rounded-full border border-white/20 bg-white/10 flex-shrink-0">
+          <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
+            <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border border-slate-300 bg-slate-200 dark:border-white/20 dark:bg-white/10">
               {avatarSrc ? (
                 <img src={avatarSrc} alt={displayName} className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-white/90">
+                <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-slate-800 dark:text-white/90">
                   {initialsFromName(displayName)}
                 </div>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-lg font-semibold text-white">{displayName}</div>
-              <div className="text-xs text-white/70">
+              <div className="truncate text-lg font-semibold text-slate-900 dark:text-white">{displayName}</div>
+              <div className="text-xs text-slate-600 dark:text-white/70">
                 {profile?.agency_code || 'Unknown agency'} • {profile?.roles?.[0] || 'No plan'}
               </div>
             </div>
@@ -437,8 +437,8 @@ export function TrackerUserProfileModal({
           </div>
 
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto pr-1 lg:grid-cols-2">
-            <section className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-4">
-              <h4 className="text-sm font-semibold text-white">Editable Profile</h4>
+            <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Editable Profile</h4>
               <div className="grid grid-cols-2 gap-3">
                 <LabeledField label="First Name">
                   <Input variant="surface" value={form.firstName} onChange={(e) => updateField('firstName', e.target.value)} placeholder="First name" />
@@ -580,7 +580,7 @@ export function TrackerUserProfileModal({
                 </LabeledField>
               </div>
 
-              <div className="flex items-center gap-4 pt-1 text-sm text-white/90">
+              <div className="flex items-center gap-4 pt-1 text-sm text-slate-800 dark:text-white/90">
                 <label className="inline-flex items-center gap-2">
                   <Checkbox checked={form.married} onChange={(e) => updateField('married', e.target.checked)} />
                   Married
@@ -592,14 +592,14 @@ export function TrackerUserProfileModal({
                   />
                   Dependent kids
                 </label>
-                <span className="text-xs text-white/60">Age: {ageFromBirthday(form.birthday)}</span>
+                <span className="text-xs text-slate-600 dark:text-white/60">Age: {ageFromBirthday(form.birthday)}</span>
               </div>
             </section>
 
-            <section className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/90">
-              <h4 className="text-sm font-semibold text-white">Tracker Summary</h4>
-              <div className="space-y-2 rounded-lg border border-white/10 bg-white/5 p-3">
-                <div className="text-xs font-semibold uppercase text-white/70">Mission</div>
+            <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-800 dark:border-white/10 dark:bg-black/20 dark:text-white/90">
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Tracker Summary</h4>
+              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/5">
+                <div className="text-xs font-semibold uppercase text-slate-600 dark:text-white/70">Mission</div>
                 {snapshots?.missionTracker ? (
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>1st Recruit: {yesNo(snapshots.missionTracker.finish_1st_recruit)}</div>
@@ -610,12 +610,12 @@ export function TrackerUserProfileModal({
                     <div>Sircon/NIPR: {snapshots.missionTracker.sircon_nipr_date || '-'}</div>
                   </div>
                 ) : (
-                  <div className="text-xs text-white/60">No mission record.</div>
+                  <div className="text-xs text-slate-600 dark:text-white/60">No mission record.</div>
                 )}
               </div>
 
-              <div className="space-y-2 rounded-lg border border-white/10 bg-white/5 p-3">
-                <div className="text-xs font-semibold uppercase text-white/70">Associate</div>
+              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/5">
+                <div className="text-xs font-semibold uppercase text-slate-600 dark:text-white/70">Associate</div>
                 {snapshots?.associate ? (
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>Key Player: {yesNo(snapshots.associate.is_key_player)}</div>
@@ -624,12 +624,12 @@ export function TrackerUserProfileModal({
                     <div>Net Licensed: {snapshots.associate.net_license_amount}</div>
                   </div>
                 ) : (
-                  <div className="text-xs text-white/60">No associate record.</div>
+                  <div className="text-xs text-slate-600 dark:text-white/60">No associate record.</div>
                 )}
               </div>
 
-              <div className="space-y-2 rounded-lg border border-white/10 bg-white/5 p-3">
-                <div className="text-xs font-semibold uppercase text-white/70">Licensing</div>
+              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/5">
+                <div className="text-xs font-semibold uppercase text-slate-600 dark:text-white/70">Licensing</div>
                 {snapshots?.licensing ? (
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>Licensed: {yesNo(snapshots.licensing.is_licensed)}</div>
@@ -640,11 +640,11 @@ export function TrackerUserProfileModal({
                     <div>Sircon/NIPR: {snapshots.licensing.sircon_nipr_date || '-'}</div>
                   </div>
                 ) : (
-                  <div className="text-xs text-white/60">No licensing record.</div>
+                  <div className="text-xs text-slate-600 dark:text-white/60">No licensing record.</div>
                 )}
               </div>
 
-              <div className="space-y-1 rounded-lg border border-white/10 bg-white/5 p-3 text-xs">
+              <div className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs dark:border-white/10 dark:bg-white/5">
                 <div>Recruiter: {profile?.recruited_by_name || '-'}</div>
                 <div>Leader: {profile?.leader_name || '-'}</div>
                 <div>
@@ -654,7 +654,7 @@ export function TrackerUserProfileModal({
             </section>
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-3">
+          <div className="flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-white/10">
             <Button
               type="button"
               variant="destructive"

@@ -24,7 +24,8 @@ interface BaseDateProps {
 
 const dateVariantClasses: Record<NonNullable<BaseDateProps['variant']>, string> = {
   default: 'date-input input',
-  surface: 'date-input input h-11 w-full rounded-lg border border-white/20 bg-white/5 px-3 text-white',
+  surface:
+    'date-input input h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-white/5 dark:text-white dark:placeholder:text-white/50',
 };
 
 function toDate(value?: string) {
@@ -191,7 +192,7 @@ export function DateRangePicker({
 
   return (
     <div className={cn('grid gap-1.5', className)}>
-      <label className="mb-1 block text-xs font-semibold text-white/80">
+      <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-white/80">
         {startLabel} - {endLabel}
       </label>
       <DatePickerLib

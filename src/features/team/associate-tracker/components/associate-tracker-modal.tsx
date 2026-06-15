@@ -286,7 +286,7 @@ export function AssociateTrackerModal({
           }}
         />
       </div>
-      {loadingMore && <div className="pt-3 text-center text-xs text-white/60">Loading more associate records...</div>}
+      {loadingMore && <div className="pt-3 text-center text-xs text-slate-600 dark:text-white/60">Loading more associate records...</div>}
       <TrackerNotesModal
         open={Boolean(notesOpenFor)}
         title={`Notes - ${notesOpenFor?.user_name || ''}`}

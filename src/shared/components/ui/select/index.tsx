@@ -8,7 +8,7 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 
 const selectVariantClasses: Record<NonNullable<SelectProps['variant']>, string> = {
   default: 'input',
-  surface: 'input h-11 w-full rounded-lg border border-white/20 bg-white/5 px-3 text-white',
+  surface: 'input h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 dark:border-white/20 dark:bg-white/5 dark:text-white',
 };
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({ className, children, variant = 'surface', ...props }, ref) => {

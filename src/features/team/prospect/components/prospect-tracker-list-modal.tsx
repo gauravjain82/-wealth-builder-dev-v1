@@ -1068,17 +1068,17 @@ export function ProspectTrackerListModal({
       contentClassName="h-[94vh] w-[96vw] max-w-none flex flex-col"
     >
       <div className="flex min-h-0 flex-1 flex-col gap-3">
-        <div className="rounded-lg border border-white/10 bg-white/5 p-2 text-xs text-white/70">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/70">
           {introText.replace('{ownerName}', ownerName)}
         </div>
 
         {headerContent}
 
-        <div className="min-h-[420px] flex-1 overflow-hidden rounded-xl border border-white/10 bg-black/20">
+        <div className="min-h-[420px] flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-black/20">
           {loading ? (
-            <div className="px-4 py-6 text-sm text-white/70">{loadingText}</div>
+            <div className="px-4 py-6 text-sm text-slate-600 dark:text-white/70">{loadingText}</div>
           ) : rows.length === 0 ? (
-            <div className="px-4 py-6 text-sm text-white/70">{emptyText}</div>
+            <div className="px-4 py-6 text-sm text-slate-600 dark:text-white/70">{emptyText}</div>
           ) : (
             <TrackerTable
               columns={columns}

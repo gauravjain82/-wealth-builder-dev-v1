@@ -36,15 +36,15 @@ export function TrackerNotesModal({
       contentClassName="max-w-[760px]"
     >
       <div className="space-y-3">
-        <div className="max-h-[45vh] overflow-auto rounded-xl border border-white/10 bg-white/5 p-3">
+        <div className="max-h-[45vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-white/5">
           {notes.length === 0 ? (
-            <div className="px-2 py-3 text-sm text-white/70">No notes yet.</div>
+            <div className="px-2 py-3 text-sm text-slate-600 dark:text-white/70">No notes yet.</div>
           ) : (
             <div className="space-y-2">
               {notes.map((note) => (
-                <div key={note.id} className="rounded-lg border border-white/10 bg-black/20 p-3">
-                  <div className="whitespace-pre-wrap text-sm text-white/90">{note.text}</div>
-                  <div className="mt-1 text-xs text-white/70">
+                <div key={note.id} className="rounded-lg border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-black/20">
+                  <div className="whitespace-pre-wrap text-sm text-slate-800 dark:text-white/90">{note.text}</div>
+                  <div className="mt-1 text-xs text-slate-600 dark:text-white/70">
                     {(note.created_by_name || '—') + ' • ' + (note.tracker || 'unknown') + ' • ' + formatDateTime(note.created_at)}
                   </div>
                 </div>

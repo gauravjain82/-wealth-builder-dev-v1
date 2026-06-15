@@ -314,13 +314,13 @@ function TwoByTwoInputCell({
 }) {
   return (
     <div
-      className="inline-block cursor-pointer select-none px-1 py-0.5 rounded border border-white/10 bg-white/5 hover:bg-white/10"
+      className="inline-block cursor-pointer select-none rounded border border-slate-200 bg-slate-50 px-1 py-0.5 hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
       onClick={onCellClick}
       style={{ textAlign: 'center', minWidth: fitLargeValues ? 136 : 96, maxWidth: fitLargeValues ? 152 : 128 }}
     >
       <div className="mb-0.5 grid grid-cols-2 items-center gap-0.5">
-        <span className="text-center text-[10px] font-semibold text-white/70">{colLabels[0]}</span>
-        <span className="text-center text-[10px] font-semibold text-white/70">{colLabels[1]}</span>
+        <span className="text-center text-[10px] font-semibold text-slate-600 dark:text-white/70">{colLabels[0]}</span>
+        <span className="text-center text-[10px] font-semibold text-slate-600 dark:text-white/70">{colLabels[1]}</span>
       </div>
       <div className="grid grid-rows-2 gap-0.5">
         {[0, 1].map((rowIdx) => (
@@ -334,7 +334,7 @@ function TwoByTwoInputCell({
               return (
                 <div key={String(field)} className="relative min-w-0">
                   <input
-                    className={`h-8 w-full rounded border border-white/20 bg-white/10 px-0.5 text-center font-semibold tracking-tight text-white placeholder-white/50 outline-none ${valueTextSize}`}
+                    className={`h-8 w-full rounded border border-slate-300 bg-white px-0.5 text-center font-semibold tracking-tight text-slate-900 placeholder:text-slate-500 outline-none dark:border-white/20 dark:bg-white/10 dark:text-white dark:placeholder:text-white/50 ${valueTextSize}`}
                     type="text"
                     value={value}
                     title={value}
@@ -343,7 +343,7 @@ function TwoByTwoInputCell({
                     tabIndex={-1}
                     style={{ cursor: 'pointer', backgroundColor: 'rgba(255,255,255,0.03)' }}
                   />
-                  <span className="pointer-events-none absolute bottom-0.5 right-1 text-[8px] leading-none text-white/50">
+                  <span className="pointer-events-none absolute bottom-0.5 right-1 text-[8px] leading-none text-slate-500 dark:text-white/50">
                     {rowLabels[rowIdx]}
                   </span>
                 </div>
@@ -373,14 +373,14 @@ function TwoInputCell({
 }) {
   return (
     <div
-      className={`relative inline-block select-none rounded border border-white/10 bg-white/5 px-1 py-0.5 ${
-        onCellClick ? 'hover:bg-white/10' : ''
+      className={`relative inline-block select-none rounded border border-slate-200 bg-slate-50 px-1 py-0.5 dark:border-white/10 dark:bg-white/5 ${
+        onCellClick ? 'hover:bg-slate-100 dark:hover:bg-white/10' : ''
       }`}
       style={{ textAlign: 'center', minWidth: 96, maxWidth: 128 }}
     >
       <div className="mb-0.5 grid grid-cols-2 items-center gap-0.5">
         {labels.map((label) => (
-          <span key={label} className="whitespace-nowrap text-center text-[10px] font-semibold text-white/70">
+          <span key={label} className="whitespace-nowrap text-center text-[10px] font-semibold text-slate-600 dark:text-white/70">
             {label}
           </span>
         ))}
@@ -393,7 +393,7 @@ function TwoInputCell({
           return (
             <input
               key={String(field)}
-              className="h-8 min-w-0 w-full rounded border border-white/20 bg-white/5 px-1 text-center text-xs font-semibold text-white placeholder-white/50 outline-none focus:border-amber-300/60"
+              className="h-8 min-w-0 w-full rounded border border-slate-300 bg-white px-1 text-center text-xs font-semibold text-slate-900 placeholder:text-slate-500 outline-none focus:border-amber-400 dark:border-white/20 dark:bg-white/5 dark:text-white dark:placeholder:text-white/50 dark:focus:border-amber-300/60"
               type="number"
               defaultValue={initialValue}
               disabled={readOnly || saving}

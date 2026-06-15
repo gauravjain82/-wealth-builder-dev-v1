@@ -8,7 +8,7 @@ export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> 
 
 const labelVariantClasses: Record<NonNullable<LabelProps['variant']>, string> = {
   default: '',
-  form: 'mb-1 block text-sm font-semibold text-white',
+  form: 'mb-1 block text-sm font-semibold text-slate-700 dark:text-white',
 };
 
 const Label = React.forwardRef<HTMLLabelElement, LabelProps>(({ className, variant = 'default', ...props }, ref) => (

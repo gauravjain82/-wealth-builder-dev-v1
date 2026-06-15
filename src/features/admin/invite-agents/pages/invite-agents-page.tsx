@@ -26,13 +26,13 @@ function formatDate(value: string): string {
 function StatusBadge({ status }: { status: Invitation['status'] }) {
   if (status === 'pending') {
     return (
-      <span className="inline-flex items-center rounded-full bg-amber-400/15 px-2.5 py-0.5 text-xs font-medium text-amber-300">
+      <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-400/15 dark:text-amber-300">
         Pending
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white/50">
+    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-white/50">
       Cancelled
     </span>
   );
@@ -68,13 +68,13 @@ function Pagination({
   }
 
   return (
-    <div className="flex items-center justify-between border-t border-white/10 px-4 py-3">
-      <span className="text-xs text-white/50">
+    <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 dark:border-white/10">
+      <span className="text-xs text-slate-500 dark:text-white/50">
         Showing {from} to {to} of {total} agent{total !== 1 ? 's' : ''}
       </span>
       <div className="flex items-center gap-1">
         <button
-          className="rounded border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10 disabled:opacity-40"
+          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:border-white/15 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10"
           disabled={page === 1}
           onClick={() => onPage(page - 1)}
         >
@@ -82,7 +82,7 @@ function Pagination({
         </button>
         {pages.map((p, idx) =>
           p === '...' ? (
-            <span key={`ellipsis-${idx}`} className="px-1 text-xs text-white/40">
+            <span key={`ellipsis-${idx}`} className="px-1 text-xs text-slate-400 dark:text-white/40">
               ...
             </span>
           ) : (
@@ -91,8 +91,8 @@ function Pagination({
               onClick={() => onPage(p as number)}
               className={`min-w-[32px] rounded border px-2 py-1.5 text-xs ${
                 p === page
-                  ? 'border-amber-400/60 bg-amber-500/20 font-semibold text-amber-300'
-                  : 'border-white/15 bg-white/5 text-white/70 hover:bg-white/10'
+                  ? 'border-amber-400 bg-amber-100 font-semibold text-amber-700 dark:border-amber-400/60 dark:bg-amber-500/20 dark:text-amber-300'
+                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-white/15 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
               }`}
             >
               {p}
@@ -100,7 +100,7 @@ function Pagination({
           )
         )}
         <button
-          className="rounded border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10 disabled:opacity-40"
+          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:border-white/15 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10"
           disabled={page === totalPages}
           onClick={() => onPage(page + 1)}
         >
@@ -137,29 +137,29 @@ function RowMenu({
   return (
     <div ref={ref} className="relative flex justify-end">
       <button
-        className="flex h-7 w-7 items-center justify-center rounded text-white/50 hover:bg-white/10 hover:text-white"
+        className="flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-white/50 dark:hover:bg-white/10 dark:hover:text-white"
         onClick={() => setOpen((v) => !v)}
         aria-label="Row actions"
       >
         ⋮
       </button>
       {open && (
-        <div className="absolute right-0 top-8 z-50 min-w-[160px] rounded-xl border border-white/15 bg-[#1e2431] py-1 shadow-2xl">
+        <div className="absolute right-0 top-8 z-50 min-w-[160px] rounded-xl border border-slate-200 bg-white py-1 shadow-2xl dark:border-white/15 dark:bg-[#1e2431]">
           <button
-            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/8 hover:text-white"
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-white/80 dark:hover:bg-white/8 dark:hover:text-white"
             onClick={() => { setOpen(false); onResend(invitation); }}
           >
             ✉️ Resend Email
           </button>
           <button
-            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/8 hover:text-white"
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-white/80 dark:hover:bg-white/8 dark:hover:text-white"
             onClick={() => { setOpen(false); onViewDetail(invitation); }}
           >
             👁 View Detail
           </button>
-          <div className="my-1 border-t border-white/10" />
+          <div className="my-1 border-t border-slate-200 dark:border-white/10" />
           <button
-            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-300 hover:bg-red-500/10 hover:text-red-200"
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 hover:text-red-800 dark:text-red-300 dark:hover:bg-red-500/10 dark:hover:text-red-200"
             onClick={() => { setOpen(false); onDelete(invitation); }}
           >
             🗑 Delete
@@ -186,8 +186,8 @@ function DetailModal({ invitation, onClose }: { invitation: Invitation | null; o
       <dl className="space-y-3">
         {rows.map(({ label, value }) => (
           <div key={label} className="flex items-start gap-3">
-            <dt className="w-28 flex-shrink-0 text-xs font-semibold uppercase tracking-wide text-white/50">{label}</dt>
-            <dd className="break-all text-sm text-white/90">{value}</dd>
+            <dt className="w-28 flex-shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/50">{label}</dt>
+            <dd className="break-all text-sm text-slate-800 dark:text-white/90">{value}</dd>
           </div>
         ))}
       </dl>
@@ -223,7 +223,7 @@ function InviteModal({
     <Modal open={open} title="Invite Agent" onClose={onClose} contentClassName="max-w-[460px]">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-white/60">Name (optional)</label>
+          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">Name (optional)</label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -233,7 +233,7 @@ function InviteModal({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-white/60">Email Address *</label>
+          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">Email Address *</label>
           <Input
             type="email"
             required
@@ -384,13 +384,13 @@ export default function InviteAgentsPage() {
       </form>
 
       {/* Table */}
-      <div className="min-h-0 flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#1a1d25]">
+      <div className="min-h-0 flex-1 overflow-auto rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-[#1a1d25]">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-sm text-white/50">
+          <div className="flex items-center justify-center py-16 text-sm text-slate-500 dark:text-white/50">
             Loading invitations…
           </div>
         ) : invitations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-16 text-white/50">
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-slate-500 dark:text-white/50">
             <span className="text-3xl">✉️</span>
             <p className="text-sm">No invitations found.</p>
             <Button size="sm" onClick={() => setInviteOpen(true)}>Send first invitation</Button>
@@ -398,20 +398,20 @@ export default function InviteAgentsPage() {
         ) : (
           <table className="w-full table-auto border-collapse text-sm">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
+              <tr className="border-b border-slate-200 dark:border-white/10">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
                   Name
                 </th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
                   Email
                 </th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
                   Status
                 </th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
                   Sent
                 </th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/50">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
                   Expires
                 </th>
                 <th className="w-12 px-3 py-3" />
@@ -421,22 +421,22 @@ export default function InviteAgentsPage() {
               {invitations.map((inv, idx) => (
                 <tr
                   key={inv.id}
-                  className={`border-b border-white/6 transition-colors hover:bg-white/4 ${
-                    idx % 2 === 0 ? 'bg-transparent' : 'bg-white/2'
+                  className={`border-b border-slate-100 transition-colors hover:bg-slate-50 dark:border-white/6 dark:hover:bg-white/4 ${
+                    idx % 2 === 0 ? 'bg-transparent' : 'bg-slate-50/50 dark:bg-white/2'
                   }`}
                 >
-                  <td className="px-5 py-3 font-medium text-white">
-                    {inv.to_name || <span className="text-white/40">—</span>}
+                  <td className="px-5 py-3 font-medium text-slate-900 dark:text-white">
+                    {inv.to_name || <span className="text-slate-400 dark:text-white/40">—</span>}
                   </td>
-                  <td className="px-5 py-3 text-white/70">{inv.email}</td>
+                  <td className="px-5 py-3 text-slate-600 dark:text-white/70">{inv.email}</td>
                   <td className="px-5 py-3">
                     <StatusBadge status={inv.status} />
                   </td>
-                  <td className="px-5 py-3 text-white/50">{formatDate(inv.created_at)}</td>
-                  <td className="px-5 py-3 text-white/50">{formatDate(inv.expires_at)}</td>
+                  <td className="px-5 py-3 text-slate-500 dark:text-white/50">{formatDate(inv.created_at)}</td>
+                  <td className="px-5 py-3 text-slate-500 dark:text-white/50">{formatDate(inv.expires_at)}</td>
                   <td className="px-3 py-3">
                     {resending === inv.id ? (
-                      <span className="text-xs text-white/40">…</span>
+                      <span className="text-xs text-slate-400 dark:text-white/40">…</span>
                     ) : (
                       <RowMenu
                         invitation={inv}

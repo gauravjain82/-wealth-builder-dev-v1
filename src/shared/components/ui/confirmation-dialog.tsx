@@ -28,7 +28,7 @@ export function ConfirmationDialog({
   return (
     <Modal open={open} title={title} onClose={onClose} contentClassName="max-w-[520px]">
       <div className="space-y-6">
-        <Text className="text-white/90">{message}</Text>
+        <Text className="text-slate-700 dark:text-white/90">{message}</Text>
 
         <div className="flex items-center justify-end gap-3">
           <Button type="button" variant="outline" onClick={onClose} disabled={loading}>

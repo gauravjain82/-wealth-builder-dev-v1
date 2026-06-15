@@ -214,7 +214,7 @@ export default function AdminHelpdeskPage() {
   if (!canAccess) {
     return (
       <div className="p-6">
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+        <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
           You do not have permission to view Helpdesk admin.
         </div>
       </div>
@@ -222,37 +222,37 @@ export default function AdminHelpdeskPage() {
   }
 
   return (
-    <div className="p-4 h-full min-h-0 flex flex-col gap-4">
+    <div className="h-full min-h-0 p-4 flex flex-col gap-4 text-slate-900 dark:text-white">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Helpdesk Admin</h1>
-          <p className="text-xs text-white/65">Review, reply, and resolve support requests.</p>
+          <h1 className="text-xl font-bold">Helpdesk Admin</h1>
+          <p className="text-xs text-slate-600 dark:text-white/65">Review, reply, and resolve support requests.</p>
         </div>
       </div>
 
-      <div className="grid gap-2 rounded-xl border border-white/10 bg-white/5 p-3 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-2 xl:grid-cols-5 dark:border-white/10 dark:bg-white/5">
         <input
           type="text"
           value={ticketFilter}
           onChange={(e) => setTicketFilter(e.target.value)}
           placeholder="Ticket # (e.g. HD-001)"
-          className="rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-black/30 dark:text-white dark:placeholder:text-white/50"
         />
         <input
           type="email"
           value={emailFilter}
           onChange={(e) => setEmailFilter(e.target.value)}
           placeholder="Email"
-          className="rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-black/30 dark:text-white dark:placeholder:text-white/50"
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as HelpdeskStatus | '')}
-          className="rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
         >
           <option value="">All Statuses</option>
           {STATUS_OPTIONS.map((item) => (
-            <option key={item.value} value={item.value} className="bg-[#0f131c]">
+            <option key={item.value} value={item.value} className="bg-white text-slate-900 dark:bg-[#0f131c] dark:text-white">
               {item.label}
             </option>
           ))}
@@ -260,11 +260,11 @@ export default function AdminHelpdeskPage() {
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value as HelpdeskPriority | '')}
-          className="rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
         >
           <option value="">All Priorities</option>
           {PRIORITY_OPTIONS.map((item) => (
-            <option key={item.value} value={item.value} className="bg-[#0f131c]">
+            <option key={item.value} value={item.value} className="bg-white text-slate-900 dark:bg-[#0f131c] dark:text-white">
               {item.label}
             </option>
           ))}
@@ -272,11 +272,11 @@ export default function AdminHelpdeskPage() {
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value as HelpdeskCategory | '')}
-          className="rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
         >
           <option value="">All Categories</option>
           {CATEGORY_OPTIONS.map((item) => (
-            <option key={item.value} value={item.value} className="bg-[#0f131c]">
+            <option key={item.value} value={item.value} className="bg-white text-slate-900 dark:bg-[#0f131c] dark:text-white">
               {item.label}
             </option>
           ))}
@@ -284,23 +284,23 @@ export default function AdminHelpdeskPage() {
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[380px_1fr]">
-        <section className="min-h-0 overflow-auto rounded-xl border border-white/10 bg-white/5">
+        <section className="min-h-0 overflow-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
           {loadingTickets ? (
-            <div className="p-4 text-sm text-white/70">Loading tickets...</div>
+            <div className="p-4 text-sm text-slate-600 dark:text-white/70">Loading tickets...</div>
           ) : tickets.length === 0 ? (
-            <div className="p-4 text-sm text-white/70">No tickets found for the current filters.</div>
+            <div className="p-4 text-sm text-slate-600 dark:text-white/70">No tickets found for the current filters.</div>
           ) : (
-            <div className="divide-y divide-white/10">
+            <div className="divide-y divide-slate-200 dark:divide-white/10">
               {tickets.map((ticket) => (
                 <button
                   key={ticket.ticket_number}
                   type="button"
                   onClick={() => setSelectedTicketNumber(ticket.ticket_number)}
-                  className={`w-full px-4 py-3 text-left hover:bg-white/10 ${selectedTicketNumber === ticket.ticket_number ? 'bg-white/10' : ''}`}
+                  className={`w-full px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-white/10 ${selectedTicketNumber === ticket.ticket_number ? 'bg-slate-100 dark:bg-white/10' : ''}`}
                 >
                   <div className="text-sm font-semibold text-[#f5d66a]">{ticket.ticket_number}</div>
-                  <div className="text-sm text-white truncate">{ticket.subject}</div>
-                  <div className="mt-1 text-xs text-white/70">
+                  <div className="truncate text-sm text-slate-900 dark:text-white">{ticket.subject}</div>
+                  <div className="mt-1 text-xs text-slate-600 dark:text-white/70">
                     {ticket.status} - {ticket.priority} - {ticket.comment_count} comments
                   </div>
                 </button>
@@ -309,21 +309,21 @@ export default function AdminHelpdeskPage() {
           )}
         </section>
 
-        <section className="min-h-0 overflow-auto rounded-xl border border-white/10 bg-white/5 p-4">
+        <section className="min-h-0 overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
           {loadingDetail ? (
-            <div className="text-sm text-white/70">Loading ticket details...</div>
+            <div className="text-sm text-slate-600 dark:text-white/70">Loading ticket details...</div>
           ) : !detail ? (
-            <div className="text-sm text-white/70">Select a ticket to view details.</div>
+            <div className="text-sm text-slate-600 dark:text-white/70">Select a ticket to view details.</div>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-lg border border-white/10 bg-black/20 p-3 text-sm">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm dark:border-white/10 dark:bg-black/20">
                 <div><strong>Ticket:</strong> {detail.ticket_number}</div>
                 <div><strong>Name:</strong> {detail.name}</div>
                 <div><strong>Email:</strong> {detail.email}</div>
                 <div><strong>Category:</strong> {detail.category}</div>
                 <div><strong>Subject:</strong> {detail.subject}</div>
                 <div className="mt-2 whitespace-pre-wrap"><strong>Description:</strong> {detail.description}</div>
-                <div className="mt-2 text-xs text-white/65">
+                <div className="mt-2 text-xs text-slate-600 dark:text-white/65">
                   Created: {formatDate(detail.created_at)} | Updated: {formatDate(detail.updated_at)}
                 </div>
               </div>
@@ -332,11 +332,11 @@ export default function AdminHelpdeskPage() {
                 <select
                   value={draftStatus}
                   onChange={(e) => setDraftStatus(e.target.value as HelpdeskStatus)}
-                  className="rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
                   disabled={savingTicket}
                 >
                   {STATUS_OPTIONS.map((item) => (
-                    <option key={item.value} value={item.value} className="bg-[#0f131c]">
+                    <option key={item.value} value={item.value} className="bg-white text-slate-900 dark:bg-[#0f131c] dark:text-white">
                       {item.label}
                     </option>
                   ))}
@@ -344,11 +344,11 @@ export default function AdminHelpdeskPage() {
                 <select
                   value={draftPriority}
                   onChange={(e) => setDraftPriority(e.target.value as HelpdeskPriority)}
-                  className="rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
                   disabled={savingTicket}
                 >
                   {PRIORITY_OPTIONS.map((item) => (
-                    <option key={item.value} value={item.value} className="bg-[#0f131c]">
+                    <option key={item.value} value={item.value} className="bg-white text-slate-900 dark:bg-[#0f131c] dark:text-white">
                       {item.label}
                     </option>
                   ))}
@@ -364,7 +364,7 @@ export default function AdminHelpdeskPage() {
                   </button>
                   <button
                     type="button"
-                    className="flex-1 rounded-lg border border-white/25 px-3 py-2 text-sm hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/25 dark:hover:bg-white/10"
                     onClick={() => void handleCloseTicket()}
                     disabled={savingTicket || detail.status === 'closed'}
                   >
@@ -373,15 +373,15 @@ export default function AdminHelpdeskPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black/20">
                 <h3 className="mb-2 text-sm font-semibold">Comments</h3>
                 <div className="max-h-[240px] space-y-2 overflow-auto pr-1">
                   {detail.comments.length === 0 ? (
-                    <div className="text-xs text-white/65">No comments yet.</div>
+                    <div className="text-xs text-slate-600 dark:text-white/65">No comments yet.</div>
                   ) : (
                     detail.comments.map((comment) => (
-                      <div key={comment.id} className="rounded-md border border-white/10 bg-white/5 p-2 text-sm">
-                        <div className="mb-1 text-xs text-white/70">
+                      <div key={comment.id} className="rounded-md border border-slate-200 bg-white p-2 text-sm dark:border-white/10 dark:bg-white/5">
+                        <div className="mb-1 text-xs text-slate-600 dark:text-white/70">
                           {(comment.author_name || 'Support Team')} - {formatDate(comment.created_at)}
                           {comment.is_internal ? ' - internal' : ''}
                         </div>
@@ -392,18 +392,18 @@ export default function AdminHelpdeskPage() {
                 </div>
               </div>
 
-              <form onSubmit={handleAddComment} className="rounded-lg border border-white/10 bg-black/20 p-3">
+              <form onSubmit={handleAddComment} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black/20">
                 <textarea
                   value={commentBody}
                   onChange={(e) => setCommentBody(e.target.value)}
                   rows={4}
                   placeholder="Write a reply or internal note"
-                  className="w-full rounded-lg border border-white/20 bg-black/30 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-black/30 dark:text-white dark:placeholder:text-white/50"
                   required
                   disabled={postingComment}
                 />
                 <div className="mt-2 flex items-center justify-between">
-                  <label className="inline-flex items-center gap-2 text-xs text-white/80">
+                  <label className="inline-flex items-center gap-2 text-xs text-slate-700 dark:text-white/80">
                     <input
                       type="checkbox"
                       checked={isInternalComment}

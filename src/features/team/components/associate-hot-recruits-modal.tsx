@@ -112,16 +112,16 @@ function RecruitSummaryCard({
   teamRecruits: number | null | undefined;
 }) {
   return (
-    <div className="w-60 rounded-lg border border-white/10 bg-black/30 px-5 py-3 shadow-sm">
-      <div className="mb-2 text-center text-[10px] uppercase tracking-widest text-white/60">{title}</div>
-      <div className="grid grid-cols-2 divide-x divide-white/10">
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-3 shadow-sm dark:border-white/10 dark:bg-black/30">
+      <div className="mb-2 text-center text-[10px] uppercase tracking-widest text-slate-600 dark:text-white/60">{title}</div>
+      <div className="grid grid-cols-2 divide-x divide-slate-200 dark:divide-white/10">
         <div className="pr-3 text-center">
           <div className="text-[10px] font-semibold text-amber-300">Personal Recruits</div>
-          <div className="mt-1 text-2xl font-semibold text-white">{personalRecruits ?? 0}</div>
+          <div className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{personalRecruits ?? 0}</div>
         </div>
         <div className="pl-3 text-center">
           <div className="text-[10px] font-semibold text-amber-300">Team Recruits</div>
-          <div className="mt-1 text-2xl font-semibold text-white">{teamRecruits ?? 0}</div>
+          <div className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{teamRecruits ?? 0}</div>
         </div>
       </div>
     </div>
@@ -157,9 +157,9 @@ function PointsSummaryCard({
 
   return (
     <div
-      className={`w-80 rounded-lg bg-black/30 px-4 py-3 shadow-sm ${
-        highlight ? 'border border-amber-400/60' : 'border border-white/10'
-      } ${onClick ? 'cursor-pointer transition-colors hover:bg-amber-500/10' : ''}`}
+      className={`rounded-lg bg-slate-50 px-4 py-3 shadow-sm dark:bg-black/30 ${
+        highlight ? 'border border-amber-400/60' : 'border border-slate-200 dark:border-white/10'
+      } ${onClick ? 'cursor-pointer transition-colors hover:bg-amber-100 dark:hover:bg-amber-500/10' : ''}`}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
@@ -170,14 +170,14 @@ function PointsSummaryCard({
         }
       } : undefined}
     >
-      <div className={`mb-2 text-center text-[10px] uppercase tracking-widest ${highlight ? 'text-amber-300' : 'text-white/60'}`}>
+      <div className={`mb-2 text-center text-[10px] uppercase tracking-widest ${highlight ? 'text-amber-700 dark:text-amber-300' : 'text-slate-600 dark:text-white/60'}`}>
         {title}
       </div>
-      <div className="grid grid-cols-2 divide-x divide-white/10">
+      <div className="grid grid-cols-2 divide-x divide-slate-200 dark:divide-white/10">
         <div className="min-w-0 pr-3 text-center">
           <div className="text-[10px] font-semibold text-amber-300">Personal Points</div>
           <div
-            className={`mt-1 whitespace-nowrap font-semibold tabular-nums text-white ${pointsValueClassName(formattedPersonalPoints)}`}
+            className={`mt-1 whitespace-nowrap font-semibold tabular-nums text-slate-900 dark:text-white ${pointsValueClassName(formattedPersonalPoints)}`}
             title={formattedPersonalPoints}
           >
             {formattedPersonalPoints}
@@ -186,7 +186,7 @@ function PointsSummaryCard({
         <div className="min-w-0 pl-3 text-center">
           <div className="text-[10px] font-semibold text-amber-300">Team Points</div>
           <div
-            className={`mt-1 whitespace-nowrap font-semibold tabular-nums text-white ${pointsValueClassName(formattedTeamPoints)}`}
+            className={`mt-1 whitespace-nowrap font-semibold tabular-nums text-slate-900 dark:text-white ${pointsValueClassName(formattedTeamPoints)}`}
             title={formattedTeamPoints}
           >
             {formattedTeamPoints}

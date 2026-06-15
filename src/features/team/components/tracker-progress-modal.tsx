@@ -65,13 +65,13 @@ export function TrackerProgressModal({
     <Modal open={open} onClose={onClose} title={title} contentClassName="max-w-md">
       {/* Progress bar */}
       <div className="mb-4">
-        <div className="flex justify-between text-sm mb-1 text-white/70">
+        <div className="mb-1 flex justify-between text-sm text-slate-600 dark:text-white/70">
           <span>Progress</span>
           <span>
             {formatNumber(current)} / {formatNumber(target)} {meta.unit}
           </span>
         </div>
-        <div className="h-3 w-full rounded-full bg-white/10 overflow-hidden">
+        <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
@@ -82,7 +82,7 @@ export function TrackerProgressModal({
             }}
           />
         </div>
-        <p className="text-xs text-white/50 mt-1">{meta.targetLabel}</p>
+        <p className="mt-1 text-xs text-slate-500 dark:text-white/50">{meta.targetLabel}</p>
       </div>
 
       {/* Status card */}
@@ -99,7 +99,7 @@ export function TrackerProgressModal({
         >
           {formatNumber(current)}
         </div>
-        <div className="text-sm text-white/60 mb-2">current {meta.unit}</div>
+        <div className="mb-2 text-sm text-slate-600 dark:text-white/60">current {meta.unit}</div>
         {achieved ? (
           <div className="text-green-400 font-semibold">🎉 Goal Achieved!</div>
         ) : (
