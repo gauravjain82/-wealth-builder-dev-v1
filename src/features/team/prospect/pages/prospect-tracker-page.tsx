@@ -540,7 +540,7 @@ export default function ProspectTrackerPage() {
         profile: {
           state: formData.state || undefined,
           home_address: formData.homeAddress || undefined,
-          home_address2: formData.homeAddress2 || undefined,
+          home_address2: formData.homeAddress2.trim(),
           home_city: formData.homeCity || undefined,
           home_zip: formData.homeZip || undefined,
           birthday: formData.birthday || undefined,
@@ -584,7 +584,7 @@ export default function ProspectTrackerPage() {
           phone: formData.phone || updated.profile?.phone || editingProspect.profile?.phone || '',
           state: formData.state || '',
           home_address: formData.homeAddress || updated.profile?.home_address || editingProspect.profile?.home_address || '',
-          home_address2: formData.homeAddress2 || updated.profile?.home_address2 || editingProspect.profile?.home_address2 || '',
+          home_address2: formData.homeAddress2,
           home_city: formData.homeCity || updated.profile?.home_city || editingProspect.profile?.home_city || '',
           home_zip: formData.homeZip || updated.profile?.home_zip || editingProspect.profile?.home_zip || '',
           birthday: formData.birthday || null,
@@ -689,7 +689,14 @@ export default function ProspectTrackerPage() {
         spouse_polo_size: formData.spousePoloSize,
         recruited_by: formData.recruiterId,
         leader: formData.leaderId,
-        profile: formData.dateOfBirth ? { birthday: formData.dateOfBirth } : undefined,
+        profile: {
+          birthday: formData.dateOfBirth || undefined,
+          state: formData.state || undefined,
+          home_address: formData.homeAddress || undefined,
+          home_address2: formData.homeAddress2.trim(),
+          home_city: formData.homeCity || undefined,
+          home_zip: formData.homeZip || undefined,
+        },
       });
 
       const activated = await activateProspectWithAgencyCode(addAgencyCodeFor.id, formData.agencyCode.trim());
@@ -1416,7 +1423,7 @@ export default function ProspectTrackerPage() {
         profile: {
           state: formData.state || undefined,
           home_address: formData.homeAddress || undefined,
-          home_address2: formData.homeAddress2 || undefined,
+          home_address2: formData.homeAddress2.trim(),
           home_city: formData.homeCity || undefined,
           home_zip: formData.homeZip || undefined,
           birthday: formData.birthday || undefined,

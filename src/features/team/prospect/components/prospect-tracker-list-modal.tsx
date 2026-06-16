@@ -683,7 +683,7 @@ export function ProspectTrackerListModal({
             ...(row.profile || {}),
             birthday: birthdayFromAge(draft.age) || row.profile?.birthday || undefined,
             home_address: row.profile?.home_address || undefined,
-            home_address2: row.profile?.home_address2 || undefined,
+            home_address2: (row.profile?.home_address2 ?? '').trim(),
             home_city: row.profile?.home_city || undefined,
             home_zip: row.profile?.home_zip || undefined,
             occupation: draft.occupation || undefined,
@@ -753,7 +753,7 @@ export function ProspectTrackerListModal({
         profile: {
           state: formData.state || undefined,
           home_address: formData.homeAddress || undefined,
-          home_address2: formData.homeAddress2 || undefined,
+          home_address2: formData.homeAddress2.trim(),
           home_city: formData.homeCity || undefined,
           home_zip: formData.homeZip || undefined,
           birthday: formData.birthday || undefined,
@@ -846,7 +846,14 @@ export function ProspectTrackerListModal({
         spouse_polo_size: formData.spousePoloSize,
         recruited_by: formData.recruiterId,
         leader: formData.leaderId,
-        profile: formData.dateOfBirth ? { birthday: formData.dateOfBirth } : undefined,
+        profile: {
+          birthday: formData.dateOfBirth || undefined,
+          state: formData.state || undefined,
+          home_address: formData.homeAddress || undefined,
+          home_address2: formData.homeAddress2.trim(),
+          home_city: formData.homeCity || undefined,
+          home_zip: formData.homeZip || undefined,
+        },
       });
 
       const activated = await activateProspectWithAgencyCode(addAgencyCodeFor.id, formData.agencyCode.trim());

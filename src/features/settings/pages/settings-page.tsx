@@ -702,10 +702,6 @@ export default function SettingsPage() {
       addToast({ type: 'warning', message: 'Address is required.' });
       return;
     }
-    if (!profileForm.homeAddress2.trim()) {
-      addToast({ type: 'warning', message: 'Address 2 is required.' });
-      return;
-    }
     if (!profileForm.homeCity.trim()) {
       addToast({ type: 'warning', message: 'City is required.' });
       return;
@@ -893,7 +889,7 @@ export default function SettingsPage() {
 
                 <div className="field-row field-row-four">
                   <div className="field-group">
-                    <label>Address 2*</label>
+                    <label>Address 2</label>
                     <input
                       className="input-field"
                       value={profileForm.homeAddress2}

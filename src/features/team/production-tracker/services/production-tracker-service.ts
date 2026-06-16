@@ -344,7 +344,7 @@ function normalizeProductionRecord(record: BackendProductionTrackerRecord): Prod
       id: Number(record.id),
       uuid: toStringValue(record.uuid) || undefined,
       prospect: (record.client as number | null | undefined) ?? null,
-      client_name: toStringValue(record.client_display) || toStringValue(record.client_name),
+      client_name: toStringValue(record.client_name) || toStringValue(record.client_display),
       client_display: toStringValue(record.client_display) || undefined,
       date_written: toNullableString(record.date_written),
       closure_date: toNullableString(record.closure_date),

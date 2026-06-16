@@ -91,10 +91,6 @@ export function AddAgencyCodeModal({
       addToast({ type: 'warning', message: 'Address is required.' });
       return;
     }
-    if (!form.homeAddress2.trim()) {
-      addToast({ type: 'warning', message: 'Address 2 is required.' });
-      return;
-    }
     if (!form.homeCity.trim()) {
       addToast({ type: 'warning', message: 'City is required.' });
       return;
@@ -180,7 +176,7 @@ export function AddAgencyCodeModal({
               />
             </FormRow>
             <FormRow>
-              <Label variant="form">Address 2*</Label>
+              <Label variant="form">Address 2</Label>
               <Input
                 variant="surface"
                 value={form.homeAddress2}
