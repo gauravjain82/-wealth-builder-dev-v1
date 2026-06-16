@@ -286,7 +286,7 @@ interface UpdateProspectPayload {
     home_address2?: string;
     home_city?: string;
     home_zip?: string;
-    birthday?: string;
+    birthday?: string | null;
     gender?: string;
     occupation?: string;
     how_known?: string;
@@ -369,7 +369,7 @@ export interface CreateProspectPayload {
     home_address2?: string;
     home_city?: string;
     home_zip?: string;
-    birthday?: string;
+    birthday?: string | null;
     gender?: string;
     occupation?: string;
     how_known?: string;

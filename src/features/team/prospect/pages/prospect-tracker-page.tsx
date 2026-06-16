@@ -113,31 +113,6 @@ function markAfterProductionAssignment(prospect: Prospect): ProspectMark {
   return hasAgencyCode || current === 'recruit' || current === 'both' ? 'both' : 'client';
 }
 
-function ageFromBirthday(value?: string | null): string {
-  if (!value) return '';
-  const birth = new Date(value);
-  if (Number.isNaN(birth.getTime())) return '';
-
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-  return age > 0 ? String(age) : '';
-}
-
-function birthdayFromAge(value: string): string | undefined {
-  const age = Number.parseInt(value, 10);
-  if (!Number.isFinite(age) || age <= 0) return undefined;
-
-  const today = new Date();
-  const year = today.getFullYear() - age;
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function toProspectSort(sort: { key: string; direction: SortDirection } | null): string {
   if (!sort) return '';
   const keyMap: Record<string, string> = {
@@ -230,7 +205,6 @@ export default function ProspectTrackerPage() {
         howKnown: string;
         relationship: string;
         occupation: string;
-        age: string;
         whatTold: string;
         married: boolean;
         dependentKids: boolean;
@@ -543,7 +517,7 @@ export default function ProspectTrackerPage() {
           home_address2: formData.homeAddress2.trim(),
           home_city: formData.homeCity || undefined,
           home_zip: formData.homeZip || undefined,
-          birthday: formData.birthday || undefined,
+          birthday: formData.birthday || null,
           gender: formData.gender || undefined,
           occupation: formData.occupation || undefined,
           how_known: formData.howKnown || undefined,
@@ -690,7 +664,7 @@ export default function ProspectTrackerPage() {
         recruited_by: formData.recruiterId,
         leader: formData.leaderId,
         profile: {
-          birthday: formData.dateOfBirth || undefined,
+          birthday: formData.dateOfBirth || null,
           state: formData.state || undefined,
           home_address: formData.homeAddress || undefined,
           home_address2: formData.homeAddress2.trim(),
@@ -969,7 +943,6 @@ export default function ProspectTrackerPage() {
             ? String(profile.relationship)
             : '',
         occupation: profile?.occupation || '',
-        age: ageFromBirthday(profile?.birthday),
         whatTold: profile?.what_told || '',
         married: Boolean(profile?.flags?.married),
         dependentKids: Boolean(profile?.flags?.dependentKids),
@@ -1030,7 +1003,7 @@ export default function ProspectTrackerPage() {
   }, []);
 
   const handleProfileDraftFieldChange = useCallback(
-    (prospectId: number, field: 'howKnown' | 'relationship' | 'occupation' | 'age' | 'whatTold', value: string) => {
+    (prospectId: number, field: 'howKnown' | 'relationship' | 'occupation' | 'whatTold', value: string) => {
       setProfileDraftByProspectId((prev) => ({
         ...prev,
         [prospectId]: {
@@ -1038,7 +1011,6 @@ export default function ProspectTrackerPage() {
             howKnown: '',
             relationship: '',
             occupation: '',
-            age: '',
             whatTold: '',
             married: false,
             dependentKids: false,
@@ -1059,7 +1031,6 @@ export default function ProspectTrackerPage() {
             howKnown: '',
             relationship: '',
             occupation: '',
-            age: '',
             whatTold: '',
             married: false,
             dependentKids: false,
@@ -1078,9 +1049,9 @@ export default function ProspectTrackerPage() {
 
       setSavingMetaProspectIdSet((prev) => new Set(prev).add(row.id));
       const previousProfile = row.profile || null;
-      const nextBirthday = birthdayFromAge(draft.age);
       const optimisticProfile = {
         ...(row.profile || {}),
+        birthday: row.profile?.birthday ?? null,
         city: row.profile?.city || '',
         state: row.profile?.state || '',
         phone: row.profile?.phone || row.phone || '',
@@ -1092,7 +1063,6 @@ export default function ProspectTrackerPage() {
         how_known: draft.howKnown || '',
         relationship: draft.relationship ? Number.parseInt(draft.relationship, 10) : null,
         occupation: draft.occupation || '',
-        birthday: nextBirthday || null,
         what_told: draft.whatTold || '',
         dependent_children: draft.dependentKids,
         flags: {
@@ -1106,7 +1076,6 @@ export default function ProspectTrackerPage() {
         how_known: draft.howKnown || undefined,
         relationship: draft.relationship ? Number.parseInt(draft.relationship, 10) : null,
         occupation: draft.occupation || undefined,
-        birthday: nextBirthday,
         what_told: draft.whatTold || undefined,
         dependent_children: draft.dependentKids,
         home_address: row.profile?.home_address || '',
@@ -1426,7 +1395,7 @@ export default function ProspectTrackerPage() {
           home_address2: formData.homeAddress2.trim(),
           home_city: formData.homeCity || undefined,
           home_zip: formData.homeZip || undefined,
-          birthday: formData.birthday || undefined,
+          birthday: formData.birthday || null,
           gender: formData.gender || undefined,
           occupation: formData.occupation || undefined,
           how_known: formData.howKnown || undefined,

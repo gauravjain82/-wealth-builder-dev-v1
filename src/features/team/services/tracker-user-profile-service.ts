@@ -64,7 +64,7 @@ export interface TrackerUserProfileUpdatePayload {
   leader?: number | null;
   level_id?: number | null;
   profile?: {
-    birthday?: string;
+    birthday?: string | null;
     state?: string;
     home_address?: string;
     home_address2?: string;

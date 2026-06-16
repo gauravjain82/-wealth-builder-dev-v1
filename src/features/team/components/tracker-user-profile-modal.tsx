@@ -156,21 +156,6 @@ function mapToForm(user: TrackerUserProfile): ProfileFormState {
   };
 }
 
-function ageFromBirthday(value: string): string {
-  if (!value) return '—';
-  const birth = new Date(value);
-  if (Number.isNaN(birth.getTime())) return '—';
-
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-
-  return age >= 0 ? `${age} yrs` : '—';
-}
-
 function yesNo(value: boolean | null | undefined): string {
   return value ? 'Yes' : 'No';
 }
@@ -306,7 +291,7 @@ export function TrackerUserProfileModal({
         recruited_by: form.recruiterId,
         leader: form.leaderId,
         profile: {
-          birthday: form.birthday || '',
+          birthday: form.birthday || null,
           state: form.state || '',
           home_address: form.homeAddress || '',
           home_address2: form.homeAddress2 || '',
@@ -531,7 +516,7 @@ export function TrackerUserProfileModal({
                     }}
                   />
                 </LabeledField>
-                <LabeledField label="Birthday" required>
+                <LabeledField label="Birthday">
                   <DatePicker
                     value={form.birthday}
                     onChange={(value) => updateField('birthday', value)}
@@ -592,7 +577,6 @@ export function TrackerUserProfileModal({
                   />
                   Dependent kids
                 </label>
-                <span className="text-xs text-slate-600 dark:text-white/60">Age: {ageFromBirthday(form.birthday)}</span>
               </div>
             </section>
 

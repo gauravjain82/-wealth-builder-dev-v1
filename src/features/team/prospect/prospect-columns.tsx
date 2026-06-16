@@ -29,7 +29,6 @@ interface ProspectColumnOptions {
       howKnown: string;
       relationship: string;
       occupation: string;
-      age: string;
       whatTold: string;
       married: boolean;
       dependentKids: boolean;
@@ -38,7 +37,7 @@ interface ProspectColumnOptions {
   onStartProfileEdit: (row: Prospect) => void;
   onProfileDraftFieldChange: (
     prospectId: number,
-    field: 'howKnown' | 'relationship' | 'occupation' | 'age' | 'whatTold',
+    field: 'howKnown' | 'relationship' | 'occupation' | 'whatTold',
     value: string
   ) => void;
   onProfileDraftFlagChange: (prospectId: number, field: 'married' | 'dependentKids', value: boolean) => void;
@@ -329,15 +328,6 @@ export function buildProspectColumns(
                 placeholder="Occupation"
                 value={draft.occupation}
                 onChange={(e) => options.onProfileDraftFieldChange(row.id, 'occupation', e.target.value)}
-              />
-              <input
-                className="h-8 rounded border border-white/15 bg-white/5 px-2 text-xs text-white outline-none"
-                type="number"
-                min="1"
-                max="100"
-                placeholder="Age"
-                value={draft.age}
-                onChange={(e) => options.onProfileDraftFieldChange(row.id, 'age', e.target.value)}
               />
             </div>
             <input

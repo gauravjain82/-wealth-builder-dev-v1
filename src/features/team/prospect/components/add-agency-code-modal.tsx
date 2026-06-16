@@ -99,10 +99,6 @@ export function AddAgencyCodeModal({
       addToast({ type: 'warning', message: 'Zip is required.' });
       return;
     }
-    if (!form.dateOfBirth.trim()) {
-      addToast({ type: 'warning', message: 'Date of Birth is required.' });
-      return;
-    }
     await onSubmit(form);
   };
 
@@ -133,7 +129,7 @@ export function AddAgencyCodeModal({
               <DatePicker value={form.amaDate} onChange={(value) => updateField('amaDate', value)} />
             </FormRow>
             <FormRow>
-              <Label variant="form">Date of Birth*</Label>
+              <Label variant="form">Date of Birth</Label>
               <DatePicker
                 value={form.dateOfBirth}
                 onChange={(value) => updateField('dateOfBirth', value)}

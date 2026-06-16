@@ -706,11 +706,6 @@ export default function SettingsPage() {
       addToast({ type: 'warning', message: 'City is required.' });
       return;
     }
-    if (!profileForm.dateOfBirth.trim()) {
-      addToast({ type: 'warning', message: 'Date of Birth is required.' });
-      return;
-    }
-
     try {
       setSavingProfile(true);
       await updateCurrentUserDetails(userDetails.id, {
@@ -720,7 +715,7 @@ export default function SettingsPage() {
         spouse_phone: profileForm.spousePhone.trim(),
         spouse_polo_size: profileForm.spousePoloSize.trim(),
         profile: {
-          birthday: profileForm.dateOfBirth,
+          birthday: profileForm.dateOfBirth || null,
           state: profileForm.state.trim(),
           gender: profileForm.gender.trim(),
           home_zip: profileForm.homeZip.trim(),
@@ -852,7 +847,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div className="field-group">
-                    <label>Date of Birth*</label>
+                    <label>Date of Birth</label>
                     <DatePicker
                       value={profileForm.dateOfBirth}
                       onChange={(value) => updateProfileField('dateOfBirth', value)}

@@ -37,7 +37,7 @@ export interface CurrentUserProfileUpdatePayload {
   spouse_phone?: string;
   spouse_polo_size?: string;
   profile?: {
-    birthday?: string;
+    birthday?: string | null;
     state?: string;
     gender?: string;
     home_address?: string;

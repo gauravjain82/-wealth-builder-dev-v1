@@ -357,9 +357,9 @@ export default function InviteAgentsPage() {
         description="Send and manage invitations to new agents."
         titleVariant="h5"
         className="flex-shrink-0"
-        actions={
-          <Button onClick={() => setInviteOpen(true)}>+ Invite Agent</Button>
-        }
+        // actions={
+          // <Button onClick={() => setInviteOpen(true)}>+ Invite Agent</Button>
+        // }
       />
 
       {/* Search bar */}
@@ -421,19 +421,19 @@ export default function InviteAgentsPage() {
               {invitations.map((inv, idx) => (
                 <tr
                   key={inv.id}
-                  className={`border-b border-slate-100 transition-colors hover:bg-slate-50 dark:border-white/6 dark:hover:bg-white/4 ${
-                    idx % 2 === 0 ? 'bg-transparent' : 'bg-slate-50/50 dark:bg-white/2'
+                  className={`group border-b  transition-colors hover:bg-slate-50 dark:border-white/6 dark:hover:bg-slate-700/55 ${
+                    idx % 2 === 0 ? 'bg-transparent' : 'bg-slate-50/50 dark:bg-slate-800/35'
                   }`}
                 >
-                  <td className="px-5 py-3 font-medium text-slate-900 dark:text-white">
+                  <td className="px-5 py-3 font-medium text-slate-900 group-hover:text-slate-900 dark:text-white dark:group-hover:text-white">
                     {inv.to_name || <span className="text-slate-400 dark:text-white/40">—</span>}
                   </td>
-                  <td className="px-5 py-3 text-slate-600 dark:text-white/70">{inv.email}</td>
+                  <td className="px-5 py-3 text-slate-600 group-hover:text-slate-700 dark:text-white/70 dark:group-hover:text-white/90">{inv.email}</td>
                   <td className="px-5 py-3">
                     <StatusBadge status={inv.status} />
                   </td>
-                  <td className="px-5 py-3 text-slate-500 dark:text-white/50">{formatDate(inv.created_at)}</td>
-                  <td className="px-5 py-3 text-slate-500 dark:text-white/50">{formatDate(inv.expires_at)}</td>
+                  <td className="px-5 py-3 text-slate-500 group-hover:text-slate-700 dark:text-white/50 dark:group-hover:text-white/85">{formatDate(inv.created_at)}</td>
+                  <td className="px-5 py-3 text-slate-500 group-hover:text-slate-700 dark:text-white/50 dark:group-hover:text-white/85">{formatDate(inv.expires_at)}</td>
                   <td className="px-3 py-3">
                     {resending === inv.id ? (
                       <span className="text-xs text-slate-400 dark:text-white/40">…</span>

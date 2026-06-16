@@ -117,31 +117,6 @@ function markAfterProductionAssignment(prospect: Prospect): ProspectMark {
   return hasAgencyCode || current === 'recruit' || current === 'both' ? 'both' : 'client';
 }
 
-function ageFromBirthday(value?: string | null): string {
-  if (!value) return '';
-  const birth = new Date(value);
-  if (Number.isNaN(birth.getTime())) return '';
-
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-  return age > 0 ? String(age) : '';
-}
-
-function birthdayFromAge(value: string): string | undefined {
-  const age = Number.parseInt(value, 10);
-  if (!Number.isFinite(age) || age <= 0) return undefined;
-
-  const today = new Date();
-  const year = today.getFullYear() - age;
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function toProspect(user: ProspectTrackerListUser): Prospect {
   const raw = user as ProspectTrackerListUser & Record<string, any>;
   const fullName = fullNameOf(user);
@@ -299,7 +274,6 @@ export function ProspectTrackerListModal({
         howKnown: string;
         relationship: string;
         occupation: string;
-        age: string;
         whatTold: string;
         married: boolean;
         dependentKids: boolean;
@@ -617,7 +591,6 @@ export function ProspectTrackerListModal({
             ? String(row.profile.relationship)
             : '',
         occupation: row.profile?.occupation || '',
-        age: ageFromBirthday(row.profile?.birthday),
         whatTold: row.profile?.what_told || '',
         married: Boolean(row.profile?.flags?.married),
         dependentKids: Boolean(row.profile?.flags?.dependentKids || row.profile?.dependent_children),
@@ -628,7 +601,7 @@ export function ProspectTrackerListModal({
   const handleProfileDraftFieldChange = useCallback(
     (
       prospectId: number,
-      field: 'howKnown' | 'relationship' | 'occupation' | 'age' | 'whatTold',
+      field: 'howKnown' | 'relationship' | 'occupation' | 'whatTold',
       value: string
     ) => {
       setProfileDraftByProspectId((prev) => ({
@@ -638,7 +611,6 @@ export function ProspectTrackerListModal({
             howKnown: '',
             relationship: '',
             occupation: '',
-            age: '',
             whatTold: '',
             married: false,
             dependentKids: false,
@@ -659,7 +631,6 @@ export function ProspectTrackerListModal({
             howKnown: '',
             relationship: '',
             occupation: '',
-            age: '',
             whatTold: '',
             married: false,
             dependentKids: false,
@@ -681,7 +652,6 @@ export function ProspectTrackerListModal({
         const updated = await updateProspectDetails(row.id, {
           profile: {
             ...(row.profile || {}),
-            birthday: birthdayFromAge(draft.age) || row.profile?.birthday || undefined,
             home_address: row.profile?.home_address || undefined,
             home_address2: (row.profile?.home_address2 ?? '').trim(),
             home_city: row.profile?.home_city || undefined,
@@ -756,7 +726,7 @@ export function ProspectTrackerListModal({
           home_address2: formData.homeAddress2.trim(),
           home_city: formData.homeCity || undefined,
           home_zip: formData.homeZip || undefined,
-          birthday: formData.birthday || undefined,
+          birthday: formData.birthday || null,
           gender: formData.gender || undefined,
           occupation: formData.occupation || undefined,
           how_known: formData.howKnown || undefined,
@@ -847,7 +817,7 @@ export function ProspectTrackerListModal({
         recruited_by: formData.recruiterId,
         leader: formData.leaderId,
         profile: {
-          birthday: formData.dateOfBirth || undefined,
+          birthday: formData.dateOfBirth || null,
           state: formData.state || undefined,
           home_address: formData.homeAddress || undefined,
           home_address2: formData.homeAddress2.trim(),
