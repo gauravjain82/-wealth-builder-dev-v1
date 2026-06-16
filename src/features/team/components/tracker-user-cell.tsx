@@ -21,6 +21,18 @@ function getInitials(fullName: string): string {
 
 function formatAmaDate(value?: string | null): string {
   if (!value) return '-';
+
+  const dateOnlyMatch = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnlyMatch) {
+    const year = Number.parseInt(dateOnlyMatch[1], 10);
+    const month = Number.parseInt(dateOnlyMatch[2], 10);
+    const day = Number.parseInt(dateOnlyMatch[3], 10);
+    const localDate = new Date(year, month - 1, day);
+    if (!Number.isNaN(localDate.getTime())) {
+      return localDate.toLocaleDateString();
+    }
+  }
+
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleDateString();
