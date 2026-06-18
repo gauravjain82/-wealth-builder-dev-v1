@@ -6,6 +6,47 @@ import { fetchCachedReferenceData } from '@/infrastructure/query/reference-data'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
+const POLICY_STATUS_VALUES = new Set([
+  'INCOMPLETE',
+  'IN_PROGRESS',
+  'SUBMITTED',
+  'ADVANCE_1_PAID',
+  'ADVANCE_2_PAID',
+  'APPROVED',
+  'ISSUED',
+  'DELIVERED',
+  'COMPLETED',
+  'DECLINED',
+  'TRIAL',
+  'CHARGEBACK',
+  'CANCELLED',
+]);
+
+const LEGACY_POLICY_STATUS_MAP: Record<string, string> = {
+  active: 'IN_PROGRESS',
+  pending: 'IN_PROGRESS',
+  'in progress': 'IN_PROGRESS',
+  incomplete: 'INCOMPLETE',
+  submitted: 'SUBMITTED',
+  approved: 'APPROVED',
+  issued: 'ISSUED',
+  issue: 'ISSUED',
+  delivered: 'DELIVERED',
+  complete: 'COMPLETED',
+  completed: 'COMPLETED',
+  declined: 'DECLINED',
+  trial: 'TRIAL',
+  chargeback: 'CHARGEBACK',
+  cancelled: 'CANCELLED',
+  canceled: 'CANCELLED',
+};
+
+function normalizePolicyStatus(status: string | undefined): string | undefined {
+  if (!status) return status;
+  if (POLICY_STATUS_VALUES.has(status)) return status;
+  return LEGACY_POLICY_STATUS_MAP[status.trim().toLowerCase()] || status;
+}
+
 export interface ProductionTrackerRecord {
   id: number;
   uuid?: string;
@@ -503,7 +544,7 @@ function toBackendPayload(payload: CreateProductionPayload | UpdateProductionPay
   }
 
   // Status
-  if ('status' in payload) out.status = payload.status;
+  if ('status' in payload) out.status = normalizePolicyStatus(payload.status);
 
   // Trial app
   if ('trial_app' in payload) out.is_trial_app = payload.trial_app;
@@ -542,12 +583,15 @@ function toBackendPayload(payload: CreateProductionPayload | UpdateProductionPay
   if ('chargeback_deposited_12_months' in payload) out.chargeback_deposited_12_months = payload.chargeback_deposited_12_months;
   if ('chargeback_deposited_26_months' in payload) out.chargeback_deposited_26_months = payload.chargeback_deposited_26_months;
 
-  // Agent splits: build array from agent_1/agent_2 fields
-  const agent1 = payload.agent_1;
-  const agent1Pct = payload.agent_1_pct;
-  if (agent1 != null && agent1Pct != null) {
+  // Agent splits: v2 policy create requires agent_splits.
+  if ('agent_splits' in payload && Array.isArray(payload.agent_splits)) {
+    out.agent_splits = payload.agent_splits.map((split) => ({
+      agent: split.agent,
+      split_percentage: String(split.split_percentage),
+    }));
+  } else if (payload.agent_1 != null && payload.agent_1_pct != null) {
     const splits: Array<{ agent: number; split_percentage: string }> = [
-      { agent: agent1, split_percentage: String(agent1Pct) },
+      { agent: payload.agent_1, split_percentage: String(payload.agent_1_pct) },
     ];
     if (payload.split_mode === 'split' && payload.agent_2 != null && payload.agent_2_pct != null) {
       splits.push({ agent: payload.agent_2, split_percentage: String(payload.agent_2_pct) });
@@ -598,6 +642,10 @@ export interface CreateProductionPayload {
   agent_2_name?: string;
   agent_2_pct?: number;
   split_mode?: 'split' | 'solo';
+  agent_splits?: Array<{
+    agent: number;
+    split_percentage: string | number;
+  }>;
   advance_first_date?: string | null;
   advance_first_amount?: number | null;
   advance_second_date?: string | null;
