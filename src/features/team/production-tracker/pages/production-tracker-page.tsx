@@ -385,8 +385,8 @@ export default function ProductionTrackerPage() {
     setNoteDraftByUserId((prev) => ({ ...prev, [userId]: value }));
   }, []);
 
-  const ensureNotesLoaded = useCallback(async (userId: number) => {
-    if (Object.prototype.hasOwnProperty.call(notesByUserId, userId) || loadingNoteUserIdSet.has(userId)) {
+  const ensureNotesLoaded = useCallback(async (userId: number, force = false) => {
+    if ((!force && Object.prototype.hasOwnProperty.call(notesByUserId, userId)) || loadingNoteUserIdSet.has(userId)) {
       return;
     }
 
@@ -682,7 +682,7 @@ export default function ProductionTrackerPage() {
             addToast({ type: 'error', message: 'This policy is not linked to a user yet.' });
             return;
           }
-          void ensureNotesLoaded(row.prospect);
+          void ensureNotesLoaded(row.prospect, true);
           setNotesOpenFor(row);
           setModalNoteDraft('');
         },

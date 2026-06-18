@@ -308,8 +308,8 @@ export default function MissionTrackerPage() {
     }
   };
 
-  const ensureNotesLoaded = async (userId: number) => {
-    if (notesByUserId[userId]) return;
+  const ensureNotesLoaded = async (userId: number, force = false) => {
+    if (!force && notesByUserId[userId]) return;
     setLoadingNoteUserIdSet((prev) => new Set(prev).add(userId));
     try {
       const loaded = await fetchTrackerNotesForUser(userId);
@@ -337,6 +337,7 @@ export default function MissionTrackerPage() {
       let agent1Name = '';
       try {
         const raw = localStorage.getItem('authUser');
+        const storedUserId = localStorage.getItem('wb.userId');
         if (raw) {
           const parsed = JSON.parse(raw);
           const parsedId = Number.parseInt(String(parsed?.id ?? ''), 10);
@@ -348,12 +349,21 @@ export default function MissionTrackerPage() {
             parsed?.email ||
             '';
         }
+        if (agent1Id == null && storedUserId) {
+          const parsedStoredId = Number.parseInt(storedUserId, 10);
+          if (Number.isFinite(parsedStoredId)) agent1Id = parsedStoredId;
+        }
+        if (!agent1Name) {
+          agent1Name = localStorage.getItem('wb.userName') || localStorage.getItem('wb.userEmail') || '';
+        }
       } catch {
-        // Ignore malformed payload.
+        const parsedStoredId = Number.parseInt(localStorage.getItem('wb.userId') || '', 10);
+        if (Number.isFinite(parsedStoredId)) agent1Id = parsedStoredId;
+        agent1Name = localStorage.getItem('wb.userName') || localStorage.getItem('wb.userEmail') || '';
       }
 
       const form: AddProductionFormData = {
-        status: 'Active',
+        status: 'IN_PROGRESS',
         dateWritten: today,
         closureDate: '',
         client: row.user_name || '',
@@ -390,6 +400,18 @@ export default function MissionTrackerPage() {
         const [pA, pB] = data.split.split('/').map((v) => parseFloat(v) || 0);
         const base = parseFloat(data.targetPoints) || 0;
         const isOther = data.company === 'OTHER' || data.product === 'OTHER';
+        if (data.agent1Id == null) {
+          throw new Error('Select Agent 1 before adding this record to production.');
+        }
+        if (data.agentMode === 'split' && data.agent2Id == null) {
+          throw new Error('Select Agent 2 before adding a split production record.');
+        }
+        const agentSplits = [
+          { agent: data.agent1Id, split_percentage: String(pA) },
+          ...(data.agentMode === 'split' && data.agent2Id != null
+            ? [{ agent: data.agent2Id, split_percentage: String(pB) }]
+            : []),
+        ];
 
         // v2: resolve company_product FK id; null for "OTHER"
         const company_product_id = isOther
@@ -425,6 +447,7 @@ export default function MissionTrackerPage() {
           agent_2_name: data.agentMode === 'split' ? data.agent2Name : '',
           agent_2_pct: pB,
           split_mode: data.agentMode === 'split' ? 'split' : 'solo',
+          agent_splits: agentSplits,
         });
 
         setAddProductionRow(null);
@@ -439,7 +462,7 @@ export default function MissionTrackerPage() {
         setSavingProduction(false);
       }
     },
-    [addProductionRow, addToast]
+    [addProductionRow, addToast, productionCompanyProductIds]
   );
 
   const columns = useMemo(
@@ -465,7 +488,7 @@ export default function MissionTrackerPage() {
         onNoteBlur: () => setFocusedNoteInputId(null),
         onAddInlineNote: handleAddInlineNote,
         onOpenAllNotes: (row) => {
-          void ensureNotesLoaded(row.user_id);
+          void ensureNotesLoaded(row.user_id, true);
           setNotesOpenFor(row);
           setModalNoteDraft('');
         },
