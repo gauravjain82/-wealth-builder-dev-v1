@@ -374,8 +374,8 @@ export default function AssociateTrackerPage() {
     }
   }, [addToast, clientPointsOpenFor, clientUsersHasMore, clientUsersLoading, clientUsersLoadingMore, clientUsersNextPage]);
 
-  const ensureNotesLoaded = async (userId: number) => {
-    if (notesByUserId[userId]) return;
+  const ensureNotesLoaded = async (userId: number, force = false) => {
+    if (!force && notesByUserId[userId]) return;
     setLoadingNoteUserIdSet((prev) => new Set(prev).add(userId));
     try {
       const loaded = await fetchTrackerNotesForUser(userId);
@@ -428,7 +428,7 @@ export default function AssociateTrackerPage() {
         onNoteBlur: () => setFocusedNoteInputId(null),
         onAddInlineNote: handleAddInlineNote,
         onOpenAllNotes: (row) => {
-          void ensureNotesLoaded(row.user_id);
+          void ensureNotesLoaded(row.user_id, true);
           setNotesOpenFor(row);
           setModalNoteDraft('');
         },

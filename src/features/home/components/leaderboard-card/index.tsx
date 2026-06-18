@@ -21,7 +21,7 @@ function formatValue(row: HomeLeaderboardEntry): string {
   const value = Number(row.value);
   if (!Number.isFinite(value)) return String(row.value);
   return value.toLocaleString(undefined, {
-    maximumFractionDigits: row.metric === 'points' ? 2 : 0,
+    maximumFractionDigits: 0,
   });
 }
 

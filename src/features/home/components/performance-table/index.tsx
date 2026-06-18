@@ -8,7 +8,7 @@ import './performance-table.css';
 function formatValue(value: number | string | undefined): string {
   const numericValue = Number(value ?? 0);
   if (!Number.isFinite(numericValue)) return String(value ?? 0);
-  return numericValue.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return numericValue.toLocaleString(undefined, { maximumFractionDigits: 0 });
 }
 
 const HEADERS = [

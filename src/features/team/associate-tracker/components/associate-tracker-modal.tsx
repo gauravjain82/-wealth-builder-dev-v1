@@ -168,8 +168,8 @@ export function AssociateTrackerModal({
     }
   }, [addToast]);
 
-  const ensureNotesLoaded = useCallback(async (userId: number) => {
-    if (notesByUserId[userId]) return;
+  const ensureNotesLoaded = useCallback(async (userId: number, force = false) => {
+    if (!force && notesByUserId[userId]) return;
     setLoadingNoteUserIdSet((prev) => new Set(prev).add(userId));
     try {
       const notes = await fetchTrackerNotesForUser(userId);
@@ -223,7 +223,7 @@ export function AssociateTrackerModal({
     onNoteBlur: () => setFocusedNoteInputId(null),
     onAddInlineNote: async (userId) => addNote(userId, noteDraftByUserId[userId] || ''),
     onOpenAllNotes: (row) => {
-      void ensureNotesLoaded(row.user_id);
+      void ensureNotesLoaded(row.user_id, true);
       setNotesOpenFor(row);
       setModalNoteDraft('');
     },

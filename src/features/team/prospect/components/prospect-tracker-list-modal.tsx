@@ -372,8 +372,8 @@ export function ProspectTrackerListModal({
   }, []);
 
   const ensureNotesLoaded = useCallback(
-    async (userId: number) => {
-      if (notesByProspectId[userId]) return;
+    async (userId: number, force = false) => {
+      if (!force && notesByProspectId[userId]) return;
       setLoadingNoteProspectIdSet((prev) => new Set(prev).add(userId));
       try {
         const loaded = await fetchTrackerNotesForUser(userId, 'prospect');
@@ -990,7 +990,7 @@ export function ProspectTrackerListModal({
           onNoteBlur: () => setFocusedNoteInputId(null),
           onAddInlineNote: handleAddInlineNote,
           onOpenAllNotes: (row) => {
-            void ensureNotesLoaded(row.id);
+            void ensureNotesLoaded(row.id, true);
             setNotesOpenFor(row);
             setModalNoteDraft('');
           },
