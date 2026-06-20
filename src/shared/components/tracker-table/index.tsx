@@ -16,6 +16,12 @@ export interface TrackerTableColumn<T> {
   resizable?: boolean;
   searchable?: boolean;
   searchPlaceholder?: string;
+  renderSearch?: (props: {
+    value: string;
+    onChange: (value: string) => void;
+    onApply: (value: string) => void;
+    onClear: () => void;
+  }) => ReactNode;
   className?: string;
   value?: (row: T) => string | number | null | undefined;
   render?: (row: T) => ReactNode;
@@ -565,9 +571,27 @@ export function TrackerTable<T>({
                       maxWidth: width,
                       ...(stickyHeader ? { top: baseHeaderTop + groupRowHeight } : {}),
                       ...(isSticky ? { left: stickyOffsets[column.key] ?? 0 } : {}),
+                      ...(column.renderSearch ? { overflow: 'visible' } : {}),
                     }}
                   >
-                    {column.searchable ? (
+                    {column.searchable && column.renderSearch ? (
+                      column.renderSearch({
+                        value: draftValue,
+                        onChange: (value) => handleSearchDraftChange(column.key, value),
+                        onApply: (value) => {
+                          const nextFilters = {
+                            ...searchApplied,
+                            [column.key]: value.trim(),
+                          };
+                          setSearchDraft((prev) => ({ ...prev, [column.key]: value.trim() }));
+                          setSearchApplied(nextFilters);
+                          if (useServerMode) {
+                            onServerFilterChange?.(nextFilters);
+                          }
+                        },
+                        onClear: () => clearSearchForColumn(column.key),
+                      })
+                    ) : column.searchable ? (
                       <div className="tracker-search-input-wrap">
                         <input
                           type="text"

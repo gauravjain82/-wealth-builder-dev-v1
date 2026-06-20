@@ -25,7 +25,7 @@ interface BaseDateProps {
 const dateVariantClasses: Record<NonNullable<BaseDateProps['variant']>, string> = {
   default: 'date-input input',
   surface:
-    'date-input input h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-white/5 dark:text-white dark:placeholder:text-white/50',
+    'date-input input h-8 w-full rounded-lg border border-slate-300 bg-white px-2 text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-white/5 dark:text-white dark:placeholder:text-white/50',
 };
 
 function toDate(value?: string) {
@@ -219,7 +219,7 @@ export function DateRangePicker({
         dateFormat="yyyy-MM-dd"
         disabled={disabled}
         placeholderText="Select date range"
-        className={cn(dateVariantClasses.surface, 'date-input-with-icon h-11')}
+        className={cn(dateVariantClasses.surface, 'date-input-with-icon h-8')}
         wrapperClassName="date-picker-wrapper"
         popperClassName="date-picker-popper"
         calendarClassName="date-picker-calendar"

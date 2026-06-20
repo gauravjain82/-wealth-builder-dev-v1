@@ -852,7 +852,7 @@ export default function SettingsPage() {
                       value={profileForm.dateOfBirth}
                       onChange={(value) => updateProfileField('dateOfBirth', value)}
                       monthDayOnly
-                      className="h-11"
+                      className="h-8"
                       disabled={savingProfile}
                     />
                   </div>
