@@ -226,7 +226,7 @@ export function UserAutocompleteDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 text-left text-slate-900 disabled:opacity-60 dark:border-white/20 dark:bg-white/5 dark:text-white"
+        className="flex h-8 w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 text-left text-slate-900 disabled:opacity-60 dark:border-white/20 dark:bg-white/5 dark:text-white"
       >
         <span className="truncate pr-2 text-sm">{displayLabel}</span>
         <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-700 dark:border-white/25 dark:bg-white/5 dark:text-white">{buttonText}</span>

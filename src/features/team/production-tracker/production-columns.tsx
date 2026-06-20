@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { IconPencil, IconCalendar } from '@tabler/icons-react';
-import { DatePicker, Modal } from '@/shared/components';
+import {
+  DatePicker,
+  Modal,
+  UserAutocompleteDropdown,
+  type UserAutocompleteOption,
+} from '@/shared/components';
 import type { TrackerTableColumn } from '@/shared/components';
 import { TrackerUserProfileModal } from '@/features/team/components/tracker-user-profile-modal';
 import type { TrackerNote } from '@/features/team/services/tracker-notes-service';
@@ -44,6 +49,52 @@ function toNumber(value: number | string | null | undefined): number {
 
 function toYesNo(value: boolean): string {
   return value ? 'Yes' : 'No';
+}
+
+function AgentSearchFilter({
+  value,
+  onApply,
+  onClear,
+}: {
+  value: string;
+  onApply: (value: string) => void;
+  onClear: () => void;
+}) {
+  const selectedId = Number(value);
+  const hasSelection = Number.isFinite(selectedId) && selectedId > 0;
+  const [selectedLabel, setSelectedLabel] = useState('');
+
+  useEffect(() => {
+    if (!hasSelection) setSelectedLabel('');
+  }, [hasSelection]);
+
+  return (
+    <div className="flex items-center gap-1">
+      <div className="min-w-0 flex-1">
+        <UserAutocompleteDropdown
+          fetchFromApi
+          selectedId={hasSelection ? selectedId : null}
+          selectedLabel={selectedLabel || (hasSelection ? `User #${selectedId}` : undefined)}
+          placeholder="Select agent"
+          onSelect={(option: UserAutocompleteOption) => {
+            setSelectedLabel(option.label);
+            onApply(String(option.id));
+          }}
+        />
+      </div>
+      {hasSelection ? (
+        <button
+          type="button"
+          className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-sm leading-none text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+          onClick={onClear}
+          aria-label="Clear agent filter"
+          title="Clear agent filter"
+        >
+          ×
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 function getRowNotes(
@@ -589,8 +640,11 @@ export function buildProductionColumns(actions: ProductionColumnActions): Tracke
     {
       key: 'agents',
       label: 'AGENTS',
-      width: 260,
-      searchable: false,
+      width: 320,
+      searchable: true,
+      renderSearch: ({ value, onApply, onClear }) => (
+        <AgentSearchFilter value={value} onApply={onApply} onClear={onClear} />
+      ),
       value: (row) => {
         const splitLabel = row.split_mode === 'split' ? `${row.agent_1_pct || 50}/${row.agent_2_pct || 50}` : '100/0';
         return `${row.agent_1_name || ''} ${row.agent_2_name || ''} ${splitLabel}`.trim();

@@ -1,5 +1,6 @@
 import { Button, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange } from '@/shared/components';
 import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
+import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 
 const PRODUCTION_FILTER_KEY_OPTIONS = [
   { value: 'all', label: 'Submitted Date' },
@@ -36,12 +37,14 @@ export function ProductionTrackerToolbar({
   filterKey,
   teamScope,
   teamScopeUserId,
+  summaryVisible,
   // onAddProduction,
   onExport,
   // onImport,
   onFilterKeyChange,
   onDateRangeChange,
   onTeamScopeChange,
+  onToggleSummary,
 }: {
   pageHeading: string;
   pageDescription: string;
@@ -51,12 +54,14 @@ export function ProductionTrackerToolbar({
   filterKey: string;
   teamScope: TrackerTeamScope;
   teamScopeUserId: string | null;
+  summaryVisible: boolean;
   // onAddProduction: () => void;
   onExport: () => void;
   // onImport: () => void;
   onFilterKeyChange: (value: string) => void;
   onDateRangeChange: (value: TrackerDateRangeChange) => void;
   onTeamScopeChange: (next: { scope: TrackerTeamScope; user: { id: string; name: string } | null }) => void;
+  onToggleSummary: () => void;
 }) {
   return (
     <div className="relative z-[200] overflow-visible rounded-2xl border border-gray-200 bg-white px-4 py-5 shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:border-white/10 dark:bg-[#1d2027] dark:shadow-[0_20px_45px_rgba(0,0,0,0.28)]">
@@ -89,6 +94,10 @@ export function ProductionTrackerToolbar({
             selectedUserId={teamScopeUserId}
             onChange={onTeamScopeChange}
           />
+          <Button type="button" size="sm" variant="secondary" onClick={onToggleSummary}>
+            {summaryVisible ? <IconChevronUp size={15} /> : <IconChevronDown size={15} />}
+            {summaryVisible ? 'Hide Summary' : 'Show Summary'}
+          </Button>
           {/* <Button type="button" size="sm" onClick={onAddProduction}>
             Add Production
           </Button> */}

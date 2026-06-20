@@ -330,6 +330,7 @@ function mapFilterKey(key: string): string {
     policy_company: 'company_product',
     policy_product: 'company_product',
     prospect: 'client',
+    agents: 'agent',
   };
   return mapped[key] ?? key;
 }

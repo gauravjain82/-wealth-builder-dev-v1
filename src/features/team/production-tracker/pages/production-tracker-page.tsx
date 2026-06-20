@@ -226,6 +226,7 @@ export default function ProductionTrackerPage() {
   const [companyProducts, setCompanyProducts] = useState<ProductionCompanyProduct[]>([]);
   const [splitOptions, setSplitOptions] = useState<string[]>([]);
   const [topProducersOpen, setTopProducersOpen] = useState(false);
+  const [summaryVisible, setSummaryVisible] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -1147,6 +1148,7 @@ export default function ProductionTrackerPage() {
         filterKey={filters.filterkey || 'all'}
         teamScope={teamScope}
         teamScopeUserId={teamScopeUserId}
+        summaryVisible={summaryVisible}
         // onAddProduction={() => setAddProductionOpen(true)}
         onExport={() => void handleExportCsv()}
         // onImport={() => {
@@ -1159,18 +1161,21 @@ export default function ProductionTrackerPage() {
         }}
         onDateRangeChange={handleDateRangeChange}
         onTeamScopeChange={handleTeamScopeChange}
+        onToggleSummary={() => setSummaryVisible((visible) => !visible)}
       />
 
-      <div className="grid flex-shrink-0 grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-8">
-        <ProductionKpiCard label="Families Helped" value={totalCount.toString()} info="" />
-        <ProductionKpiCard label="Baseshop Points" value={displayedKpis.baseshop} info="Direct points written and issued." />
-        <ProductionKpiCard label="Baseshop Projected Points" value={displayedKpis.baseshopProj} info="Baseshop points submitted but not fully issued yet." />
-        <ProductionKpiCard label="Personal Points" value={displayedKpis.personal} info="Your direct written and issued points." />
-        <ProductionKpiCard label="Personal Projected Points" value={displayedKpis.personalProj} info="Your submitted points that are not fully issued yet." />
-        <ProductionKpiCard label="Chargebacks" value={displayedKpis.chargebacks} info="Business that was declined, cancelled, or lapsed." />
-        <ProductionKpiCard label="NPR" value={displayedKpis.npr} info="Net point ratio equals net issued points divided by gross submitted points." />
-        <ProductionKpiCard label="Top Producer" value={displayedKpis.topProducer} info="Highest net point producer in the current baseshop view." onClick={() => setTopProducersOpen(true)} />
-      </div>
+      {summaryVisible && (
+        <div className="grid flex-shrink-0 grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-8">
+          <ProductionKpiCard label="Families Helped" value={totalCount.toString()} info="" />
+          <ProductionKpiCard label="Baseshop Points" value={displayedKpis.baseshop} info="Direct points written and issued." />
+          <ProductionKpiCard label="Baseshop Projected Points" value={displayedKpis.baseshopProj} info="Baseshop points submitted but not fully issued yet." />
+          <ProductionKpiCard label="Personal Points" value={displayedKpis.personal} info="Your direct written and issued points." />
+          <ProductionKpiCard label="Personal Projected Points" value={displayedKpis.personalProj} info="Your submitted points that are not fully issued yet." />
+          <ProductionKpiCard label="Chargebacks" value={displayedKpis.chargebacks} info="Business that was declined, cancelled, or lapsed." />
+          <ProductionKpiCard label="NPR" value={displayedKpis.npr} info="Net point ratio equals net issued points divided by gross submitted points." />
+          <ProductionKpiCard label="Top Producer" value={displayedKpis.topProducer} info="Highest net point producer in the current baseshop view." onClick={() => setTopProducersOpen(true)} />
+        </div>
+      )}
 
       <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:border-[#3c3521] dark:bg-[#171a20] dark:shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
         <TrackerTable
