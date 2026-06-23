@@ -103,10 +103,10 @@ export default function TeamPromotionPage() {
       )}
       <footer className="promo-footer">
         <strong>WEALTH BUILDERS</strong>
-        <span>
+        {/* <span>
           Sample data shown — connect your live recruit tracker to populate in
           real time
-        </span>
+        </span> */}
       </footer>
     </main>
   );
