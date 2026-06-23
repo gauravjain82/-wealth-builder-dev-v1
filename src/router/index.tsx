@@ -38,6 +38,8 @@ const AdminHelpdeskPage = lazy(() => import('@/features/helpdesk/pages/admin-hel
 const InviteAgentsPage = lazy(() => import('@/features/admin/invite-agents/pages/invite-agents-page'));
 import { AdminMissionRingProofPage } from '@/features/admin/mission-ring-proof';
 const TerminatedUsersPage = lazy(() => import('@/features/terminated-users/pages/terminated-users-page'));
+const PromotionDashboardPage = lazy(() => import('@/features/promotion/pages/promotion-dashboard-page'));
+const TeamPromotionPage = lazy(() => import('@/features/promotion/pages/team-promotion-page'));
 
 // Loading component
 function PageLoader() {
@@ -178,6 +180,14 @@ const router = createBrowserRouter([
       {
         path: 'onboarding-game',
         element: lazyLoad(OnboardingGamePage),
+      },
+      {
+        path: 'promotion/dashboard',
+        element: lazyLoad(PromotionDashboardPage),
+      },
+      {
+        path: 'promotion/team',
+        element: lazyLoad(TeamPromotionPage),
       },
       {
         path: 'training-center',
