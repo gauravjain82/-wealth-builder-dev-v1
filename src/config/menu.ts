@@ -27,6 +27,7 @@ const MENU_ITEMS = {
   HOME: { label: 'Home', icon: '🏠', path: '/home' } as MenuItem,
   INSIGHT_CENTER: { label: 'Insight Center', icon: '💡', path: '/insight-center' } as MenuItem,
   ONBOARDING_GAME: { label: 'Onboarding Game', icon: '🎮', path: '/onboarding-game' } as MenuItem,
+  PROMOTION: { label: 'Promotion', icon: '🏆', path: '/promotion/dashboard' } as MenuItem,
   
   // Tools
   SYSTEMATIC_TOOLS: { label: '10 Systematic Tools', icon: '🛠️', path: '/systematic-tools' } as MenuItem,
@@ -49,6 +50,7 @@ const MENU_ITEMS = {
   ASSOCIATE_TRACKER: { label: 'Associate Tracker', icon: '👔', path: '/team/associate-tracker' } as MenuItem,
   LICENSING_TRACKER: { label: 'Licensing Tracker', icon: '📝', path: '/team/licensing-tracker' } as MenuItem,
   PRODUCTION_TRACKER: { label: 'Production Tracker', icon: '💰', path: '/team/production-tracker' } as MenuItem,
+  TEAM_PROMOTION: { label: 'Team Promotion Tracker', icon: '📈', path: '/promotion/team' } as MenuItem,
   INVITE_AGENTS: { label: 'Invite Agents', icon: '📨', path: '/admin/invite-agents' } as MenuItem,
   TERMINATED_USERS: { label: 'Terminated Users', icon: '🚫', path: '/terminated-users' } as MenuItem,
   
@@ -84,6 +86,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -110,6 +113,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -141,6 +145,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -161,6 +166,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.ASSOCIATE_TRACKER,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
+        MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
     MENU_ITEMS.MATCHUP,
@@ -176,6 +182,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -196,6 +203,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.ASSOCIATE_TRACKER,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
+        MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
     MENU_ITEMS.MATCHUP,
@@ -224,6 +232,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    // MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -244,6 +253,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.ASSOCIATE_TRACKER,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
+        MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
     MENU_ITEMS.MATCHUP,
@@ -271,6 +281,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    // MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -291,6 +302,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.ASSOCIATE_TRACKER,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
+        MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
     MENU_ITEMS.MATCHUP,
@@ -337,6 +349,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    // MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -357,6 +370,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.ASSOCIATE_TRACKER,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
+        MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
     MENU_ITEMS.MATCHUP,

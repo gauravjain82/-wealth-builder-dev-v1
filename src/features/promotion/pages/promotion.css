@@ -1,0 +1,1050 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap");
+.promo-page {
+  --gold: #c9a84c;
+  --gold-light: #e8c86a;
+  --gold-dark: #9a7a2e;
+  --black: #0a0a0a;
+  --soft: #141414;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --white: #fff;
+  --dim: #e8e8e8;
+  --muted: #777;
+  --green: #2ecc71;
+  --red: #e74c3c;
+  --amber: #f0b429;
+  --blue: #5dade2;
+  max-width: 1016px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 36px 28px;
+  background: var(--black);
+  color: var(--white);
+  font-family: Barlow, sans-serif;
+}
+.promo-page button,
+.promo-page input,
+.promo-page select {
+  font: inherit;
+}
+.promo-header {
+  text-align: center;
+  border-bottom: 2px solid var(--gold);
+  padding-bottom: 18px;
+  margin-bottom: 22px;
+}
+.promo-header h1 {
+  font: 46px/1 "Bebas Neue";
+  letter-spacing: 5px;
+  color: var(--gold-light);
+  margin: 0;
+}
+.promo-header p {
+  font: 11px "Barlow Condensed";
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin: 3px 0 0;
+}
+.promo-tabs {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.promo-tabs button {
+  flex: 1;
+  border: 0;
+  background: #1e1a0e;
+  color: var(--gold-light);
+  border-bottom: 2px solid var(--gold);
+  padding: 11px;
+  text-transform: uppercase;
+  font: 13px "Barlow Condensed";
+  letter-spacing: 1px;
+}
+.promo-progress {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 18px;
+  margin-bottom: 18px;
+}
+.promo-progress > strong {
+  font: 24px "Bebas Neue";
+  color: var(--gold);
+  min-width: 54px;
+}
+.promo-progress > span {
+  font: 11px "Barlow Condensed";
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.promo-progress .ready {
+  color: var(--green);
+}
+.promo-progress .close {
+  color: var(--amber);
+}
+.promo-progress .not-ready {
+  color: var(--red);
+}
+.promo-bar,
+.promo-route-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.promo-bar i,
+.promo-route-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dark), var(--gold-light));
+  border-radius: 20px;
+}
+.promo-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 12px;
+  color: var(--gold);
+  font: 11px "Barlow Condensed";
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.promo-section-label:after {
+  content: "";
+  height: 1px;
+  background: var(--border);
+  flex: 1;
+}
+.promo-skills-card,
+.promo-route-card,
+.promo-member {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.promo-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1e1a0e;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.promo-card-head h2 {
+  margin: 0;
+  font: 16px "Barlow Condensed";
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.promo-card-head span {
+  color: var(--gold);
+  font: 13px "Barlow Condensed";
+}
+.promo-skill {
+  border-bottom: 1px solid #2a2a2a99;
+}
+.promo-skill:last-child {
+  border: 0;
+}
+.promo-skill-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px;
+  cursor: pointer;
+}
+.promo-skill-row:hover,
+.promo-module-row:hover {
+  background: #c9a84c0a;
+}
+.promo-check {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border: 2px solid var(--gold-dark);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+.promo-check.on {
+  background: var(--gold);
+  position: relative;
+}
+.promo-check.on:after {
+  content: "✓";
+  font-weight: bold;
+  color: #000;
+  position: absolute;
+  inset: 0;
+}
+.promo-skill-copy {
+  flex: 1;
+  font-size: 13px;
+  color: var(--dim);
+}
+.promo-skill-copy small,
+.promo-module-row small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 2px;
+}
+.promo-tag,
+.promo-badge {
+  font: 10px "Barlow Condensed";
+  letter-spacing: 1px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+.promo-tag.skill {
+  color: var(--gold);
+  border: 1px solid #c9a84c40;
+}
+.promo-tag.action,
+.promo-badge.done {
+  color: var(--green);
+  border: 1px solid #2ecc714d;
+}
+.promo-badge.progress {
+  color: var(--gold);
+  border: 1px solid #c9a84c4d;
+}
+.promo-badge.pending {
+  color: var(--muted);
+  border: 1px solid #7774;
+}
+.promo-skill-row > b {
+  font-size: 10px;
+  color: var(--gold);
+}
+.promo-skill-row > b.open,
+.promo-member-row > .open {
+  transform: rotate(180deg);
+}
+.promo-modules {
+  padding: 6px 20px 18px 52px;
+  background: #0004;
+}
+.promo-module-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border: 0;
+  border-bottom: 1px solid #2a2a2a80;
+  background: transparent;
+  color: var(--dim);
+  text-align: left;
+  cursor: pointer;
+}
+.promo-module-row em {
+  font: 17px "Bebas Neue";
+  color: var(--gold-dark);
+  min-width: 22px;
+}
+.promo-module-row > span {
+  flex: 1;
+}
+.promo-module-row strong {
+  font-size: 12px;
+}
+.promo-module-row i {
+  font: 10px "Barlow Condensed";
+  letter-spacing: 1px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  font-style: normal;
+}
+.promo-module-row i.pending {
+  color: var(--muted);
+  border: 1px solid #7774;
+}
+.promo-module-row i.watch {
+  color: var(--blue);
+  border: 1px solid #5dade24d;
+}
+.promo-module-row i.quiz {
+  color: var(--amber);
+  border: 1px solid #f0b4294d;
+}
+.promo-module-row i.done {
+  color: var(--green);
+  border: 1px solid #2ecc714d;
+}
+.promo-video-area {
+  padding: 14px;
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.promo-video {
+  width: 340px;
+  max-width: 100%;
+  aspect-ratio: 16/9;
+  background: #0a0a0a;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.promo-video.watched {
+  border-color: var(--green);
+}
+.promo-video span {
+  font: 10px "Barlow Condensed";
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.promo-play {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--gold);
+  position: relative;
+}
+.promo-play:after {
+  content: "";
+  position: absolute;
+  left: 19px;
+  top: 14px;
+  border: 8px solid transparent;
+  border-left: 13px solid #000;
+}
+.promo-gold-btn,
+.promo-route-card header button {
+  border: 0;
+  border-radius: 5px;
+  background: var(--gold);
+  color: #000;
+  padding: 8px 16px;
+  text-transform: uppercase;
+  font: 700 11px "Barlow Condensed";
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.promo-gold-btn:disabled {
+  opacity: 0.5;
+}
+.promo-pending,
+.promo-message {
+  padding: 10px 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-style: italic;
+}
+.promo-quiz {
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.promo-quiz h4 {
+  color: var(--gold);
+  font: 11px "Barlow Condensed";
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.promo-quiz fieldset {
+  border: 0;
+  margin: 12px 0;
+  padding: 0;
+}
+.promo-quiz legend {
+  font-size: 12px;
+  color: var(--dim);
+  margin-bottom: 7px;
+}
+.promo-quiz label {
+  display: block;
+  padding: 5px;
+  font-size: 11px;
+  color: #ccc;
+}
+.promo-quiz input {
+  margin-right: 8px;
+}
+.promo-route-card.selected {
+  border-color: var(--gold);
+}
+.promo-route-card.expired {
+  opacity: 0.6;
+}
+.promo-route-card > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.promo-route-card.selected > header {
+  background: #c9a84c14;
+}
+.promo-route-card h3 {
+  margin: 0;
+  color: var(--gold-light);
+  font: 16px "Barlow Condensed";
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.promo-route-card header p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.promo-route-card header p.urgent {
+  color: var(--red);
+  font-weight: bold;
+}
+.promo-route-card header button:disabled {
+  cursor: not-allowed;
+}
+.promo-route-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 18px;
+  border: 0;
+  border-bottom: 1px solid #2a2a2a80;
+  background: transparent;
+  color: var(--dim);
+  text-align: left;
+  font-size: 13px;
+}
+.promo-route-row:not(.numeric) {
+  cursor: pointer;
+}
+.promo-route-row > i {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--gold-dark);
+  border-radius: 3px;
+}
+.promo-route-row > i.on {
+  background: var(--gold);
+}
+.promo-route-row > i.on:after {
+  content: "✓";
+  color: #000;
+  padding-left: 2px;
+  font-weight: bold;
+}
+.promo-route-row span {
+  flex: 1;
+}
+.promo-route-row span.done {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.promo-route-row strong {
+  font: 14px "Bebas Neue";
+  color: var(--gold-light);
+}
+.promo-route-row input {
+  width: 76px;
+  background: #111;
+  border: 1px solid var(--border);
+  color: #fff;
+  padding: 4px;
+}
+.promo-route-card > footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+}
+.promo-route-card > footer span {
+  font: 12px "Barlow Condensed";
+  color: var(--gold);
+}
+.promo-route-note {
+  margin: 0;
+  padding: 8px 18px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-style: italic;
+}
+.promo-legs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 10px 18px;
+}
+.promo-legs section {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.promo-legs h4 {
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--gold);
+  font: 10px "Barlow Condensed";
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.promo-or {
+  text-align: center;
+  margin: 10px 0;
+  color: var(--muted);
+  font: 12px "Barlow Condensed";
+  letter-spacing: 2px;
+}
+.promo-footer {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.promo-footer strong {
+  color: var(--gold);
+  font: 18px "Bebas Neue";
+  letter-spacing: 3px;
+}
+.promo-state {
+  padding: 50px;
+  text-align: center;
+  color: #777;
+}
+.promo-state h2 {
+  color: #c9a84c;
+}
+.promo-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.promo-stats > div {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 14px;
+  text-align: center;
+}
+.promo-stats strong {
+  display: block;
+  font: 28px "Bebas Neue";
+  color: var(--gold-light);
+}
+.promo-stats strong.green {
+  color: var(--green);
+}
+.promo-stats strong.amber {
+  color: var(--amber);
+}
+.promo-stats strong.muted {
+  color: var(--muted);
+}
+.promo-stats span {
+  font: 10px "Barlow Condensed";
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.promo-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.promo-filters > div {
+  display: flex;
+  flex: 1;
+}
+.promo-filters button {
+  padding: 8px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font: 11px "Barlow Condensed";
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.promo-filters button.active {
+  background: #1e1a0e;
+  color: var(--gold);
+  border-color: var(--gold-dark);
+}
+.promo-filters input,
+.promo-filters select {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 8px 10px;
+  color: var(--dim);
+  font-size: 11px;
+}
+.promo-member {
+  margin-bottom: 9px;
+}
+.promo-member.ready {
+  border-color: #2ecc7160;
+}
+.promo-member-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--dim);
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+}
+.promo-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #c9a84c1f;
+  border: 1px solid var(--gold-dark);
+  color: var(--gold-light);
+  font: 16px "Bebas Neue";
+}
+.promo-member-name {
+  flex: 1;
+  min-width: 140px;
+}
+.promo-member-name strong {
+  display: block;
+  font-size: 13px;
+}
+.promo-member-name small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.promo-rank,
+.promo-target,
+.promo-ready {
+  font: 10px "Barlow Condensed";
+  letter-spacing: 0.5px;
+  border-radius: 12px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+.promo-rank {
+  color: var(--gold);
+  border: 1px solid #c9a84c40;
+}
+.promo-target {
+  color: var(--dim);
+  border: 1px solid var(--border);
+}
+.promo-ready {
+  color: var(--green);
+  border: 1px solid #2ecc714d;
+}
+.promo-arrow {
+  color: var(--gold-dark);
+}
+.promo-mini-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 145px;
+}
+.promo-mini-progress > i {
+  height: 5px;
+  background: var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+  flex: 1;
+}
+.promo-mini-progress b {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+.promo-mini-progress > strong {
+  font: 13px "Bebas Neue";
+  color: var(--gold);
+}
+.promo-member-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 14px 18px 18px 66px;
+  border-top: 1px solid var(--border);
+  background: #0003;
+}
+.promo-member-detail > section {
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.promo-member-detail h3 {
+  margin: 0;
+  padding: 10px 14px;
+  color: var(--gold);
+  font: 11px "Barlow Condensed";
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.promo-team-skill,
+.promo-mini-route > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-bottom: 1px solid #2a2a2a80;
+  font-size: 12px;
+}
+.promo-team-skill i,
+.promo-mini-route > div i {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--border);
+  font-style: normal;
+  font-size: 10px;
+  text-align: center;
+}
+.promo-team-skill i.done,
+.promo-mini-route > div i.done {
+  background: var(--green);
+  color: #000;
+}
+.promo-team-skill i.progress {
+  color: #000;
+  background: var(--gold);
+}
+.promo-team-skill span,
+.promo-mini-route > div span {
+  flex: 1;
+}
+.promo-team-skill b {
+  color: var(--muted);
+  font-size: 10px;
+}
+.promo-team-routes {
+  border: 0 !important;
+  background: transparent !important;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.promo-team-routes > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+.promo-mini-route {
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.promo-mini-route.expired {
+  opacity: 0.55;
+}
+.promo-mini-route header {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--gold-light);
+  font: 12px "Barlow Condensed";
+  letter-spacing: 1px;
+}
+.promo-mini-route header span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.promo-mini-route header span.urgent {
+  color: var(--red);
+}
+.promo-mini-route > div b {
+  color: var(--gold-light);
+  font: 14px "Bebas Neue";
+}
+.promo-mini-route > small {
+  display: block;
+  padding: 8px;
+  color: var(--muted);
+  font-style: italic;
+}
+@media (max-width: 800px) {
+  .promo-page {
+    padding: 24px 14px;
+  }
+  .promo-header h1 {
+    font-size: 34px;
+  }
+  .promo-filters {
+    flex-wrap: wrap;
+  }
+  .promo-filters > div {
+    flex-basis: 100%;
+    overflow: auto;
+  }
+  .promo-member-row {
+    flex-wrap: wrap;
+  }
+  .promo-mini-progress {
+    width: 120px;
+  }
+  .promo-member-detail {
+    grid-template-columns: 1fr;
+    padding-left: 18px;
+  }
+  .promo-legs {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 520px) {
+  .promo-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .promo-skill-row {
+    padding: 12px;
+  }
+  .promo-tag {
+    display: none;
+  }
+  .promo-modules {
+    padding-left: 10px;
+  }
+  .promo-progress {
+    flex-wrap: wrap;
+  }
+  .promo-bar {
+    flex-basis: 100%;
+  }
+  .promo-footer {
+    gap: 16px;
+  }
+  .promo-rank,
+  .promo-arrow,
+  .promo-target {
+    display: none;
+  }
+}
+
+/* Fill the site's content area; MainLayout already owns the outer page spacing. */
+.promo-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+/* Native button padding offsets pseudo-element checkmarks unless it is reset. */
+.promo-check {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  line-height: 1;
+}
+.promo-check.on {
+  position: static;
+}
+.promo-check.on:after {
+  position: static;
+  inset: auto;
+  font-size: 13px;
+  line-height: 1;
+}
+.promo-route-row > i {
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+.promo-route-row > i.on:after {
+  padding-left: 0;
+  font-size: 11px;
+  line-height: 1;
+}
+.promo-skills-hint {
+  margin: 0;
+  padding: 8px 20px 14px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-style: italic;
+}
+.promo-result {
+  margin-top: 16px;
+  padding: 26px;
+  text-align: center;
+  background: var(--card);
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+}
+.promo-result-icon {
+  color: var(--gold);
+  font: 56px "Bebas Neue";
+  line-height: 1;
+}
+.promo-result h2 {
+  margin: 4px 0 0;
+  color: var(--gold-light);
+  font: 30px "Bebas Neue";
+  letter-spacing: 3px;
+}
+.promo-result p {
+  max-width: 480px;
+  margin: 10px auto 0;
+  color: var(--dim);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.promo-result button {
+  margin-top: 16px;
+  padding: 10px 22px;
+  background: var(--gold);
+  border: 0;
+  border-radius: 5px;
+  color: var(--black);
+  cursor: pointer;
+  font: 700 13px "Barlow Condensed";
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.team .promo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.promo-role-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.promo-role-toggle button {
+  padding: 8px 16px;
+  background: var(--card);
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font: 12px "Barlow Condensed";
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.promo-role-toggle button.active {
+  background: var(--gold);
+  color: var(--black);
+  font-weight: 700;
+}
+.promo-compact-stats {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.promo-compact-chip {
+  min-width: 58px;
+  padding: 4px 9px;
+  text-align: center;
+  line-height: 1.25;
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+.promo-compact-chip.confirmed {
+  border-color: rgba(46, 204, 113, 0.35);
+}
+.promo-compact-chip.waiting {
+  border-color: rgba(119, 119, 119, 0.3);
+}
+.promo-compact-chip.remaining {
+  border-color: rgba(231, 76, 60, 0.3);
+}
+.promo-compact-icon {
+  font-size: 12px;
+}
+.promo-compact-icon.yes {
+  color: var(--green);
+}
+.promo-compact-icon.no {
+  color: var(--muted);
+}
+.promo-compact-label,
+.promo-compact-top-label {
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.promo-compact-top-label {
+  margin-bottom: 2px;
+  font-size: 7.5px;
+}
+.promo-compact-line {
+  color: var(--gold-light);
+  font-size: 9px;
+  line-height: 1.4;
+}
+.promo-compact-chip.remaining .promo-compact-line {
+  color: var(--red);
+}
+.promo-compact-value {
+  color: var(--gold-light);
+  font: 14px "Bebas Neue";
+  line-height: 1.1;
+}
+.promo-numeric-check {
+  display: grid;
+  place-items: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.promo-numeric-check > i {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--gold-dark);
+  border-radius: 3px;
+  line-height: 1;
+}
+.promo-numeric-check > i.on {
+  background: var(--gold);
+}
+.promo-numeric-check > i.on::after {
+  content: "✓";
+  color: var(--black);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
