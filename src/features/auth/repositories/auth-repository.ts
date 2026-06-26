@@ -11,6 +11,7 @@ interface LoginResponse {
   token: string;
   user_id: number;
   username: string;
+  has_promotion_access?: boolean;
 }
 
 interface ApiMessageResponse {
@@ -102,7 +103,8 @@ function mapBackendUserToProfile(
   backendUser: Partial<BackendUserProfile>,
   fallbackEmail: string,
   fallbackUsername: string,
-  fallbackId: number
+  fallbackId: number,
+  hasPromotionAccess = false
 ): UserWithProfile {
   // Roles are the single source of truth for account type.
   const roles = (backendUser.roles || []).filter(
@@ -130,6 +132,7 @@ function mapBackendUserToProfile(
     emailVerified: true,
     accountType,
     roles,
+    hasPromotionAccess,
     plan: accountType,
     firstName: firstName || undefined,
     lastName: lastName || undefined,
@@ -194,7 +197,8 @@ export class AuthRepository {
       backendProfile || { id: loginData.user_id, username: loginData.username },
       email,
       loginData.username,
-      loginData.user_id
+      loginData.user_id,
+      Boolean(loginData.has_promotion_access)
     );
 
     this.persistSession({ token: loginData.token, user: userProfile });
@@ -314,6 +318,7 @@ export class AuthRepository {
     localStorage.setItem('wb.userId', user.id);
     localStorage.setItem('wb.userEmail', user.email);
     localStorage.setItem('wb.userName', user.name || user.displayName || user.email);
+    localStorage.setItem('wb.hasPromotionAccess', String(Boolean(user.hasPromotionAccess)));
     localStorage.setItem(
       'authUser',
       JSON.stringify({
@@ -324,6 +329,7 @@ export class AuthRepository {
         fullName: user.fullName || user.name,
         photoURL: user.photoURL,
         roles: user.roles || [],
+        hasPromotionAccess: Boolean(user.hasPromotionAccess),
       })
     );
   }
@@ -336,6 +342,7 @@ export class AuthRepository {
     localStorage.removeItem('wb.userId');
     localStorage.removeItem('wb.userEmail');
     localStorage.removeItem('wb.userName');
+    localStorage.removeItem('wb.hasPromotionAccess');
   }
 }
 

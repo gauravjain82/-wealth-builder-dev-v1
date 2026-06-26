@@ -232,7 +232,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    // MENU_ITEMS.PROMOTION,
+    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -281,7 +281,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    // MENU_ITEMS.PROMOTION,
+    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -349,7 +349,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    // MENU_ITEMS.PROMOTION,
+    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -428,4 +428,22 @@ function normalizePlan(plan: unknown): AccountType {
 export function getMenuForPlan(plan: unknown): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   return PLAN_MENUS[normalizedPlan];
+}
+
+function cloneMenuItems(items: MenuItem[]): MenuItem[] {
+  return items.map((item) => ({
+    ...item,
+    children: item.children ? cloneMenuItems(item.children) : undefined,
+  }));
+}
+
+export function getMenuForUser(plan: unknown, hasPromotionAccess: boolean): MenuItem[] {
+  const normalizedPlan = normalizePlan(plan);
+  const menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
+
+  if (normalizedPlan !== Plan.NewAgent || hasPromotionAccess) {
+    return menuItems;
+  }
+
+  return menuItems.filter((item) => item.label !== MENU_ITEMS.PROMOTION.label);
 }

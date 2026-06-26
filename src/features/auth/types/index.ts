@@ -17,6 +17,7 @@ export interface AuthUser extends BaseEntity {
 export interface UserWithProfile extends AuthUser {
   accountType: AccountType;
   roles?: string[];
+  hasPromotionAccess?: boolean;
   plan?: Plan; // Alias for accountType (from Firestore)
   firstName?: string;
   lastName?: string;

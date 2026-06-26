@@ -100,6 +100,8 @@ export interface MissionTrackerRecord {
   created_at: string;
   updated_at: string;
   smd_100k_class: boolean | null;
+  promotion_access_approved: boolean;
+  has_promotion_access: boolean;
   mission_ring_proof?: MissionRingProofAttachment[];
 }
 

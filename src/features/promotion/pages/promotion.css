@@ -56,13 +56,29 @@
 .promo-tabs button {
   flex: 1;
   border: 0;
-  background: #1e1a0e;
-  color: var(--gold-light);
-  border-bottom: 2px solid var(--gold);
+  border-right: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
   padding: 11px;
   text-transform: uppercase;
   font: 13px "Barlow Condensed";
   letter-spacing: 1px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.promo-tabs button:last-child {
+  border-right: 0;
+}
+.promo-tabs button:hover {
+  background: #1e1a0e;
+  color: var(--gold);
+}
+.promo-tabs button.active {
+  background: #1e1a0e;
+  color: var(--gold-light);
+  border-bottom: 2px solid var(--gold);
 }
 .promo-progress {
   display: flex;

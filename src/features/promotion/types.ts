@@ -59,6 +59,7 @@ export interface PromotionDashboard {
   skills: PromotionSkill[];
   routes: PromotionRoute[];
 }
+export type PromotionDashboardResponse = PromotionDashboard | PromotionDashboard[];
 export interface QuizQuestion {
   id: number;
   question_text: string;

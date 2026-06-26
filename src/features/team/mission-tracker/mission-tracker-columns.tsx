@@ -495,6 +495,16 @@ export function buildMissionTrackerColumns(options: BuildMissionTrackerColumnsOp
       ),
     },
     {
+      key: 'promotion_access_approved',
+      label: 'Promotions',
+      width: 120,
+      align: 'center',
+      sortable: true,
+      searchable: false,
+      value: (row) => asYesNo(row.promotion_access_approved),
+      render: (row) => renderCheckbox(row, 'promotion_access_approved', options),
+    },
+    {
       key: 'smd_100k_class',
       label: 'SMD 100K Class',
       width: 140,

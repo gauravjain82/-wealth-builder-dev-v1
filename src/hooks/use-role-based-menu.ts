@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAuth } from '../features/auth/hooks/use-auth';
 import { roleToPlan } from '../core/constants/roles';
-import { getMenuForPlan, type MenuItem } from '../config/menu';
+import { getMenuForUser, type MenuItem } from '../config/menu';
 
 /**
  * Hook to get plan-based menu structure
@@ -12,10 +12,11 @@ export function useRoleBasedMenu(): MenuItem[] {
   
   const menuItems = useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
-    if (!primaryRole) return getMenuForPlan(null);
+    const hasPromotionAccess = Boolean(user?.hasPromotionAccess);
+    if (!primaryRole) return getMenuForUser(null, hasPromotionAccess);
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
-    return getMenuForPlan(roleToPlan(normalizedRole));
-  }, [user?.roles]);
+    return getMenuForUser(roleToPlan(normalizedRole), hasPromotionAccess);
+  }, [user?.hasPromotionAccess, user?.roles]);
   
   return menuItems;
 }

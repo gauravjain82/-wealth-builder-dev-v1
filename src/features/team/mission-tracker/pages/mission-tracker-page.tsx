@@ -543,14 +543,14 @@ export default function MissionTrackerPage() {
       [
         { label: '', colSpan: 4, className: 'group-empty' },
         { label: 'PHILOSOPHY', colSpan: 3, className: 'group-main' },
-        { label: 'SYSTEM', colSpan: 10, className: 'group-main' },
+        { label: 'SYSTEM', colSpan: 11, className: 'group-main' },
       ],
       [
         { label: '', colSpan: 4, className: 'group-empty' },
         { label: 'MULTI HANDED', colSpan: 1, className: 'group-sub' },
         { label: '10% 3 RULES 3 GOALS', colSpan: 1, className: 'group-sub' },
         { label: 'SELF IMPROVEMENT', colSpan: 1, className: 'group-sub' },
-        { label: 'MISSION', colSpan: 10, className: 'group-sub' },
+        { label: 'MISSION', colSpan: 11, className: 'group-sub' },
       ],
     ],
     []

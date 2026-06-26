@@ -62,6 +62,20 @@ function updateNumericItem(
   };
 }
 
+function updateNumericItemInDashboards(
+  dashboards: PromotionDashboard[],
+  itemId: number,
+  value: number,
+): PromotionDashboard[] {
+  return dashboards.map((dashboard) => {
+    const hasItem = dashboard.routes.some((route) =>
+      route.items.some((item) => item.id === itemId),
+    );
+
+    return hasItem ? updateNumericItem(dashboard, itemId, value) : dashboard;
+  });
+}
+
 export function usePromotionDashboard() {
   const client = useQueryClient();
   const query = useQuery({
@@ -89,11 +103,11 @@ export function usePromotionDashboard() {
 
         await client.cancelQueries({ queryKey: DASHBOARD_QUERY_KEY });
         const previous =
-          client.getQueryData<PromotionDashboard>(DASHBOARD_QUERY_KEY);
-        client.setQueryData<PromotionDashboard>(
+          client.getQueryData<PromotionDashboard[]>(DASHBOARD_QUERY_KEY);
+        client.setQueryData<PromotionDashboard[]>(
           DASHBOARD_QUERY_KEY,
           (current) =>
-            current ? updateNumericItem(current, id, value) : current,
+            current ? updateNumericItemInDashboards(current, id, value) : current,
         );
         return { previous };
       },

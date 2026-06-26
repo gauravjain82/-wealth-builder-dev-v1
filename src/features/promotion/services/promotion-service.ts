@@ -1,5 +1,6 @@
 import type {
   PromotionDashboard,
+  PromotionDashboardResponse,
   QuizQuestion,
   TeamResponse,
   TeamSort,
@@ -29,7 +30,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const promotionService = {
-  dashboard: () => request<PromotionDashboard>("my-dashboard/"),
+  dashboard: async (): Promise<PromotionDashboard[]> => {
+    const data = await request<PromotionDashboardResponse>("my-dashboard/");
+    return Array.isArray(data) ? data : [data];
+  },
   team: (rank: string, search: string, sort: TeamSort) => {
     const params = new URLSearchParams({ sort });
     if (rank) params.set("rank", rank);
