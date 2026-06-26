@@ -95,6 +95,20 @@ export interface SubscriptionApprovalRequestResponse {
   updated_at: string;
 }
 
+export interface TelegramLinkStatus {
+  linked: boolean;
+  telegram_username?: string | null;
+  linked_at?: string | null;
+  notification_preferences?: Record<string, boolean>;
+}
+
+export interface TelegramLinkTokenResponse {
+  deep_link: string;
+  qr_code?: string;
+  already_linked: boolean;
+  expires_in_minutes: number;
+}
+
 interface SubscriptionApprovalRequestCreatePayload {
   old_id: string;
   price_id: string;
@@ -382,4 +396,45 @@ export async function updateCurrentUserDetails(
 
   const raw = (await response.json()) as CurrentUserDetails;
   return normalizeCurrentUserDetails(raw);
+}
+
+export async function fetchTelegramLinkStatus(): Promise<TelegramLinkStatus> {
+  const response = await fetch(`${getApiBaseUrl()}/api/telegram/link-token/`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const message = await parseError(response, 'Failed to load Telegram connection status.');
+    throw new Error(message);
+  }
+
+  return (await response.json()) as TelegramLinkStatus;
+}
+
+export async function createTelegramLinkToken(): Promise<TelegramLinkTokenResponse> {
+  const response = await fetch(`${getApiBaseUrl()}/api/telegram/link-token/`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const message = await parseError(response, 'Failed to create Telegram connection link.');
+    throw new Error(message);
+  }
+
+  return (await response.json()) as TelegramLinkTokenResponse;
+}
+
+export async function unlinkTelegramAccount(): Promise<{ unlinked: boolean }> {
+  const response = await fetch(`${getApiBaseUrl()}/api/telegram/link-token/`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const message = await parseError(response, 'Failed to disconnect Telegram account.');
+    throw new Error(message);
+  }
+
+  return (await response.json()) as { unlinked: boolean };
 }

@@ -18,10 +18,15 @@ import {
   fetchMyApprovalRequests,
   approveRequest,
   rejectRequest,
+  fetchTelegramLinkStatus,
+  createTelegramLinkToken,
+  unlinkTelegramAccount,
   type CurrentUserDetails,
   type PaymentProduct,
   type RoleOption,
   type SubscriptionApprovalRequestResponse,
+  type TelegramLinkStatus,
+  type TelegramLinkTokenResponse,
 } from '../services/settings-billing-service';
 import './settings-page.css';
 
@@ -482,6 +487,61 @@ function UpgradeRequestForm({
   );
 }
 
+function ConnectedAccountsSection({
+  status,
+  loading,
+  connecting,
+  disconnecting,
+  onConnect,
+  onDisconnect,
+}: {
+  status: TelegramLinkStatus | null;
+  loading: boolean;
+  connecting: boolean;
+  disconnecting: boolean;
+  onConnect: () => void;
+  onDisconnect: () => void;
+}) {
+  const isLinked = Boolean(status?.linked);
+  const username = status?.telegram_username?.trim();
+
+  return (
+    <div className="connected-account-compact">
+      <div className="connected-account-copy">
+        <span className="connected-account-title">Telegram</span>
+        <span className="connected-account-status">
+          {loading
+            ? 'Checking...'
+            : isLinked
+              ? `Connected${username ? ` @${username}` : ''}`
+              : 'Not connected'}
+        </span>
+      </div>
+
+      <div className="connected-account-actions">
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={onConnect}
+          disabled={loading || connecting || disconnecting}
+        >
+          {connecting ? 'Opening...' : isLinked ? 'Open' : 'Connect'}
+        </button>
+        {isLinked ? (
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={onDisconnect}
+            disabled={loading || connecting || disconnecting}
+          >
+            {disconnecting ? '...' : 'Disconnect'}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { addToast } = useToastStore();
 
@@ -493,6 +553,11 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [telegramStatus, setTelegramStatus] = useState<TelegramLinkStatus | null>(null);
+  const [loadingTelegramStatus, setLoadingTelegramStatus] = useState(false);
+  const [connectingTelegram, setConnectingTelegram] = useState(false);
+  const [disconnectingTelegram, setDisconnectingTelegram] = useState(false);
+  const [telegramLink, setTelegramLink] = useState<TelegramLinkTokenResponse | null>(null);
   const [profileEmail, setProfileEmail] = useState('');
   const [profileForm, setProfileForm] = useState<ProfileFormState>(DEFAULT_PROFILE_FORM);
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
@@ -546,6 +611,16 @@ export default function SettingsPage() {
       } catch {
         // User may not be an approver
         setApprovalRequests([]);
+      }
+
+      try {
+        setLoadingTelegramStatus(true);
+        const telegram = await fetchTelegramLinkStatus();
+        setTelegramStatus(telegram);
+      } catch {
+        setTelegramStatus(null);
+      } finally {
+        setLoadingTelegramStatus(false);
       }
     } catch (error) {
       addToast({
@@ -737,6 +812,48 @@ export default function SettingsPage() {
     }
   };
 
+  const handleConnectTelegram = async () => {
+    try {
+      setConnectingTelegram(true);
+      const link = await createTelegramLinkToken();
+      setTelegramLink(link);
+      setTelegramStatus((prev) => ({
+        ...(prev || { linked: false }),
+        linked: link.already_linked || Boolean(prev?.linked),
+      }));
+      addToast({
+        type: 'success',
+        message: link.already_linked
+          ? 'Telegram is already connected. Opening the bot.'
+          : `Telegram connection link opened. It expires in ${link.expires_in_minutes} minutes.`,
+      });
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to create Telegram connection link.',
+      });
+    } finally {
+      setConnectingTelegram(false);
+    }
+  };
+
+  const handleDisconnectTelegram = async () => {
+    try {
+      setDisconnectingTelegram(true);
+      await unlinkTelegramAccount();
+      setTelegramStatus({ linked: false });
+      setTelegramLink(null);
+      addToast({ type: 'success', message: 'Telegram account disconnected.' });
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to disconnect Telegram account.',
+      });
+    } finally {
+      setDisconnectingTelegram(false);
+    }
+  };
+
   const currentPlan = normalizePlan(userDetails?.roles?.[0]);
   const currentLevel = resolveLevelLabel(userDetails?.level);
   const agencyCode = userDetails?.agency_code?.trim() || '-';
@@ -785,6 +902,14 @@ export default function SettingsPage() {
               <span className="title-icon">👤</span>
               Profile
             </h3>
+            <ConnectedAccountsSection
+              status={telegramStatus}
+              loading={loadingTelegramStatus}
+              connecting={connectingTelegram}
+              disconnecting={disconnectingTelegram}
+              onConnect={() => void handleConnectTelegram()}
+              onDisconnect={() => void handleDisconnectTelegram()}
+            />
           </div>
 
           {loading ? (
@@ -1282,6 +1407,37 @@ export default function SettingsPage() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(telegramLink)}
+        onClose={() => setTelegramLink(null)}
+        title="Connect Telegram"
+        contentClassName="max-w-[380px]"
+      >
+        {telegramLink ? (
+          <div className="telegram-link-modal">
+            {telegramLink.qr_code ? (
+              <img
+                className="telegram-qr-code"
+                src={telegramLink.qr_code}
+                alt="Telegram connection QR code"
+              />
+            ) : null}
+            <p>
+              Scan the QR code or open the bot link. This link expires in{' '}
+              {telegramLink.expires_in_minutes} minutes.
+            </p>
+            <a
+              className="btn-primary telegram-open-link"
+              href={telegramLink.deep_link}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open Telegram
+            </a>
+          </div>
+        ) : null}
       </Modal>
     </div>
   );

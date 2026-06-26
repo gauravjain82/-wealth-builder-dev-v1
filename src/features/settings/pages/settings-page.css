@@ -173,6 +173,79 @@
   gap: 20px;
 }
 
+.settings-profile-page .connected-account-compact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: 10px;
+}
+
+.settings-profile-page .connected-account-copy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.settings-profile-page .connected-account-title {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.settings-profile-page .connected-account-status {
+  color: #d4af37;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.settings-profile-page .connected-account-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.settings-profile-page .connected-account-compact .btn-primary,
+.settings-profile-page .connected-account-compact .btn-secondary {
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.settings-profile-page .telegram-link-modal {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.settings-profile-page .telegram-qr-code {
+  width: min(220px, 100%);
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+}
+
+.settings-profile-page .telegram-link-modal p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.settings-profile-page .telegram-open-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .settings-profile-page .field-row {
   display: contents;
 }
@@ -578,6 +651,12 @@
   .settings-profile-page .plan-cards-grid {
     grid-template-columns: 1fr;
   }
+
+  .settings-profile-page .connected-account-compact,
+  .settings-profile-page .connected-account-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 /* Approval Requests Table */
@@ -844,6 +923,19 @@ html:not(.dark) .settings-profile-page .input-field:focus {
 
 html:not(.dark) .settings-profile-page .input-field:disabled {
   background: #f1f5f9;
+  color: #475569;
+}
+
+html:not(.dark) .settings-profile-page .connected-account-compact {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+html:not(.dark) .settings-profile-page .connected-account-title {
+  color: #1e293b;
+}
+
+html:not(.dark) .settings-profile-page .telegram-link-modal p {
   color: #475569;
 }
 
