@@ -72,7 +72,7 @@ export const VAULT_DATA: VaultSection[] = [
       },
       {
         title: 'Step 3 Part I',
-        href: '#',
+        href: 'https://docs.google.com/presentation/d/e/2PACX-1vR13g-a7rdvokLZmIzlArdLvh-Ysu4PYBuKDdHnCk8IegE4ScrVMvnjAPX9CCFRZQ/pub?start=false&loop=false&delayms=3000',
         thumb: 'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Screenshot_57.png?alt=media&token=82fbfad7-414e-43d5-95b1-a0b3c8086424p',
       },
       {
