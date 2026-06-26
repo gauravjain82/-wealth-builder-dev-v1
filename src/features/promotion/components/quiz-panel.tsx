@@ -1,6 +1,45 @@
 import { useEffect, useState } from "react";
+import { VideoModal } from "@/features/education/components";
 import { promotionService } from "../services/promotion-service";
 import type { PromotionModule, QuizQuestion } from "../types";
+
+function getEmbedVideoUrl(src: string): string {
+  if (!src) return src;
+
+  try {
+    const url = new URL(src);
+    const host = url.hostname.toLowerCase();
+    const pathParts = url.pathname.split("/").filter(Boolean);
+
+    if (host.includes("player.vimeo.com")) {
+      return url.toString();
+    }
+
+    if (host.includes("youtu.be")) {
+      const id = pathParts[0];
+      return id ? `https://www.youtube.com/embed/${id}` : src;
+    }
+
+    if (host.includes("youtube.com")) {
+      const id = url.searchParams.get("v");
+      if (id) return `https://www.youtube.com/embed/${id}`;
+      return src;
+    }
+
+    if (host.includes("vimeo.com") && !host.includes("player.vimeo.com")) {
+      const id = pathParts[0];
+      if (!id) return src;
+      const embedUrl = new URL(`https://player.vimeo.com/video/${id}`);
+      const privateHash = pathParts[1] || url.searchParams.get("h");
+      if (privateHash) embedUrl.searchParams.set("h", privateHash);
+      return embedUrl.toString();
+    }
+
+    return src;
+  } catch {
+    return src;
+  }
+}
 
 export function QuizPanel({
   module,
@@ -13,6 +52,7 @@ export function QuizPanel({
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
   useEffect(() => {
     if (module.status === "quiz")
       promotionService
@@ -60,17 +100,22 @@ export function QuizPanel({
       <div
         className={`promo-video ${module.status !== "watch" ? "watched" : ""}`}
       >
-        <a
-          href={module.video_url}
-          target="_blank"
-          rel="noreferrer"
+        <button
+          type="button"
           className="promo-play"
           aria-label={`Watch ${module.title}`}
+          onClick={() => setVideoOpen(true)}
         />
         <span>
           {module.title} — {module.duration_label}
         </span>
       </div>
+      <VideoModal
+        open={videoOpen}
+        onClose={() => setVideoOpen(false)}
+        src={getEmbedVideoUrl(module.video_url)}
+        title={module.title}
+      />
       {module.status === "watch" && (
         <button disabled={busy} onClick={watch} className="promo-gold-btn">
           {busy ? "Saving…" : "Mark as Watched"}
