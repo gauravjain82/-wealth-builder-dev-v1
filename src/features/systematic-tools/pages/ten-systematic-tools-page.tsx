@@ -237,6 +237,11 @@ export default function TenSystematicToolsPage() {
             'https://docs.google.com/presentation/d/e/2PACX-1vR-U8zstEic_AvvMRDEE_6bX2I4niyU75VALnf0ijKuE3Lt0CaHJMEFd3UW9-xIuurxzhBqU_j9cimo/pubembed?start=false&loop=false&delayms=3000',
         },
         {
+          title: 'Step 3 Part I',
+          thumb: 'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Screenshot_57.png?alt=media&token=82fbfad7-414e-43d5-95b1-a0b3c8086424',
+          embedSrc: 'https://docs.google.com/presentation/d/e/2PACX-1vR13g-a7rdvokLZmIzlArdLvh-Ysu4PYBuKDdHnCk8IegE4ScrVMvnjAPX9CCFRZQ/pubembed?start=false&loop=false&delayms=3000',
+        },
+        {
           title: 'Step 1 Spanish',
           thumb:
             'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Thumbnails%2FWhatsApp%20Image%202026-02-01%20at%205.08.37%20AM.jpeg?alt=media&token=73e2c393-1b68-448a-8a2d-ad2df9ca6856',
@@ -426,7 +431,7 @@ export default function TenSystematicToolsPage() {
   const saveMenuToStorage = (menu: ToolItem[]) => {
     try {
       localStorage.setItem(MENU_KEY, JSON.stringify(menu));
-    } catch {}
+    } catch { }
   };
 
   const initialMenuRef = useRef<ToolItem[]>(
@@ -571,8 +576,8 @@ export default function TenSystematicToolsPage() {
       const original = m.singleOption
         ? [m.singleOption]
         : Array.isArray(m.options)
-        ? m.options
-        : [];
+          ? m.options
+          : [];
       const cleaned = draftItems
         .map((d, idx) => {
           const src = original[idx] || {};
@@ -701,7 +706,7 @@ export default function TenSystematicToolsPage() {
             style={{
               gridTemplateColumns:
                 activeItem.id === 'unified-system'
-                  ? '300px 300px'
+                  ? '300px 300px 300px'
                   : 'repeat(auto-fill, minmax(260px, 1fr))',
             }}
           >
