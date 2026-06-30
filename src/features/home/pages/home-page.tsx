@@ -22,7 +22,7 @@ const BACKGROUND_URL =
   'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/ChatGPT%20Image%20Sep%2015%2C%202025%2C%2012_54_37%20AM.png?alt=media&token=2322a57d-447c-4319-888c-8353a34fbfb9';
 const TRAILER_URL =
   'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/IMG_7934.MP4?alt=media&token=597143ab-4dfc-42bb-87f3-428e54c345df';
-const REGISTER_URL = 'https://www.eventbrite.ca/e/infinite-2026-tickets-1979546254134';
+const REGISTER_URL = 'https://bscpro.com/event/wb2026';
 const EVENTS_VIDEO_URL = 'https://www.canva.com/design/DAG6eJasb0c/QMcDazQ53A-DPwBIfKIn-Q/view?embed';
 const RECOGNITION_VIDEO_URL = 'https://www.canva.com/design/DAG-W6V-Uxc/qjp27ftg9x_dXxF9O9WBvA/view?embed';
 
@@ -63,7 +63,7 @@ export default function HomePage() {
         {/* Hero Section */}
         <VideoHero
           videoUrl={TRAILER_URL}
-          title="INFINITE 2026 June 25-27 | Rogers Place Edmonton, AB"
+          title="Wealth Bowl 2026 - Oct 9 - 11 | St. Louis Union Station Hotel, MO"
           registerUrl={REGISTER_URL}
           muted={muted}
           onMuteToggle={() => setMuted((m) => !m)}
