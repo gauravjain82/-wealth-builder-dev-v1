@@ -52,7 +52,7 @@ export function LeaderboardShell({
           </Button>
         </div>
       }
-      className="h-full overflow-hidden"
+      className="flex h-full min-h-0 flex-col overflow-hidden"
     >
       {loading ? (
         <div className="py-12 text-center text-sm text-slate-500 dark:text-white/60">
@@ -61,7 +61,9 @@ export function LeaderboardShell({
       ) : error ? (
         <div className="py-12 text-center text-sm text-red-500 dark:text-red-300">{error}</div>
       ) : (
-        children
+        <div className="min-h-0 flex-1 overflow-hidden">
+          {children}
+        </div>
       )}
     </Block>
   );

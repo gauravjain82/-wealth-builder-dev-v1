@@ -46,13 +46,14 @@ export function ActivityLeaderboard({
       onPaceChange={onPaceChange}
       onRefresh={onRefresh}
     >
-      <div className="mb-4 flex flex-wrap gap-2">
-        {ACTIVITY_METRICS.map((metric) => (
-          <MetricTag key={metric} label={metric} />
-        ))}
-      </div>
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="mb-4 flex flex-shrink-0 flex-wrap gap-2">
+          {ACTIVITY_METRICS.map((metric) => (
+            <MetricTag key={metric} label={metric} />
+          ))}
+        </div>
 
-      <div className="overflow-auto rounded-lg border border-slate-200 dark:border-white/10">
+        <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-slate-200 dark:border-white/10">
         <table className="w-full min-w-[760px] border-collapse text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-white/5 dark:text-white/60">
             <tr>
@@ -99,6 +100,7 @@ export function ActivityLeaderboard({
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </LeaderboardShell>
   );
