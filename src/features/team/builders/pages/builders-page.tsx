@@ -145,7 +145,7 @@ export default function BuildersPage() {
     <div className="flex h-full min-h-0 flex-col overflow-hidden p-2">
       <Block
         title="Builders"
-        description="Builder tracker, result rankings, activity rankings, and Daily Six submissions"
+        description=""
         titleVariant="h4"
         className="mb-2 flex-shrink-0"
       />
@@ -155,7 +155,7 @@ export default function BuildersPage() {
       <div className="min-h-0 flex-1 overflow-hidden">
         {activeTab === 'tracker' && (
           <AssociateTrackerContent
-            pageHeading="Builder Tracker"
+            pageHeading="Associate Tracker"
             pageDescription="Monitor Builder Plan participants and their progress"
             tableId="builders-tracker"
             emptyMessage="No Builder tracker records found."

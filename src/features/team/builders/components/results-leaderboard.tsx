@@ -9,10 +9,25 @@ interface ResultsLeaderboardProps {
   onRefresh: () => void;
 }
 
+const RESULT_WEIGHTS = [
+  { label: 'Recruits', value: '25%' },
+  { label: 'Points', value: '25%' },
+  { label: 'Licenses', value: '25%' },
+  { label: 'Registrations', value: '25%' },
+];
+
 function formatNumber(value: number | string): string {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return String(value);
   return parsed.toLocaleString(undefined, { maximumFractionDigits: 1 });
+}
+
+function WeightTag({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/60">
+      {label} <span className="font-bold text-amber-500">{value}</span>
+    </span>
+  );
 }
 
 export function ResultsLeaderboard({
@@ -23,13 +38,19 @@ export function ResultsLeaderboard({
 }: ResultsLeaderboardProps) {
   return (
     <LeaderboardShell
-      title="Results Leaderboard"
-      description="Top 20 builders ranked against fixed Builder targets for recruits, points, licenses, and registrations."
+      title="Results Leaderboard - Top 20"
+      description="Ranked on all four Builder numbers at once. Each metric is scored against the top performer in that category, then weighted equally. One score, one rank."
       loading={loading}
       error={error}
       onPaceChange={() => undefined}
       onRefresh={onRefresh}
     >
+      <div className="mb-4 flex flex-wrap gap-2">
+        {RESULT_WEIGHTS.map((weight) => (
+          <WeightTag key={weight.label} label={weight.label} value={weight.value} />
+        ))}
+      </div>
+
       <div className="overflow-auto rounded-lg border border-slate-200 dark:border-white/10">
         <table className="w-full min-w-[820px] border-collapse text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-white/5 dark:text-white/60">

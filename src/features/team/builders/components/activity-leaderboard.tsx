@@ -12,8 +12,18 @@ interface ActivityLeaderboardProps {
   onRefresh: () => void;
 }
 
+const ACTIVITY_METRICS = ['Friends', 'Calls', 'Appointments', 'Preplan', 'Business plan', '10 pages'];
+
 function percent(value: number): string {
   return `${Math.round(value)}%`;
+}
+
+function MetricTag({ label }: { label: string }) {
+  return (
+    <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/60">
+      {label}
+    </span>
+  );
 }
 
 export function ActivityLeaderboard({
@@ -27,8 +37,8 @@ export function ActivityLeaderboard({
 }: ActivityLeaderboardProps) {
   return (
     <LeaderboardShell
-      title="Activity Leaderboard"
-      description="Top 20 builders ranked by Daily Six activity against their own pace targets."
+      title="Activity Leaderboard - Top 20"
+      description="The grind board. Scored on the Daily Six against each person's own goal, so a part-timer at 90% of their target outranks a full-timer at 60% of theirs. Rolling average of the last 14 submissions (7 days, morning and night)."
       paceId={paceId}
       paces={paces}
       loading={loading}
@@ -36,6 +46,12 @@ export function ActivityLeaderboard({
       onPaceChange={onPaceChange}
       onRefresh={onRefresh}
     >
+      <div className="mb-4 flex flex-wrap gap-2">
+        {ACTIVITY_METRICS.map((metric) => (
+          <MetricTag key={metric} label={metric} />
+        ))}
+      </div>
+
       <div className="overflow-auto rounded-lg border border-slate-200 dark:border-white/10">
         <table className="w-full min-w-[760px] border-collapse text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-white/5 dark:text-white/60">
@@ -59,8 +75,15 @@ export function ActivityLeaderboard({
                 <td className="px-4 py-3 text-center font-semibold">{percent(row.friends_pct)}</td>
                 <td className="px-4 py-3 text-center font-semibold">{percent(row.calls_pct)}</td>
                 <td className="px-4 py-3 text-center font-semibold">{percent(row.appts_pct)}</td>
-                <td className="px-4 py-3 text-center font-semibold text-amber-600 dark:text-amber-300">
-                  {row.streak || '-'}
+                <td className="px-4 py-3 text-center">
+                  {row.streak ? (
+                    <span className="inline-flex items-center justify-center gap-1 font-extrabold text-[#ffad32]">
+                      <span aria-hidden="true">🔥</span>
+                      <span>{row.streak}</span>
+                    </span>
+                  ) : (
+                    <span className="font-semibold text-slate-400 dark:text-white/40">-</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <ScoreBar value={row.activity_score} />
