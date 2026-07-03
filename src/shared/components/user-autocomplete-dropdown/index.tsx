@@ -17,6 +17,7 @@ interface UserAutocompleteDropdownProps {
   buttonText?: string;
   disabled?: boolean;
   fetchFromApi?: boolean;
+  fetchOptions?: (search: string) => Promise<UserAutocompleteOption[]>;
   roleFilter?: string[];
 }
 
@@ -85,6 +86,7 @@ export function UserAutocompleteDropdown({
   buttonText = 'CHANGE',
   disabled = false,
   fetchFromApi = false,
+  fetchOptions,
   roleFilter,
 }: UserAutocompleteDropdownProps) {
   const [open, setOpen] = useState(false);
@@ -99,8 +101,9 @@ export function UserAutocompleteDropdown({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Tracks which query string the current loaded results belong to
   const loadedQueryRef = useRef<string>('');
+  const usesRemoteSearch = fetchFromApi || Boolean(fetchOptions);
 
-  const sourceOptions = fetchFromApi ? apiOptions : (options ?? []);
+  const sourceOptions = usesRemoteSearch ? apiOptions : (options ?? []);
   const effectiveOptions = useMemo(
     () => sourceOptions.filter((item) => matchesRoleFilter(item, roleFilter)),
     [sourceOptions, roleFilter]
@@ -108,14 +111,14 @@ export function UserAutocompleteDropdown({
 
   // For static options mode: filter locally; for API mode: results are already filtered server-side
   const displayed = useMemo(() => {
-    if (fetchFromApi) return effectiveOptions;
+    if (usesRemoteSearch) return effectiveOptions;
     const normalized = query.trim().toLowerCase();
     if (!normalized) return effectiveOptions;
     return effectiveOptions.filter((item) => {
       const text = `${item.label} ${item.meta || ''}`.toLowerCase();
       return text.includes(normalized);
     });
-  }, [fetchFromApi, effectiveOptions, query]);
+  }, [usesRemoteSearch, effectiveOptions, query]);
 
   const selectedOption = useMemo(
     () => [...(options ?? []), ...apiOptions].find((item) => item.id === selectedId) || null,
@@ -124,14 +127,16 @@ export function UserAutocompleteDropdown({
   const displayLabel = selectedOption?.label || selectedLabel || placeholder;
 
   const doSearch = useCallback(async (name: string) => {
-    if (!fetchFromApi) return;
+    if (!usesRemoteSearch) return;
     loadedQueryRef.current = name;
     setLoading(true);
     setLoadError(null);
     setApiOptions([]);
     setNextUrl(null);
     try {
-      const { options: fetched, next } = await fetchUsersPage(name, null);
+      const { options: fetched, next } = fetchOptions
+        ? { options: await fetchOptions(name), next: null }
+        : await fetchUsersPage(name, null);
       // Discard stale responses
       if (loadedQueryRef.current !== name) return;
       setApiOptions(fetched);
@@ -142,10 +147,10 @@ export function UserAutocompleteDropdown({
     } finally {
       if (loadedQueryRef.current === name) setLoading(false);
     }
-  }, [fetchFromApi]);
+  }, [fetchOptions, usesRemoteSearch]);
 
   const loadMore = useCallback(async () => {
-    if (!fetchFromApi || !nextUrl || loadingMore) return;
+    if (!fetchFromApi || fetchOptions || !nextUrl || loadingMore) return;
     const nameAtStart = loadedQueryRef.current;
     setLoadingMore(true);
     try {
@@ -158,11 +163,11 @@ export function UserAutocompleteDropdown({
     } finally {
       if (loadedQueryRef.current === nameAtStart) setLoadingMore(false);
     }
-  }, [fetchFromApi, loadingMore, nextUrl]);
+  }, [fetchFromApi, fetchOptions, loadingMore, nextUrl]);
 
   // Debounce search: trigger after 1st character, 300 ms delay
   useEffect(() => {
-    if (!fetchFromApi || !open) return;
+    if (!usesRemoteSearch || !open) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (query.length === 0) {
@@ -179,12 +184,12 @@ export function UserAutocompleteDropdown({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [fetchFromApi, open, query, doSearch]);
+  }, [usesRemoteSearch, open, query, doSearch]);
 
   // Infinite scroll inside the list
   useEffect(() => {
     const el = listRef.current;
-    if (!el || !fetchFromApi) return;
+    if (!el || !fetchFromApi || fetchOptions) return;
 
     const onScroll = () => {
       if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
@@ -194,7 +199,7 @@ export function UserAutocompleteDropdown({
 
     el.addEventListener('scroll', onScroll);
     return () => el.removeEventListener('scroll', onScroll);
-  }, [fetchFromApi, loadMore]);
+  }, [fetchFromApi, fetchOptions, loadMore]);
 
   // Close on outside click
   useEffect(() => {
@@ -212,13 +217,13 @@ export function UserAutocompleteDropdown({
   useEffect(() => {
     if (!open) {
       setQuery('');
-      if (fetchFromApi) {
+      if (usesRemoteSearch) {
         setApiOptions([]);
         setNextUrl(null);
         setLoadError(null);
       }
     }
-  }, [open, fetchFromApi]);
+  }, [open, usesRemoteSearch]);
 
   return (
     <div className="relative" ref={containerRef}>
@@ -244,13 +249,13 @@ export function UserAutocompleteDropdown({
           <div ref={listRef} className="max-h-52 overflow-auto rounded-md border border-slate-200 dark:border-white/10">
             {loading && <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">Loading users...</div>}
             {loadError && <div className="px-3 py-2 text-sm text-red-300">{loadError}</div>}
-            {!loading && fetchFromApi && query.length === 0 && (
+            {!loading && usesRemoteSearch && query.length === 0 && (
               <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">Start typing to search users</div>
             )}
             {!loading && !loadError && query.length > 0 && displayed.length === 0 && (
               <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">No users found</div>
             )}
-            {!loading && !fetchFromApi && displayed.length === 0 && (
+            {!loading && !usesRemoteSearch && displayed.length === 0 && (
               <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">No users found</div>
             )}
             {displayed.map((item) => (

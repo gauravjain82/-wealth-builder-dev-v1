@@ -14,6 +14,8 @@ const ProspectTrackerPage = lazy(() => import('@/features/team/prospect/pages/pr
 const OrgChartPage = lazy(() => import('@/features/team/org-chart/pages/org-chart-page'));
 const MissionTrackerPage = lazy(() => import('@/features/team/mission-tracker/pages/mission-tracker-page'));
 const AssociateTrackerPage = lazy(() => import('@/features/team/associate-tracker/pages/associate-tracker-page'));
+const BuildersPage = lazy(() => import('@/features/team/builders/pages/builders-page'));
+const PublicDailySixPage = lazy(() => import('@/features/team/builders/pages/public-daily-six-page'));
 const AddGoalsPage = lazy(() => import('@/features/team/associate-tracker/pages/add-goals-page'));
 const LicensingTrackerPage = lazy(() => import('@/features/team/licensing-tracker/pages/licensing-tracker-page'));
 const ProductionTrackerPage = lazy(() => import('@/features/team/production-tracker/pages/production-tracker-page'));
@@ -108,6 +110,12 @@ const router = createBrowserRouter([
   {
     path: '/learn/public-education',
     element: lazyLoad(PublicEducationPage),
+  },
+
+  // Public Daily Six submission page
+  {
+    path: '/team/builders/daily-six/:agencyCode',
+    element: lazyLoad(PublicDailySixPage),
   },
 
   // Hidden shareable page. Recipients sign in and update their own associate tracker goals.
@@ -220,6 +228,10 @@ const router = createBrowserRouter([
       {
         path: 'team/associate-tracker',
         element: lazyLoad(AssociateTrackerPage),
+      },
+      {
+        path: 'team/builders',
+        element: lazyLoad(BuildersPage),
       },
       {
         path: 'team/licensing-tracker',

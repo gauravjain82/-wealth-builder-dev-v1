@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Block, Button, ErrorState, LoadingState, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
-import { buildAssociateColumns } from '../associate-tracker-columns';
+import { buildAssociateColumns, type AssociateTrackerColumnVariant } from '../associate-tracker-columns';
 import {
   fetchAssociateUsersForAssociatePage,
   fetchAssociates,
@@ -61,9 +61,31 @@ function shouldDeferTeamScopeFetch(scope: TrackerTeamScope, teamScopeUserId: str
   return scope !== 'baseshop' && !teamScopeUserId;
 }
 
+const EMPTY_BACKEND_FILTERS: Record<string, string> = {};
+
 export default function AssociateTrackerPage() {
   const pageHeading = 'Associate Tracker';
   const pageDescription = "Monitor your associates' activity and progress";
+  return <AssociateTrackerContent pageHeading={pageHeading} pageDescription={pageDescription} />;
+}
+
+interface AssociateTrackerContentProps {
+  pageHeading?: string;
+  pageDescription?: string;
+  tableId?: string;
+  emptyMessage?: string;
+  baseBackendFilters?: Record<string, string>;
+  columnVariant?: AssociateTrackerColumnVariant;
+}
+
+export function AssociateTrackerContent({
+  pageHeading = 'Associate Tracker',
+  pageDescription = "Monitor your associates' activity and progress",
+  tableId = 'associate-tracker',
+  emptyMessage = 'No associate tracker records found.',
+  baseBackendFilters = EMPTY_BACKEND_FILTERS,
+  columnVariant = 'associate',
+}: AssociateTrackerContentProps) {
 
   const [rows, setRows] = useState<AssociateTrackerRecord[]>([]);
   const [savingKeySet, setSavingKeySet] = useState<Set<string>>(new Set());
@@ -432,7 +454,7 @@ export default function AssociateTrackerPage() {
           setNotesOpenFor(row);
           setModalNoteDraft('');
         },
-      }),
+      }, columnVariant),
     [
       savingKeySet,
       notesByUserId,
@@ -447,6 +469,7 @@ export default function AssociateTrackerPage() {
       handleNoteDraftChange,
       handleAddInlineNote,
       ensureNotesLoaded,
+      columnVariant,
     ]
   );
 
@@ -480,15 +503,24 @@ export default function AssociateTrackerPage() {
   }, []);
 
   const headerGroupRows = useMemo(
-    () => [
-      [
-        { label: '', colSpan: 3, className: 'group-empty' },
-        { label: 'PHILOSOPHY', colSpan: 3, className: 'group-main' },
-        { label: 'SYSTEM', colSpan: 4, className: 'group-main' },
-        { label: 'BUILD', colSpan: 9, className: 'group-main' },
-      ],
-    ],
-    []
+    () =>
+      columnVariant === 'builders'
+        ? [
+            [
+              { label: '', colSpan: 4, className: 'group-empty' },
+              { label: 'SYSTEM', colSpan: 4, className: 'group-main' },
+              { label: 'BUILD', colSpan: 3, className: 'group-main' },
+            ],
+          ]
+        : [
+            [
+              { label: '', colSpan: 3, className: 'group-empty' },
+              { label: 'PHILOSOPHY', colSpan: 3, className: 'group-main' },
+              { label: 'SYSTEM', colSpan: 4, className: 'group-main' },
+              { label: 'BUILD', colSpan: 9, className: 'group-main' },
+            ],
+          ],
+    [columnVariant]
   );
 
   const loadRows = useCallback(
@@ -511,7 +543,10 @@ export default function AssociateTrackerPage() {
           pageSize,
           sort: toSortParam(nextSort),
           segment: toSegmentParam(teamScope),
-          filters: toBackendFilters(nextFilters),
+          filters: {
+            ...baseBackendFilters,
+            ...toBackendFilters(nextFilters),
+          },
         };
 
         const data = await fetchAssociates(query);
@@ -542,7 +577,7 @@ export default function AssociateTrackerPage() {
         }
       }
     },
-    [addToast, teamScope]
+    [addToast, baseBackendFilters, teamScope]
   );
 
   const handleResetAction = useCallback(
@@ -684,10 +719,10 @@ export default function AssociateTrackerPage() {
           rows={rows}
           rowKey={(row, index) => `${row.id}-${index}`}
           headerGroupRows={headerGroupRows}
-          stickyFirstNColumns={3}
+          stickyFirstNColumns={columnVariant === 'builders' ? 4 : 3}
           resizable
-          tableId="associate-tracker"
-          emptyMessage="No associate tracker records found."
+          tableId={tableId}
+          emptyMessage={emptyMessage}
           className="h-full"
           loading={loading}
           serverSort={sortState}

@@ -460,10 +460,13 @@ function TwoInputCell({
     </div>
   );
 }
+export type AssociateTrackerColumnVariant = 'associate' | 'builders';
+
 export function buildAssociateColumns(
-  options: BuildAssociateColumnsOptions
+  options: BuildAssociateColumnsOptions,
+  variant: AssociateTrackerColumnVariant = 'associate'
 ): TrackerTableColumn<AssociateTrackerRecord>[] {
-  return [
+  const columns: TrackerTableColumn<AssociateTrackerRecord>[] = [
     {
       key: 'index',
       label: '#',
@@ -740,4 +743,24 @@ export function buildAssociateColumns(
       ),
     },
   ];
+
+  if (variant === 'builders') {
+    const builderColumnKeys = new Set([
+      'index',
+      'user_name',
+      'recruiter',
+      'leader',
+      'recruits_inputs',
+      'points_inputs',
+      'licenses_inputs',
+      'registrations_inputs',
+      'why',
+      'goal',
+      'notes',
+    ]);
+
+    return columns.filter((column) => builderColumnKeys.has(column.key));
+  }
+
+  return columns;
 }

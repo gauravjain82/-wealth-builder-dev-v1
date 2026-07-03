@@ -52,6 +52,7 @@ const ICON_MAP: Record<string, IconSpec> = {
   'Prospect Tracker': { icon: IconUserSearch, color: '#1E90FF' },
   'Mission Tracker': { icon: IconTarget, color: '#32CD32' },
   'Associate Tracker': { icon: IconUsers, color: '#F4A7B9' },
+  Builders: { icon: IconChartDots, color: '#FFD700' },
   'Licensing Tracker': { icon: IconCertificate, color: '#F5F5F5' },
   'Production Tracker': {
     imageSrc:
