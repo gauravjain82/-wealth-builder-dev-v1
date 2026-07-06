@@ -25,6 +25,10 @@ const US_STATES = [
   'QC', 'RI', 'SC', 'SD', 'SK', 'TN', 'TX', 'UT', 'VA', 'VT', 'WA', 'WI', 'WV', 'WY', 'YT',
 ];
 
+const ASSIGNABLE_PLANS = Object.values(Plan).filter(
+  (plan) => plan !== Plan.Admin && plan !== Plan.SuperAdmin
+);
+
 interface AddAgencyCodeModalProps {
   prospect: Prospect | null;
   saving: boolean;
@@ -300,7 +304,7 @@ export function AddAgencyCodeModal({
             <FormRow>
               <Label variant="form">Plan*</Label>
               <Select value={form.plan} onChange={(e) => updateField('plan', e.target.value)}>
-                {Object.values(Plan).map((plan) => (
+                {ASSIGNABLE_PLANS.map((plan) => (
                   <option key={plan} value={plan}>{plan}</option>
                 ))}
               </Select>

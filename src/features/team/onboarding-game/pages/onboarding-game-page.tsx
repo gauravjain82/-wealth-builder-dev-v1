@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { hasRoleAtLeast } from '@/core/constants/roles';
+import { Plan } from '@/core/types';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { AssociateHotRecruitsModal, AssociateClientUsersModal } from '@/features/team/components/associate-hot-recruits-modal';
 import { LicensingTrackerModal } from '@/features/team/licensing-tracker/components/licensing-tracker-modal';
@@ -104,7 +106,11 @@ function getIsComplete(moduleId: string, data: OnboardingTrackerData): boolean {
   }
 }
 
-function computeUnlockedSections(data: OnboardingTrackerData): Set<string> {
+function computeUnlockedSections(data: OnboardingTrackerData, unlockAllSections: boolean): Set<string> {
+  if (unlockAllSections) {
+    return new Set(MODULES.map((module) => module.section));
+  }
+
   const unlocked = new Set<string>(['start']);
 
   if (data.introWatched) unlocked.add('philosophy');
@@ -114,6 +120,15 @@ function computeUnlockedSections(data: OnboardingTrackerData): Set<string> {
   }
 
   return unlocked;
+}
+
+function canSeeAllVideos(user: ReturnType<typeof useAuth>['user']): boolean {
+  const candidateRoles = [
+    ...(user?.roles || []),
+    user?.accountType,
+    user?.plan,
+  ];
+  return hasRoleAtLeast(candidateRoles, Plan.Agent);
 }
 
 interface VideoModalProps {
@@ -227,12 +242,16 @@ export default function OnboardingGamePage() {
   }, [activeUserId, loadData, loadVideos]);
 
   const data = trackerData ?? EMPTY_DATA;
+  const showAllVideos = useMemo(() => canSeeAllVideos(user), [user]);
   const progressData = useMemo(() => {
     const hasWatchedIntroVideo = moduleVideos.m0?.some((video) => video.watched) ?? false;
     return hasWatchedIntroVideo && !data.introWatched ? { ...data, introWatched: true } : data;
   }, [data, moduleVideos]);
 
-  const unlockedSections = useMemo(() => computeUnlockedSections(progressData), [progressData]);
+  const unlockedSections = useMemo(
+    () => computeUnlockedSections(progressData, showAllVideos),
+    [progressData, showAllVideos]
+  );
   const moduleStates = useMemo(() => {
     const result: Record<string, { isComplete: boolean; isUnlocked: boolean }> = {};
     MODULES.forEach((module) => {
@@ -252,7 +271,7 @@ export default function OnboardingGamePage() {
   const handleVideoClick = (moduleId: string, videoIdx: number) => {
     const state = moduleStates[moduleId];
     if (!state?.isUnlocked) return;
-    if (moduleId === 'm4' && !(moduleStates.m1?.isComplete && moduleStates.m2?.isComplete && moduleStates.m3?.isComplete)) {
+    if (!showAllVideos && moduleId === 'm4' && !(moduleStates.m1?.isComplete && moduleStates.m2?.isComplete && moduleStates.m3?.isComplete)) {
       return;
     }
     setActiveVideo({ moduleId, videoIdx });
@@ -477,7 +496,7 @@ export default function OnboardingGamePage() {
             if (!videos || !position || !unlockedSections.has(module.section)) return null;
 
             const state = moduleStates[module.id];
-            const prereqOk = module.id !== 'm4' || (
+            const prereqOk = showAllVideos || module.id !== 'm4' || (
               moduleStates.m1?.isComplete &&
               moduleStates.m2?.isComplete &&
               moduleStates.m3?.isComplete

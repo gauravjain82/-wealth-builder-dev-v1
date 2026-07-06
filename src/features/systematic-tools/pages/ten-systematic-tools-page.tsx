@@ -118,7 +118,7 @@ export default function TenSystematicToolsPage() {
     accountability:
       'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/NAL%20Thumbnails%2FScreenshot_7.png?alt=media&token=47b3e4b6-d990-4568-9bdb-7a4d22ddf73a',
     trainerManual:
-      'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/NAL%20Thumbnails%2FScreenshot_8.png?alt=media&token=fd9ab14d-0f9f-4c80-8167-35c5c59e59d8',
+      'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Thumbnails%2Ftrainer_manual_thumb.png?alt=media&token=79ec112d-3b58-41c0-9f71-59cf5e699683',
     dropByPhilosophies:
       'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/Screenshot%202026-04-19%20193745.png?alt=media&token=3a85f65a-bf3a-43d2-8693-6d1774260c4f',
   };
@@ -152,7 +152,7 @@ export default function TenSystematicToolsPage() {
     accountability:
       'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/10%20Systematic%20Tools%2FACCOUNTABILITY.pdf?alt=media&token=7560a8af-4013-46ed-b31c-fd8ba708721e',
     trainerManual:
-      'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/10%20Systematic%20Tools%2FUS%20TRAINER%20MANUAL%202026.pdf?alt=media&token=9f14966e-d808-45bd-a811-22d37bb972e2',
+      'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/10%20Systematic%20Tools%2FTrainer_Manual_WB_6_2026.pdf?alt=media&token=4ce27d97-08f5-44bc-822b-c364d10dd4d8',
     businessShowerBlueCards:
       'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/10%20Systematic%20Tools%2FBUSINESS_SHOWER_FEEDBACK_CARD.pdf?alt=media&token=388c10cc-ced4-4e09-b280-47e579ff097a',
     newArtBlueCards:
