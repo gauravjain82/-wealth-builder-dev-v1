@@ -388,7 +388,10 @@ function SuccessCardV2({
             </div>
             <div className="rounded-lg border border-[#ffad32]/25 bg-[#ffad32]/10 p-2 text-center">
               <div className="text-[10px] font-black uppercase tracking-wide text-[#ffd08a]">Streak</div>
-              <div className="text-2xl font-black leading-7 text-[#ffad32]">{streak}</div>
+              <div className="text-2xl font-black leading-7 text-[#ffad32]"><span className="text-xl">🔥</span><span>{streak} </span></div>
+            </div>
+            <div className="col-span-2 rounded-lg border border-[#ffad32]/15 bg-[#ffad32]/5 px-2 py-1.5 text-center text-[11px] font-medium leading-4 text-[#ffd08a]">
+              Miss a day and it goes back to zero. Don't break the chain.
             </div>
           </div>
         </ResultSection>
