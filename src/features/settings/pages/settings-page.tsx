@@ -163,6 +163,10 @@ function normalizePlan(value?: string | null): Plan {
   return Plan.NewAgent;
 }
 
+function isHigherPlan(plan: Plan, currentPlan: Plan): boolean {
+  return PLAN_ORDER[plan] > PLAN_ORDER[currentPlan];
+}
+
 function resolveLevelLabel(level: CurrentUserDetails['level']): string {
   if (typeof level === 'string') {
     const normalized = level.trim();
@@ -397,9 +401,9 @@ function UpgradeRequestForm({
       <div className="plan-cards-grid">
         {PLAN_CARDS.map((card) => {
           const isCurrent = card.plan === currentPlan;
-          const isNext = nextPlan === card.plan;
+          const isUpgradeTarget = isHigherPlan(card.plan, currentPlan);
           const isAdmin = currentPlan === Plan.Admin;
-          const isDisabled = isAdmin || !isNext;
+          const isDisabled = isAdmin || !isUpgradeTarget;
 
           let buttonLabel = `Upgrade to ${card.plan}`;
           if (isCurrent) buttonLabel = 'Current Plan';
@@ -463,7 +467,7 @@ function UpgradeRequestForm({
               type="button"
               className="btn-primary"
               onClick={handleSubmit}
-              disabled={submitting || !stripePromise || nextPlan === null}
+              disabled={submitting || !stripePromise || !isHigherPlan(targetPlan, currentPlan)}
             >
               {submitting ? 'Submitting...' : 'Save & Upgrade Request'}
             </button>
