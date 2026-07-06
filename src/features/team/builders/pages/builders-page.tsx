@@ -19,7 +19,7 @@ import {
   type ResultsLeaderboardEntry,
 } from '../services/builders-service';
 
-const BUILDER_TRACKER_FILTERS = { key_player: 'true' };
+const BUILDER_TRACKER_FILTERS = { is_key_player: 'true' };
 
 export default function BuildersPage() {
   const addToast = useToastStore((state) => state.addToast);

@@ -44,3 +44,28 @@ export function roleToPlan(role: unknown): Plan {
   }
   return Plan.NewAgent;
 }
+
+const PLAN_RANK: Record<Plan, number> = {
+  [Plan.NewAgent]: 0,
+  [Plan.Agent]: 1,
+  [Plan.Leader]: 2,
+  [Plan.Broker]: 3,
+  [Plan.SeniorBroker]: 4,
+  [Plan.Admin]: 5,
+  [Plan.SuperAdmin]: 6,
+};
+
+export function normalizeRoleToPlan(role: unknown): Plan {
+  if (typeof role !== 'string') return Plan.NewAgent;
+
+  const normalizedRole = role.trim().toUpperCase().replace(/[\s-]+/g, '_');
+  return roleToPlan(normalizedRole);
+}
+
+export function isPlanAtLeast(plan: unknown, minimumPlan: Plan): boolean {
+  return PLAN_RANK[normalizeRoleToPlan(plan)] >= PLAN_RANK[minimumPlan];
+}
+
+export function hasRoleAtLeast(roles: unknown[], minimumPlan: Plan): boolean {
+  return roles.some((role) => isPlanAtLeast(role, minimumPlan));
+}

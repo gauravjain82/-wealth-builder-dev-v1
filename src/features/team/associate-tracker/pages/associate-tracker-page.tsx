@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { hasRoleAtLeast } from '@/core/constants/roles';
+import { Plan } from '@/core/types';
+import { useAuth } from '@/features/auth';
 import { Block, Button, ErrorState, LoadingState, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { buildAssociateColumns, type AssociateTrackerColumnVariant } from '../associate-tracker-columns';
@@ -26,6 +29,15 @@ import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/c
 import type { TrackerUserProfile } from '@/features/team/services/tracker-user-profile-service';
 
 type SortDirection = 'asc' | 'desc';
+
+function canViewKeyPlayerColumn(user: ReturnType<typeof useAuth>['user']): boolean {
+  const candidateRoles = [
+    ...(user?.roles || []),
+    user?.accountType,
+    user?.plan,
+  ];
+  return hasRoleAtLeast(candidateRoles, Plan.Broker);
+}
 
 function toSortParam(sort: { key: string; direction: SortDirection } | null): string | undefined {
   if (!sort) return undefined;
@@ -87,6 +99,7 @@ export function AssociateTrackerContent({
   columnVariant = 'associate',
 }: AssociateTrackerContentProps) {
 
+  const { user } = useAuth();
   const [rows, setRows] = useState<AssociateTrackerRecord[]>([]);
   const [savingKeySet, setSavingKeySet] = useState<Set<string>>(new Set());
   const [notesByUserId, setNotesByUserId] = useState<Record<number, TrackerNote[]>>({});
@@ -154,6 +167,7 @@ export function AssociateTrackerContent({
 
   const pageSize = 15;
   const addToast = useToastStore((state) => state.addToast);
+  const showKeyPlayerColumn = useMemo(() => canViewKeyPlayerColumn(user), [user]);
 
   const handleDateRangeChange = useCallback((value: TrackerDateRangeChange) => {
     setDateRangePreset(value.preset);
@@ -421,6 +435,7 @@ export function AssociateTrackerContent({
       buildAssociateColumns({
         onToggle: handleToggle,
         onPatch: handlePatchField,
+        showKeyPlayerColumn,
         onOpenUserProfile: (row) => {
           setProfileOpenFor({
             userId: row.user_id,
@@ -456,6 +471,7 @@ export function AssociateTrackerContent({
         },
       }, columnVariant),
     [
+      showKeyPlayerColumn,
       savingKeySet,
       notesByUserId,
       noteDraftByUserId,
@@ -517,10 +533,10 @@ export function AssociateTrackerContent({
               { label: '', colSpan: 3, className: 'group-empty' },
               { label: 'PHILOSOPHY', colSpan: 3, className: 'group-main' },
               { label: 'SYSTEM', colSpan: 4, className: 'group-main' },
-              { label: 'BUILD', colSpan: 9, className: 'group-main' },
+              { label: 'BUILD', colSpan: showKeyPlayerColumn ? 9 : 8, className: 'group-main' },
             ],
           ],
-    [columnVariant]
+    [columnVariant, showKeyPlayerColumn]
   );
 
   const loadRows = useCallback(

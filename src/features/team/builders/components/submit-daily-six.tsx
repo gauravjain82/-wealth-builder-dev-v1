@@ -98,7 +98,7 @@ export function SubmitDailySix({
       page: 1,
       pageSize: 20,
       filters: {
-        key_player: 'true',
+        is_key_player: 'true',
         name: search,
       },
     });

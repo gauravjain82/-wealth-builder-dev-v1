@@ -66,6 +66,7 @@ function GoalHeader() {
 interface BuildAssociateColumnsOptions {
   onToggle: (userId: number, field: keyof AssociateTrackerRecord, value: boolean) => void;
   onPatch: (userId: number, field: keyof AssociateTrackerRecord, value: number | string | null) => void;
+  showKeyPlayerColumn?: boolean;
   onOpenUserProfile?: (row: AssociateTrackerRecord) => void;
   onOpenHotRecruits?: (row: AssociateTrackerRecord) => void;
   onOpenPersonalPoints?: (row: AssociateTrackerRecord) => void;
@@ -466,6 +467,7 @@ export function buildAssociateColumns(
   options: BuildAssociateColumnsOptions,
   variant: AssociateTrackerColumnVariant = 'associate'
 ): TrackerTableColumn<AssociateTrackerRecord>[] {
+  const showKeyPlayerColumn = options.showKeyPlayerColumn ?? true;
   const columns: TrackerTableColumn<AssociateTrackerRecord>[] = [
     {
       key: 'index',
@@ -744,6 +746,10 @@ export function buildAssociateColumns(
     },
   ];
 
+  const visibleColumns = showKeyPlayerColumn
+    ? columns
+    : columns.filter((column) => column.key !== 'is_key_player');
+
   if (variant === 'builders') {
     const builderColumnKeys = new Set([
       'index',
@@ -759,8 +765,8 @@ export function buildAssociateColumns(
       'notes',
     ]);
 
-    return columns.filter((column) => builderColumnKeys.has(column.key));
+    return visibleColumns.filter((column) => builderColumnKeys.has(column.key));
   }
 
-  return columns;
+  return visibleColumns;
 }
