@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { CheckCircle2, Flame, Target } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import {
   fetchAgencyDailySix,
   submitAgencyDailySix,
   type AgencyDailySixContext,
+  type BuilderPace,
   type DailySixPayload,
 } from '../services/builders-service';
 
@@ -20,6 +22,11 @@ const EMPTY_FORM: DailySixPayload = {
 
 type CountField = 'friends_made' | 'calls_made' | 'appointments';
 type ToggleField = 'preplan' | 'pages_read' | 'business_plan_am' | 'business_plan_pm';
+type DailySixSuccess = {
+  score: number;
+  streak: number;
+  submission: DailySixPayload;
+};
 
 function currentSession(): DailySixPayload['session'] {
   return new Date().getHours() < 12 ? 'AM' : 'PM';
@@ -32,7 +39,7 @@ export default function PublicDailySixPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ score: number; streak: number } | null>(null);
+  const [success, setSuccess] = useState<DailySixSuccess | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,7 +123,7 @@ export default function PublicDailySixPage() {
     try {
       const response = await submitAgencyDailySix(agencyCode, form);
       setContext((prev) => (prev ? { ...prev, streak: response.streak } : prev));
-      setSuccess({ score: calculateScore(), streak: response.streak });
+      setSuccess({ score: calculateScore(), streak: response.streak, submission: { ...form } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit Daily Six.');
     } finally {
@@ -134,14 +141,18 @@ export default function PublicDailySixPage() {
     <main className="min-h-screen bg-[#050607] text-white">
       <div className="border-b border-white/10">
         <div className="mx-auto max-w-[760px] px-5">
-          <div className="inline-flex border-b-2 border-[#e7c95f] px-5 py-5 text-sm font-extrabold text-[#f4d766]">
+          <div className={`inline-flex border-b-2 border-[#e7c95f] text-sm font-bold text-[#f4d766] ${
+            success ? 'px-3 py-3' : 'px-5 py-5'
+          }`}>
             Submit Daily Six
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-[760px] px-5 py-6">
-        <section className="rounded-2xl border border-white/12 bg-[#0b0c10] p-6 shadow-[0_20px_70px_rgba(0,0,0,0.35)] sm:p-8">
+      <div className={`mx-auto max-w-[760px] ${success ? 'px-2 py-2' : 'px-3 py-6 sm:px-5'}`}>
+        <section className={`rounded-2xl border border-white/12 bg-[#0b0c10] shadow-[0_20px_70px_rgba(0,0,0,0.35)] ${
+          success ? 'p-2' : 'p-2'
+        }`}>
           {loading && <div className="py-20 text-center text-sm text-slate-400">Loading Daily Six...</div>}
 
           {!loading && error && !context && (
@@ -151,7 +162,10 @@ export default function PublicDailySixPage() {
           )}
 
           {!loading && context && success && (
-            <SuccessCard
+            <SuccessCardV2
+              userName={context.user_name}
+              pace={context.pace}
+              submission={success.submission}
               score={success.score}
               streak={success.streak}
               onAnotherSubmission={handleAnotherSubmission}
@@ -160,28 +174,28 @@ export default function PublicDailySixPage() {
 
           {!loading && context && !success && (
             <>
-              <div className="mb-6">
-                <h1 className="text-2xl font-black text-white">Daily Six</h1>
-                <p className="mt-1 text-sm text-slate-400">{headerText}</p>
+              <div className="mb-4 rounded-xl border border-[#f4d766]/20 bg-[#f4d766]/10 p-3">
+                {/* <h1 className="text-xl font-bold leading-6 text-white">Daily Six</h1> */}
+                <p className="mt-1 truncate text-sm font-medium text-slate-300">{headerText}</p>
               </div>
 
-              <div className="grid gap-3">
+              <div className="grid gap-2">
                 <MetricRow
-                  label="Friends made"
+                  label="Friends"
                   goal={context.pace.target_friends}
                   value={form.friends_made}
                   onDecrement={() => updateCount('friends_made', -1)}
                   onIncrement={() => updateCount('friends_made', 1)}
                 />
                 <MetricRow
-                  label="Calls made"
+                  label="Calls"
                   goal={context.pace.target_calls}
                   value={form.calls_made}
                   onDecrement={() => updateCount('calls_made', -1)}
                   onIncrement={() => updateCount('calls_made', 1)}
                 />
                 <MetricRow
-                  label="Appointments"
+                  label="Appts"
                   goal={context.pace.target_appointments}
                   value={form.appointments}
                   onDecrement={() => updateCount('appointments', -1)}
@@ -212,19 +226,19 @@ export default function PublicDailySixPage() {
               </div>
 
               {error && (
-                <div className="mt-5 rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
+                <div className="mt-3 rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
                   {error}
                 </div>
               )}
               <button
                 type="button"
-                className="mt-6 h-14 w-full rounded-xl bg-[#e7c95f] text-base font-black text-black transition hover:bg-[#f2d874] disabled:cursor-not-allowed disabled:opacity-70"
+                className="mt-4 h-12 w-full rounded-xl bg-[#e7c95f] text-sm font-bold text-black transition hover:bg-[#f2d874] disabled:cursor-not-allowed disabled:opacity-70"
                 disabled={saving}
                 onClick={handleSubmit}
               >
                 {saving ? 'Submitting...' : 'Submit today'}
               </button>
-              <p className="mt-5 text-center text-xs leading-5 text-slate-500">
+              <p className="mt-3 text-center text-xs leading-5 text-slate-500">
                 Morning: log what you'll do. Night: log what you did. Two submissions a day keeps the streak alive.
               </p>
             </>
@@ -249,14 +263,14 @@ function MetricRow({
   onIncrement: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#14151a] px-4 py-4">
-      <div>
-        <div className="font-bold text-white">{label}</div>
-        <div className="mt-1 text-xs text-slate-500">Goal: {goal} today</div>
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#14151a] px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold leading-5 text-white">{label}</div>
+        <div className="text-xs leading-4 text-slate-500">Goal {goal}</div>
       </div>
       <div className="flex items-center gap-1">
         <StepButton label="-" onClick={onDecrement} />
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-[#101116] text-lg font-black">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-[#101116] text-base font-bold">
           {value}
         </div>
         <StepButton label="+" onClick={onIncrement} />
@@ -265,7 +279,7 @@ function MetricRow({
   );
 }
 
-function SuccessCard({
+export function SuccessCard({
   score,
   streak,
   onAnotherSubmission,
@@ -300,11 +314,160 @@ function SuccessCard({
   );
 }
 
+function SuccessCardV2({
+  userName,
+  pace,
+  submission,
+  score,
+  streak,
+  onAnotherSubmission,
+}: {
+  userName: string;
+  pace: BuilderPace;
+  submission: DailySixPayload;
+  score: number;
+  streak: number;
+  onAnotherSubmission: () => void;
+}) {
+  return (
+    <div className="px-0 py-1">
+      <div className="mb-1.5 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-2">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-400 text-black shadow-[0_0_20px_rgba(52,211,153,0.18)]">
+            <CheckCircle2 size={16} />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold leading-4 text-emerald-200">Submitted</div>
+            <h2 className="truncate text-base font-bold leading-5 text-white">{userName}</h2>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-1.5">
+        <ResultSection
+          eyebrow="Goal"
+          title={pace.name}
+          icon={<Target size={18} />}
+          accent="gold"
+        >
+          <div className="grid grid-cols-3 gap-1.5">
+            <ResultMetric label="Friends" value={pace.target_friends} />
+            <ResultMetric label="Calls" value={pace.target_calls} />
+            <ResultMetric label="Appts" value={pace.target_appointments} />
+          </div>
+        </ResultSection>
+
+        <ResultSection
+          eyebrow="Submission"
+          title={submission.session}
+          icon={<CheckCircle2 size={18} />}
+          accent="blue"
+        >
+          <div className="grid grid-cols-3 gap-1.5">
+            <ResultMetric label="Friends" value={submission.friends_made} />
+            <ResultMetric label="Calls" value={submission.calls_made} />
+            <ResultMetric label="Appts" value={submission.appointments} />
+          </div>
+          <div className="mt-1 grid grid-cols-3 gap-1">
+            <StatusPill label="Preplan" active={submission.preplan} />
+            <StatusPill label="Plan" active={submission.business_plan_am || submission.business_plan_pm} />
+            <StatusPill label="Pages" active={submission.pages_read} />
+          </div>
+        </ResultSection>
+
+        <ResultSection
+          eyebrow="Streak"
+          title={`${streak} day${streak === 1 ? '' : 's'}`}
+          icon={<Flame size={18} />}
+          accent="orange"
+        >
+          <div className="grid grid-cols-2 gap-1.5">
+            <div className="rounded-lg border border-white/10 bg-black/20 p-2 text-center">
+              <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Score</div>
+              <div className="text-2xl font-black leading-7 text-[#f4d766]">{score}%</div>
+            </div>
+            <div className="rounded-lg border border-[#ffad32]/25 bg-[#ffad32]/10 p-2 text-center">
+              <div className="text-[10px] font-black uppercase tracking-wide text-[#ffd08a]">Streak</div>
+              <div className="text-2xl font-black leading-7 text-[#ffad32]">{streak}</div>
+            </div>
+          </div>
+        </ResultSection>
+      </div>
+
+      <button
+        type="button"
+        className="mt-2 h-9 w-full rounded-xl border border-white/10 bg-[#14151a] px-4 text-xs font-semibold text-slate-200 transition hover:bg-white/5 sm:w-auto"
+        onClick={onAnotherSubmission}
+      >
+        Log another submission
+      </button>
+    </div>
+  );
+}
+
+function ResultSection({
+  eyebrow,
+  title,
+  icon,
+  accent,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  icon: ReactNode;
+  accent: 'gold' | 'blue' | 'orange';
+  children: ReactNode;
+}) {
+  const accentClass = {
+    gold: 'border-[#f4d766]/25 bg-[#f4d766]/10 text-[#f4d766]',
+    blue: 'border-sky-300/25 bg-sky-400/10 text-sky-200',
+    orange: 'border-[#ffad32]/25 bg-[#ffad32]/10 text-[#ffad32]',
+  }[accent];
+
+  return (
+    <section className="rounded-xl border border-white/10 bg-[#101116] p-2">
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-[11px] font-semibold leading-4 text-slate-400">{eyebrow}</div>
+          <h3 className="truncate text-sm font-bold leading-5 text-white">{title}</h3>
+        </div>
+        <div className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border ${accentClass}`}>
+          {icon}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function ResultMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-black/20 px-1.5 py-1 text-center">
+      <div className="text-base font-bold leading-5 text-white">{value}</div>
+      <div className="truncate text-[10px] font-medium leading-4 text-slate-400">{label}</div>
+    </div>
+  );
+}
+
+function StatusPill({ label, active }: { label: string; active: boolean }) {
+  return (
+    <div
+      className={`rounded-md border px-1 py-0.5 text-center text-[10px] font-medium leading-4 ${
+        active
+          ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-200'
+          : 'border-white/10 bg-black/20 text-slate-500'
+      }`}
+    >
+      {label}: {active ? 'Yes' : 'No'}
+    </div>
+  );
+}
+
 function StepButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       type="button"
-      className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-[#101116] text-xl font-black text-[#f4d766] hover:bg-white/5"
+      className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-[#101116] text-lg font-bold text-[#f4d766] hover:bg-white/5"
       onClick={onClick}
     >
       {label}
@@ -328,12 +491,12 @@ function ToggleRow({
   onNo: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#14151a] px-4 py-4">
-      <div>
-        <div className="font-bold text-white">{label}</div>
-        <div className="mt-1 text-xs text-slate-500">{helper}</div>
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#14151a] px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold leading-5 text-white">{label}</div>
+        <div className="text-xs leading-4 text-slate-500">{helper}</div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-shrink-0 gap-1.5">
         <ToggleButton label="Yes" active={yesActive} onClick={onYes} />
         <ToggleButton label="No" active={noActive} onClick={onNo} />
       </div>
@@ -353,12 +516,12 @@ function BusinessPlanRow({
   onPm: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#14151a] px-4 py-4">
-      <div>
-        <div className="font-bold text-white">Read business plan</div>
-        <div className="mt-1 text-xs text-slate-500">Morning and night</div>
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#14151a] px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold leading-5 text-white">Business plan</div>
+        <div className="text-xs leading-4 text-slate-500">Morning and night</div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-shrink-0 gap-1.5">
         <ToggleButton label="AM" active={am} onClick={onAm} />
         <ToggleButton label="PM" active={pm} onClick={onPm} />
       </div>
@@ -370,7 +533,7 @@ function ToggleButton({ label, active, onClick }: { label: string; active: boole
   return (
     <button
       type="button"
-      className={`h-9 rounded-xl border px-4 text-sm font-semibold transition ${
+      className={`h-8 rounded-lg border px-3 text-xs font-semibold transition ${
         active
           ? 'border-[#e7c95f] bg-[#e7c95f]/15 text-[#f4d766]'
           : 'border-white/10 bg-[#101116] text-slate-300 hover:bg-white/5'
