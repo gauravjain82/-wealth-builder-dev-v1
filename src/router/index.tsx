@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './protected-route';
 import { PublicRoute } from './public-route';
+import { RouteErrorFallback } from './route-error-boundary';
 import { RootRedirect } from './root-redirect.tsx';
 import { MainLayout } from '@shared/layouts';
 import { LoginPage, SignupPage } from '@/features/auth';
@@ -68,24 +69,28 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <RootRedirect />,
+    errorElement: <RouteErrorFallback />,
   },
 
   // Login page (standalone, no layout wrapper)
   {
     path: '/login',
     element: <LoginPage />,
+    errorElement: <RouteErrorFallback />,
   },
 
   // Public helpdesk page (works without login)
   {
     path: '/help-needed',
     element: lazyLoad(HelpNeededPage),
+    errorElement: <RouteErrorFallback />,
   },
 
   // Password reset/setup page (email link target)
   {
     path: '/reset-password',
     element: lazyLoad(ResetPasswordPage),
+    errorElement: <RouteErrorFallback />,
   },
 
   // Signup page
@@ -96,28 +101,33 @@ const router = createBrowserRouter([
         <SignupPage />
       </PublicRoute>
     ),
+    errorElement: <RouteErrorFallback />,
   },
 
   // Public Insight Center (standalone, no auth required)
   {
     path: '/public-insight-center',
     element: lazyLoad(PublicInsightCenter),
+    errorElement: <RouteErrorFallback />,
   },
 
   // Public Education Pages (no auth required)
   {
     path: '/learn/public-business',
     element: lazyLoad(PublicBusinessPage),
+    errorElement: <RouteErrorFallback />,
   },
   {
     path: '/learn/public-education',
     element: lazyLoad(PublicEducationPage),
+    errorElement: <RouteErrorFallback />,
   },
 
   // Public Daily Six submission page
   {
     path: '/team/builders/daily-six/:agencyCode',
     element: lazyLoad(PublicDailySixPage),
+    errorElement: <RouteErrorFallback />,
   },
 
   // Hidden shareable page. Recipients sign in and update their own associate tracker goals.
@@ -128,6 +138,7 @@ const router = createBrowserRouter([
         {lazyLoad(AddGoalsPage)}
       </ProtectedRoute>
     ),
+    errorElement: <RouteErrorFallback />,
   },
 
   // Protected routes
@@ -138,6 +149,7 @@ const router = createBrowserRouter([
         <MainLayout />
       </ProtectedRoute>
     ),
+    errorElement: <RouteErrorFallback />,
     children: [
       {
         path: 'home',
@@ -290,6 +302,7 @@ const router = createBrowserRouter([
   {
     path: '*',
     element: <Navigate to="/" replace />,
+    errorElement: <RouteErrorFallback />,
   },
 ]);
 
