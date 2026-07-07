@@ -35,6 +35,8 @@ const OnboardingGamePage = lazy(() => import('@/features/team/onboarding-game/pa
 const ResetPasswordPage = lazy(() => import('@/features/auth/components/reset-password-page'));
 const TrainingCenterPage = lazy(() => import('@/features/training-center/pages/training-center-page'));
 const TrainingSchedulePage = lazy(() => import('@/features/training-schedule/pages/training-schedule-page'));
+const MatchupPage = lazy(() => import('@/features/matchup/pages/matchup-page'));
+const CalendarPage = lazy(() => import('@/features/matchup/pages/calendar-page'));
 const HelpNeededPage = lazy(() => import('@/features/helpdesk/pages/help-needed-page'));
 const AdminHelpdeskPage = lazy(() => import('@/features/helpdesk/pages/admin-helpdesk-page'));
 const InviteAgentsPage = lazy(() => import('@/features/admin/invite-agents/pages/invite-agents-page'));
@@ -204,6 +206,14 @@ const router = createBrowserRouter([
       {
         path: 'training-schedule',
         element: lazyLoad(TrainingSchedulePage),
+      },
+      {
+        path: 'matchup',
+        element: lazyLoad(MatchupPage),
+      },
+      {
+        path: 'calendar',
+        element: lazyLoad(CalendarPage),
       },
       {
         path: 'file-vault',
