@@ -32,6 +32,7 @@ export interface HomePerformanceStats {
   net_license_amount: number | string;
   current_month_net_licensed_count: number;
   total_licenses: number;
+  total_butts_in_seat: number;
   total_big_event_registrations: number;
 }
 
