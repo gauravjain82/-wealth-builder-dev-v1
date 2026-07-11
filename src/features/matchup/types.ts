@@ -85,6 +85,13 @@ export interface AppointmentReschedule {
   created_at: string;
 }
 
+export interface AppointmentLastNote {
+  id?: number;
+  text: string;
+  created_by_name?: string;
+  created_at?: string;
+}
+
 export interface AppointmentListItem {
   id: number;
   uuid?: string;
@@ -120,6 +127,7 @@ export interface AppointmentListItem {
   has_result?: boolean;
   created_at?: string;
   updated_at?: string;
+  last_note?: AppointmentLastNote | null;
 }
 
 export interface AppointmentDetail extends Omit<AppointmentListItem, 'types'> {

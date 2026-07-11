@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CalendarClock, CheckCircle2, Download, MoreHorizontal, NotebookPen, Pencil, UserPlus, XCircle } from 'lucide-react';
 import { Button } from '@shared/components/ui';
 import { formatAppointmentTime } from '../services/matchup-service';
@@ -64,6 +64,7 @@ export function AppointmentList({
   onAddNote,
   onOpenNotes,
 }: AppointmentListProps) {
+  const [focusedNoteInputId, setFocusedNoteInputId] = useState<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -161,14 +162,24 @@ export function AppointmentList({
                     {(() => {
                       const userId = item.contact || item.trainee;
                       if (!userId) return '-';
+
+                      const draft = noteDraftByAppointmentId[item.id] || '';
+                      const lastNoteText = typeof item.last_note === 'string'
+                        ? item.last_note
+                        : item.last_note?.text || '';
+                      const isFocused = focusedNoteInputId === item.id;
+                      const inputValue = isFocused ? draft : draft || lastNoteText;
+
                       return (
                         <div className="flex min-w-[220px] flex-col gap-1">
                           <div className="flex items-center gap-1">
                             <input
                               className="h-8 min-w-0 flex-1 rounded border border-white/15 bg-white/5 px-2 text-xs outline-none"
                               placeholder="Add note... (Press Enter)"
-                              value={noteDraftByAppointmentId[item.id] || ''}
+                              value={inputValue}
                               disabled={savingNoteAppointmentIds.has(item.id)}
+                              onFocus={() => setFocusedNoteInputId(item.id)}
+                              onBlur={() => setFocusedNoteInputId((current) => (current === item.id ? null : current))}
                               onChange={(event) => onNoteDraftChange?.(item.id, event.target.value)}
                               onKeyDown={(event) => {
                                 if (event.key === 'Enter') {
@@ -188,6 +199,13 @@ export function AppointmentList({
                               <NotebookPen size={15} />
                             </Button>
                           </div>
+                          {lastNoteText && !isFocused && !draft ? (
+                            <div className="truncate text-[11px] text-slate-500">
+                              {typeof item.last_note === 'object' && item.last_note?.created_by_name
+                                ? `${item.last_note.created_by_name} • ${new Date(item.last_note.created_at || '').toLocaleString()}`
+                                : '-'}
+                            </div>
+                          ) : null}
                         </div>
                       );
                     })()}
