@@ -28,7 +28,7 @@ export interface UserProfile {
   what_told: string;
   relationship?: number | null;
   dependent_children?: boolean;
-  flags?: Record<string, boolean>;
+  flags?: Record<string, boolean | string>;
 }
 
 export interface LevelData {
@@ -173,6 +173,18 @@ export async function fetchUsersForSelection(): Promise<Prospect[]> {
   return users;
 }
 
+export async function fetchProspectDetails(prospectId: number): Promise<Prospect> {
+  const response = await fetch(`${API_BASE_URL}/api/accounts/users/${prospectId}/`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch prospect profile: ${response.statusText}`);
+  }
+
+  return (await response.json()) as Prospect;
+}
+
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem('wb.authToken');
   if (!token) {
@@ -293,7 +305,7 @@ interface UpdateProspectPayload {
     what_told?: string;
     relationship?: number | null;
     dependent_children?: boolean;
-    flags?: Record<string, boolean>;
+    flags?: Record<string, boolean | string>;
   };
   prospect_meta?: {
     notes?: string;
@@ -376,7 +388,7 @@ export interface CreateProspectPayload {
     what_told?: string;
     relationship?: number | null;
     dependent_children?: boolean;
-    flags?: Record<string, boolean>;
+    flags?: Record<string, boolean | string>;
   };
   prospect_meta?: {
     notes?: string;

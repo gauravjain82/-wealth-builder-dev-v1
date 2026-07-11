@@ -18,6 +18,12 @@ export interface MatchupStatusMeta {
   color: string;
 }
 
+export interface MatchupActionRequiredResponse {
+  assign?: AppointmentListItem[];
+  accept?: AppointmentListItem[];
+  complete?: AppointmentListItem[];
+}
+
 export interface AppointmentType {
   id: number;
   name: string;

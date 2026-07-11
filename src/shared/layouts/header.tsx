@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { ThemeToggle } from '@/shared/components/theme-toggle';
+import { Bell, CheckCheck } from 'lucide-react';
+import { inAppNotificationService, type InAppNotification } from '@/features/matchup/services/inapp-notification-service';
 import './header.css';
 
 const LOGO_URL =
@@ -11,7 +13,12 @@ export function Header() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<InAppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
 
   // Get first name
   const firstName = (user?.displayName || user?.name || user?.email || 'User').split(' ')[0];
@@ -32,16 +39,56 @@ export function Header() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+      }
     };
 
-    if (dropdownOpen) {
+    if (dropdownOpen || notificationsOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [dropdownOpen]);
+  }, [dropdownOpen, notificationsOpen]);
+
+  useEffect(() => {
+    if (!user || !localStorage.getItem('wb.authToken')) return;
+    const refreshCount = () => void inAppNotificationService.unreadCount().then(setUnreadCount).catch(() => undefined);
+    refreshCount();
+    const interval = window.setInterval(refreshCount, 60_000);
+    return () => window.clearInterval(interval);
+  }, [user]);
+
+  const openNotifications = async () => {
+    const nextOpen = !notificationsOpen;
+    setNotificationsOpen(nextOpen);
+    setDropdownOpen(false);
+    if (!nextOpen) return;
+    setNotificationsLoading(true);
+    try {
+      const data = await inAppNotificationService.unread();
+      setNotifications(data.results);
+      setUnreadCount(data.count);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const openNotification = async (notification: InAppNotification) => {
+    await inAppNotificationService.markRead([notification.id]).catch(() => undefined);
+    setNotifications((current) => current.filter((item) => item.id !== notification.id));
+    setUnreadCount((current) => Math.max(0, current - 1));
+    setNotificationsOpen(false);
+    navigate('/matchup', { state: { appointmentId: notification.payload?.appointment_id } });
+  };
+
+  const markAllNotificationsRead = async () => {
+    await inAppNotificationService.markAllRead();
+    setNotifications([]);
+    setUnreadCount(0);
+  };
 
   const handleProfileClick = () => {
     setDropdownOpen(false);
@@ -79,6 +126,26 @@ export function Header() {
         </span>
 
         <ThemeToggle />
+
+        <div ref={notificationsRef} className="header__notifications">
+          <button type="button" className="header__bell-button" onClick={() => void openNotifications()} aria-label="Open notifications" title="Notifications">
+            <Bell size={20} />
+            {unreadCount > 0 ? <span className="header__notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}
+          </button>
+          {notificationsOpen ? (
+            <div className="header__notification-menu">
+              <div className="header__notification-title"><strong>Notifications</strong>{notifications.length ? <button type="button" onClick={() => void markAllNotificationsRead()}><CheckCheck size={15} /> Mark all read</button> : null}</div>
+              <div className="header__notification-list">
+                {notificationsLoading ? <p>Loading notifications...</p> : notifications.length ? notifications.map((notification) => (
+                  <button key={notification.id} type="button" className="header__notification-item" onClick={() => void openNotification(notification)}>
+                    <span className="header__notification-dot" />
+                    <span><strong>{notification.title}</strong><small>{notification.body}</small><time>{new Date(notification.created_at).toLocaleString()}</time></span>
+                  </button>
+                )) : <p>You're all caught up.</p>}
+              </div>
+            </div>
+          ) : null}
+        </div>
 
         <div ref={dropdownRef} className="header__dropdown">
           <button

@@ -26,6 +26,12 @@ const US_STATES = [
 
 const GENDERS = ['', 'Male', 'Female'];
 
+const PROFILE_LANGUAGES = [
+  'English', 'Spanish', 'French', 'Arabic', 'Armenian', 'Bengali', 'Farsi', 'German', 'Hindi',
+  'Italian', 'Japanese', 'Korean', 'Mandarin', 'Portuguese', 'Punjabi', 'Russian', 'Thai',
+  'Vietnamese', 'Yiddish', 'Other',
+];
+
 const PROFILE_FLAGS: Array<{ key: keyof AddProspectFormData; label: string }> = [
   { key: 'age25Plus', label: '25+ Y.O' },
   { key: 'homeowner', label: 'Homeowner' },
@@ -305,7 +311,20 @@ export function AddProspectModal({
               ))}
             </div>
           </FormRow>
-
+          <FormRowGroup>
+          <FormRow>
+              <Label variant="form">Language</Label>
+              <Select value={form.language} onChange={(e) => updateField('language', e.target.value)}>
+                <option value="" className="text-black">Select language</option>
+                {PROFILE_LANGUAGES.map((language) => (
+                  <option key={language} value={language} className="text-black">
+                    {language}
+                  </option>
+                ))}
+              </Select>
+            </FormRow>
+            <FormRow>.</FormRow>
+          </FormRowGroup>
           <FormRow>
             <Label variant="form">How do you know this person?</Label>
             <Input

@@ -19,6 +19,9 @@ interface UserAutocompleteDropdownProps {
   fetchFromApi?: boolean;
   fetchOptions?: (search: string) => Promise<UserAutocompleteOption[]>;
   roleFilter?: string[];
+  onNoResultsAction?: (query: string) => void;
+  noResultsActionLabel?: string;
+  includeUncoded?: boolean;
 }
 
 interface UsersResponse {
@@ -62,11 +65,12 @@ function mapUserToOption(user: UsersResponse['results'][number]): UserAutocomple
   };
 }
 
-async function fetchUsersPage(search: string, url: string | null): Promise<{ options: UserAutocompleteOption[]; next: string | null }> {
+async function fetchUsersPage(search: string, url: string | null, includeUncoded = false): Promise<{ options: UserAutocompleteOption[]; next: string | null }> {
   const token = localStorage.getItem('wb.authToken');
   if (!token) throw new Error('No authentication token found');
 
-  const resolvedUrl = url ?? `${API_BASE_URL}/api/accounts/users/?has_agency_code=true&page_size=${PAGE_SIZE}&search=${encodeURIComponent(search)}`;
+  const agencyFilter = includeUncoded ? '' : 'has_agency_code=true&';
+  const resolvedUrl = url ?? `${API_BASE_URL}/api/accounts/users/?${agencyFilter}page_size=${PAGE_SIZE}&search=${encodeURIComponent(search)}`;
 
   const response = await fetch(resolvedUrl, {
     headers: { Authorization: `Token ${token}`, 'Content-Type': 'application/json' },
@@ -88,6 +92,9 @@ export function UserAutocompleteDropdown({
   fetchFromApi = false,
   fetchOptions,
   roleFilter,
+  onNoResultsAction,
+  noResultsActionLabel = 'Add to Prospect',
+  includeUncoded = false,
 }: UserAutocompleteDropdownProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -136,7 +143,7 @@ export function UserAutocompleteDropdown({
     try {
       const { options: fetched, next } = fetchOptions
         ? { options: await fetchOptions(name), next: null }
-        : await fetchUsersPage(name, null);
+        : await fetchUsersPage(name, null, includeUncoded);
       // Discard stale responses
       if (loadedQueryRef.current !== name) return;
       setApiOptions(fetched);
@@ -147,14 +154,14 @@ export function UserAutocompleteDropdown({
     } finally {
       if (loadedQueryRef.current === name) setLoading(false);
     }
-  }, [fetchOptions, usesRemoteSearch]);
+  }, [fetchOptions, includeUncoded, usesRemoteSearch]);
 
   const loadMore = useCallback(async () => {
     if (!fetchFromApi || fetchOptions || !nextUrl || loadingMore) return;
     const nameAtStart = loadedQueryRef.current;
     setLoadingMore(true);
     try {
-      const { options: fetched, next } = await fetchUsersPage(nameAtStart, nextUrl);
+      const { options: fetched, next } = await fetchUsersPage(nameAtStart, nextUrl, includeUncoded);
       if (loadedQueryRef.current !== nameAtStart) return;
       setApiOptions((prev) => [...prev, ...fetched]);
       setNextUrl(next);
@@ -163,7 +170,7 @@ export function UserAutocompleteDropdown({
     } finally {
       if (loadedQueryRef.current === nameAtStart) setLoadingMore(false);
     }
-  }, [fetchFromApi, fetchOptions, loadingMore, nextUrl]);
+  }, [fetchFromApi, fetchOptions, includeUncoded, loadingMore, nextUrl]);
 
   // Debounce search: trigger after 1st character, 300 ms delay
   useEffect(() => {
@@ -253,7 +260,21 @@ export function UserAutocompleteDropdown({
               <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">Start typing to search users</div>
             )}
             {!loading && !loadError && query.length > 0 && displayed.length === 0 && (
-              <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">No users found</div>
+              <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">
+                <div>No users found</div>
+                {onNoResultsAction ? (
+                  <button
+                    type="button"
+                    className="mt-2 rounded-md border border-amber-400/50 px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-300"
+                    onClick={() => {
+                      onNoResultsAction(query.trim());
+                      setOpen(false);
+                    }}
+                  >
+                    {noResultsActionLabel}
+                  </button>
+                ) : null}
+              </div>
             )}
             {!loading && !usesRemoteSearch && displayed.length === 0 && (
               <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">No users found</div>

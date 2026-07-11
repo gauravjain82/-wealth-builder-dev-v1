@@ -7,6 +7,7 @@ import type {
   CompleteAppointmentPayload,
   CreateAppointmentPayload,
   GoogleStatus,
+  MatchupActionRequiredResponse,
   MatchupMetrics,
   MatchupStatusMeta,
   PaginatedResponse,
@@ -144,7 +145,7 @@ export const matchupService = {
   metrics: (filters: AppointmentFilters = {}) =>
     request<MatchupMetrics>(`/api/matchup/appointments/metrics/${listQuery(filters)}`),
 
-  actionRequired: () => request<AppointmentListItem[]>('/api/matchup/appointments/action-required/'),
+  actionRequired: () => request<MatchupActionRequiredResponse>('/api/matchup/appointments/action-required/'),
 
   assign: (appointmentId: number, trainerId: number) =>
     request<AppointmentDetail>(`/api/matchup/appointments/${appointmentId}/assign/`, {

@@ -3,10 +3,11 @@ import { Plus, RefreshCw } from 'lucide-react';
 import { useToastStore } from '@/store';
 import { Button } from '@shared/components/ui';
 import { AppointmentFormModal } from '../components/appointment-form-modal';
+import { AppointmentDetailsModal } from '../components/appointment-details-modal';
 import { MonthCalendar } from '../components/month-calendar';
 import { useMatchupDashboard } from '../hooks/use-matchup-dashboard';
 import { matchupService } from '../services/matchup-service';
-import type { AppointmentFilters, CreateAppointmentPayload } from '../types';
+import type { AppointmentDetail, AppointmentFilters, CreateAppointmentPayload } from '../types';
 import './matchup-page.css';
 
 export default function CalendarPage() {
@@ -15,6 +16,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [detailsTarget, setDetailsTarget] = useState<AppointmentDetail | null>(null);
   const filters = useMemo<AppointmentFilters>(() => ({ pageSize: 25 }), []);
 
   const {
@@ -36,6 +38,17 @@ export default function CalendarPage() {
       await reload();
     } catch (err) {
       addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to create appointment.' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openDetails = async (id: number) => {
+    setBusy(true);
+    try {
+      setDetailsTarget(await matchupService.appointment(id));
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load appointment.' });
     } finally {
       setBusy(false);
     }
@@ -87,7 +100,10 @@ export default function CalendarPage() {
         selectedDate={selectedDate}
         onMonthChange={setCalendarMonth}
         onDateSelect={setSelectedDate}
+        onItemClick={(id) => void openDetails(id)}
       />
+
+      <AppointmentDetailsModal appointment={detailsTarget} onClose={() => setDetailsTarget(null)} />
 
       <AppointmentFormModal
         open={formOpen}

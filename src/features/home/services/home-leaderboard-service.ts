@@ -71,12 +71,18 @@ export async function fetchHomeLeaderboard(
 }
 
 export async function fetchHomePerformanceStats(
-  userId: string
+  userId: string,
+  segment?: string,
+  year?: number,
+  month?: number
 ): Promise<HomePerformanceStats> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/tracker/trackers/associate/${userId}/`,
-    { headers: getAuthHeaders() }
-  );
+  const base = `${API_BASE_URL}/api/tracker/trackers/associate/${userId}/`;
+  const params = new URLSearchParams();
+  if (segment) params.set('segment', segment);
+  if (typeof year === 'number') params.set('year', String(year));
+  if (typeof month === 'number') params.set('month', String(month));
+  const url = params.toString() ? `${base}?${params.toString()}` : base;
+  const response = await fetch(url, { headers: getAuthHeaders() });
   if (!response.ok) {
     const message = await response.text();
     throw new Error(message || 'Unable to load performance stats');

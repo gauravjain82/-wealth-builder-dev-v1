@@ -13,19 +13,30 @@ interface CompleteAppointmentModalProps {
   onAddToProduction?: (appointment: AppointmentListItem) => void;
 }
 
-const initialForm: Required<CompleteAppointmentPayload> = {
-  appointment_happened: true,
-  ama_completed: false,
-  fna_taken: false,
-  second_appointment_scheduled: false,
+interface CompleteForm {
+  appointment_happened: boolean | null;
+  ama_completed: boolean | null;
+  fna_taken: boolean | null;
+  second_appointment_scheduled: boolean | null;
+  referrals: number;
+  invited_to_bpm: boolean | null;
+  trainee_edified_trainer: 'YES' | 'NO' | 'KINDA' | '';
+  made_sale: 'YES' | 'NO' | 'NOT_YET' | '';
+  notes: string;
+}
+
+const initialForm: CompleteForm = {
+  appointment_happened: null,
+  ama_completed: null,
+  fna_taken: null,
+  second_appointment_scheduled: null,
   referrals: 0,
-  invited_to_bpm: false,
+  invited_to_bpm: null,
   trainee_edified_trainer: '',
   made_sale: '',
   notes: '',
 };
 
-type CompleteForm = typeof initialForm;
 type BooleanKey =
   | 'appointment_happened'
   | 'ama_completed'
@@ -68,6 +79,31 @@ export function CompleteAppointmentModal({
     update(key, value);
   };
 
+  const updateAppointmentHappened = (value: boolean) => {
+    if (value) {
+      update('appointment_happened', true);
+      return;
+    }
+    setForm((prev) => ({
+      ...initialForm,
+      appointment_happened: false,
+      notes: prev.notes,
+    }));
+    setHasReferrals(null);
+  };
+
+  const canSubmit = form.appointment_happened !== null && (
+    form.appointment_happened === false || (
+      form.ama_completed !== null
+      && form.fna_taken !== null
+      && form.second_appointment_scheduled !== null
+      && hasReferrals !== null
+      && form.invited_to_bpm !== null
+      && Boolean(form.trainee_edified_trainer)
+      && Boolean(form.made_sale)
+    )
+  );
+
   const updateReferrals = (value: boolean) => {
     setHasReferrals(value);
     update('referrals', value ? Math.max(form.referrals, 1) : 0);
@@ -84,16 +120,27 @@ export function CompleteAppointmentModal({
         className="matchup-form matchup-followup-form"
         onSubmit={(event) => {
           event.preventDefault();
-          void onComplete(form);
+          if (!canSubmit || form.appointment_happened === null) return;
+          void onComplete({
+            ...form,
+            appointment_happened: form.appointment_happened,
+            ama_completed: form.ama_completed ?? false,
+            fna_taken: form.fna_taken ?? false,
+            second_appointment_scheduled: form.second_appointment_scheduled ?? false,
+            invited_to_bpm: form.invited_to_bpm ?? false,
+            made_sale: form.made_sale === 'NO' ? '' : form.made_sale,
+          });
         }}
       >
         <BooleanQuestion
           label="Did the appointment happen?"
           name="appointment_happened"
           value={form.appointment_happened}
-          onChange={(value) => updateBoolean('appointment_happened', value)}
+          onChange={updateAppointmentHappened}
           required
         />
+        {form.appointment_happened ? (
+          <>
         <BooleanQuestion
           label="Did you complete an AMA?"
           name="ama_completed"
@@ -101,10 +148,12 @@ export function CompleteAppointmentModal({
           onChange={(value) => updateBoolean('ama_completed', value)}
           required
         />
-        <ActionPrompt
-          actionText="Add to Recruit Tracker"
-          onClick={appointment && onAddToRecruitTracker ? () => onAddToRecruitTracker(appointment) : undefined}
-        />
+        {form.ama_completed === true ? (
+          <ActionPrompt
+            actionText="Add to Recruit Tracker"
+            onClick={appointment && onAddToRecruitTracker ? () => onAddToRecruitTracker(appointment) : undefined}
+          />
+        ) : null}
         <BooleanQuestion
           label="Financial Needs Analysis (FNA) Taken?"
           name="fna_taken"
@@ -119,10 +168,12 @@ export function CompleteAppointmentModal({
           onChange={(value) => updateBoolean('second_appointment_scheduled', value)}
           required
         />
-        <ActionPrompt
-          actionText="create a follow-up appointment"
-          onClick={appointment && onCreateFollowUpAppointment ? () => onCreateFollowUpAppointment(appointment) : undefined}
-        />
+        {form.second_appointment_scheduled === true ? (
+          <ActionPrompt
+            actionText="create a follow-up appointment"
+            onClick={appointment && onCreateFollowUpAppointment ? () => onCreateFollowUpAppointment(appointment) : undefined}
+          />
+        ) : null}
         <BooleanQuestion
           label="Referrals?"
           name="referrals"
@@ -133,7 +184,7 @@ export function CompleteAppointmentModal({
         <StringQuestion
           label="Invited to BPM?"
           name="invited_to_bpm"
-          value={form.invited_to_bpm ? 'YES' : 'NO'}
+          value={form.invited_to_bpm === null ? null : form.invited_to_bpm ? 'YES' : 'NO'}
           options={[
             ['YES', 'Yes'],
             ['NO', 'No'],
@@ -141,7 +192,9 @@ export function CompleteAppointmentModal({
           onChange={(value) => updateBoolean('invited_to_bpm', value === 'YES')}
           required
         />
-        <ActionPrompt actionText={`Add ${contactName} to your BPM Invites`} disabled />
+        {form.invited_to_bpm === true ? (
+          <ActionPrompt actionText={`Add ${contactName} to your BPM Invites`} disabled />
+        ) : null}
         <StringQuestion
           label="Did trainee edify the trainer properly?"
           name="trainee_edified_trainer"
@@ -160,16 +213,20 @@ export function CompleteAppointmentModal({
           value={form.made_sale || null}
           options={[
             ['YES', 'Yes'],
-            ['', 'No'],
+            ['NO', 'No'],
             ['NOT_YET', 'Not Yet'],
           ]}
           onChange={(value) => update('made_sale', value as CompleteForm['made_sale'])}
           required
         />
-        <ActionPrompt
-          actionText={`Add ${contactName} to your Production`}
-          onClick={appointment && onAddToProduction ? () => onAddToProduction(appointment) : undefined}
-        />
+        {form.made_sale === 'YES' ? (
+          <ActionPrompt
+            actionText={`Add ${contactName} to your Production`}
+            onClick={appointment && onAddToProduction ? () => onAddToProduction(appointment) : undefined}
+          />
+        ) : null}
+          </>
+        ) : null}
 
         <div className="matchup-form-grid">
           <label className="matchup-form-wide">
@@ -180,7 +237,7 @@ export function CompleteAppointmentModal({
 
         <div className="matchup-form-actions">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={saving}>{saving ? 'Submitting...' : 'Submit Follow Up'}</Button>
+          <Button type="submit" disabled={saving || !canSubmit}>{saving ? 'Submitting...' : 'Submit Follow Up'}</Button>
         </div>
       </form>
     </Modal>

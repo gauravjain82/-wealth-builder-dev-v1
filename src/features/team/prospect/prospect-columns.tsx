@@ -5,6 +5,12 @@ import { buildProfileSummary } from './prospect-utils';
 
 type ProspectMark = 'default' | 'client' | 'recruit' | 'both';
 
+const PROFILE_LANGUAGES = [
+  'English', 'Spanish', 'French', 'Arabic', 'Armenian', 'Bengali', 'Farsi', 'German', 'Hindi',
+  'Italian', 'Japanese', 'Korean', 'Mandarin', 'Portuguese', 'Punjabi', 'Russian', 'Thai',
+  'Vietnamese', 'Yiddish', 'Other',
+];
+
 interface ProspectColumnOptions {
   notesByProspectId: Record<number, TrackerNote[]>;
   noteDraftByProspectId: Record<number, string>;
@@ -29,6 +35,7 @@ interface ProspectColumnOptions {
       howKnown: string;
       relationship: string;
       occupation: string;
+      language: string;
       whatTold: string;
       married: boolean;
       dependentKids: boolean;
@@ -37,7 +44,7 @@ interface ProspectColumnOptions {
   onStartProfileEdit: (row: Prospect) => void;
   onProfileDraftFieldChange: (
     prospectId: number,
-    field: 'howKnown' | 'relationship' | 'occupation' | 'whatTold',
+    field: 'howKnown' | 'relationship' | 'occupation' | 'language' | 'whatTold',
     value: string
   ) => void;
   onProfileDraftFlagChange: (prospectId: number, field: 'married' | 'dependentKids', value: boolean) => void;
@@ -329,6 +336,17 @@ export function buildProspectColumns(
                 value={draft.occupation}
                 onChange={(e) => options.onProfileDraftFieldChange(row.id, 'occupation', e.target.value)}
               />
+              <select
+                className="h-8 rounded border border-white/15 bg-neutral-800 px-2 text-xs text-white outline-none"
+                value={draft.language}
+                onChange={(e) => options.onProfileDraftFieldChange(row.id, 'language', e.target.value)}
+                aria-label="Preferred language"
+              >
+                <option value="">Select language</option>
+                {PROFILE_LANGUAGES.map((language) => (
+                  <option key={language} value={language}>{language}</option>
+                ))}
+              </select>
             </div>
             <input
               className="h-8 rounded border border-white/15 bg-white/5 px-2 text-xs text-white outline-none"

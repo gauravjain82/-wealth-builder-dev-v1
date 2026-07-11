@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { Button } from '@shared/components/ui';
 import { formatAppointmentTime } from '../services/matchup-service';
 import type { AppointmentListItem, CalendarAppointment, MatchupStatusMeta } from '../types';
@@ -102,7 +102,10 @@ export function MonthCalendar({
                       <span>{formatAppointmentTime(item.start_at, { month: undefined, day: undefined })}</span>
                       {trainerName ? <small>Assigned to {trainerName}</small> : null}
                     </div>
-                    <StatusBadge status={item.status} label={item.status_label} color={item.status_color} statuses={statuses} />
+                    <span className="matchup-selected-item-actions">
+                      <StatusBadge status={item.status} label={item.status_label} color={item.status_color} statuses={statuses} />
+                      <Eye size={15} aria-hidden="true" />
+                    </span>
                   </button>
                 );
               })}

@@ -9,6 +9,7 @@ export function buildProfileSummary(row: Prospect): string {
     profile.how_known || null,
     profile.relationship !== undefined && profile.relationship !== null ? `${profile.relationship}/10` : null,
     profile.occupation || null,
+    typeof flags.language === 'string' ? flags.language : null,
     flags.married ? 'Married' : null,
     flags.dependentKids ? 'Dependent Kids' : null,
   ];

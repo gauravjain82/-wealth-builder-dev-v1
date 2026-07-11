@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Button, Input, Modal, Select, Textarea } from '@shared/components/ui';
 import { UserAutocompleteDropdown, type UserAutocompleteOption } from '@shared/components/user-autocomplete-dropdown';
 import { browserTimezone, localDateTimeValue } from '../services/matchup-service';
+import { fetchProspectDetails, updateProspectDetails } from '@/features/team/prospect/services/prospect-service';
+import type { Prospect } from '@/features/team/prospect/services/prospect-service';
+import { createTrackerNote } from '@/features/team/services/tracker-notes-service';
 import type {
   AppointmentDetail,
   AppointmentListItem,
@@ -12,6 +15,38 @@ import type {
 
 type AppointmentFormAppointment = AppointmentListItem | AppointmentDetail;
 
+const browserSupportedTimezones = (): string[] => {
+  const intl = Intl as typeof Intl & {
+    supportedValuesOf?: (key: 'timeZone') => string[];
+  };
+
+  try {
+    return intl.supportedValuesOf?.('timeZone') ?? [];
+  } catch {
+    return [];
+  }
+};
+
+const SUPPORTED_TIMEZONES = browserSupportedTimezones();
+
+const PROFILE_FLAGS = [
+  ['age25Plus', '25+ Y.O'],
+  ['homeowner', 'Homeowner'],
+  ['solidCareer', 'Solid Career Background'],
+  ['income75kPlus', '$75k+ Income'],
+  ['dissatisfied', 'Dissatisfied'],
+  ['entrepreneurial', 'Entrepreneurial'],
+  ['spanishPreferred', 'Spanish Speaking Preferred'],
+  ['married', 'Married'],
+  ['dependentKids', 'Dependent Kids'],
+] as const;
+
+const PROFILE_LANGUAGES = [
+  'English', 'Spanish', 'French', 'Arabic', 'Armenian', 'Bengali', 'Farsi', 'German', 'Hindi',
+  'Italian', 'Japanese', 'Korean', 'Mandarin', 'Portuguese', 'Punjabi', 'Russian', 'Thai',
+  'Vietnamese', 'Yiddish', 'Other',
+];
+
 interface AppointmentFormModalProps {
   open: boolean;
   appointment?: AppointmentFormAppointment | null;
@@ -20,6 +55,8 @@ interface AppointmentFormModalProps {
   saving?: boolean;
   onClose: () => void;
   onSubmit: (payload: CreateAppointmentPayload, id?: number) => Promise<void>;
+  onAddProspect?: (searchedName: string) => void;
+  addedContact?: Prospect | null;
 }
 
 interface FormState {
@@ -40,9 +77,11 @@ interface FormState {
   contactLabel: string;
   contact_phone: string;
   contact_spouse_name: string;
+  contact_profile_flags: Record<string, boolean | string>;
   trainee: number | null;
   traineeLabel: string;
   trainee_phone: string;
+  notes: string;
 }
 
 const defaultForm = (): FormState => ({
@@ -63,9 +102,11 @@ const defaultForm = (): FormState => ({
   contactLabel: '',
   contact_phone: '',
   contact_spouse_name: '',
+  contact_profile_flags: {},
   trainee: localStorage.getItem('wb.userId') ? Number(localStorage.getItem('wb.userId')) : null,
   traineeLabel: localStorage.getItem('wb.name') || '',
   trainee_phone: '',
+  notes: '',
 });
 
 function isAppointmentDetail(appointment: AppointmentFormAppointment): appointment is AppointmentDetail {
@@ -115,16 +156,40 @@ export function AppointmentFormModal({
   saving = false,
   onClose,
   onSubmit,
+  onAddProspect,
+  addedContact,
 }: AppointmentFormModalProps) {
   const [form, setForm] = useState<FormState>(defaultForm);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setForm(formFromAppointment(appointment, initialValues));
+      const nextForm = formFromAppointment(appointment, initialValues);
+      setForm(nextForm);
       setError(null);
+      if (nextForm.contact) {
+        void fetchProspectDetails(nextForm.contact)
+          .then((contact) => {
+            setForm((prev) => ({
+              ...prev,
+              contact_profile_flags: { ...(contact.profile?.flags || {}) },
+            }));
+          })
+          .catch(() => undefined);
+      }
     }
   }, [appointment, initialValues, open]);
+
+  useEffect(() => {
+    if (!open || !addedContact) return;
+    setForm((prev) => ({
+      ...prev,
+      contact: addedContact.id,
+      contactLabel: addedContact.full_name || `${addedContact.first_name} ${addedContact.last_name}`.trim(),
+      contact_phone: addedContact.phone || addedContact.profile?.phone || '',
+      contact_profile_flags: { ...(addedContact.profile?.flags || {}) },
+    }));
+  }, [addedContact, open]);
 
   const selectedTypeText = useMemo(() => {
     if (!form.types.length) return 'Select at least one appointment type.';
@@ -133,6 +198,11 @@ export function AppointmentFormModal({
       .map((type) => type.name)
       .join(', ');
   }, [appointmentTypes, form.types]);
+
+  const timezoneOptions = useMemo(() => {
+    const currentTimezone = browserTimezone();
+    return Array.from(new Set([currentTimezone, form.timezone, ...SUPPORTED_TIMEZONES])).filter(Boolean);
+  }, [form.timezone]);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -153,6 +223,29 @@ export function AppointmentFormModal({
         ? { ...prev, contact: option.id, contactLabel: option.label }
         : { ...prev, trainee: option.id, traineeLabel: option.label },
     );
+
+    if (field === 'contact') {
+      void loadContactProfile(option.id);
+    }
+  };
+
+  const loadContactProfile = async (contactId: number) => {
+    try {
+      const contact = await fetchProspectDetails(contactId);
+      setForm((prev) => ({
+        ...prev,
+        contact_profile_flags: { ...(contact.profile?.flags || {}) },
+      }));
+    } catch {
+      setForm((prev) => ({ ...prev, contact_profile_flags: {} }));
+    }
+  };
+
+  const updateContactProfileFlag = (key: string, value: boolean | string) => {
+    setForm((prev) => ({
+      ...prev,
+      contact_profile_flags: { ...prev.contact_profile_flags, [key]: value },
+    }));
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -165,10 +258,6 @@ export function AppointmentFormModal({
     }
     if (form.kind === 'REQUEST_TRAINER' && (!form.contact || !form.trainee)) {
       setError('Request Trainer appointments require both a contact and a trainee.');
-      return;
-    }
-    if (form.location_type === 'VIRTUAL' && !form.url.trim()) {
-      setError('Virtual appointments require a URL.');
       return;
     }
     if (form.location_type === 'PHYSICAL' && (!form.address.trim() || !form.city.trim() || !form.state.trim())) {
@@ -202,6 +291,17 @@ export function AppointmentFormModal({
     if (form.contact_spouse_name.trim()) payload.contact_spouse_name = form.contact_spouse_name.trim();
     if (form.trainee_phone.trim()) payload.trainee_phone = form.trainee_phone.trim();
 
+    if (form.kind === 'REQUEST_TRAINER' && form.contact) {
+      await updateProspectDetails(form.contact, {
+        profile: { flags: form.contact_profile_flags },
+      });
+    }
+
+    const noteUserId = form.contact || form.trainee;
+    if (noteUserId && form.notes.trim()) {
+      await createTrackerNote(noteUserId, form.notes, 'matchup');
+    }
+
     await onSubmit(payload, appointment?.id);
   };
 
@@ -224,7 +324,13 @@ export function AppointmentFormModal({
           </label>
           <label>
             <span>Timezone</span>
-            <Input variant="surface" value={form.timezone} onChange={(event) => update('timezone', event.target.value)} />
+            <Select value={form.timezone} onChange={(event) => update('timezone', event.target.value)}>
+              {timezoneOptions.map((timezone) => (
+                <option key={timezone} value={timezone}>
+                  {timezone}
+                </option>
+              ))}
+            </Select>
           </label>
           <label>
             <span>Duration</span>
@@ -254,7 +360,9 @@ export function AppointmentFormModal({
                 selectedLabel={form.contactLabel}
                 placeholder="Search contacts"
                 fetchFromApi
+                includeUncoded
                 onSelect={(option) => handleUserSelect('contact', option)}
+                onNoResultsAction={onAddProspect}
               />
             </label>
             <label>
@@ -274,6 +382,33 @@ export function AppointmentFormModal({
             <label>
               <span>Spouse Name</span>
               <Input variant="surface" value={form.contact_spouse_name} onChange={(event) => update('contact_spouse_name', event.target.value)} />
+            </label>
+            <fieldset className="matchup-fieldset matchup-form-wide">
+              <legend>Contact Profile</legend>
+              <div className="matchup-checkbox-grid">
+                {PROFILE_FLAGS.map(([key, label]) => (
+                  <label key={key} className="matchup-check">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form.contact_profile_flags[key])}
+                      onChange={(event) => updateContactProfileFlag(key, event.target.checked)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <label>
+              <span>Contact Language</span>
+              <Select
+                value={typeof form.contact_profile_flags.language === 'string' ? form.contact_profile_flags.language : ''}
+                onChange={(event) => updateContactProfileFlag('language', event.target.value)}
+              >
+                <option value="">Select language</option>
+                {PROFILE_LANGUAGES.map((language) => (
+                  <option key={language} value={language}>{language}</option>
+                ))}
+              </Select>
             </label>
           </div>
         ) : null}
@@ -318,6 +453,16 @@ export function AppointmentFormModal({
             </>
           )}
         </div>
+
+        <label>
+          <span>Notes</span>
+          <Textarea
+            value={form.notes}
+            onChange={(event) => update('notes', event.target.value)}
+            rows={3}
+            placeholder="Add an appointment note..."
+          />
+        </label>
 
         <div className="matchup-form-actions">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

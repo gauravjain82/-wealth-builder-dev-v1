@@ -1,4 +1,5 @@
-import { CalendarClock, CheckCircle2, Download, MoreHorizontal, Pencil, UserPlus, XCircle } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { CalendarClock, CheckCircle2, Download, MoreHorizontal, NotebookPen, Pencil, UserPlus, XCircle } from 'lucide-react';
 import { Button } from '@shared/components/ui';
 import { formatAppointmentTime } from '../services/matchup-service';
 import type { AppointmentListItem, MatchupStatusMeta } from '../types';
@@ -26,10 +27,20 @@ interface AppointmentListProps {
   statuses: MatchupStatusMeta[];
   loading?: boolean;
   onOpen: (item: AppointmentListItem) => void;
+  onViewDetails: (item: AppointmentListItem) => void;
+  onOpenContact?: (contactId: number, contactName: string) => void;
   onAssign: (item: AppointmentListItem) => void;
   onComplete: (item: AppointmentListItem) => void;
   onCancel: (item: AppointmentListItem) => void;
   onExport: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
+  noteDraftByAppointmentId?: Record<number, string>;
+  savingNoteAppointmentIds?: Set<number>;
+  onNoteDraftChange?: (appointmentId: number, value: string) => void;
+  onAddNote?: (appointmentId: number, userId: number) => void;
+  onOpenNotes?: (userId: number, contactName: string) => void;
 }
 
 export function AppointmentList({
@@ -38,11 +49,36 @@ export function AppointmentList({
   statuses,
   loading = false,
   onOpen,
+  onViewDetails,
+  onOpenContact,
   onAssign,
   onComplete,
   onCancel,
   onExport,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
+  noteDraftByAppointmentId = {},
+  savingNoteAppointmentIds = new Set(),
+  onNoteDraftChange,
+  onAddNote,
+  onOpenNotes,
 }: AppointmentListProps) {
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasMore || !onLoadMore) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !loadingMore) onLoadMore();
+      },
+      { rootMargin: '200px 0px' },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, items.length, loadingMore, onLoadMore]);
+
   return (
     <section className="matchup-panel matchup-list-panel">
       <div className="matchup-panel-header">
@@ -65,11 +101,13 @@ export function AppointmentList({
             <thead>
               <tr>
                 <th>When</th>
+                <th>Kind</th>
                 <th>Contact</th>
                 <th>Trainee</th>
                 <th>Trainer</th>
                 <th>Types</th>
                 <th>Location</th>
+                <th>Notes</th>
                 <th aria-label="Actions" />
               </tr>
             </thead>
@@ -86,7 +124,23 @@ export function AppointmentList({
                     <small>{item.timezone}</small>
                     <span className="matchup-row-status" style={{ color }}>{statusLabel(item, statuses)}</span>
                   </td>
-                  <td>{item.contact_name || '-'}</td>
+                  <td>
+                    <span className={`matchup-kind-badge ${item.kind === 'REQUEST_TRAINER' ? 'is-request-trainer' : 'is-personal'}`}>
+                      {item.kind === 'REQUEST_TRAINER' ? 'Request Trainer' : 'Personal'}
+                    </span>
+                  </td>
+                  <td>
+                    {item.contact && item.contact_name ? (
+                      <button
+                        type="button"
+                        className="matchup-contact-link"
+                        onClick={() => onOpenContact?.(item.contact as number, item.contact_name as string)}
+                        title={`View ${item.contact_name}'s profile`}
+                      >
+                        {item.contact_name}
+                      </button>
+                    ) : '-'}
+                  </td>
                   <td>{item.trainee_name || '-'}</td>
                   <td>{assignedName(item)}</td>
                   <td>
@@ -102,6 +156,41 @@ export function AppointmentList({
                     ) : (
                       <span title={locationText(item)}>{locationText(item)}</span>
                     )}
+                  </td>
+                  <td>
+                    {(() => {
+                      const userId = item.contact || item.trainee;
+                      if (!userId) return '-';
+                      return (
+                        <div className="flex min-w-[220px] flex-col gap-1">
+                          <div className="flex items-center gap-1">
+                            <input
+                              className="h-8 min-w-0 flex-1 rounded border border-white/15 bg-white/5 px-2 text-xs outline-none"
+                              placeholder="Add note... (Press Enter)"
+                              value={noteDraftByAppointmentId[item.id] || ''}
+                              disabled={savingNoteAppointmentIds.has(item.id)}
+                              onChange={(event) => onNoteDraftChange?.(item.id, event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                  event.preventDefault();
+                                  onAddNote?.(item.id, userId);
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              title="View all contact notes"
+                              aria-label={`View all notes for ${item.contact_name || item.trainee_name || 'contact'}`}
+                              onClick={() => onOpenNotes?.(userId, item.contact_name || item.trainee_name || 'Contact')}
+                            >
+                              <NotebookPen size={15} />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td>
                     <div className="matchup-row-actions">
@@ -157,7 +246,7 @@ export function AppointmentList({
                         aria-label="More appointment details"
                         title="More appointment details"
                         className="matchup-action-button is-more"
-                        onClick={() => onOpen(item)}
+                        onClick={() => onViewDetails(item)}
                       >
                         <MoreHorizontal size={15} />
                       </Button>
@@ -168,6 +257,11 @@ export function AppointmentList({
               })}
             </tbody>
           </table>
+          {hasMore ? (
+            <div ref={loadMoreRef} className="matchup-muted" style={{ padding: '0.75rem', textAlign: 'center' }}>
+              {loadingMore ? 'Loading more appointments...' : 'Scroll to load more'}
+            </div>
+          ) : null}
         </div>
       )}
     </section>

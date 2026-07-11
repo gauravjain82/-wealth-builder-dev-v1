@@ -205,6 +205,7 @@ export default function ProspectTrackerPage() {
         howKnown: string;
         relationship: string;
         occupation: string;
+        language: string;
         whatTold: string;
         married: boolean;
         dependentKids: boolean;
@@ -462,6 +463,7 @@ export default function ProspectTrackerPage() {
         ? String(prospect.profile.relationship)
         : '',
     occupation: prospect.profile?.occupation || '',
+    language: typeof prospect.profile?.flags?.language === 'string' ? prospect.profile.flags.language : '',
     whatTold: prospect.profile?.what_told || '',
     age25Plus: Boolean(prospect.profile?.flags?.age25Plus),
     homeowner: Boolean(prospect.profile?.flags?.homeowner),
@@ -534,6 +536,7 @@ export default function ProspectTrackerPage() {
             spanishPreferred: formData.spanishPreferred,
             married: formData.married,
             dependentKids: formData.dependentKids,
+            language: formData.language,
           },
         },
       });
@@ -580,6 +583,7 @@ export default function ProspectTrackerPage() {
             spanishPreferred: formData.spanishPreferred,
             married: formData.married,
             dependentKids: formData.dependentKids,
+            language: formData.language,
           },
         },
       };
@@ -943,6 +947,7 @@ export default function ProspectTrackerPage() {
             ? String(profile.relationship)
             : '',
         occupation: profile?.occupation || '',
+        language: typeof profile?.flags?.language === 'string' ? profile.flags.language : '',
         whatTold: profile?.what_told || '',
         married: Boolean(profile?.flags?.married),
         dependentKids: Boolean(profile?.flags?.dependentKids),
@@ -1003,7 +1008,7 @@ export default function ProspectTrackerPage() {
   }, []);
 
   const handleProfileDraftFieldChange = useCallback(
-    (prospectId: number, field: 'howKnown' | 'relationship' | 'occupation' | 'whatTold', value: string) => {
+    (prospectId: number, field: 'howKnown' | 'relationship' | 'occupation' | 'language' | 'whatTold', value: string) => {
       setProfileDraftByProspectId((prev) => ({
         ...prev,
         [prospectId]: {
@@ -1011,6 +1016,7 @@ export default function ProspectTrackerPage() {
             howKnown: '',
             relationship: '',
             occupation: '',
+            language: '',
             whatTold: '',
             married: false,
             dependentKids: false,
@@ -1031,6 +1037,7 @@ export default function ProspectTrackerPage() {
             howKnown: '',
             relationship: '',
             occupation: '',
+            language: '',
             whatTold: '',
             married: false,
             dependentKids: false,
@@ -1069,6 +1076,7 @@ export default function ProspectTrackerPage() {
           ...(row.profile?.flags || {}),
           married: draft.married,
           dependentKids: draft.dependentKids,
+          language: draft.language,
         },
       };
       const payloadProfile = {
@@ -1086,6 +1094,7 @@ export default function ProspectTrackerPage() {
           ...(row.profile?.flags || {}),
           married: draft.married,
           dependentKids: draft.dependentKids,
+          language: draft.language,
         },
       };
 
@@ -1412,6 +1421,7 @@ export default function ProspectTrackerPage() {
             spanishPreferred: formData.spanishPreferred,
             married: formData.married,
             dependentKids: formData.dependentKids,
+            language: formData.language,
           },
         },
         prospect_meta: {

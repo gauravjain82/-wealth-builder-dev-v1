@@ -36,6 +36,7 @@ export function useMatchupDashboard(filters: AppointmentFilters, calendarMonth: 
   const [metrics, setMetrics] = useState<MatchupMetrics>(EMPTY_METRICS);
   const [googleStatus, setGoogleStatus] = useState<GoogleStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
@@ -60,7 +61,11 @@ export function useMatchupDashboard(filters: AppointmentFilters, calendarMonth: 
       setAppointments(listData);
       setMetrics(metricData);
       setCalendarItems(calendarData);
-      setActionRequired(actionData);
+      setActionRequired([
+        ...(actionData.assign ?? []),
+        ...(actionData.accept ?? []),
+        ...(actionData.complete ?? []),
+      ]);
       setGoogleStatus(googleData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load matchup data');
@@ -68,6 +73,27 @@ export function useMatchupDashboard(filters: AppointmentFilters, calendarMonth: 
       setLoading(false);
     }
   }, [calendarMonth, filters]);
+
+  const loadMore = useCallback(async () => {
+    if (loading || loadingMore || !appointments.next) return;
+    setLoadingMore(true);
+    try {
+      const pageSize = filters.pageSize || 50;
+      const nextPage = Math.floor(appointments.results.length / pageSize) + 1;
+      const nextData = await matchupService.appointments({ ...filters, page: nextPage });
+      setAppointments((current) => ({
+        ...nextData,
+        results: [
+          ...current.results,
+          ...nextData.results.filter((item) => !current.results.some((existing) => existing.id === item.id)),
+        ],
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load more appointments');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [appointments.next, appointments.results.length, filters, loading, loadingMore]);
 
   useEffect(() => {
     void reload();
@@ -83,7 +109,9 @@ export function useMatchupDashboard(filters: AppointmentFilters, calendarMonth: 
     metrics,
     googleStatus,
     loading,
+    loadingMore,
     error,
     reload,
+    loadMore,
   };
 }

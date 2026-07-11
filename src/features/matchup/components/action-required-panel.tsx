@@ -1,4 +1,4 @@
-import { Check, UserPlus, X } from 'lucide-react';
+import { Check, Eye, UserPlus, X } from 'lucide-react';
 import { Button } from '@shared/components/ui';
 import { formatAppointmentTime } from '../services/matchup-service';
 import type { AppointmentListItem, MatchupStatusMeta } from '../types';
@@ -10,6 +10,7 @@ interface ActionRequiredPanelProps {
   onAssign: (item: AppointmentListItem) => void;
   onAccept: (item: AppointmentListItem) => void;
   onDecline: (item: AppointmentListItem) => void;
+  onView: (item: AppointmentListItem) => void;
   busy?: boolean;
 }
 
@@ -19,6 +20,7 @@ export function ActionRequiredPanel({
   onAssign,
   onAccept,
   onDecline,
+  onView,
   busy = false,
 }: ActionRequiredPanelProps) {
   return (
@@ -43,20 +45,25 @@ export function ActionRequiredPanel({
                   statuses={statuses}
                 />
               </div>
-              {item.status === 'REQUESTED' ? (
-                <Button size="sm" onClick={() => onAssign(item)} disabled={busy}>
-                  <UserPlus size={15} /> Assign
+              <div className="matchup-row-actions">
+                <Button variant="outline" size="sm" onClick={() => onView(item)} title="View appointment" aria-label="View appointment">
+                  <Eye size={15} /> View
                 </Button>
-              ) : (
-                <div className="matchup-row-actions">
-                  <Button size="sm" onClick={() => onAccept(item)} disabled={busy}>
-                    <Check size={15} /> Accept
+                {item.status === 'REQUESTED' ? (
+                  <Button variant="default" size="sm" onClick={() => onAssign(item)} disabled={busy}>
+                    <UserPlus size={12} /> Assign
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => onDecline(item)} disabled={busy}>
-                    <X size={15} /> Decline
+                ) : (
+                  <>
+                  <Button variant="default" size="sm" onClick={() => onAccept(item)} disabled={busy}>
+                    <Check size={12} /> Accept
                   </Button>
-                </div>
-              )}
+                  <Button variant="destructive" size="sm" onClick={() => onDecline(item)} disabled={busy}>
+                    <X size={12} /> Decline
+                  </Button>
+                  </>
+                )}
+              </div>
             </article>
           ))}
         </div>

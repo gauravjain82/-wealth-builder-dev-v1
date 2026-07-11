@@ -210,6 +210,7 @@ function mapProspectToForm(prospect: Prospect): AddProspectFormData {
         ? String(prospect.profile.relationship)
         : '',
     occupation: prospect.profile?.occupation || '',
+    language: typeof prospect.profile?.flags?.language === 'string' ? prospect.profile.flags.language : '',
     whatTold: prospect.profile?.what_told || '',
     age25Plus: Boolean(prospect.profile?.flags?.age25Plus),
     homeowner: Boolean(prospect.profile?.flags?.homeowner),
@@ -274,6 +275,7 @@ export function ProspectTrackerListModal({
         howKnown: string;
         relationship: string;
         occupation: string;
+        language: string;
         whatTold: string;
         married: boolean;
         dependentKids: boolean;
@@ -591,6 +593,7 @@ export function ProspectTrackerListModal({
             ? String(row.profile.relationship)
             : '',
         occupation: row.profile?.occupation || '',
+        language: typeof row.profile?.flags?.language === 'string' ? row.profile.flags.language : '',
         whatTold: row.profile?.what_told || '',
         married: Boolean(row.profile?.flags?.married),
         dependentKids: Boolean(row.profile?.flags?.dependentKids || row.profile?.dependent_children),
@@ -601,7 +604,7 @@ export function ProspectTrackerListModal({
   const handleProfileDraftFieldChange = useCallback(
     (
       prospectId: number,
-      field: 'howKnown' | 'relationship' | 'occupation' | 'whatTold',
+      field: 'howKnown' | 'relationship' | 'occupation' | 'language' | 'whatTold',
       value: string
     ) => {
       setProfileDraftByProspectId((prev) => ({
@@ -611,6 +614,7 @@ export function ProspectTrackerListModal({
             howKnown: '',
             relationship: '',
             occupation: '',
+            language: '',
             whatTold: '',
             married: false,
             dependentKids: false,
@@ -631,6 +635,7 @@ export function ProspectTrackerListModal({
             howKnown: '',
             relationship: '',
             occupation: '',
+            language: '',
             whatTold: '',
             married: false,
             dependentKids: false,
@@ -665,6 +670,7 @@ export function ProspectTrackerListModal({
               ...(row.profile?.flags || {}),
               married: draft.married,
               dependentKids: draft.dependentKids,
+              language: draft.language,
             },
           },
         });
@@ -743,6 +749,7 @@ export function ProspectTrackerListModal({
             spanishPreferred: formData.spanishPreferred,
             married: formData.married,
             dependentKids: formData.dependentKids,
+            language: formData.language,
           },
         },
       });

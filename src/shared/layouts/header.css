@@ -36,6 +36,23 @@
   position: relative;
 }
 
+.header__notifications { position:relative; }
+.header__bell-button { position:relative; display:grid; width:38px; height:38px; place-items:center; border:1px solid hsl(var(--border)); border-radius:50%; background:hsl(var(--muted)); color:hsl(var(--foreground)); cursor:pointer; }
+.header__bell-button:hover { border-color:hsl(var(--primary)); background:hsl(var(--accent)); }
+.header__notification-badge { position:absolute; right:-5px; top:-5px; display:grid; min-width:18px; height:18px; place-items:center; padding:0 4px; border:2px solid hsl(var(--background)); border-radius:999px; background:#dc2626; color:white; font-size:10px; font-weight:800; }
+.header__notification-menu { position:absolute; top:calc(100% + 10px); right:0; z-index:1100; width:min(380px,calc(100vw - 24px)); overflow:hidden; border:1px solid hsl(var(--border)); border-radius:14px; background:hsl(var(--background)); box-shadow:0 18px 45px rgba(0,0,0,.28); }
+.header__notification-title { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid hsl(var(--border)); }
+.header__notification-title button { display:flex; align-items:center; gap:5px; border:0; background:transparent; color:hsl(var(--primary)); font-size:12px; cursor:pointer; }
+.header__notification-list { max-height:420px; overflow:auto; }
+.header__notification-list > p { margin:0; padding:28px 16px; color:hsl(var(--muted-foreground)); text-align:center; font-size:13px; }
+.header__notification-item { display:flex; width:100%; gap:10px; padding:13px 15px; border:0; border-bottom:1px solid hsl(var(--border)); background:transparent; color:hsl(var(--foreground)); text-align:left; cursor:pointer; }
+.header__notification-item:hover { background:hsl(var(--accent)); }
+.header__notification-item > span:last-child { display:flex; min-width:0; flex:1; flex-direction:column; gap:4px; }
+.header__notification-item strong { font-size:13px; }
+.header__notification-item small { color:hsl(var(--muted-foreground)); font-size:12px; line-height:1.35; }
+.header__notification-item time { color:hsl(var(--muted-foreground)); font-size:10px; }
+.header__notification-dot { width:8px; height:8px; margin-top:5px; flex:0 0 auto; border-radius:50%; background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.15); }
+
 .header__avatar-button {
   display: grid;
   place-items: center;

@@ -9,6 +9,10 @@
   transition: all 0.5s;
 }
 
+.performance-table {
+  position: relative;
+}
+
 .performance-table:hover {
   box-shadow: 0 25px 50px -12px rgba(245, 196, 67, 0.3);
   border-color: rgba(245, 196, 67, 0.4);
@@ -41,6 +45,7 @@
 
 .performance-table__header-cell--month {
   position: relative;
+  padding: 0.75rem 1rem;
 }
 
 .performance-table__header-cell--month::after {
@@ -160,4 +165,93 @@
   padding: 0.75rem;
   color: #f87171;
   text-align: center;
+}
+
+.performance-table__controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.performance-table__segment-select {
+  background: rgba(0,0,0,0.6);
+  color: #fbbf24;
+  border: 1px solid rgba(245,196,67,0.25);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.performance-table__date-select {
+  background: rgba(0,0,0,0.6);
+  color: #fbbf24;
+  border: 1px solid rgba(245,196,67,0.15);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.performance-table__pill-group {
+  display: inline-flex;
+  gap: 3px;
+  background: rgba(255,255,255,0.02);
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(245,196,67,0.12);
+  white-space: nowrap;
+}
+
+.performance-table__pill-button {
+  background: transparent;
+  color: #fbbf24;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  line-height: 1rem;
+}
+
+.performance-table__pill-button.active,
+.performance-table__pill-button:hover {
+  background: rgba(245,196,67,0.12);
+  box-shadow: 0 4px 10px rgba(245,196,67,0.06);
+}
+
+.performance-table__header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+
+.performance-table__period-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.performance-table__period-label {
+  color: #fbbf24;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: normal;
+}
+
+.performance-table__period-controls .performance-table__date-select {
+  font-weight: 800;
+  padding: 8px 14px;
+}
+
+@media (max-width: 900px) {
+  .performance-table__header-controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .performance-table__pill-group {
+    align-self: flex-end;
+  }
 }

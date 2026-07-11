@@ -4,6 +4,10 @@ import { Text } from '@/shared/components/ui/typography';
 import { Tooltip } from '@/shared/components/ui/tooltip';
 import { fetchHomePerformanceStats } from '@/features/home/services/home-leaderboard-service';
 import './performance-table.css';
+import { useState, useMemo } from 'react';
+import { useAuth } from '@/features/auth/hooks/use-auth';
+import { hasRoleAtLeast } from '@core/constants/roles';
+import { Plan } from '@core/types';
 
 function formatValue(value: number | string | undefined): string {
   const numericValue = Number(value ?? 0);
@@ -38,9 +42,15 @@ function MetricHeader({ label, info }: { label: string; info: string }) {
 
 export function PerformanceTable() {
   const userId = localStorage.getItem('wb.userId') || '';
+  const { user } = useAuth();
+  const canChangeSegment = hasRoleAtLeast(user?.roles ?? [], Plan.Leader);
+  const [segment, setSegment] = useState<string | undefined>(canChangeSegment ? 'BASESHOP' : undefined);
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
   const { data, error, isLoading } = useQuery({
-    queryKey: ['home-performance-stats', userId],
-    queryFn: () => fetchHomePerformanceStats(userId),
+    queryKey: ['home-performance-stats', userId, segment, selectedYear, selectedMonth],
+    queryFn: () => fetchHomePerformanceStats(userId, segment, selectedYear, selectedMonth),
     enabled: Boolean(userId),
   });
   const values = [
@@ -52,8 +62,23 @@ export function PerformanceTable() {
     '0',
     formatValue(data?.total_big_event_registrations),
   ];
-  const currentMonth = new Date().toLocaleString('default', { month: 'long' }).toUpperCase();
-
+  const MONTHS = useMemo(
+    () => [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ],
+    []
+  );
   return (
     <div className="performance-table">
       <div className="performance-table__container">
@@ -61,9 +86,60 @@ export function PerformanceTable() {
           <thead>
             <tr className="performance-table__header-row">
               <th colSpan={4} className="performance-table__header-cell performance-table__header-cell--month">
-                <Text weight="bold" align="center" className="text-xl tracking-widest text-yellow-400">
-                  {currentMonth}
-                </Text>
+                <div className="performance-table__header-controls">
+                  <div className="performance-table__period-controls">
+                    <select
+                      aria-label="Select month"
+                      className="performance-table__date-select"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                    >
+                      {MONTHS.map((m, i) => (
+                        <option key={m} value={i + 1}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label="Select year"
+                      className="performance-table__date-select"
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    >
+                      {Array.from({ length: 6 }).map((_, idx) => {
+                        const y = now.getFullYear() - idx;
+                        return (
+                          <option key={y} value={y}>
+                            {y}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  {canChangeSegment && (
+                    <div className="performance-table__pill-group" role="tablist" aria-label="Scope selector">
+                      <button
+                        className={`performance-table__pill-button ${segment === 'BASESHOP' ? 'active' : ''}`}
+                        onClick={() => setSegment('BASESHOP')}
+                      >
+                        Baseshop
+                      </button>
+                      <button
+                        className={`performance-table__pill-button ${segment === 'SUPERBASE' ? 'active' : ''}`}
+                        onClick={() => setSegment('SUPERBASE')}
+                      >
+                        Super base
+                      </button>
+                      <button
+                        className={`performance-table__pill-button ${segment === 'SUPERTEAM' ? 'active' : ''}`}
+                        onClick={() => setSegment('SUPERTEAM')}
+                      >
+                        Super team
+                      </button>
+                    </div>
+                  )}
+                </div>
               </th>
               <th colSpan={3} className="performance-table__header-cell">
                 <Text weight="bold" align="center" className="text-xl tracking-widest text-yellow-400">

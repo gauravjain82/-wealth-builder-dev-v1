@@ -44,6 +44,7 @@ export interface AddProspectFormData {
   howKnown: string;
   relationship: string;
   occupation: string;
+  language: string;
   whatTold: string;
   age25Plus: boolean;
   homeowner: boolean;
@@ -100,6 +101,7 @@ export const defaultAddProspectForm: AddProspectFormData = {
   howKnown: '',
   relationship: '',
   occupation: '',
+  language: '',
   whatTold: '',
   age25Plus: false,
   homeowner: false,
