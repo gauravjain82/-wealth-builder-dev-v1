@@ -59,7 +59,7 @@ export function PerformanceTable() {
     formatValue(data?.current_month_licenses),
     formatValue(data?.current_month_net_licensed_count),
     formatValue(data?.total_licenses),
-    '0',
+    formatValue(data?.total_butts_in_seat),
     formatValue(data?.total_big_event_registrations),
   ];
   const MONTHS = useMemo(
