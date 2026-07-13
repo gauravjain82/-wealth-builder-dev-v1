@@ -109,6 +109,15 @@ const defaultForm = (): FormState => ({
   notes: '',
 });
 
+function traineeFromProspect(prospect: Prospect): Pick<FormState, 'trainee' | 'traineeLabel'> | null {
+  if (!prospect.recruited_by) return null;
+
+  return {
+    trainee: prospect.recruited_by,
+    traineeLabel: prospect.recruited_by_name || `User #${prospect.recruited_by}`,
+  };
+}
+
 function isAppointmentDetail(appointment: AppointmentFormAppointment): appointment is AppointmentDetail {
   return 'types_detail' in appointment;
 }
@@ -182,12 +191,14 @@ export function AppointmentFormModal({
 
   useEffect(() => {
     if (!open || !addedContact) return;
+    const prospectTrainee = traineeFromProspect(addedContact);
     setForm((prev) => ({
       ...prev,
       contact: addedContact.id,
       contactLabel: addedContact.full_name || `${addedContact.first_name} ${addedContact.last_name}`.trim(),
       contact_phone: addedContact.phone || addedContact.profile?.phone || '',
       contact_profile_flags: { ...(addedContact.profile?.flags || {}) },
+      ...(prospectTrainee || {}),
     }));
   }, [addedContact, open]);
 
@@ -232,12 +243,17 @@ export function AppointmentFormModal({
   const loadContactProfile = async (contactId: number) => {
     try {
       const contact = await fetchProspectDetails(contactId);
-      setForm((prev) => ({
-        ...prev,
-        contact_profile_flags: { ...(contact.profile?.flags || {}) },
-      }));
+      const prospectTrainee = traineeFromProspect(contact);
+      setForm((prev) => {
+        if (prev.contact !== contactId) return prev;
+        return {
+          ...prev,
+          contact_profile_flags: { ...(contact.profile?.flags || {}) },
+          ...(prospectTrainee || {}),
+        };
+      });
     } catch {
-      setForm((prev) => ({ ...prev, contact_profile_flags: {} }));
+      setForm((prev) => prev.contact === contactId ? { ...prev, contact_profile_flags: {} } : prev);
     }
   };
 
