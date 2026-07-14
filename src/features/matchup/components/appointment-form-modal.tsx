@@ -276,6 +276,10 @@ export function AppointmentFormModal({
       setError('Request Trainer appointments require both a contact and a trainee.');
       return;
     }
+    if (form.kind === 'PERSONAL' && !form.contact) {
+      setError('Personal appointments require a contact.');
+      return;
+    }
     if (form.location_type === 'PHYSICAL' && (!form.address.trim() || !form.city.trim() || !form.state.trim())) {
       setError('Physical appointments require address, city, and state.');
       return;
@@ -289,7 +293,7 @@ export function AppointmentFormModal({
       types: form.types,
       location_type: form.location_type,
       country: form.country,
-      contact: form.kind === 'REQUEST_TRAINER' ? form.contact : null,
+      contact: form.contact,
       trainee: form.kind === 'REQUEST_TRAINER' ? form.trainee : null,
     };
 
@@ -367,20 +371,21 @@ export function AppointmentFormModal({
           </div>
         </fieldset>
 
-        {form.kind === 'REQUEST_TRAINER' ? (
-          <div className="matchup-form-grid">
-            <label>
-              <span>Contact</span>
-              <UserAutocompleteDropdown
-                selectedId={form.contact}
-                selectedLabel={form.contactLabel}
-                placeholder="Search contacts"
-                fetchFromApi
-                includeUncoded
-                onSelect={(option) => handleUserSelect('contact', option)}
-                onNoResultsAction={onAddProspect}
-              />
-            </label>
+        <div className="matchup-form-grid">
+          <label>
+            <span>Contact</span>
+            <UserAutocompleteDropdown
+              selectedId={form.contact}
+              selectedLabel={form.contactLabel}
+              placeholder="Search contacts"
+              fetchFromApi
+              includeUncoded
+              onSelect={(option) => handleUserSelect('contact', option)}
+              onNoResultsAction={onAddProspect}
+            />
+          </label>
+          {form.kind === 'REQUEST_TRAINER' ? (
+            <>
             <label>
               <span>Trainee</span>
               <UserAutocompleteDropdown
@@ -426,8 +431,9 @@ export function AppointmentFormModal({
                 ))}
               </Select>
             </label>
-          </div>
-        ) : null}
+            </>
+          ) : null}
+        </div>
 
         <div className="matchup-form-grid">
           <label>
