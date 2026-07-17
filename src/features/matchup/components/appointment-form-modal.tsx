@@ -5,6 +5,7 @@ import { browserTimezone, localDateTimeValue } from '../services/matchup-service
 import { fetchProspectDetails, updateProspectDetails } from '@/features/team/prospect/services/prospect-service';
 import type { Prospect } from '@/features/team/prospect/services/prospect-service';
 import { createTrackerNote } from '@/features/team/services/tracker-notes-service';
+import '../pages/matchup-page.css';
 import type {
   AppointmentDetail,
   AppointmentListItem,

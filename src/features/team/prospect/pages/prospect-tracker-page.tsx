@@ -43,6 +43,9 @@ import {
   resolveTrackerUserIdByName,
   type TrackerUserProfile,
 } from '@/features/team/services/tracker-user-profile-service';
+import { AppointmentFormModal } from '@/features/matchup/components/appointment-form-modal';
+import { matchupService } from '@/features/matchup/services/matchup-service';
+import type { AppointmentKind, AppointmentType, CreateAppointmentPayload } from '@/features/matchup/types';
 
 type SortDirection = 'asc' | 'desc';
 type ProspectMark = 'default' | 'client' | 'recruit' | 'both';
@@ -85,6 +88,62 @@ interface ImportedContact {
   email: string;
   phone: string;
   checked: boolean;
+}
+
+interface ProspectAppointmentInitialValues {
+  kind: AppointmentKind;
+  types: number[];
+  contact: number | null;
+  contactLabel: string;
+  contact_phone: string;
+  trainee: number | null;
+  traineeLabel: string;
+  trainee_phone: string;
+}
+
+const REQUEST_TRAINER_TYPE_HINTS = ['training', 'trainer', 'step'];
+const PERSONAL_TYPE_HINTS = ['personal', 'consult', 'follow'];
+
+function normalizeTypeText(value?: string | null) {
+  return (value || '').trim().toLowerCase();
+}
+
+function resolvePreselectedTypeIds(appointmentTypes: AppointmentType[], kind: AppointmentKind): number[] {
+  if (!appointmentTypes.length) return [];
+
+  const hints = kind === 'REQUEST_TRAINER' ? REQUEST_TRAINER_TYPE_HINTS : PERSONAL_TYPE_HINTS;
+  const matched = appointmentTypes.find((type) => {
+    const name = normalizeTypeText(type.name);
+    const slug = normalizeTypeText(type.slug);
+    return hints.some((hint) => name.includes(hint) || slug.includes(hint));
+  });
+
+  if (matched) return [matched.id];
+  return [appointmentTypes[0].id];
+}
+
+function buildAppointmentInitialValues(
+  prospect: Prospect,
+  kind: AppointmentKind,
+  appointmentTypes: AppointmentType[],
+): ProspectAppointmentInitialValues {
+  const fullName = prospect.full_name
+    || `${prospect.first_name || ''} ${prospect.last_name || ''}`.trim()
+    || prospect.email
+    || `Prospect #${prospect.id}`;
+
+  return {
+    kind,
+    types: resolvePreselectedTypeIds(appointmentTypes, kind),
+    contact: prospect.id,
+    contactLabel: fullName,
+    contact_phone: prospect.phone || prospect.profile?.phone || '',
+    trainee: kind === 'REQUEST_TRAINER' ? prospect.recruited_by || null : null,
+    traineeLabel: kind === 'REQUEST_TRAINER'
+      ? prospect.recruited_by_name || (prospect.recruited_by ? `User #${prospect.recruited_by}` : '')
+      : '',
+    trainee_phone: '',
+  };
 }
 
 function normalizeMarkValue(value?: string | null): ProspectMark {
@@ -182,6 +241,12 @@ export default function ProspectTrackerPage() {
   const [savingProduction, setSavingProduction] = useState(false);
   const [addProspectOpen, setAddProspectOpen] = useState(false);
   const [savingCallLog, setSavingCallLog] = useState(false);
+  const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
+  const [savingAppointment, setSavingAppointment] = useState(false);
+  const [appointmentActionKind, setAppointmentActionKind] = useState<AppointmentKind>('PERSONAL');
+  const [appointmentInitialValues, setAppointmentInitialValues] =
+    useState<ProspectAppointmentInitialValues | null>(null);
+  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
   const [productionCompanyOptions, setProductionCompanyOptions] = useState<string[]>([]);
   const [productionProductsByCompany, setProductionProductsByCompany] =
     useState<Record<string, string[]>>({});
@@ -238,6 +303,30 @@ export default function ProspectTrackerPage() {
     const primaryRole = parseStoredRoles()[0] || null;
     return resolvePlanFromPrimaryRole(primaryRole);
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAppointmentTypes = async () => {
+      try {
+        const loadedTypes = await matchupService.appointmentTypes();
+        if (!isMounted) return;
+        setAppointmentTypes(loadedTypes);
+      } catch {
+        if (!isMounted) return;
+        addToast({
+          type: 'error',
+          message: 'Failed to load appointment types. Please retry.',
+        });
+      }
+    };
+
+    void loadAppointmentTypes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [addToast]);
 
   useEffect(() => {
     let isMounted = true;
@@ -779,19 +868,45 @@ export default function ProspectTrackerPage() {
     }
   };
 
-  const handleQuickActionLog = async (row: Prospect, actionLabel: string) => {
+  const openAppointmentModalForProspect = (prospect: Prospect, kind: AppointmentKind) => {
+    if (!appointmentTypes.length) {
+      addToast({
+        type: 'warning',
+        message: 'Appointment types are still loading. Please try again in a moment.',
+      });
+      return;
+    }
+
+    setAppointmentActionKind(kind);
+    setAppointmentInitialValues(buildAppointmentInitialValues(prospect, kind, appointmentTypes));
+    setActiveCallLogProspect(null);
+    setAppointmentModalOpen(true);
+  };
+
+  const closeAppointmentModal = () => {
+    setAppointmentModalOpen(false);
+    setAppointmentActionKind('PERSONAL');
+    setAppointmentInitialValues(null);
+  };
+
+  const handleSaveAppointment = async (payload: CreateAppointmentPayload) => {
     try {
-      setSavingCallLog(true);
-      const updated = await saveProspectCallLog(row, 'Connected', actionLabel);
-      updateProspectInState(updated);
-      setActiveCallLogProspect(updated);
+      setSavingAppointment(true);
+      await matchupService.createAppointment(payload);
+      closeAppointmentModal();
+      addToast({
+        type: 'success',
+        message: appointmentActionKind === 'REQUEST_TRAINER'
+          ? 'Trainer request appointment created.'
+          : 'Appointment created.',
+      });
     } catch (err) {
       addToast({
         type: 'error',
-        message: err instanceof Error ? err.message : `Failed to ${actionLabel.toLowerCase()}.`,
+        message: err instanceof Error ? err.message : 'Failed to create appointment.',
       });
     } finally {
-      setSavingCallLog(false);
+      setSavingAppointment(false);
     }
   };
 
@@ -1618,9 +1733,18 @@ export default function ProspectTrackerPage() {
         onSave={handleSaveCallLog}
         onInvite={handleInviteProspect}
         onAddAgencyCode={handleAddAgencyCode}
-        onRequestTrainer={(prospect) => handleQuickActionLog(prospect, 'Requested trainer')}
-        onAddAppointment={(prospect) => handleQuickActionLog(prospect, 'Added appointment')}
+        onRequestTrainer={async (prospect) => openAppointmentModalForProspect(prospect, 'REQUEST_TRAINER')}
+        onAddAppointment={async (prospect) => openAppointmentModalForProspect(prospect, 'PERSONAL')}
         onAddProduction={async (prospect) => { setAddProductionFor(prospect); }}
+      />
+
+      <AppointmentFormModal
+        open={appointmentModalOpen}
+        initialValues={appointmentInitialValues}
+        appointmentTypes={appointmentTypes}
+        saving={savingAppointment}
+        onClose={closeAppointmentModal}
+        onSubmit={handleSaveAppointment}
       />
 
       <AddAgencyCodeModal
