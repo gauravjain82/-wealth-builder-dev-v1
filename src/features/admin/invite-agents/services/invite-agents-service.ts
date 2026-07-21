@@ -30,6 +30,35 @@ export interface InvitationsResponse {
   results: Invitation[];
 }
 
+export interface RegistrationEmailLog {
+  id: number;
+  email_address?: string | null;
+  status?: string | null;
+  action?: string | null;
+  requested_on?: string | null;
+  sent_on?: string | null;
+  delivered_at?: string | null;
+  first_opened_at?: string | null;
+}
+
+export interface AgencyCodeAssignment {
+  id: number;
+  user?: number | null;
+  full_name?: string | null;
+  user_name?: string | null;
+  email?: string | null;
+  agency_code?: string | null;
+  assigned_at?: string | null;
+  latest_email?: RegistrationEmailLog | null;
+}
+
+export interface AgencyCodeAssignmentsResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: AgencyCodeAssignment[];
+}
+
 export async function fetchInvitations(params: {
   page?: number;
   pageSize?: number;
@@ -53,6 +82,31 @@ export async function fetchInvitations(params: {
     return { count: data.length, next: null, previous: null, results: data as Invitation[] };
   }
   return data as InvitationsResponse;
+}
+
+export async function fetchAgencyCodeAssignments(params: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+} = {}): Promise<AgencyCodeAssignmentsResponse> {
+  const p = new URLSearchParams();
+  if (params.page && params.page > 1) p.set('page', String(params.page));
+  if (params.pageSize) p.set('page_size', String(params.pageSize));
+  if (params.search?.trim()) p.set('search', params.search.trim());
+
+  const qs = p.toString();
+  const url = `${API_BASE_URL}/api/accounts/agency-code-assignments/${qs ? `?${qs}` : ''}`;
+  const response = await fetch(url, { headers: getAuthHeaders() });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch agency code assignments: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  if (Array.isArray(data)) {
+    return { count: data.length, next: null, previous: null, results: data as AgencyCodeAssignment[] };
+  }
+  return data as AgencyCodeAssignmentsResponse;
 }
 
 export async function sendInvitation(email: string, toName: string): Promise<Invitation> {
@@ -101,6 +155,26 @@ export async function resendInvitation(id: number): Promise<Invitation> {
   }
 
   return (await response.json()) as Invitation;
+}
+
+export async function resendAgencyCodeAssignment(id: number): Promise<AgencyCodeAssignment> {
+  const response = await fetch(`${API_BASE_URL}/api/accounts/agency-code-assignments/${id}/resend/`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    let message = `Failed to resend registration email: ${response.statusText}`;
+    try {
+      const data = await response.json();
+      message = data?.detail || data?.message || message;
+    } catch {
+      // Keep fallback.
+    }
+    throw new Error(message);
+  }
+
+  return (await response.json()) as AgencyCodeAssignment;
 }
 
 export async function deleteInvitation(id: number): Promise<void> {

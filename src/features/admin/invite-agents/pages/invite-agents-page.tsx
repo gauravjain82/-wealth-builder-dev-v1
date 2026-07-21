@@ -9,18 +9,59 @@ import {
 import { useToastStore } from '@/store';
 import {
   deleteInvitation,
+  fetchAgencyCodeAssignments,
   fetchInvitations,
+  resendAgencyCodeAssignment,
   resendInvitation,
   sendInvitation,
+  type AgencyCodeAssignment,
   type Invitation,
 } from '../services/invite-agents-service';
 
 const PAGE_SIZE = 10;
+type InviteAgentsTab = 'invite' | 'register';
 
 function formatDate(value: string): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function formatOptionalDate(value?: string | null): string {
+  return value ? formatDate(value) : '—';
+}
+
+function resolveAssignmentName(assignment: AgencyCodeAssignment): string {
+  return assignment.full_name || assignment.user_name || '—';
+}
+
+function resolveAssignmentEmail(assignment: AgencyCodeAssignment): string {
+  return assignment.email || assignment.latest_email?.email_address || '—';
+}
+
+function LatestEmailBadge({ assignment }: { assignment: AgencyCodeAssignment }) {
+  const latestEmail = assignment.latest_email;
+  if (!latestEmail) {
+    return <span className="text-xs text-slate-400 dark:text-white/40">—</span>;
+  }
+
+  const status = latestEmail.status || 'pending';
+  const tone = status === 'completed' || status === 'delivered' || status === 'sent'
+    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+    : status === 'failed' || status === 'bounced'
+    ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300'
+    : 'bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300';
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tone}`}>
+        {status.replace('_', ' ')}
+      </span>
+      <span className="text-xs text-slate-500 dark:text-white/50">
+        {formatOptionalDate(latestEmail.sent_on || latestEmail.requested_on || latestEmail.delivered_at || latestEmail.first_opened_at)}
+      </span>
+    </div>
+  );
 }
 
 function StatusBadge({ status }: { status: Invitation['status'] }) {
@@ -260,7 +301,9 @@ function InviteModal({
 export default function InviteAgentsPage() {
   const addToast = useToastStore((s) => s.addToast);
 
+  const [activeTab, setActiveTab] = useState<InviteAgentsTab>('invite');
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [assignments, setAssignments] = useState<AgencyCodeAssignment[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -277,7 +320,7 @@ export default function InviteAgentsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const load = async (p: number, s: string) => {
+  const loadInvitationsList = async (p: number, s: string) => {
     setLoading(true);
     try {
       const data = await fetchInvitations({ page: p, pageSize: PAGE_SIZE, search: s });
@@ -290,9 +333,26 @@ export default function InviteAgentsPage() {
     }
   };
 
+  const loadAssignmentsList = async (p: number, s: string) => {
+    setLoading(true);
+    try {
+      const data = await fetchAgencyCodeAssignments({ page: p, pageSize: PAGE_SIZE, search: s });
+      setAssignments(data.results);
+      setTotal(data.count);
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load registrations.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    void load(page, search);
-  }, [page, search]);
+    if (activeTab === 'invite') {
+      void loadInvitationsList(page, search);
+      return;
+    }
+    void loadAssignmentsList(page, search);
+  }, [activeTab, page, search]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,7 +372,7 @@ export default function InviteAgentsPage() {
       addToast({ type: 'success', message: `Invitation sent to ${created.email}.` });
       setInviteOpen(false);
       setPage(1);
-      await load(1, search);
+      await loadInvitationsList(1, search);
     } catch (err) {
       addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to send invitation.' });
     } finally {
@@ -342,7 +402,7 @@ export default function InviteAgentsPage() {
       setDeleteTarget(null);
       const newPage = invitations.length === 1 && page > 1 ? page - 1 : page;
       setPage(newPage);
-      await load(newPage, search);
+      await loadInvitationsList(newPage, search);
     } catch (err) {
       addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to delete invitation.' });
     } finally {
@@ -350,24 +410,72 @@ export default function InviteAgentsPage() {
     }
   };
 
+  const handleAssignmentResend = async (assignment: AgencyCodeAssignment) => {
+    setResendingId(assignment.id);
+    try {
+      const updated = await resendAgencyCodeAssignment(assignment.id);
+      setAssignments((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      addToast({ type: 'success', message: `Registration email resent to ${resolveAssignmentEmail(assignment)}.` });
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to resend registration email.' });
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const searchPlaceholder = activeTab === 'invite'
+    ? 'Search by name or email…'
+    : 'Search by name, email, or agency code…';
+
   return (
     <div className="flex h-full flex-col gap-4 p-4">
       <Block
         title="Invite Agents"
-        description="Send and manage invitations to new agents."
+        description={activeTab === 'invite' ? 'Send and manage invitations to new agents.' : 'Manage assigned agency code registrations and resend registration emails.'}
         titleVariant="h5"
         className="flex-shrink-0"
-        // actions={
-          // <Button onClick={() => setInviteOpen(true)}>+ Invite Agent</Button>
-        // }
+        actions={
+          activeTab === 'invite' ? <Button onClick={() => setInviteOpen(true)}>+ Invite Agent</Button> : undefined
+        }
       />
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'invite'
+              ? 'border-amber-400 bg-amber-100 text-amber-700 dark:border-amber-400/60 dark:bg-amber-500/20 dark:text-amber-300'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-white/15 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
+          }`}
+          onClick={() => {
+            setActiveTab('invite');
+            setPage(1);
+          }}
+        >
+          Invite
+        </button>
+        <button
+          type="button"
+          className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'register'
+              ? 'border-amber-400 bg-amber-100 text-amber-700 dark:border-amber-400/60 dark:bg-amber-500/20 dark:text-amber-300'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-white/15 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
+          }`}
+          onClick={() => {
+            setActiveTab('register');
+            setPage(1);
+          }}
+        >
+          Register Agent
+        </button>
+      </div>
 
       {/* Search bar */}
       <form onSubmit={handleSearch} className="flex flex-shrink-0 items-center gap-2">
         <Input
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search by name or email…"
+          placeholder={searchPlaceholder}
           className="max-w-xs"
         />
         <Button type="submit" variant="outline" size="sm">Search</Button>
@@ -387,15 +495,20 @@ export default function InviteAgentsPage() {
       <div className="min-h-0 flex-1 overflow-auto rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-[#1a1d25]">
         {loading ? (
           <div className="flex items-center justify-center py-16 text-sm text-slate-500 dark:text-white/50">
-            Loading invitations…
+            {activeTab === 'invite' ? 'Loading invitations…' : 'Loading registrations…'}
           </div>
-        ) : invitations.length === 0 ? (
+        ) : activeTab === 'invite' && invitations.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-slate-500 dark:text-white/50">
             <span className="text-3xl">✉️</span>
             <p className="text-sm">No invitations found.</p>
             <Button size="sm" onClick={() => setInviteOpen(true)}>Send first invitation</Button>
           </div>
-        ) : (
+        ) : activeTab === 'register' && assignments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-slate-500 dark:text-white/50">
+            <span className="text-3xl">🪪</span>
+            <p className="text-sm">No registration records found.</p>
+          </div>
+        ) : activeTab === 'invite' ? (
           <table className="w-full table-auto border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-200 dark:border-white/10">
@@ -450,9 +563,63 @@ export default function InviteAgentsPage() {
               ))}
             </tbody>
           </table>
+        ) : (
+          <table className="w-full table-auto border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-white/10">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
+                  Name
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
+                  Email
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
+                  Agency Code
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
+                  Assigned
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
+                  Latest Email
+                </th>
+                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-white/50">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {assignments.map((assignment, idx) => (
+                <tr
+                  key={assignment.id}
+                  className={`group border-b  transition-colors hover:bg-slate-50 dark:border-white/6 dark:hover:bg-slate-700/55 ${
+                    idx % 2 === 0 ? 'bg-transparent' : 'bg-slate-50/50 dark:bg-slate-800/35'
+                  }`}
+                >
+                  <td className="px-5 py-3 font-medium text-slate-900 group-hover:text-slate-900 dark:text-white dark:group-hover:text-white">
+                    {resolveAssignmentName(assignment)}
+                  </td>
+                  <td className="px-5 py-3 text-slate-600 group-hover:text-slate-700 dark:text-white/70 dark:group-hover:text-white/90">{resolveAssignmentEmail(assignment)}</td>
+                  <td className="px-5 py-3 text-slate-600 group-hover:text-slate-700 dark:text-white/70 dark:group-hover:text-white/90">{assignment.agency_code || '—'}</td>
+                  <td className="px-5 py-3 text-slate-500 group-hover:text-slate-700 dark:text-white/50 dark:group-hover:text-white/85">{formatOptionalDate(assignment.assigned_at)}</td>
+                  <td className="px-5 py-3">
+                    <LatestEmailBadge assignment={assignment} />
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    {resending === assignment.id ? (
+                      <span className="text-xs text-slate-400 dark:text-white/40">…</span>
+                    ) : (
+                      <Button size="sm" variant="outline" onClick={() => void handleAssignmentResend(assignment)}>
+                        Resend Email
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
 
-        {!loading && invitations.length > 0 && (
+        {!loading && ((activeTab === 'invite' && invitations.length > 0) || (activeTab === 'register' && assignments.length > 0)) && (
           <Pagination
             page={page}
             totalPages={totalPages}
