@@ -43,9 +43,56 @@ function toBackendFilters(filters: Record<string, string>): Record<string, strin
     leader: 'leader_name',
   };
 
+  const normalizeTestResult = (value: string): string | null => {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return null;
+    if (['true', '1', 'yes', 'y', 'pass', 'passed'].includes(normalized)) return 'true';
+    if (['false', '0', 'no', 'n', 'fail', 'failed'].includes(normalized)) return 'false';
+    return null;
+  };
+
+  const parseTestResultFilterValue = (value: string): { status: string; date: string } => {
+    const normalized = value.trim();
+    if (!normalized) return { status: '', date: '' };
+    if (!normalized.includes('=')) return { status: '', date: '' };
+
+    const params = new URLSearchParams(normalized);
+    return {
+      status: (params.get('status') || '').toLowerCase(),
+      date: params.get('date') || '',
+    };
+  };
+
+  const isIsoDate = (value: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(value);
+
   return Object.entries(filters).reduce<Record<string, string>>((acc, [key, value]) => {
     const normalized = value.trim();
-    if (normalized) acc[keyMap[key] || key] = normalized;
+    if (!normalized) return acc;
+
+    if (key === 'test_result') {
+      const parsed = parseTestResultFilterValue(normalized);
+      if (parsed.date && isIsoDate(parsed.date)) {
+        acc.test_result_date = parsed.date;
+      }
+
+      const normalizedResult = parsed.status
+        ? normalizeTestResult(parsed.status)
+        : normalizeTestResult(normalized);
+      if (normalizedResult) {
+        acc.test_result = normalizedResult;
+      }
+
+      if (!acc.test_result && !acc.test_result_date) {
+        return acc;
+      }
+      return acc;
+    }
+
+    if (key === 'test_date' && !isIsoDate(normalized)) {
+      return acc;
+    }
+
+    acc[keyMap[key] || key] = normalized;
     return acc;
   }, {});
 }

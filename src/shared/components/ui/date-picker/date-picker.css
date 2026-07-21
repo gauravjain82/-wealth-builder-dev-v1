@@ -26,6 +26,39 @@ html.light .date-input,
   padding-right: 2.2rem !important;
 }
 
+.date-input-with-clear {
+  padding-right: 3.7rem !important;
+}
+
+.date-input-clear-btn {
+  position: absolute;
+  right: 2.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.date-input-clear-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+html.light .date-input-clear-btn,
+.light .date-input-clear-btn {
+  color: rgba(15, 23, 42, 0.45);
+}
+
+html.light .date-input-clear-btn:hover,
+.light .date-input-clear-btn:hover {
+  color: rgba(15, 23, 42, 0.7);
+}
+
 .date-input-icon {
   position: absolute;
   right: 0.75rem;

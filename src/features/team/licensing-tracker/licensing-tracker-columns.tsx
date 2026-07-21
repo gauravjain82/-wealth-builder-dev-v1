@@ -12,6 +12,39 @@ function asYesNo(value: boolean): string {
   return value ? 'Yes' : 'No';
 }
 
+type TestResultStatusFilterValue = '' | 'pass' | 'fail';
+
+function parseTestResultFilterValue(value: string): {
+  status: TestResultStatusFilterValue;
+  date: string;
+} {
+  const normalized = value.trim();
+  if (!normalized) {
+    return { status: '', date: '' };
+  }
+
+  if (normalized.includes('=')) {
+    const params = new URLSearchParams(normalized);
+    const statusRaw = (params.get('status') || '').toLowerCase();
+    const date = params.get('date') || '';
+    const status: TestResultStatusFilterValue =
+      statusRaw === 'pass' || statusRaw === 'fail' ? statusRaw : '';
+    return { status, date };
+  }
+
+  return { status: '', date: normalized };
+}
+
+function buildTestResultFilterValue(
+  status: TestResultStatusFilterValue,
+  date: string
+): string {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (date) params.set('date', date);
+  return params.toString();
+}
+
 interface BuildLicensingColumnsOptions {
   onToggle: (userId: number, field: keyof LicensingTrackerRecord, value: boolean) => void;
   onPatch: (
@@ -213,7 +246,22 @@ export function buildLicensingColumns(
       width: 160,
       align: 'center',
       sortable: true,
-      searchable: false,
+      searchable: true,
+      renderSearch: ({ value, onApply, onClear }) => (
+        <DatePicker
+          value={value}
+          onChange={(nextValue) => {
+            if (!nextValue) {
+              onClear();
+              return;
+            }
+            onApply(nextValue);
+          }}
+          className="h-8"
+          placeholder="Select date"
+          clearable
+        />
+      ),
       value: (row) => row.test_date || '',
       render: (row) => (
         <DatePicker
@@ -230,7 +278,47 @@ export function buildLicensingColumns(
       width: 260,
       align: 'center',
       sortable: true,
-      searchable: false,
+      searchable: true,
+      renderSearch: ({ value, onApply, onClear }) => {
+        const parsed = parseTestResultFilterValue(value);
+
+        return (
+          <div className="flex items-center gap-1">
+            <DatePicker
+              value={parsed.date}
+              onChange={(nextValue) => {
+                const next = buildTestResultFilterValue(parsed.status, nextValue || '');
+                if (!next) {
+                  onClear();
+                  return;
+                }
+                onApply(next);
+              }}
+              className="h-8"
+              placeholder="Result date"
+              clearable
+            />
+            <select
+              className="h-8 rounded border border-white/15 bg-white/5 px-2 text-xs text-white outline-none focus:border-amber-300/50"
+              style={{ colorScheme: 'dark' }}
+              value={parsed.status}
+              onChange={(event) => {
+                const nextStatus = event.target.value as TestResultStatusFilterValue;
+                const next = buildTestResultFilterValue(nextStatus, parsed.date);
+                if (!next) {
+                  onClear();
+                  return;
+                }
+                onApply(next);
+              }}
+            >
+              <option value="">All</option>
+              <option value="pass">Pass</option>
+              <option value="fail">Fail</option>
+            </select>
+          </div>
+        );
+      },
       value: (row) => `${row.test_result ? 'Pass' : ''} ${row.test_result_date || ''}`.trim(),
       render: (row) => (
         <div className="flex w-full flex-row gap-1">

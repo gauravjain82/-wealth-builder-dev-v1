@@ -1,6 +1,6 @@
 import DatePickerLib from 'react-datepicker';
 import { format } from 'date-fns';
-import { Calendar } from 'lucide-react';
+import { Calendar, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { cn } from '@core/utils';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -20,6 +20,7 @@ interface BaseDateProps {
   minDate?: Date;
   maxDate?: Date;
   monthDayOnly?: boolean;
+  clearable?: boolean;
 }
 
 const dateVariantClasses: Record<NonNullable<BaseDateProps['variant']>, string> = {
@@ -75,6 +76,7 @@ export function DatePicker({
   minDate,
   maxDate,
   monthDayOnly = false,
+  clearable = false,
 }: DatePickerProps) {
   const dateFormat = monthDayOnly ? 'MMM dd' : 'yyyy-MM-dd';
   const placeholderText = placeholder || (monthDayOnly ? 'Select month and day' : 'Select date');
@@ -90,7 +92,12 @@ export function DatePicker({
         dropdownMode="select"
         scrollableYearDropdown
         yearDropdownItemNumber={100}
-        className={cn(dateVariantClasses[variant], 'date-input-with-icon', className)}
+        className={cn(
+          dateVariantClasses[variant],
+          'date-input-with-icon',
+          clearable && value ? 'date-input-with-clear' : '',
+          className
+        )}
         wrapperClassName="date-picker-wrapper"
         popperClassName="date-picker-popper"
         calendarClassName="date-picker-calendar"
@@ -106,6 +113,21 @@ export function DatePicker({
         minDate={minDate}
         maxDate={maxDate}
       />
+      {clearable && value ? (
+        <button
+          type="button"
+          className="date-input-clear-btn"
+          aria-label="Clear date"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onChange?.('');
+          }}
+        >
+          <X size={14} />
+        </button>
+      ) : null}
       <span className="date-input-icon" aria-hidden>
         <Calendar size={16} />
       </span>
