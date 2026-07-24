@@ -96,10 +96,6 @@ function toSegmentParam(scope: TrackerTeamScope): string {
   return scope.toUpperCase();
 }
 
-function shouldDeferTeamScopeFetch(scope: TrackerTeamScope, teamScopeUserId: string | null): boolean {
-  return scope !== 'baseshop' && !teamScopeUserId;
-}
-
 export default function LicensingTrackerPage() {
   const pageHeading = 'Licensing Tracker';
   const pageDescription = "Track your team's licensing progress";
@@ -121,6 +117,7 @@ export default function LicensingTrackerPage() {
 
   const [loading, setLoading] = useState(true);
   const hasLoadedOnceRef = useRef(false);
+  const latestRowsRequestRef = useRef(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [nextPageNum, setNextPageNum] = useState(1);
@@ -345,6 +342,7 @@ export default function LicensingTrackerPage() {
       nextSort: { key: string; direction: SortDirection } | null,
       nextFilters: Record<string, string>
     ) => {
+      const requestId = ++latestRowsRequestRef.current;
       try {
         if (isInitial) {
           setLoading(true);
@@ -362,6 +360,8 @@ export default function LicensingTrackerPage() {
         };
 
         const data = await fetchLicensingTracker(query);
+        if (requestId !== latestRowsRequestRef.current) return;
+
         const serialStart = (pageNum - 1) * pageSize;
         const rowsWithSerial = data.results.map((row, index) => ({
           ...row,
@@ -377,10 +377,14 @@ export default function LicensingTrackerPage() {
           setRows((prev) => [...prev, ...rowsWithSerial]);
         }
       } catch (err) {
+        if (requestId !== latestRowsRequestRef.current) return;
+
         const message = err instanceof Error ? err.message : 'Failed to load licensing tracker';
         if (isInitial) setError(message);
         addToast({ type: 'error', message: 'Failed to load licensing tracker.' });
       } finally {
+        if (requestId !== latestRowsRequestRef.current) return;
+
         if (isInitial) {
           hasLoadedOnceRef.current = true;
           setLoading(false);
@@ -393,24 +397,14 @@ export default function LicensingTrackerPage() {
   );
 
   useEffect(() => {
-    if (shouldDeferTeamScopeFetch(teamScope, teamScopeUserId)) {
-      setError(null);
-      hasLoadedOnceRef.current = true;
-      setLoading(false);
-      setLoadingMore(false);
-      return;
-    }
     void loadRows(1, true, sortState, filters);
-  }, [filters, loadRows, sortState, teamScope, teamScopeUserId]);
+  }, [filters, loadRows, sortState, teamScope]);
 
   const handleReachEnd = useCallback(() => {
-    if (shouldDeferTeamScopeFetch(teamScope, teamScopeUserId)) {
-      return;
-    }
     if (hasMore && !loadingMore && !loading && rows.length > 0) {
       void loadRows(nextPageNum, false, sortState, filters);
     }
-  }, [filters, hasMore, loadRows, loading, loadingMore, nextPageNum, rows.length, sortState, teamScope, teamScopeUserId]);
+  }, [filters, hasMore, loadRows, loading, loadingMore, nextPageNum, rows.length, sortState]);
 
   const notesForOpenUser = useMemo(() => {
     if (!notesOpenFor) return [];

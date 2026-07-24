@@ -76,7 +76,7 @@ function getCountdownFromAma(row: MissionTrackerRecord): {
     return { hasAma: false, daysLeft: null, endDateISO: null, label: '0d' };
   }
 
-  const endDate = addDays(amaDate, 30);
+  const endDate = addDays(amaDate, 10);
   const diffMs = endDate.getTime() - today.getTime();
   const daysLeft = Math.ceil(diffMs / MS_PER_DAY);
 
@@ -106,7 +106,7 @@ function renderCheckbox(
     else if (cd.daysLeft <= 10) pillClass += ' warn';
   }
   const endDateTooltip = cd.endDateISO
-    ? `30-day window ends: ${new Date(cd.endDateISO).toLocaleDateString()}`
+    ? `10-day window ends: ${new Date(cd.endDateISO).toLocaleDateString()}`
     : 'Missing AMA date';
 
   return (

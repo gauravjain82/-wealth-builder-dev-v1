@@ -197,6 +197,7 @@ export default function ProductionTrackerPage() {
   const [rows, setRows] = useState<ProductionTrackerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const hasLoadedOnceRef = useRef(false);
+  const latestRowsRequestRef = useRef(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [nextPageNum, setNextPageNum] = useState(1);
@@ -837,6 +838,7 @@ export default function ProductionTrackerPage() {
       nextSort: { key: string; direction: SortDirection } | null,
       nextFilters: Record<string, string>
     ) => {
+      const requestId = ++latestRowsRequestRef.current;
       try {
         if (isInitial) {
           setLoading(true);
@@ -854,6 +856,8 @@ export default function ProductionTrackerPage() {
         };
 
         const data = await fetchProductionTracker(query);
+        if (requestId !== latestRowsRequestRef.current) return;
+
         setTotalCount(data.count || 0);
         setHasMore(Boolean(data.next));
         setNextPageNum(pageNum + 1);
@@ -864,6 +868,8 @@ export default function ProductionTrackerPage() {
           setRows((prev) => [...prev, ...data.results]);
         }
       } catch (err) {
+        if (requestId !== latestRowsRequestRef.current) return;
+
         const message =
           err instanceof Error ? err.message : 'Failed to load production tracker records';
         if (isInitial) {
@@ -871,6 +877,8 @@ export default function ProductionTrackerPage() {
         }
         addToast({ type: 'error', message: 'Failed to load production tracker records.' });
       } finally {
+        if (requestId !== latestRowsRequestRef.current) return;
+
         if (isInitial) {
           hasLoadedOnceRef.current = true;
           setLoading(false);

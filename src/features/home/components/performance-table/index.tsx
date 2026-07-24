@@ -54,7 +54,7 @@ export function PerformanceTable() {
     enabled: Boolean(userId),
   });
   const values = [
-    `${formatValue(data?.current_month_personal_recruits)} / ${formatValue(data?.current_month_team_recruits)}`,
+    `${formatValue(data?.current_month_personal_recruits)} / ${formatValue((data?.current_month_team_recruits ?? 0) - (data?.current_month_personal_recruits ?? 0))}`,
     `${formatValue(data?.current_month_personal_points)} / ${formatValue(data?.current_month_team_points)}`,
     formatValue(data?.current_month_licenses),
     formatValue(data?.current_month_net_licensed_count),

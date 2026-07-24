@@ -71,6 +71,19 @@ export async function fetchHomeLeaderboard(
   return { smd, md };
 }
 
+function getSegmentHierarchy(segment: string): string[] {
+  switch (segment) {
+    case 'SUPERTEAM':
+      return ['SUPERTEAM', 'SUPERBASE', 'BASESHOP'];
+    case 'SUPERBASE':
+      return ['SUPERBASE', 'BASESHOP'];
+    case 'BASESHOP':
+      return ['BASESHOP'];
+    default:
+      return [];
+  }
+}
+
 export async function fetchHomePerformanceStats(
   userId: string,
   segment?: string,
@@ -79,7 +92,9 @@ export async function fetchHomePerformanceStats(
 ): Promise<HomePerformanceStats> {
   const base = `${API_BASE_URL}/api/tracker/trackers/associate/${userId}/`;
   const params = new URLSearchParams();
-  if (segment) params.set('segment', segment);
+  if (segment) {
+    params.set('segment', getSegmentHierarchy(segment).join(','));
+  }
   if (typeof year === 'number') params.set('year', String(year));
   if (typeof month === 'number') params.set('month', String(month));
   const url = params.toString() ? `${base}?${params.toString()}` : base;
