@@ -376,38 +376,91 @@
   max-width: 100%;
 }
 
+.settings-profile-page .toggle-all-details-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 9px 13px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 9px;
+  background: rgba(212, 175, 55, 0.12);
+  color: #f4e5a1;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .settings-profile-page .plan-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  align-items: stretch;
 }
 
 .settings-profile-page .plan-card {
-  border: 1px solid rgba(212, 175, 55, 0.75);
-  border-radius: 8px;
-  padding: 16px 16px 18px;
-  background: rgba(0, 0, 0, 0.15);
-  min-height: 282px;
+  border: 1px solid rgba(212, 175, 55, 0.32);
+  border-radius: 16px;
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.07), rgba(0, 0, 0, 0.16) 28%);
+  min-height: 470px;
   display: flex;
   flex-direction: column;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.settings-profile-page .plan-card:hover {
+  border-color: rgba(212, 175, 55, 0.65);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
 }
 
 .settings-profile-page .plan-card.current {
-  background: rgba(212, 175, 55, 0.08);
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.16), rgba(0, 0, 0, 0.16) 34%);
+  border-color: #d4af37;
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.2);
+}
+
+.settings-profile-page .plan-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .settings-profile-page .plan-name {
   color: rgba(255, 255, 255, 0.9);
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 6px;
+  line-height: 1.15;
+}
+
+.settings-profile-page .plan-eyebrow {
+  margin-top: 5px;
+  color: rgba(255, 255, 255, 0.54);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.settings-profile-page .current-plan-pill {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.14);
+  color: #f4e5a1;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .settings-profile-page .plan-price {
   color: #d4af37;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
-  margin-bottom: 10px;
+  margin: 18px 0 12px;
 }
 
 .settings-profile-page .plan-divider {
@@ -421,10 +474,108 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: 12px;
   color: rgba(255, 255, 255, 0.78);
   font-size: 12px;
   line-height: 1.4;
+  margin-bottom: 20px;
+}
+
+.settings-profile-page .plan-features > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.settings-profile-page .feature-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.16);
+  color: #f4e5a1;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.settings-profile-page .plan-features > li.limited .feature-status {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+
+.settings-profile-page .feature-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.settings-profile-page .feature-copy strong {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+}
+
+.settings-profile-page .feature-copy span {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11px;
+}
+
+.settings-profile-page .feature-access-content {
+  position: relative;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.settings-profile-page .feature-access-content.collapsed {
+  max-height: 2.8em;
+}
+
+.settings-profile-page .feature-access-content.collapsed::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 42%;
+  height: 1.4em;
+  background: linear-gradient(90deg, transparent, #10100f 78%);
+  pointer-events: none;
+}
+
+.settings-profile-page .feature-detail-list {
+  margin: 2px 0 0;
+  padding-left: 15px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11px;
+}
+
+.settings-profile-page .feature-detail-list li + li {
+  margin-top: 3px;
+}
+
+.settings-profile-page .feature-details-toggle {
+  justify-self: start;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #d4af37;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings-profile-page .feature-details-toggle:hover {
+  color: #f4e5a1;
+  text-decoration: underline;
+}
+
+.settings-profile-page .feature-details-toggle:focus-visible,
+.settings-profile-page .toggle-all-details-btn:focus-visible {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
 }
 
 .settings-profile-page .plan-action-btn {
@@ -969,18 +1120,44 @@ html:not(.dark) .settings-profile-page .next-level {
 }
 
 html:not(.dark) .settings-profile-page .plan-card {
-  background: #f8fafc;
-  border-color: rgba(212, 175, 55, 0.6);
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.07), #f8fafc 28%);
+  border-color: rgba(212, 175, 55, 0.38);
 }
 
 html:not(.dark) .settings-profile-page .plan-card.current {
-  background: rgba(212, 175, 55, 0.06);
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.14), #fff 34%);
+}
+
+html:not(.dark) .settings-profile-page .feature-access-content {
+  color: #64748b;
+}
+
+html:not(.dark) .settings-profile-page .toggle-all-details-btn {
+  color: #8a6500;
+}
+
+html:not(.dark) .settings-profile-page .feature-access-content.collapsed::after {
+  background: linear-gradient(90deg, transparent, #f8fafc 78%);
 }
 
 html:not(.dark) .settings-profile-page .plan-name {
   color: #1e293b;
   -webkit-text-fill-color: #1e293b;
   background: none;
+}
+
+html:not(.dark) .settings-profile-page .plan-eyebrow,
+html:not(.dark) .settings-profile-page .feature-copy span,
+html:not(.dark) .settings-profile-page .feature-detail-list {
+  color: #64748b;
+}
+
+html:not(.dark) .settings-profile-page .current-plan-pill {
+  color: #8a6500;
+}
+
+html:not(.dark) .settings-profile-page .feature-copy strong {
+  color: #1e293b;
 }
 
 html:not(.dark) .settings-profile-page .plan-divider {

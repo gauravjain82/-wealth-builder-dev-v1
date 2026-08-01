@@ -96,32 +96,131 @@ const PLAN_ORDER: Record<Plan, number> = {
 const PLAN_CARDS: Array<{
   plan: Plan;
   priceLabel: string;
-  features: string[];
+  eyebrow: string;
+  features: Array<{ name: string; access: string | string[]; limited?: boolean }>;
 }> = [
   {
     plan: Plan.NewAgent,
     priceLabel: 'Free',
-    features: ['Basic CRM', '1 Prospect', 'Limited Reports'],
+    eyebrow: 'Build your foundation',
+    features: [
+      { name: 'Home', access: 'New Agent version' },
+      { name: 'Insight Center', access: 'Included' },
+      { name: 'Onboarding Game', access: 'New Agent version' },
+      { name: 'Licensing', access: 'Same access as paid roles, except documents', limited: true },
+      {
+        name: '10 Systematic Tools',
+        access: [
+          'Unified System Presentation — steps 1 & 2 only',
+          'New Art of Living Presentation — custom flyer only',
+          'New Art of Living 4 Fold',
+          'Business Shower — custom flyer only',
+          '3 Ways to Reach the Market & FAQ',
+          'Unified License and Distribution System',
+          'Distribution Machine & Account Sheet Options',
+        ],
+        limited: true,
+      },
+      { name: 'My Team', access: 'Prospect List only; cannot send Insight Center or add agents', limited: true },
+      { name: 'Match Up', access: 'Request trainer only', limited: true },
+      { name: 'Big Event', access: 'Not included', limited: true },
+      { name: 'Training Center', access: ['Code of Honor', 'Business Model', 'Business Misconception'], limited: true },
+      {
+        name: 'Training Schedule',
+        access: [
+          'Maxout Monday — 9 AM PST',
+          'Tuesday night training — based on upline broker',
+          "National Call & ABC's of Finance — Saturday, 9 AM PST",
+          'Friday product training appears after licensing',
+          'Basic product training — 9 AM',
+          'Advanced product training — 9 AM',
+          'Times adapt to the location where the user logs in',
+        ],
+      },
+      { name: 'Calendar', access: 'Not included', limited: true },
+      { name: 'File Vault', access: 'Not listed for this role', limited: true },
+      { name: 'Help Desk', access: 'Included' },
+    ],
   },
   {
     plan: Plan.Agent,
     priceLabel: '$14.99/month',
-    features: ['Full CRM', 'Unlimited Prospects', 'Advanced Reports', 'Team Features'],
+    eyebrow: 'Grow your business',
+    features: [
+      { name: 'Home', access: 'Version 2' },
+      { name: 'Insight Center', access: 'Included' },
+      { name: 'Onboarding Game', access: 'Version 2' },
+      { name: 'Licensing', access: 'Included' },
+      { name: '10 Systematic Tools', access: ['Unified System Presentation', 'New Art of Living Presentation', 'New Art of Living 4 Fold', 'Business Shower', '3 Ways to Reach the Market & FAQ', 'Unified License and Distribution System', 'Distribution Machine & Account Sheet Options'] },
+      { name: 'My Team', access: ['Prospect Tracker — can only send Insight Center', 'Org Chart', 'Production Tracker — own production only, linked or not linked'], limited: true },
+      { name: 'Match Up', access: 'Request trainer only', limited: true },
+      { name: 'Big Event', access: 'Not included', limited: true },
+      { name: 'Training Center', access: ['Code of Honor', 'Business Model', 'Business Misconception', '3 Step Presentation', 'Financial Education', 'Agent Resources'] },
+      { name: 'Training Schedule', access: ['Maxout Monday — 9 AM PST', 'Tuesday night training — based on upline broker', "National Call & ABC's of Finance — Saturday, 9 AM PST", 'Friday product training appears after licensing', 'Basic product training — 9 AM', 'Advanced product training — 9 AM', 'Times adapt to the location where the user logs in'] },
+      { name: 'Calendar', access: 'Full access' },
+      { name: 'File Vault', access: 'Not listed for this role', limited: true },
+      { name: 'Help Desk', access: 'Included' },
+    ],
   },
   {
     plan: Plan.Leader,
     priceLabel: '$24.99/month',
-    features: ['Everything in Agent', 'Team Management', 'Custom Reports'],
+    eyebrow: 'Lead and develop a team',
+    features: [
+      { name: 'Home', access: 'Version 2' },
+      { name: 'Insight Center', access: 'Included' },
+      { name: 'Onboarding Game', access: 'Version 2' },
+      { name: 'Licensing', access: 'Included' },
+      { name: '10 Systematic Tools', access: ['Unified System Presentation', 'New Art of Living Presentation', 'New Art of Living 4 Fold', 'Business Shower', '3 Ways to Reach the Market & FAQ', 'Unified License and Distribution System', 'Distribution Machine & Account Sheet Options', 'Trainer Manual'] },
+      { name: 'My Team', access: 'Full access' },
+      { name: 'Match Up', access: 'Request trainer only', limited: true },
+      { name: 'Big Event', access: 'Not listed for this role', limited: true },
+      { name: 'Training Center', access: ['Code of Honor', 'Business Model', 'Business Misconception', '5 Step Presentation', 'Financial Education', 'Agent Resources'] },
+      { name: 'Training Schedule', access: ['Maxout Monday — 9 AM PST', 'Tuesday night training — based on upline broker', "National Call & ABC's of Finance — Saturday, 9 AM PST", 'Friday product training appears after licensing', 'Basic product training — 9 AM', 'Advanced product training — 9 AM', 'Times adapt to the location where the user logs in'] },
+      { name: 'Calendar', access: 'Full access' },
+      { name: 'File Vault', access: 'Full access' },
+      { name: 'Help Desk', access: 'Included' },
+    ],
   },
   {
     plan: Plan.Broker,
     priceLabel: '$69.99/month',
-    features: ['Everything in Leader', 'Broker Tools', 'Multi-team Management', 'Advanced Analytics'],
+    eyebrow: 'Operate at scale',
+    features: [
+      { name: 'Home', access: 'Version 2' },
+      { name: 'Insight Center', access: 'Included' },
+      { name: 'Onboarding Game', access: 'Version 2' },
+      { name: 'Licensing', access: 'Included' },
+      { name: '10 Systematic Tools', access: ['Unified System Presentation', 'New Art of Living Presentation', 'New Art of Living 4 Fold', 'Business Shower', '3 Ways to Reach the Market & FAQ', 'Unified License and Distribution System', 'Distribution Machine & Account Sheet Options', 'Trainer Manual', 'SMD & 100K Class'] },
+      { name: 'My Team', access: 'Full access' },
+      { name: 'Match Up', access: 'Full access' },
+      { name: 'Big Event', access: 'Event Manager only', limited: true },
+      { name: 'Training Center', access: ['Code of Honor', 'Business Model', 'Business Misconception', '5 Step Presentation', 'Financial Education', 'Agent Resources'] },
+      { name: 'Training Schedule', access: ['Add team training schedule', 'Add contests', 'Add recognition'] },
+      { name: 'Calendar', access: 'Full access' },
+      { name: 'File Vault', access: 'Full access' },
+      { name: 'Help Desk', access: 'Included' },
+    ],
   },
   {
     plan: Plan.SeniorBroker,
     priceLabel: '$99.99/month',
-    features: ['Everything in Broker', 'White Label Options', 'API Access', 'Priority Support'],
+    eyebrow: 'Unlock the complete platform',
+    features: [
+      { name: 'Home', access: 'Version 2' },
+      { name: 'Insight Center', access: 'Included' },
+      { name: 'Onboarding Game', access: 'Version 2' },
+      { name: 'Licensing', access: 'Included' },
+      { name: '10 Systematic Tools', access: 'Full access, including Boot Camp materials' },
+      { name: 'My Team', access: 'Full access, including SMD information' },
+      { name: 'Match Up', access: 'Full access' },
+      { name: 'Big Event', access: 'Full access' },
+      { name: 'Training Center', access: ['Code of Honor', 'Business Model', 'Business Misconception', '5 Step Presentation', 'Financial Education', 'Agent Resources'] },
+      { name: 'Training Schedule', access: ['Add team training schedule', 'Add contests', 'Add recognition', 'Add content'] },
+      { name: 'Calendar', access: 'Full access' },
+      { name: 'File Vault', access: 'Full access' },
+      { name: 'Help Desk', access: 'Included' },
+    ],
   },
   // {
   //   plan: Plan.Admin,
@@ -129,6 +228,10 @@ const PLAN_CARDS: Array<{
   //   features: ['Everything in Senior Broker', 'User Management', 'Admin Dashboard', 'Full API Access'],
   // },
 ];
+
+const EXPANDABLE_PLAN_FEATURE_KEYS = PLAN_CARDS.flatMap((card) => card.features
+  .filter((feature) => Array.isArray(feature.access) || feature.access.length > 70)
+  .map((feature) => `${card.plan}:${feature.name}`));
 
 const CARD_ELEMENT_OPTIONS = {
   style: {
@@ -217,11 +320,15 @@ function UpgradeRequestForm({
   products,
   roles,
   onCreated,
+  expandedFeatures,
+  onToggleFeature,
 }: {
   user: CurrentUserDetails;
   products: PaymentProduct[];
   roles: RoleOption[];
   onCreated: (request: SubscriptionApprovalRequestResponse) => void;
+  expandedFeatures: Set<string>;
+  onToggleFeature: (key: string) => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -289,6 +396,7 @@ function UpgradeRequestForm({
     setTargetPlan(plan);
     setModalOpen(true);
   };
+
 
   const handleSubmit = async () => {
     if (!stripe || !elements) {
@@ -413,13 +521,55 @@ function UpgradeRequestForm({
 
           return (
             <div key={card.plan} className={`plan-card ${isCurrent ? 'current' : ''}`}>
-              <div className="plan-name">{card.plan}</div>
+              <div className="plan-card-heading">
+                <div>
+                  <div className="plan-name">{card.plan}</div>
+                  <div className="plan-eyebrow">{card.eyebrow}</div>
+                </div>
+                {isCurrent ? <span className="current-plan-pill">Your plan</span> : null}
+              </div>
               <div className="plan-price">{card.priceLabel}</div>
               <div className="plan-divider" />
-              <ul className="plan-features">
-                {card.features.map((feature) => (
-                  <li key={feature}>✓ {feature}</li>
-                ))}
+              <ul
+                id={`plan-features-${normalizePlanToRoleName(card.plan)}`}
+                className="plan-features"
+                aria-label={`${card.plan} feature access`}
+              >
+                {card.features.map((feature) => {
+                  const featureKey = `${card.plan}:${feature.name}`;
+                  const isLong = Array.isArray(feature.access) || feature.access.length > 70;
+                  const isExpanded = expandedFeatures.has(featureKey);
+
+                  return <li key={feature.name} className={feature.limited ? 'limited' : ''}>
+                    <span className="feature-status" aria-hidden="true">
+                      {feature.limited ? '−' : '✓'}
+                    </span>
+                    <div className="feature-copy">
+                      <strong>{feature.name}</strong>
+                      <div
+                        id={`feature-${normalizePlanToRoleName(card.plan)}-${feature.name.replace(/\W+/g, '-').toLowerCase()}`}
+                        className={`feature-access-content ${isLong && !isExpanded ? 'collapsed' : ''}`}
+                      >
+                        {Array.isArray(feature.access) ? (
+                          <ul className="feature-detail-list">
+                            {feature.access.map((detail) => <li key={detail}>{detail}</li>)}
+                          </ul>
+                        ) : feature.access}
+                      </div>
+                      {isLong ? (
+                        <button
+                          type="button"
+                          className="feature-details-toggle"
+                          aria-expanded={isExpanded}
+                          aria-controls={`feature-${normalizePlanToRoleName(card.plan)}-${feature.name.replace(/\W+/g, '-').toLowerCase()}`}
+                          onClick={() => onToggleFeature(featureKey)}
+                        >
+                          {isExpanded ? 'View less' : 'View more'}
+                        </button>
+                      ) : null}
+                    </div>
+                  </li>;
+                })}
               </ul>
               <button
                 type="button"
@@ -565,6 +715,7 @@ export default function SettingsPage() {
   const [profileEmail, setProfileEmail] = useState('');
   const [profileForm, setProfileForm] = useState<ProfileFormState>(DEFAULT_PROFILE_FORM);
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
+  const [expandedPlanFeatures, setExpandedPlanFeatures] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [actionModal, setActionModal] = useState<{
     open: boolean;
@@ -859,6 +1010,22 @@ export default function SettingsPage() {
   };
 
   const currentPlan = normalizePlan(userDetails?.roles?.[0]);
+  const allPlanDetailsExpanded = EXPANDABLE_PLAN_FEATURE_KEYS.every((key) => expandedPlanFeatures.has(key));
+
+  const togglePlanFeature = (key: string) => {
+    setExpandedPlanFeatures((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleAllPlanDetails = () => {
+    setExpandedPlanFeatures(
+      allPlanDetailsExpanded ? new Set() : new Set(EXPANDABLE_PLAN_FEATURE_KEYS)
+    );
+  };
   const currentLevel = resolveLevelLabel(userDetails?.level);
   const agencyCode = userDetails?.agency_code?.trim() || '-';
   const nextPlan = UPGRADE_PLANS.find((plan) => PLAN_ORDER[plan] > PLAN_ORDER[currentPlan]) || null;
@@ -1182,6 +1349,17 @@ export default function SettingsPage() {
               <span className="title-icon">💎</span>
               Subscription & Billing
             </h3>
+            {currentPlan !== Plan.Admin ? (
+              <button
+                type="button"
+                className="toggle-all-details-btn"
+                aria-expanded={allPlanDetailsExpanded}
+                onClick={toggleAllPlanDetails}
+              >
+                {allPlanDetailsExpanded ? 'Collapse complete details' : 'Show complete details'}
+                <span aria-hidden="true">{allPlanDetailsExpanded ? '↑' : '↓'}</span>
+              </button>
+            ) : null}
           </div>
 
           {currentPlan === Plan.Admin ? (
@@ -1203,6 +1381,8 @@ export default function SettingsPage() {
                 products={products}
                 roles={roles}
                 onCreated={onRequestCreated}
+                expandedFeatures={expandedPlanFeatures}
+                onToggleFeature={togglePlanFeature}
               />
             </Elements>
           )}
