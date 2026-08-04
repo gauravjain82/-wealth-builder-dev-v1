@@ -871,7 +871,7 @@ export async function listPolicyAdvances(policyId: number): Promise<PolicyAdvanc
  *  @param percentage - stored as-is, e.g. "40.00". Pre-fill by type but keep editable. */
 export async function recordPolicyAdvance(
   policyId: number,
-  advance: { advance_type: 'FIRST' | 'SECOND' | 'FULL'; percentage: string; paid_date: string }
+  advance: { advance_type: 'FIRST' | 'SECOND' | 'FULL'; percentage: string; paid_date: string | null | undefined }
 ): Promise<PolicyAdvance> {
   const response = await fetch(`${API_BASE_URL}/api/tracker/policies/${policyId}/advances/`, {
     method: 'POST',

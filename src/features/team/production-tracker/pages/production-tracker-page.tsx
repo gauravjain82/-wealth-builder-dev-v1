@@ -482,9 +482,6 @@ export default function ProductionTrackerPage() {
       if (isFirstAdvanceUpdate || isSecondAdvanceUpdate) {
         if (isFirstAdvanceUpdate) {
           const paidDate = patch.advance_first_date;
-          if (!paidDate) {
-            throw new Error('Removing first advance date is not supported.');
-          }
           await recordPolicyAdvance(row.id, {
             advance_type: 'FIRST',
             percentage: deriveAdvancePercentage(row, 'FIRST'),
@@ -494,9 +491,6 @@ export default function ProductionTrackerPage() {
 
         if (isSecondAdvanceUpdate) {
           const paidDate = patch.advance_second_date;
-          if (!paidDate) {
-            throw new Error('Removing second advance date is not supported.');
-          }
           await recordPolicyAdvance(row.id, {
             advance_type: 'SECOND',
             percentage: deriveAdvancePercentage(row, 'SECOND'),
