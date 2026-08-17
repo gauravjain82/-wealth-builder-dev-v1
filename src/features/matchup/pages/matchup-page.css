@@ -91,6 +91,23 @@
   --action-border: rgba(34, 197, 94, 0.45);
 }
 
+/* Labeled pill for appointments awaiting an outcome — clearer than a bare tick */
+.matchup-result-pill {
+  width: auto !important;
+  height: auto !important;
+  padding: 4px 10px !important;
+  gap: 6px;
+  border-radius: 999px !important;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.matchup-result-pill span {
+  line-height: 1;
+}
+
 .matchup-action-button.is-cancel {
   --action-color: #fb7185;
   --action-bg: rgba(251, 113, 133, 0.12);

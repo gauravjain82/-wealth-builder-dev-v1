@@ -254,13 +254,14 @@ export function AppointmentList({
             {['ACCEPTED', 'RESCHEDULED'].includes(item.status) ? (
               <Button
                 variant="outline"
-                size="icon"
-                aria-label="Complete follow up"
-                title="Complete follow up"
-                className="matchup-action-button is-complete"
+                size="sm"
+                aria-label="Record appointment result"
+                title="Record the outcome of this appointment"
+                className="matchup-action-button matchup-result-pill is-complete"
                 onClick={() => onComplete(item)}
               >
                 <CheckCircle2 size={15} />
+                <span>Result Required</span>
               </Button>
             ) : null}
             {!['DONE', 'CANCELLED', 'NOT_INTERESTED'].includes(item.status) ? (
