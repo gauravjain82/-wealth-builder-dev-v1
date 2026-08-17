@@ -122,6 +122,10 @@ export interface AppointmentListItem {
   assigned_to?: number | null;
   assigned_to_name?: string | null;
   assigned_to_detail?: PersonCard | null;
+  assigned_to_level?: string | null;
+  assigned_to_leader?: number | null;
+  assigned_to_leader_name?: string | null;
+  assigned_to_depth?: number | null;
   created_by?: number | null;
   created_by_name?: string | null;
   has_result?: boolean;
