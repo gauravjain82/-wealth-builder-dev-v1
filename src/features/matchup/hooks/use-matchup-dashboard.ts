@@ -61,11 +61,16 @@ export function useMatchupDashboard(filters: AppointmentFilters, calendarMonth: 
       setAppointments(listData);
       setMetrics(metricData);
       setCalendarItems(calendarData);
-      setActionRequired([
-        ...(actionData.assign ?? []),
-        ...(actionData.accept ?? []),
-        ...(actionData.complete ?? []),
-      ]);
+      setActionRequired(
+        [
+          ...(actionData.assign ?? []),
+          ...(actionData.accept ?? []),
+          ...(actionData.complete ?? []),
+        ].sort(
+          (a, b) =>
+            new Date(b.start_at).getTime() - new Date(a.start_at).getTime(),
+        ),
+      );
       setGoogleStatus(googleData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load matchup data');
