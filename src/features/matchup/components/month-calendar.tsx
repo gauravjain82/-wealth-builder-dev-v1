@@ -1,8 +1,8 @@
-import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@shared/components/ui';
-import { formatAppointmentTime } from '../services/matchup-service';
 import type { AppointmentListItem, CalendarAppointment, MatchupStatusMeta } from '../types';
-import { StatusBadge } from './status-badge';
+import { DayAppointmentsModal } from './day-appointments-modal';
 
 interface MonthCalendarProps {
   month: Date;
@@ -35,11 +35,11 @@ function buildDays(month: Date) {
   ];
 }
 
-function appointmentTitle(item: CalendarAppointment) {
+export function appointmentTitle(item: CalendarAppointment) {
   return item.contact_name || item.trainee_name || `Appointment #${item.id}`;
 }
 
-function assignedName(item: CalendarAppointment, appointment?: AppointmentListItem) {
+export function assignedName(item: CalendarAppointment, appointment?: AppointmentListItem) {
   return (
     item.assigned_to_name ||
     item.assigned_to_detail?.name ||
@@ -59,6 +59,7 @@ export function MonthCalendar({
   onDateSelect,
   onItemClick,
 }: MonthCalendarProps) {
+  const [modalDate, setModalDate] = useState<Date | null>(null);
   const days = buildDays(month);
   const monthLabel = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(month);
   const today = new Date();
@@ -72,8 +73,6 @@ export function MonthCalendar({
     acc[key].push(item);
     return acc;
   }, {});
-  const selectedItems = itemsByDay[startOfDayKey(selectedDate)] || [];
-
   return (
     <section className="matchup-calendar-shell">
       <div className="matchup-calendar-toolbar">
@@ -87,32 +86,6 @@ export function MonthCalendar({
       </div>
 
       <div className="matchup-calendar-body">
-        <aside className="matchup-selected-day">
-          <h3>{new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric' }).format(selectedDate)}</h3>
-          {selectedItems.length === 0 ? (
-            <p className="matchup-muted">No visible appointments for this date.</p>
-          ) : (
-            <div className="matchup-selected-list">
-              {selectedItems.map((item) => {
-                const trainerName = assignedName(item, appointmentsById[item.id]);
-                return (
-                  <button key={item.id} type="button" className="matchup-selected-item" onClick={() => onItemClick?.(item.id)}>
-                    <div>
-                      <strong>{appointmentTitle(item)}</strong>
-                      <span>{formatAppointmentTime(item.start_at, { month: undefined, day: undefined })}</span>
-                      {trainerName ? <small>Assigned to {trainerName}</small> : null}
-                    </div>
-                    <span className="matchup-selected-item-actions">
-                      <StatusBadge status={item.status} label={item.status_label} color={item.status_color} statuses={statuses} />
-                      <Eye size={15} aria-hidden="true" />
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </aside>
-
         <div className="matchup-month-grid">
           {DAY_LABELS.map((label) => (
             <div key={label} className="matchup-day-label">{label}</div>
@@ -131,9 +104,19 @@ export function MonthCalendar({
                   isSelected ? 'is-selected' : '',
                   dayItems.length ? 'has-items' : '',
                 ].join(' ').trim()}
-                onClick={() => onDateSelect(day)}
+                onClick={() => {
+                  onDateSelect(day);
+                  if (dayItems.length) setModalDate(day);
+                }}
               >
-                <span className="matchup-day-number">{day.getDate()}</span>
+                <span className="matchup-day-head">
+                  <span className="matchup-day-number">{day.getDate()}</span>
+                  {dayItems.length ? (
+                    <span className="matchup-day-count" aria-label={`${dayItems.length} appointments`}>
+                      {dayItems.length}
+                    </span>
+                  ) : null}
+                </span>
                 <span className="matchup-day-events">
                   {dayItems.slice(0, 3).map((item) => (
                     <span key={item.id} style={{ ['--status-color' as string]: item.status_color || '#64748b' }}>
@@ -147,6 +130,19 @@ export function MonthCalendar({
           })}
         </div>
       </div>
+
+      <DayAppointmentsModal
+        key={modalDate ? startOfDayKey(modalDate) : 'none'}
+        date={modalDate}
+        items={modalDate ? itemsByDay[startOfDayKey(modalDate)] || [] : []}
+        appointmentsById={appointmentsById}
+        statuses={statuses}
+        onClose={() => setModalDate(null)}
+        onItemClick={(id: number) => {
+          setModalDate(null);
+          onItemClick?.(id);
+        }}
+      />
     </section>
   );
 }

@@ -564,16 +564,18 @@ export default function MatchupPage() {
     }
   };
 
-  const openAppointmentDetails = async (appointment: AppointmentListItem) => {
+  const openAppointmentDetailsById = async (id: number) => {
     setBusy(true);
     try {
-      setDetailsTarget(await matchupService.appointment(appointment.id));
+      setDetailsTarget(await matchupService.appointment(id));
     } catch (err) {
       addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load appointment details.' });
     } finally {
       setBusy(false);
     }
   };
+
+  const openAppointmentDetails = (appointment: AppointmentListItem) => openAppointmentDetailsById(appointment.id);
 
   return (
     <main className="matchup-page">
@@ -607,10 +609,7 @@ export default function MatchupPage() {
         selectedDate={selectedDate}
         onMonthChange={setCalendarMonth}
         onDateSelect={setSelectedDate}
-        onItemClick={(id) => {
-          const item = [...appointments.results, ...actionRequired].find((appointment) => appointment.id === id);
-          if (item) void openAppointmentDetails(item);
-        }}
+        onItemClick={(id) => void openAppointmentDetailsById(id)}
       />
 
       <div className="matchup-lower-layout">

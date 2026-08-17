@@ -303,7 +303,7 @@
 
 .matchup-calendar-body {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   min-height: 0;
 }
 
@@ -375,6 +375,13 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
+.matchup-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
 .matchup-day-number {
   display: inline-flex;
   align-items: center;
@@ -383,6 +390,148 @@
   height: 26px;
   border-radius: 999px;
   font-weight: 800;
+}
+
+.matchup-day-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+}
+
+.matchup-day:hover .matchup-day-count {
+  background: #1d4ed8;
+}
+
+.dark .matchup-day-count {
+  background: #3b82f6;
+}
+
+.matchup-day-modal-count {
+  margin: 0 0 12px;
+}
+
+.matchup-day-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.matchup-day-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: inherit;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.matchup-day-filter-chip > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.1);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.matchup-day-filter-chip.is-active {
+  border-color: var(--status-color, #2563eb);
+  background: var(--status-color, #2563eb);
+  color: #fff;
+}
+
+.matchup-day-filter-chip.is-active > span {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.dark .matchup-day-filter-chip {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .matchup-day-filter-chip > span {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.matchup-day-modal-list {
+  display: grid;
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.matchup-day-modal-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: inherit;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.matchup-day-modal-item:hover {
+  background: #eff6ff;
+}
+
+.dark .matchup-day-modal-item {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dark .matchup-day-modal-item:hover {
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.matchup-day-modal-item > div {
+  display: grid;
+  gap: 2px;
+}
+
+.matchup-day-modal-item > div strong {
+  font-weight: 700;
+}
+
+.matchup-day-modal-item > div span {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.matchup-day-modal-item > div small {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.matchup-day-modal-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .matchup-day-events {
