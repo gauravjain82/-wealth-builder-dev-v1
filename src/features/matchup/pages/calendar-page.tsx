@@ -27,7 +27,7 @@ export default function CalendarPage() {
     loading,
     error,
     reload,
-  } = useMatchupDashboard(filters, calendarMonth);
+  } = useMatchupDashboard(filters, calendarMonth, { personal: true });
 
   const saveAppointment = async (payload: CreateAppointmentPayload) => {
     setBusy(true);
@@ -98,6 +98,7 @@ export default function CalendarPage() {
         items={calendarItems}
         statuses={statuses}
         selectedDate={selectedDate}
+        personal
         onMonthChange={setCalendarMonth}
         onDateSelect={setSelectedDate}
         onItemClick={(id) => void openDetails(id)}

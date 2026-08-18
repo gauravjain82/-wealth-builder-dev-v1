@@ -11,6 +11,7 @@ interface MonthCalendarProps {
   statuses: MatchupStatusMeta[];
   selectedDate: Date;
   segment?: string;
+  personal?: boolean;
   onMonthChange: (date: Date) => void;
   onDateSelect: (date: Date) => void;
   onItemClick?: (id: number) => void;
@@ -57,6 +58,7 @@ export function MonthCalendar({
   statuses,
   selectedDate,
   segment,
+  personal,
   onMonthChange,
   onDateSelect,
   onItemClick,
@@ -140,6 +142,7 @@ export function MonthCalendar({
         appointmentsById={appointmentsById}
         statuses={statuses}
         segment={segment}
+        personal={personal}
         onClose={() => setModalDate(null)}
         onItemClick={(id: number) => {
           setModalDate(null);

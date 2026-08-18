@@ -18,6 +18,7 @@ interface DayAppointmentsModalProps {
   appointmentsById: Record<number, AppointmentListItem>;
   statuses: MatchupStatusMeta[];
   segment?: string;
+  personal?: boolean;
   onClose: () => void;
   onItemClick?: (id: number) => void;
 }
@@ -67,6 +68,7 @@ export function DayAppointmentsModal({
   appointmentsById,
   statuses,
   segment,
+  personal,
   onClose,
   onItemClick,
 }: DayAppointmentsModalProps) {
@@ -81,7 +83,7 @@ export function DayAppointmentsModal({
     setLoading(true);
     setError(null);
     matchupService
-      .dayGrouped(date, segment)
+      .dayGrouped(date, segment, personal)
       .then((response) => {
         if (!cancelled) setGroups(response.groups);
       })
@@ -94,7 +96,7 @@ export function DayAppointmentsModal({
     return () => {
       cancelled = true;
     };
-  }, [date, segment]);
+  }, [date, segment, personal]);
 
   // Status chips are derived from the loaded rich groups when available, else
   // from the lean calendar items so the modal still works during load/on error.

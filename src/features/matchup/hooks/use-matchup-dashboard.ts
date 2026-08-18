@@ -21,7 +21,17 @@ const EMPTY_METRICS: MatchupMetrics = {
   recruits: 0,
 };
 
-export function useMatchupDashboard(filters: AppointmentFilters, calendarMonth: Date) {
+interface UseMatchupDashboardOptions {
+  /** Personal calendar scope: only the logged-in user's own appointments. */
+  personal?: boolean;
+}
+
+export function useMatchupDashboard(
+  filters: AppointmentFilters,
+  calendarMonth: Date,
+  options: UseMatchupDashboardOptions = {},
+) {
+  const { personal = false } = options;
   const [appointments, setAppointments] = useState<PaginatedResponse<AppointmentListItem>>({
     count: 0,
     next: null,
@@ -49,8 +59,8 @@ export function useMatchupDashboard(filters: AppointmentFilters, calendarMonth: 
           matchupService.statuses(),
           matchupService.appointmentTypes(),
           matchupService.appointments(filters),
-          matchupService.metrics(filters),
-          matchupService.calendar(range.start, range.end, filters.segment),
+          matchupService.metrics(filters, personal),
+          matchupService.calendar(range.start, range.end, filters.segment, personal),
           matchupService.actionRequired(filters.segment),
           matchupService.googleStatus().catch(() => null),
         ]);
@@ -77,7 +87,7 @@ export function useMatchupDashboard(filters: AppointmentFilters, calendarMonth: 
     } finally {
       setLoading(false);
     }
-  }, [calendarMonth, filters]);
+  }, [calendarMonth, filters, personal]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !appointments.next) return;

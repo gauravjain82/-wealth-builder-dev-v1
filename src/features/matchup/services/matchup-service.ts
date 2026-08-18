@@ -139,12 +139,12 @@ export const matchupService = {
       method: 'DELETE',
     }),
 
-  calendar: (start: string, end: string, segment?: string) =>
+  calendar: (start: string, end: string, segment?: string, personal?: boolean) =>
     request<CalendarAppointment[]>(
-      `/api/matchup/appointments/calendar/${buildQuery({ start, end, segment })}`,
+      `/api/matchup/appointments/calendar/${buildQuery({ start, end, segment, mine: personal ? 1 : undefined })}`,
     ),
 
-  dayGrouped: (date: Date, segment?: string) => {
+  dayGrouped: (date: Date, segment?: string, personal?: boolean) => {
     const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const end = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
     return request<DayGroupedAppointments>(
@@ -152,12 +152,15 @@ export const matchupService = {
         start: start.toISOString(),
         end: end.toISOString(),
         segment,
+        mine: personal ? 1 : undefined,
       })}`,
     );
   },
 
-  metrics: (filters: AppointmentFilters = {}) =>
-    request<MatchupMetrics>(`/api/matchup/appointments/metrics/${listQuery(filters)}`),
+  metrics: (filters: AppointmentFilters = {}, personal?: boolean) =>
+    request<MatchupMetrics>(
+      `/api/matchup/appointments/metrics/${listQuery(filters)}${personal ? `${listQuery(filters) ? '&' : '?'}mine=1` : ''}`,
+    ),
 
   actionRequired: (segment?: string) =>
     request<MatchupActionRequiredResponse>(
