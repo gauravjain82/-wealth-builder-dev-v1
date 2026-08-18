@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { CalendarCheck, Plus } from 'lucide-react';
 import { useToastStore } from '@/store';
 import { Button, Input, Select } from '@shared/components/ui';
@@ -136,6 +136,7 @@ export default function MatchupPage() {
   const addToast = useToastStore((state) => state.addToast);
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [preset, setPreset] = useState('all');
   const [status, setStatus] = useState('');
   const [kind, setKind] = useState<AppointmentKind | ''>('');
@@ -329,6 +330,13 @@ export default function MatchupPage() {
       setEditingTarget(null);
       setFollowUpDefaults(null);
       setNewAppointmentContact(null);
+      setSearchParams(
+        (prev) => {
+          prev.delete('new');
+          return prev;
+        },
+        { replace: true },
+      );
     });
   };
 
@@ -560,6 +568,45 @@ export default function MatchupPage() {
     }
   };
 
+  // Open the "New Appointment" form and reflect it in the URL so the page is
+  // pinnable/bookmarkable — /matchup?new=1 launches straight into this flow.
+  const openNewAppointment = useCallback(() => {
+    setEditingTarget(null);
+    setFollowUpDefaults(null);
+    setNewAppointmentContact(null);
+    setFormOpen(true);
+    setSearchParams(
+      (prev) => {
+        prev.set('new', '1');
+        return prev;
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
+
+  const closeNewAppointmentForm = useCallback(() => {
+    setFormOpen(false);
+    setEditingTarget(null);
+    setFollowUpDefaults(null);
+    setNewAppointmentContact(null);
+    setSearchParams(
+      (prev) => {
+        prev.delete('new');
+        return prev;
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
+
+  // Deep-link support: opening /matchup?new=1 (e.g. a pinned home-screen link)
+  // opens the New Appointment form on load.
+  useEffect(() => {
+    if (searchParams.get('new') === '1' && !formOpen) {
+      openNewAppointment();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const openAppointmentForEditById = async (id: number) => {
     setBusy(true);
     try {
@@ -607,7 +654,7 @@ export default function MatchupPage() {
             <Button variant="outline" onClick={() => void (googleStatus?.connected ? disconnectGoogle() : connectGoogle())} disabled={busy}>
               <CalendarCheck size={16} /> {googleStatus?.connected ? 'Disconnect Google' : 'Connect Google'}
             </Button>
-            <Button onClick={() => { setEditingTarget(null); setFollowUpDefaults(null); setNewAppointmentContact(null); setFormOpen(true); }}>
+            <Button onClick={openNewAppointment}>
               <Plus size={16} /> New Appointment
             </Button>
           </div>
@@ -710,7 +757,7 @@ export default function MatchupPage() {
         initialValues={followUpDefaults}
         appointmentTypes={appointmentTypes}
         saving={busy}
-        onClose={() => { setFormOpen(false); setEditingTarget(null); setFollowUpDefaults(null); setNewAppointmentContact(null); }}
+        onClose={closeNewAppointmentForm}
         onSubmit={saveAppointment}
         onAddProspect={openAddProspect}
         addedContact={newAppointmentContact}
