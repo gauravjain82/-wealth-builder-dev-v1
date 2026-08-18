@@ -50,8 +50,8 @@ export function useMatchupDashboard(filters: AppointmentFilters, calendarMonth: 
           matchupService.appointmentTypes(),
           matchupService.appointments(filters),
           matchupService.metrics(filters),
-          matchupService.calendar(range.start, range.end),
-          matchupService.actionRequired(),
+          matchupService.calendar(range.start, range.end, filters.segment),
+          matchupService.actionRequired(filters.segment),
           matchupService.googleStatus().catch(() => null),
         ]);
 

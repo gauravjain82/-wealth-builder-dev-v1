@@ -20,6 +20,12 @@ interface TrackerTeamScopeFilterProps {
   value: TrackerTeamScope;
   selectedUserId: string | null;
   onChange: (next: TrackerTeamScopeChange) => void;
+  /**
+   * Segment-only mode: show just the BaseShop/SuperBase/SuperTeam toggle and
+   * never surface the broker/user picker. Used by Matchup, which scopes the
+   * current user's own org by segment without drilling into a specific broker.
+   */
+  segmentOnly?: boolean;
 }
 
 interface BrokerResponseItem {
@@ -128,6 +134,7 @@ export function TrackerTeamScopeFilter({
   value,
   selectedUserId,
   onChange,
+  segmentOnly = false,
 }: TrackerTeamScopeFilterProps) {
   const [scopeOptions, setScopeOptions] = useState<Array<{ id: TrackerTeamScope; label: string }>>([
     ALL_SCOPE_OPTIONS[0],
@@ -201,7 +208,7 @@ export function TrackerTeamScopeFilter({
   }, []);
 
   useEffect(() => {
-    if (scope === 'baseshop') {
+    if (segmentOnly || scope === 'baseshop') {
       setUsers([]);
       setLoadingUsers(false);
       return;
@@ -230,7 +237,7 @@ export function TrackerTeamScopeFilter({
     return () => {
       alive = false;
     };
-  }, [scope]);
+  }, [scope, segmentOnly]);
 
   const selectedUser = useMemo(
     () => users.find((item) => item.id === selectedUserId) || null,
@@ -282,7 +289,7 @@ export function TrackerTeamScopeFilter({
         )}
       </div>
 
-      {scope !== 'baseshop' && (
+      {!segmentOnly && scope !== 'baseshop' && (
         <div className="relative w-[260px]">
           <input
             type="text"

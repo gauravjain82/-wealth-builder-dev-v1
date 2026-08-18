@@ -81,6 +81,7 @@ function listQuery(filters: AppointmentFilters = {}) {
     page_size: filters.pageSize,
     start_after: filters.start_after,
     start_before: filters.start_before,
+    segment: filters.segment,
   });
 }
 
@@ -137,15 +138,18 @@ export const matchupService = {
       method: 'DELETE',
     }),
 
-  calendar: (start: string, end: string) =>
+  calendar: (start: string, end: string, segment?: string) =>
     request<CalendarAppointment[]>(
-      `/api/matchup/appointments/calendar/${buildQuery({ start, end })}`,
+      `/api/matchup/appointments/calendar/${buildQuery({ start, end, segment })}`,
     ),
 
   metrics: (filters: AppointmentFilters = {}) =>
     request<MatchupMetrics>(`/api/matchup/appointments/metrics/${listQuery(filters)}`),
 
-  actionRequired: () => request<MatchupActionRequiredResponse>('/api/matchup/appointments/action-required/'),
+  actionRequired: (segment?: string) =>
+    request<MatchupActionRequiredResponse>(
+      `/api/matchup/appointments/action-required/${buildQuery({ segment })}`,
+    ),
 
   assign: (appointmentId: number, trainerId: number) =>
     request<AppointmentDetail>(`/api/matchup/appointments/${appointmentId}/assign/`, {

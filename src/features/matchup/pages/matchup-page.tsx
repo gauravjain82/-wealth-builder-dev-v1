@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { CalendarCheck, Plus } from 'lucide-react';
 import { useToastStore } from '@/store';
@@ -6,6 +6,7 @@ import { Button, Input, Select } from '@shared/components/ui';
 import { AddAgencyCodeModal } from '@/features/team/prospect/components/add-agency-code-modal';
 import { AddProductionModal, type AddProductionFormData } from '@/features/team/prospect/components/add-production-modal';
 import { AddProspectModal } from '@/features/team/prospect/components/add-prospect-modal';
+import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
 import {
   activateProspectWithAgencyCode,
   createProspect,
@@ -140,6 +141,13 @@ export default function MatchupPage() {
   const [kind, setKind] = useState<AppointmentKind | ''>('');
   const [typeSlug, setTypeSlug] = useState('');
   const [search, setSearch] = useState('');
+  const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
+  // Stable identity: TrackerTeamScopeFilter's scope-loading effect depends on
+  // onChange, so an inline handler would re-run it every render (infinite loop).
+  const handleScopeChange = useCallback(
+    ({ scope }: { scope: TrackerTeamScope }) => setTeamScope(scope),
+    [],
+  );
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
@@ -177,8 +185,9 @@ export default function MatchupPage() {
       types: typeSlug,
       search,
       pageSize: 50,
+      segment: teamScope === 'baseshop' ? undefined : teamScope.toUpperCase(),
     }),
-    [kind, preset, search, status, typeSlug],
+    [kind, preset, search, status, typeSlug, teamScope],
   );
 
   const {
@@ -587,6 +596,12 @@ export default function MatchupPage() {
         </div>
         <div className="matchup-header-controls">
           <div className="matchup-hero-actions">
+            <TrackerTeamScopeFilter
+              segmentOnly
+              value={teamScope}
+              selectedUserId={null}
+              onChange={handleScopeChange}
+            />
             <Button variant="outline" onClick={() => void (googleStatus?.connected ? disconnectGoogle() : connectGoogle())} disabled={busy}>
               <CalendarCheck size={16} /> {googleStatus?.connected ? 'Disconnect Google' : 'Connect Google'}
             </Button>
