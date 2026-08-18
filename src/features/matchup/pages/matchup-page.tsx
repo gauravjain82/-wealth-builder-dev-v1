@@ -622,6 +622,7 @@ export default function MatchupPage() {
         appointmentItems={[...appointments.results, ...actionRequired]}
         statuses={statuses}
         selectedDate={selectedDate}
+        segment={filters.segment}
         onMonthChange={setCalendarMonth}
         onDateSelect={setSelectedDate}
         onItemClick={(id) => void openAppointmentDetailsById(id)}

@@ -6,6 +6,7 @@ import type {
   CalendarAppointment,
   CompleteAppointmentPayload,
   CreateAppointmentPayload,
+  DayGroupedAppointments,
   GoogleStatus,
   MatchupActionRequiredResponse,
   MatchupMetrics,
@@ -142,6 +143,18 @@ export const matchupService = {
     request<CalendarAppointment[]>(
       `/api/matchup/appointments/calendar/${buildQuery({ start, end, segment })}`,
     ),
+
+  dayGrouped: (date: Date, segment?: string) => {
+    const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const end = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+    return request<DayGroupedAppointments>(
+      `/api/matchup/appointments/day/${buildQuery({
+        start: start.toISOString(),
+        end: end.toISOString(),
+        segment,
+      })}`,
+    );
+  },
 
   metrics: (filters: AppointmentFilters = {}) =>
     request<MatchupMetrics>(`/api/matchup/appointments/metrics/${listQuery(filters)}`),

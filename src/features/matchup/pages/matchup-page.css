@@ -433,6 +433,11 @@
   background: #3b82f6;
 }
 
+.matchup-day-modal {
+  width: min(1040px, 96vw);
+  max-width: 96vw;
+}
+
 .matchup-day-modal-count {
   margin: 0 0 12px;
 }
@@ -495,6 +500,189 @@
   gap: 8px;
   max-height: 60vh;
   overflow-y: auto;
+}
+
+.matchup-day-modal-group {
+  display: grid;
+  gap: 6px;
+}
+
+.matchup-day-modal-group + .matchup-day-modal-group {
+  margin-top: 6px;
+}
+
+.matchup-day-modal-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px;
+}
+
+.matchup-day-modal-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.matchup-day-modal-group-count {
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.16);
+}
+
+.matchup-day-modal-error {
+  color: #b91c1c;
+  font-size: 13px;
+  margin: 4px 0;
+}
+
+.matchup-day-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.dark .matchup-day-table-wrap {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.matchup-day-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.matchup-day-table thead th {
+  text-align: left;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 0.7;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.dark .matchup-day-table thead th {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.matchup-day-table tbody tr {
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.matchup-day-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.matchup-day-table tbody tr:hover {
+  background: #eff6ff;
+}
+
+.dark .matchup-day-table tbody tr {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.dark .matchup-day-table tbody tr:hover {
+  background: rgba(37, 99, 235, 0.16);
+}
+
+.matchup-day-table td {
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.matchup-day-table td strong {
+  display: block;
+  font-weight: 600;
+}
+
+.matchup-day-cell-sub {
+  display: block;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.matchup-kind-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #fff;
+  background: #2563eb;
+}
+
+.matchup-kind-badge.kind-personal {
+  background: #b91c1c;
+}
+
+.matchup-day-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.matchup-day-type-chip {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(100, 116, 139, 0.16);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.matchup-day-note {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 180px;
+}
+
+.matchup-day-results {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.matchup-day-created-by {
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+.matchup-day-table tbody tr.matchup-day-reschedule-row {
+  cursor: default;
+  border-bottom: none;
+}
+
+.matchup-day-table tbody tr.matchup-day-reschedule-row:hover {
+  background: transparent;
+}
+
+.matchup-day-reschedule-row td {
+  padding: 0 10px 8px;
+}
+
+.matchup-day-reschedule-chip {
+  display: inline-block;
+  margin: 2px 6px 0 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: #475569;
 }
 
 .matchup-day-modal-item {

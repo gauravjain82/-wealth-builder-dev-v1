@@ -134,6 +134,29 @@ export interface AppointmentListItem {
   last_note?: AppointmentLastNote | null;
 }
 
+export interface DayAppointmentItem extends AppointmentListItem {
+  contact_email?: string | null;
+  trainee_email?: string | null;
+  reschedules?: AppointmentReschedule[];
+}
+
+export interface DayTrainerRef {
+  id: number;
+  name: string;
+}
+
+export interface DayAppointmentGroup {
+  trainer: DayTrainerRef | null;
+  title: string;
+  appointments: DayAppointmentItem[];
+}
+
+export interface DayGroupedAppointments {
+  start: string;
+  end: string;
+  groups: DayAppointmentGroup[];
+}
+
 export interface AppointmentDetail extends Omit<AppointmentListItem, 'types'> {
   types: number[];
   types_detail: AppointmentType[];
