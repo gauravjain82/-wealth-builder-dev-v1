@@ -91,17 +91,29 @@
   --action-border: rgba(34, 197, 94, 0.45);
 }
 
-/* Labeled pill for appointments awaiting an outcome — clearer than a bare tick */
-.matchup-result-pill {
+/* Labeled pill for appointments awaiting an outcome — clearer than a bare tick.
+   Solid orange fill with a white label so the pending action reads as a strong
+   call-to-action, without colliding with the red cancel/delete controls. */
+.matchup-action-button.matchup-result-pill {
+  --action-color: #ffffff;
+  --action-bg: #f97316;
+  --action-border: #f97316;
   width: auto !important;
   height: auto !important;
   padding: 4px 10px !important;
   gap: 6px;
   border-radius: 999px !important;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   letter-spacing: 0.01em;
+  color: #fff !important;
+}
+
+.matchup-action-button.matchup-result-pill:hover {
+  background: #ea580c !important;
+  border-color: #ea580c !important;
+  color: #fff !important;
 }
 
 .matchup-result-pill span {
