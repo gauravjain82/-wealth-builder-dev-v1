@@ -560,10 +560,10 @@ export default function MatchupPage() {
     }
   };
 
-  const openAppointmentForEdit = async (appointment: AppointmentListItem) => {
+  const openAppointmentForEditById = async (id: number) => {
     setBusy(true);
     try {
-      const detail = await matchupService.appointment(appointment.id);
+      const detail = await matchupService.appointment(id);
       setEditingTarget(detail);
       setFormOpen(true);
     } catch (err) {
@@ -572,6 +572,8 @@ export default function MatchupPage() {
       setBusy(false);
     }
   };
+
+  const openAppointmentForEdit = (appointment: AppointmentListItem) => openAppointmentForEditById(appointment.id);
 
   const openAppointmentDetailsById = async (id: number) => {
     setBusy(true);
@@ -625,7 +627,7 @@ export default function MatchupPage() {
         segment={filters.segment}
         onMonthChange={setCalendarMonth}
         onDateSelect={setSelectedDate}
-        onItemClick={(id) => void openAppointmentDetailsById(id)}
+        onItemClick={(id) => void openAppointmentForEditById(id)}
       />
 
       <div className="matchup-lower-layout">

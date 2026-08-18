@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Button, Input, Modal, Select, Textarea } from '@shared/components/ui';
 import { UserAutocompleteDropdown, type UserAutocompleteOption } from '@shared/components/user-autocomplete-dropdown';
-import { browserTimezone, localDateTimeValue } from '../services/matchup-service';
+import { browserTimezone, formatAppointmentTime, localDateTimeValue } from '../services/matchup-service';
 import { fetchProspectDetails, updateProspectDetails } from '@/features/team/prospect/services/prospect-service';
 import type { Prospect } from '@/features/team/prospect/services/prospect-service';
 import { createTrackerNote } from '@/features/team/services/tracker-notes-service';
@@ -123,6 +123,12 @@ function isAppointmentDetail(appointment: AppointmentFormAppointment): appointme
   return 'types_detail' in appointment;
 }
 
+function displayValue(value: unknown) {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  return String(value).replace(/_/g, ' ');
+}
+
 function formFromAppointment(
   appointment: AppointmentFormAppointment | null | undefined,
   initialValues?: Partial<FormState> | null,
@@ -171,6 +177,10 @@ export function AppointmentFormModal({
 }: AppointmentFormModalProps) {
   const [form, setForm] = useState<FormState>(defaultForm);
   const [error, setError] = useState<string | null>(null);
+
+  // When editing an existing appointment we also surface its read-only history
+  // (assignments, reschedules) and recorded outcome alongside the editable form.
+  const detail = appointment && isAppointmentDetail(appointment) ? appointment : null;
 
   useEffect(() => {
     if (open) {
@@ -486,6 +496,45 @@ export function AppointmentFormModal({
             placeholder="Add an appointment note..."
           />
         </label>
+
+        {detail ? (
+          <div className="matchup-form-history">
+            <section className="matchup-details-section">
+              <h3>Assignment history</h3>
+              {detail.assignments?.length ? detail.assignments.map((entry) => (
+                <article key={entry.id}>
+                  <strong>{entry.trainer_name}</strong>
+                  <span>{displayValue(entry.status)} · {new Date(entry.created_at).toLocaleString()}</span>
+                  {entry.decline_reason ? <p>{entry.decline_reason}</p> : null}
+                </article>
+              )) : <p className="matchup-muted">No assignment history.</p>}
+            </section>
+
+            <section className="matchup-details-section">
+              <h3>Reschedule history</h3>
+              {detail.reschedules?.length ? detail.reschedules.map((entry) => (
+                <article key={entry.id}>
+                  <strong>{formatAppointmentTime(entry.previous_start_at)} → {formatAppointmentTime(entry.new_start_at)}</strong>
+                  <span>{entry.new_timezone} · {entry.new_duration_minutes} minutes</span>
+                  {entry.reason ? <p>{entry.reason}</p> : null}
+                </article>
+              )) : <p className="matchup-muted">No reschedule history.</p>}
+            </section>
+
+            {detail.result ? (
+              <section className="matchup-details-section">
+                <h3>Outcome</h3>
+                <div className="matchup-result-grid">
+                  {Object.entries(detail.result)
+                    .filter(([key]) => !['submitted_by', 'created_at', 'updated_at'].includes(key))
+                    .map(([key, resultValue]) => (
+                      <div key={key}><small>{key.replace(/_/g, ' ')}</small><strong>{displayValue(resultValue)}</strong></div>
+                    ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="matchup-form-actions">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

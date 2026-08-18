@@ -1241,6 +1241,8 @@
 .matchup-details-link button:hover { background:rgba(59,130,246,.25); color:#0ea5e9; }
 .dark .matchup-details-link button { color:#93c5fd; }
 .dark .matchup-details-link button:hover { background:rgba(59,130,246,.3); color:#dbeafe; }
+.matchup-form-history { margin-top:8px; padding-top:16px; border-top:1px solid rgba(148,163,184,.25); display:grid; gap:4px; }
+.matchup-form-history > .matchup-details-section:first-child { margin-top:0; }
 .matchup-details-section { margin-top:14px; padding:14px; border:1px solid rgba(148,163,184,.2); border-radius:12px; }
 .matchup-details-section h3 { margin:0 0 10px; font-size:.95rem; }
 .matchup-details-section article { display:flex; flex-direction:column; gap:2px; padding:9px 0; border-bottom:1px solid rgba(148,163,184,.15); }
