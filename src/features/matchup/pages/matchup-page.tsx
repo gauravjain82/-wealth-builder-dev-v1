@@ -185,7 +185,7 @@ export default function MatchupPage() {
       types: typeSlug,
       search,
       pageSize: 50,
-      segment: teamScope === 'baseshop' ? undefined : teamScope.toUpperCase(),
+      segment: teamScope.toUpperCase(),
     }),
     [kind, preset, search, status, typeSlug, teamScope],
   );
