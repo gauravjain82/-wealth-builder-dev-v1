@@ -141,6 +141,11 @@ export function AppointmentList({
           </div>
           <small>{item.timezone}</small>
           <span className="matchup-row-status" style={{ color }}>{statusLabel(item, statuses)}</span>
+          {item.created_by_name ? (
+            <small className="matchup-row-created-by" title={`Created by ${item.created_by_name}`}>
+              by {item.created_by_name}
+            </small>
+          ) : null}
         </td>
         <td>
           <span className={`matchup-kind-badge ${item.kind === 'REQUEST_TRAINER' ? 'is-request-trainer' : 'is-personal'}`}>
