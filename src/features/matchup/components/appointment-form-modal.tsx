@@ -396,11 +396,9 @@ export function AppointmentFormModal({
           <p>{selectedTypeText}</p>
           <div className="matchup-checkbox-grid">
             {appointmentTypes.map((type) => (
-              <div key={type.id} className="matchup-check-item">
-                <label className="matchup-check">
-                  <input type="checkbox" checked={form.types.includes(type.id)} onChange={() => toggleType(type.id)} />
-                  <span>{type.name}</span>
-                </label>
+              <label key={type.id} className="matchup-check">
+                <input type="checkbox" checked={form.types.includes(type.id)} onChange={() => toggleType(type.id)} />
+                <span>{type.name}</span>
                 {type.description ? (
                   <>
                     <button
@@ -410,6 +408,7 @@ export function AppointmentFormModal({
                       aria-expanded={openInfoId === type.id}
                       onClick={(event) => {
                         event.preventDefault();
+                        event.stopPropagation();
                         setOpenInfoId((current) => (current === type.id ? null : type.id));
                       }}
                     >
@@ -422,7 +421,7 @@ export function AppointmentFormModal({
                     ) : null}
                   </>
                 ) : null}
-              </div>
+              </label>
             ))}
           </div>
         </fieldset>
