@@ -11,6 +11,7 @@ interface CompleteAppointmentModalProps {
   onAddToRecruitTracker?: (appointment: AppointmentListItem) => void;
   onCreateFollowUpAppointment?: (appointment: AppointmentListItem) => void;
   onAddToProduction?: (appointment: AppointmentListItem) => void;
+  onRescheduleAppointment?: (appointment: AppointmentListItem) => void;
 }
 
 interface CompleteForm {
@@ -59,6 +60,7 @@ export function CompleteAppointmentModal({
   onAddToRecruitTracker,
   onCreateFollowUpAppointment,
   onAddToProduction,
+  onRescheduleAppointment,
 }: CompleteAppointmentModalProps) {
   const [form, setForm] = useState(initialForm);
   const [hasReferrals, setHasReferrals] = useState<TriState>(null);
@@ -139,6 +141,12 @@ export function CompleteAppointmentModal({
           onChange={updateAppointmentHappened}
           required
         />
+        {form.appointment_happened === false ? (
+          <ActionPrompt
+            actionText="reschedule the appointment"
+            onClick={appointment && onRescheduleAppointment ? () => onRescheduleAppointment(appointment) : undefined}
+          />
+        ) : null}
         {form.appointment_happened ? (
           <>
         <BooleanQuestion

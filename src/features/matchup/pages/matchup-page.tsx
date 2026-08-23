@@ -480,6 +480,11 @@ export default function MatchupPage() {
     setFormOpen(true);
   };
 
+  const openRescheduleAppointment = (appointment: AppointmentListItem) => {
+    setCompleteTarget(null);
+    void openAppointmentForEditById(appointment.id);
+  };
+
   const openProductionModal = (appointment: AppointmentListItem) => {
     const prospect = prospectFromAppointment(appointment);
     if (!prospect) {
@@ -750,6 +755,7 @@ export default function MatchupPage() {
         onAddToRecruitTracker={openRecruitTrackerModal}
         onCreateFollowUpAppointment={openFollowUpAppointmentModal}
         onAddToProduction={openProductionModal}
+        onRescheduleAppointment={openRescheduleAppointment}
       />
       <AppointmentFormModal
         open={formOpen}
