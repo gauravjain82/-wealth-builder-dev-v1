@@ -429,15 +429,29 @@ export function AppointmentFormModal({
         <div className="matchup-form-grid">
           <label>
             <span>Contact</span>
-            <UserAutocompleteDropdown
-              selectedId={form.contact}
-              selectedLabel={form.contactLabel}
-              placeholder="Search contacts"
-              fetchFromApi
-              includeUncoded
-              onSelect={(option) => handleUserSelect('contact', option)}
-              onNoResultsAction={onAddProspect}
-            />
+            <div className="matchup-contact-row">
+              <div className="matchup-contact-search">
+                <UserAutocompleteDropdown
+                  selectedId={form.contact}
+                  selectedLabel={form.contactLabel}
+                  placeholder="Search contacts"
+                  fetchFromApi
+                  includeUncoded
+                  onSelect={(option) => handleUserSelect('contact', option)}
+                  onNoResultsAction={onAddProspect}
+                />
+              </div>
+              {onAddProspect ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="matchup-contact-add"
+                  onClick={() => onAddProspect('')}
+                >
+                  + New
+                </Button>
+              ) : null}
+            </div>
           </label>
           {form.kind === 'REQUEST_TRAINER' ? (
             <>

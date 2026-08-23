@@ -987,6 +987,22 @@
   gap: 12px;
 }
 
+.matchup-contact-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.matchup-contact-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.matchup-contact-add {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .matchup-form label,
 .matchup-fieldset {
   display: grid;
