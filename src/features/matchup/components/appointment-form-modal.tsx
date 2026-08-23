@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { Info } from 'lucide-react';
 import { Button, Input, Modal, Select, Textarea } from '@shared/components/ui';
 import { UserAutocompleteDropdown, type UserAutocompleteOption } from '@shared/components/user-autocomplete-dropdown';
 import { browserTimezone, formatAppointmentTime, localDateTimeValue } from '../services/matchup-service';
@@ -239,6 +240,27 @@ export function AppointmentFormModal({
     }));
   };
 
+  const [openInfoId, setOpenInfoId] = useState<number | null>(null);
+  const typesFieldsetRef = useRef<HTMLFieldSetElement>(null);
+
+  useEffect(() => {
+    if (openInfoId === null) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!typesFieldsetRef.current?.contains(event.target as Node)) {
+        setOpenInfoId(null);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenInfoId(null);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openInfoId]);
+
   const handleUserSelect = (field: 'contact' | 'trainee', option: UserAutocompleteOption) => {
     setForm((prev) =>
       field === 'contact'
@@ -369,15 +391,38 @@ export function AppointmentFormModal({
           </label>
         </div>
 
-        <fieldset className="matchup-fieldset">
+        <fieldset className="matchup-fieldset" ref={typesFieldsetRef}>
           <legend>Types</legend>
           <p>{selectedTypeText}</p>
           <div className="matchup-checkbox-grid">
             {appointmentTypes.map((type) => (
-              <label key={type.id} className="matchup-check">
-                <input type="checkbox" checked={form.types.includes(type.id)} onChange={() => toggleType(type.id)} />
-                <span>{type.name}</span>
-              </label>
+              <div key={type.id} className="matchup-check-item">
+                <label className="matchup-check">
+                  <input type="checkbox" checked={form.types.includes(type.id)} onChange={() => toggleType(type.id)} />
+                  <span>{type.name}</span>
+                </label>
+                {type.description ? (
+                  <>
+                    <button
+                      type="button"
+                      className="matchup-type-info"
+                      aria-label={`Show details for ${type.name}`}
+                      aria-expanded={openInfoId === type.id}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setOpenInfoId((current) => (current === type.id ? null : type.id));
+                      }}
+                    >
+                      <Info size={15} aria-hidden="true" />
+                    </button>
+                    {openInfoId === type.id ? (
+                      <div className="matchup-type-info-popover" role="tooltip">
+                        {type.description}
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
             ))}
           </div>
         </fieldset>

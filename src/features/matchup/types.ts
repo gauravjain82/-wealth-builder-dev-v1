@@ -29,6 +29,7 @@ export interface AppointmentType {
   name: string;
   slug: string;
   color?: string;
+  description?: string;
   sort_order?: number;
   is_active?: boolean;
 }
