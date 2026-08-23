@@ -189,12 +189,19 @@ export function AppointmentFormModal({
       setForm(nextForm);
       setError(null);
       if (nextForm.contact) {
-        void fetchProspectDetails(nextForm.contact)
+        const contactId = nextForm.contact;
+        void fetchProspectDetails(contactId)
           .then((contact) => {
-            setForm((prev) => ({
-              ...prev,
-              contact_profile_flags: { ...(contact.profile?.flags || {}) },
-            }));
+            setForm((prev) => {
+              if (prev.contact !== contactId) return prev;
+              const resolvedName = contact.full_name || `${contact.first_name} ${contact.last_name}`.trim();
+              return {
+                ...prev,
+                contactLabel: prev.contactLabel || resolvedName,
+                contact_phone: prev.contact_phone || contact.phone || contact.profile?.phone || '',
+                contact_profile_flags: { ...(contact.profile?.flags || {}) },
+              };
+            });
           })
           .catch(() => undefined);
       }
