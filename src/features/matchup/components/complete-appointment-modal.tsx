@@ -168,7 +168,7 @@ export function CompleteAppointmentModal({
           onChange={(value) => updateBoolean('second_appointment_scheduled', value)}
           required
         />
-        {form.second_appointment_scheduled === true ? (
+        {form.second_appointment_scheduled === false ? (
           <ActionPrompt
             actionText="create a follow-up appointment"
             onClick={appointment && onCreateFollowUpAppointment ? () => onCreateFollowUpAppointment(appointment) : undefined}
