@@ -125,10 +125,16 @@ export function AddProspectModal({
       : 'default';
 
     if (!lastOpenRef.current || lastInitialKeyRef.current !== initialKey) {
+      const defaultRecruiter = getDefaultRecruiter();
       if (initialForm) {
-        setForm(initialForm);
+        // Auto-populate the recruiter with the current user unless the caller
+        // already provided one.
+        setForm({
+          ...initialForm,
+          recruiter: initialForm.recruiterId != null ? initialForm.recruiter : defaultRecruiter.recruiter,
+          recruiterId: initialForm.recruiterId != null ? initialForm.recruiterId : defaultRecruiter.recruiterId,
+        });
       } else {
-        const defaultRecruiter = getDefaultRecruiter();
         setForm({
           ...defaultAddProspectForm,
           recruiter: defaultRecruiter.recruiter,
