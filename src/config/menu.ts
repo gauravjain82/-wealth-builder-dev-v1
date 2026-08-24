@@ -76,6 +76,8 @@ const MENU_ITEMS = {
   ONBOARDING_VIDEO_MANAGER: { label: 'Onboarding Video Manager', icon: '🎥', path: '/admin/onboarding-videos' } as MenuItem,
   UPGRADE_REQUESTS: { label: 'Upgrade Requests', icon: '⬆️', path: '/admin/upgrade-requests' } as MenuItem,
   HELPDESK_ADMIN: { label: 'Helpdesk', icon: '🆘', path: '/admin/helpdesk' } as MenuItem,
+  FUNCTIONS: { label: 'Functions', icon: '🧩', path: '/admin/functions' } as MenuItem,
+  USER_PERMISSIONS: { label: 'User Permissions', icon: '🔐', path: '/admin/user-permissions' } as MenuItem,
 };
 
 /**
@@ -347,6 +349,8 @@ export const PLAN_MENUS = {
         MENU_ITEMS.ONBOARDING_VIDEO_MANAGER,
         MENU_ITEMS.UPGRADE_REQUESTS,
         MENU_ITEMS.HELPDESK_ADMIN,
+        MENU_ITEMS.FUNCTIONS,
+        MENU_ITEMS.USER_PERMISSIONS,
       ],
     },
   ] as MenuItem[],
@@ -416,6 +420,8 @@ export const PLAN_MENUS = {
         MENU_ITEMS.ONBOARDING_VIDEO_MANAGER,
         MENU_ITEMS.UPGRADE_REQUESTS,
         MENU_ITEMS.HELPDESK_ADMIN,
+        MENU_ITEMS.FUNCTIONS,
+        MENU_ITEMS.USER_PERMISSIONS,
       ],
     },
   ] as MenuItem[],

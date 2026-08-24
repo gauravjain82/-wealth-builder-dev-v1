@@ -200,11 +200,20 @@ export const matchupService = {
   cancel: (appointmentId: number) =>
     request<AppointmentDetail>(`/api/matchup/appointments/${appointmentId}/cancel/`, { method: 'POST' }),
 
-  trainerSearch: (params: { q?: string; baseOnly?: boolean; start?: string; end?: string }) =>
+  trainerSearch: (params: {
+    q?: string;
+    baseOnly?: boolean;
+    trainersOnly?: boolean;
+    city?: string;
+    start?: string;
+    end?: string;
+  }) =>
     request<TrainerCandidate[]>(
       `/api/matchup/trainer-search/${buildQuery({
         q: params.q,
         base_only: params.baseOnly ? '1' : undefined,
+        trainers_only: params.trainersOnly ? '1' : undefined,
+        city: params.city?.trim() || undefined,
         start: params.start,
         end: params.end,
       })}`,

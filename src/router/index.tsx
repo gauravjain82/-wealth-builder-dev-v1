@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './protected-route';
+import { AdminRoute } from './admin-route';
 import { PublicRoute } from './public-route';
 import { RouteErrorFallback } from './route-error-boundary';
 import { RootRedirect } from './root-redirect.tsx';
@@ -41,6 +42,8 @@ const CalendarPage = lazy(() => import('@/features/matchup/pages/calendar-page')
 const HelpNeededPage = lazy(() => import('@/features/helpdesk/pages/help-needed-page'));
 const AdminHelpdeskPage = lazy(() => import('@/features/helpdesk/pages/admin-helpdesk-page'));
 const InviteAgentsPage = lazy(() => import('@/features/admin/invite-agents/pages/invite-agents-page'));
+const FunctionsPage = lazy(() => import('@/features/admin/access-control/pages/functions-page'));
+const UserPermissionsPage = lazy(() => import('@/features/admin/access-control/pages/user-permissions-page'));
 import { AdminMissionRingProofPage } from '@/features/admin/mission-ring-proof';
 const TerminatedUsersPage = lazy(() => import('@/features/terminated-users/pages/terminated-users-page'));
 const PromotionDashboardPage = lazy(() => import('@/features/promotion/pages/promotion-dashboard-page'));
@@ -270,6 +273,14 @@ const router = createBrowserRouter([
       {
         path: 'admin/mission-ring-proof',
         element: lazyLoad(AdminMissionRingProofPage),
+      },
+      {
+        path: 'admin/functions',
+        element: <AdminRoute>{lazyLoad(FunctionsPage)}</AdminRoute>,
+      },
+      {
+        path: 'admin/user-permissions',
+        element: <AdminRoute>{lazyLoad(UserPermissionsPage)}</AdminRoute>,
       },
       {
         path: 'terminated-users',

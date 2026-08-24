@@ -1181,6 +1181,35 @@
   align-items: center;
 }
 
+.matchup-assign-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.matchup-search-input--grow {
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+
+.matchup-search-input--city {
+  flex: 0 1 150px;
+  min-width: 120px;
+}
+
+.matchup-filter-toggles {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.matchup-filter-toggles .matchup-inline-check {
+  white-space: nowrap;
+}
+
 .matchup-search-input {
   position: relative;
 }

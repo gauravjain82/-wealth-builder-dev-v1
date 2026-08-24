@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search } from 'lucide-react';
+import { MapPin, Search } from 'lucide-react';
 import { Button, Input, Modal } from '@shared/components/ui';
 import { formatAppointmentTime, matchupService } from '../services/matchup-service';
 import type { AppointmentListItem, TrainerCandidate } from '../types';
@@ -20,7 +20,9 @@ export function AssignTrainerModal({
   onAssign,
 }: AssignTrainerModalProps) {
   const [query, setQuery] = useState('');
+  const [city, setCity] = useState('');
   const [baseOnly, setBaseOnly] = useState(true);
+  const [trainersOnly, setTrainersOnly] = useState(false);
   const [candidates, setCandidates] = useState<TrainerCandidate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +30,8 @@ export function AssignTrainerModal({
   useEffect(() => {
     if (!open) {
       setQuery('');
+      setCity('');
+      setTrainersOnly(false);
       setCandidates([]);
       setError(null);
     }
@@ -42,6 +46,8 @@ export function AssignTrainerModal({
         const data = await matchupService.trainerSearch({
           q: query,
           baseOnly,
+          trainersOnly,
+          city,
           start: appointment.start_at,
           end: appointment.end_at,
         });
@@ -54,7 +60,7 @@ export function AssignTrainerModal({
     }, 250);
 
     return () => window.clearTimeout(handle);
-  }, [appointment, baseOnly, open, query]);
+  }, [appointment, baseOnly, trainersOnly, city, open, query]);
 
   return (
     <Modal open={open} title="Assign Trainer" onClose={onClose} contentClassName="matchup-modal-content">
@@ -66,15 +72,25 @@ export function AssignTrainerModal({
           </div>
         ) : null}
 
-        <div className="matchup-search-row">
-          <div className="matchup-search-input">
+        <div className="matchup-assign-filters">
+          <div className="matchup-search-input matchup-search-input--grow">
             <Search size={16} />
-            <Input variant="surface" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name or agency code" />
+            <Input variant="surface" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, agency code, or mobile" />
           </div>
-          <label className="matchup-inline-check">
-            <input type="checkbox" checked={baseOnly} onChange={(event) => setBaseOnly(event.target.checked)} />
-            <span>Base Only</span>
-          </label>
+          <div className="matchup-search-input matchup-search-input--city">
+            <MapPin size={16} />
+            <Input variant="surface" value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" />
+          </div>
+          <div className="matchup-filter-toggles">
+            <label className="matchup-inline-check">
+              <input type="checkbox" checked={baseOnly} onChange={(event) => setBaseOnly(event.target.checked)} />
+              <span>Base Only</span>
+            </label>
+            <label className="matchup-inline-check">
+              <input type="checkbox" checked={trainersOnly} onChange={(event) => setTrainersOnly(event.target.checked)} />
+              <span>Trainers Only</span>
+            </label>
+          </div>
         </div>
 
         {error ? <div className="matchup-form-error">{error}</div> : null}
