@@ -22,6 +22,8 @@ export interface MatchupActionRequiredResponse {
   assign?: AppointmentListItem[];
   accept?: AppointmentListItem[];
   complete?: AppointmentListItem[];
+  can_view?: boolean;
+  can_take_action?: boolean;
 }
 
 export interface AppointmentType {

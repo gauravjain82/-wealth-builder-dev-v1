@@ -195,6 +195,7 @@ export default function MatchupPage() {
     appointments,
     calendarItems,
     actionRequired,
+    canTakeAction,
     appointmentTypes,
     statuses,
     presets,
@@ -687,6 +688,7 @@ export default function MatchupPage() {
           <ActionRequiredPanel
             items={actionRequired}
             statuses={statuses}
+            canTakeAction={canTakeAction}
             onAssign={setAssignTarget}
             onAccept={(item) => void acceptAppointment(item)}
             onDecline={(item) => void declineAppointment(item)}

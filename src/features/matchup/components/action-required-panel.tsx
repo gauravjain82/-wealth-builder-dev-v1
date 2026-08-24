@@ -7,6 +7,7 @@ import { StatusBadge } from './status-badge';
 interface ActionRequiredPanelProps {
   items: AppointmentListItem[];
   statuses: MatchupStatusMeta[];
+  canTakeAction?: boolean;
   onAssign: (item: AppointmentListItem) => void;
   onAccept: (item: AppointmentListItem) => void;
   onDecline: (item: AppointmentListItem) => void;
@@ -17,6 +18,7 @@ interface ActionRequiredPanelProps {
 export function ActionRequiredPanel({
   items,
   statuses,
+  canTakeAction = false,
   onAssign,
   onAccept,
   onDecline,
@@ -49,19 +51,21 @@ export function ActionRequiredPanel({
                 <Button variant="outline" size="sm" onClick={() => onView(item)} title="View appointment" aria-label="View appointment">
                   <Eye size={15} /> View
                 </Button>
-                {item.status === 'REQUESTED' ? (
-                  <Button variant="default" size="sm" onClick={() => onAssign(item)} disabled={busy}>
-                    <UserPlus size={12} /> Assign
-                  </Button>
-                ) : (
-                  <>
-                  <Button variant="default" size="sm" onClick={() => onAccept(item)} disabled={busy}>
-                    <Check size={12} /> Accept
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => onDecline(item)} disabled={busy}>
-                    <X size={12} /> Decline
-                  </Button>
-                  </>
+                {canTakeAction && (
+                  item.status === 'REQUESTED' ? (
+                    <Button variant="default" size="sm" onClick={() => onAssign(item)} disabled={busy}>
+                      <UserPlus size={12} /> Assign
+                    </Button>
+                  ) : (
+                    <>
+                    <Button variant="default" size="sm" onClick={() => onAccept(item)} disabled={busy}>
+                      <Check size={12} /> Accept
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => onDecline(item)} disabled={busy}>
+                      <X size={12} /> Decline
+                    </Button>
+                    </>
+                  )
                 )}
               </div>
             </article>

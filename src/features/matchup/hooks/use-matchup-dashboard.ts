@@ -40,6 +40,7 @@ export function useMatchupDashboard(
   });
   const [calendarItems, setCalendarItems] = useState<CalendarAppointment[]>([]);
   const [actionRequired, setActionRequired] = useState<AppointmentListItem[]>([]);
+  const [canTakeAction, setCanTakeAction] = useState(false);
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
   const [statuses, setStatuses] = useState<MatchupStatusMeta[]>([]);
   const [presets, setPresets] = useState<string[]>(['all']);
@@ -81,6 +82,7 @@ export function useMatchupDashboard(
             new Date(b.start_at).getTime() - new Date(a.start_at).getTime(),
         ),
       );
+      setCanTakeAction(actionData.can_take_action ?? false);
       setGoogleStatus(googleData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load matchup data');
@@ -118,6 +120,7 @@ export function useMatchupDashboard(
     appointments,
     calendarItems,
     actionRequired,
+    canTakeAction,
     appointmentTypes,
     statuses,
     presets,
