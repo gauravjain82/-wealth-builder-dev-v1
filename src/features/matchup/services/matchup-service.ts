@@ -202,7 +202,7 @@ export const matchupService = {
 
   trainerSearch: (params: {
     q?: string;
-    baseOnly?: boolean;
+    segment?: string;
     trainersOnly?: boolean;
     city?: string;
     start?: string;
@@ -211,7 +211,7 @@ export const matchupService = {
     request<TrainerCandidate[]>(
       `/api/matchup/trainer-search/${buildQuery({
         q: params.q,
-        base_only: params.baseOnly ? '1' : undefined,
+        segment: params.segment || undefined,
         trainers_only: params.trainersOnly ? '1' : undefined,
         city: params.city?.trim() || undefined,
         start: params.start,

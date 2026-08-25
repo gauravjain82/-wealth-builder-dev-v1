@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react';
 import { MapPin, Search } from 'lucide-react';
-import { Button, Input, Modal } from '@shared/components/ui';
+import { Button, Input, Modal, Select } from '@shared/components/ui';
 import { formatAppointmentTime, matchupService } from '../services/matchup-service';
 import type { AppointmentListItem, TrainerCandidate } from '../types';
+
+type SegmentScope = 'BASESHOP' | 'SUPERBASE' | 'SUPERTEAM';
+
+const SEGMENT_OPTIONS: Array<{ value: SegmentScope; label: string }> = [
+  { value: 'BASESHOP', label: 'BaseShop' },
+  { value: 'SUPERBASE', label: 'SuperBase' },
+  { value: 'SUPERTEAM', label: 'SuperTeam' },
+];
 
 interface AssignTrainerModalProps {
   open: boolean;
@@ -21,7 +29,7 @@ export function AssignTrainerModal({
 }: AssignTrainerModalProps) {
   const [query, setQuery] = useState('');
   const [city, setCity] = useState('');
-  const [baseOnly, setBaseOnly] = useState(true);
+  const [segment, setSegment] = useState<SegmentScope>('BASESHOP');
   const [trainersOnly, setTrainersOnly] = useState(false);
   const [candidates, setCandidates] = useState<TrainerCandidate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -31,6 +39,7 @@ export function AssignTrainerModal({
     if (!open) {
       setQuery('');
       setCity('');
+      setSegment('BASESHOP');
       setTrainersOnly(false);
       setCandidates([]);
       setError(null);
@@ -45,7 +54,7 @@ export function AssignTrainerModal({
       try {
         const data = await matchupService.trainerSearch({
           q: query,
-          baseOnly,
+          segment,
           trainersOnly,
           city,
           start: appointment.start_at,
@@ -60,7 +69,7 @@ export function AssignTrainerModal({
     }, 250);
 
     return () => window.clearTimeout(handle);
-  }, [appointment, baseOnly, trainersOnly, city, open, query]);
+  }, [appointment, segment, trainersOnly, city, open, query]);
 
   return (
     <Modal open={open} title="Assign Trainer" onClose={onClose} contentClassName="matchup-modal-content">
@@ -82,10 +91,16 @@ export function AssignTrainerModal({
             <Input variant="surface" value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" />
           </div>
           <div className="matchup-filter-toggles">
-            <label className="matchup-inline-check">
-              <input type="checkbox" checked={baseOnly} onChange={(event) => setBaseOnly(event.target.checked)} />
-              <span>Base Only</span>
-            </label>
+            <Select
+              variant="surface"
+              value={segment}
+              onChange={(event) => setSegment(event.target.value as SegmentScope)}
+              aria-label="Segment scope"
+            >
+              {SEGMENT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </Select>
             <label className="matchup-inline-check">
               <input type="checkbox" checked={trainersOnly} onChange={(event) => setTrainersOnly(event.target.checked)} />
               <span>Trainers Only</span>
