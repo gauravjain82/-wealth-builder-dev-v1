@@ -82,6 +82,7 @@ function listQuery(filters: AppointmentFilters = {}) {
     page_size: filters.pageSize,
     start_after: filters.start_after,
     start_before: filters.start_before,
+    ordering: filters.ordering,
     segment: filters.segment,
   });
 }

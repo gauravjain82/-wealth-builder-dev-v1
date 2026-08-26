@@ -322,8 +322,17 @@
 
 .matchup-filter-bar {
   display: grid;
-  grid-template-columns: minmax(180px, 1.4fr) repeat(4, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
+}
+
+.matchup-view-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.matchup-view-toggle > * {
+  flex: 1 1 0;
 }
 
 .matchup-calendar-shell {
@@ -1854,7 +1863,7 @@
 }
 
 .matchup-filter-bar {
-  grid-template-columns: minmax(210px, 1.4fr) repeat(4, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   padding: 8px;
 }
 

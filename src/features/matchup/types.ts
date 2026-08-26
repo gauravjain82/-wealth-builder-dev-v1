@@ -233,6 +233,7 @@ export interface AppointmentFilters {
   pageSize?: number;
   start_after?: string;
   start_before?: string;
+  ordering?: string;
   segment?: string;
 }
 

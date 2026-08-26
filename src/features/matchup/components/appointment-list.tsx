@@ -36,6 +36,10 @@ interface AppointmentListProps {
   items: AppointmentListItem[];
   count: number;
   statuses: MatchupStatusMeta[];
+  /** 'trainer' groups by assigned trainer; 'date' is a flat chronological list. */
+  viewMode?: 'trainer' | 'date';
+  /** Sort direction for the 'date' view: 'asc' = earliest first. */
+  dateSortDir?: 'asc' | 'desc';
   loading?: boolean;
   onOpen: (item: AppointmentListItem) => void;
   onViewDetails: (item: AppointmentListItem) => void;
@@ -58,6 +62,8 @@ export function AppointmentList({
   items,
   count,
   statuses,
+  viewMode = 'trainer',
+  dateSortDir = 'asc',
   loading = false,
   onOpen,
   onViewDetails,
@@ -120,6 +126,14 @@ export function AppointmentList({
       return a.name.localeCompare(b.name);
     });
   }, [items]);
+
+  // Flat chronological list for the "by date" view — direction follows dateSortDir.
+  const dateSorted = useMemo(() => {
+    const factor = dateSortDir === 'desc' ? -1 : 1;
+    return [...items].sort(
+      (a, b) => factor * (new Date(a.start_at).getTime() - new Date(b.start_at).getTime()),
+    );
+  }, [items, dateSortDir]);
 
   const toggleGroup = (key: GroupKey) => {
     setCollapsedGroups((current) => {
@@ -297,6 +311,33 @@ export function AppointmentList({
     );
   };
 
+  const renderTable = (rows: AppointmentListItem[]) => (
+    <div className="matchup-table-wrap">
+      <table className="matchup-table">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Kind</th>
+            <th>Contact</th>
+            <th>Trainee</th>
+            <th>Trainer</th>
+            <th>Types</th>
+            <th>Location</th>
+            <th>Notes</th>
+            <th aria-label="Actions" />
+          </tr>
+        </thead>
+        <tbody>{rows.map(renderRow)}</tbody>
+      </table>
+    </div>
+  );
+
+  const loadMoreFooter = hasMore ? (
+    <div ref={loadMoreRef} className="matchup-muted" style={{ padding: '0.75rem', textAlign: 'center' }}>
+      {loadingMore ? 'Loading more appointments...' : 'Scroll to load more'}
+    </div>
+  ) : null;
+
   return (
     <section className="matchup-panel matchup-list-panel">
       <div className="matchup-panel-header">
@@ -313,6 +354,11 @@ export function AppointmentList({
         <p className="matchup-muted">Loading appointments...</p>
       ) : items.length === 0 ? (
         <p className="matchup-muted">No appointments match the current filters.</p>
+      ) : viewMode === 'date' ? (
+        <div className="matchup-trainer-groups">
+          {renderTable(dateSorted)}
+          {loadMoreFooter}
+        </div>
       ) : (
         <div className="matchup-trainer-groups">
           {groups.map((group) => {
@@ -331,34 +377,11 @@ export function AppointmentList({
                   {group.leaderName ? <span className="matchup-trainer-leader">under {group.leaderName}</span> : null}
                   <span className="matchup-trainer-count">{group.items.length}</span>
                 </button>
-                {collapsed ? null : (
-                  <div className="matchup-table-wrap">
-                    <table className="matchup-table">
-                      <thead>
-                        <tr>
-                          <th>When</th>
-                          <th>Kind</th>
-                          <th>Contact</th>
-                          <th>Trainee</th>
-                          <th>Trainer</th>
-                          <th>Types</th>
-                          <th>Location</th>
-                          <th>Notes</th>
-                          <th aria-label="Actions" />
-                        </tr>
-                      </thead>
-                      <tbody>{group.items.map(renderRow)}</tbody>
-                    </table>
-                  </div>
-                )}
+                {collapsed ? null : renderTable(group.items)}
               </div>
             );
           })}
-          {hasMore ? (
-            <div ref={loadMoreRef} className="matchup-muted" style={{ padding: '0.75rem', textAlign: 'center' }}>
-              {loadingMore ? 'Loading more appointments...' : 'Scroll to load more'}
-            </div>
-          ) : null}
+          {loadMoreFooter}
         </div>
       )}
     </section>

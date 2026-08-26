@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { CalendarCheck, Plus } from 'lucide-react';
 import { useToastStore } from '@/store';
 import { Button, Input, Select } from '@shared/components/ui';
+import { TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange } from '@/shared/components';
 import { AddAgencyCodeModal } from '@/features/team/prospect/components/add-agency-code-modal';
 import { AddProductionModal, type AddProductionFormData } from '@/features/team/prospect/components/add-production-modal';
 import { AddProspectModal } from '@/features/team/prospect/components/add-prospect-modal';
@@ -142,6 +143,14 @@ export default function MatchupPage() {
   const [kind, setKind] = useState<AppointmentKind | ''>('');
   const [typeSlug, setTypeSlug] = useState('');
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'trainer' | 'date'>('trainer');
+  const [dateSortDir, setDateSortDir] = useState<'asc' | 'desc'>('asc');
+  const [dateRangePreset, setDateRangePreset] = useState<DatePresetKey>('all');
+  const [dateRange, setDateRange] = useState<{ startDate: string; endDate: string }>({ startDate: '', endDate: '' });
+  const handleDateRangeChange = useCallback((value: TrackerDateRangeChange) => {
+    setDateRangePreset(value.preset);
+    setDateRange({ startDate: value.startDate, endDate: value.endDate });
+  }, []);
   const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
   // Stable identity: TrackerTeamScopeFilter's scope-loading effect depends on
   // onChange, so an inline handler would re-run it every render (infinite loop).
@@ -186,9 +195,19 @@ export default function MatchupPage() {
       types: typeSlug,
       search,
       pageSize: 50,
+      // Scope by start_at; the range picker yields local calendar days, so we
+      // widen to the full start/end day before converting to ISO.
+      start_after: dateRange.startDate
+        ? new Date(`${dateRange.startDate}T00:00:00`).toISOString()
+        : undefined,
+      start_before: dateRange.endDate
+        ? new Date(`${dateRange.endDate}T23:59:59`).toISOString()
+        : undefined,
+      // Chronological ordering only matters for the flat "by date" list.
+      ordering: viewMode === 'date' ? (dateSortDir === 'desc' ? '-start_at' : 'start_at') : undefined,
       segment: teamScope.toUpperCase(),
     }),
-    [kind, preset, search, status, typeSlug, teamScope],
+    [kind, preset, search, status, typeSlug, teamScope, dateRange.startDate, dateRange.endDate, viewMode, dateSortDir],
   );
 
   const {
@@ -699,6 +718,39 @@ export default function MatchupPage() {
 
         <section className="matchup-content">
           <div className="matchup-filter-bar">
+            <div className="matchup-view-toggle" role="group" aria-label="Appointment view">
+              <Button
+                variant={viewMode === 'trainer' ? 'default' : 'outline'}
+                size="sm"
+                aria-pressed={viewMode === 'trainer'}
+                onClick={() => setViewMode('trainer')}
+              >
+                By Trainer
+              </Button>
+              <Button
+                variant={viewMode === 'date' ? 'default' : 'outline'}
+                size="sm"
+                aria-pressed={viewMode === 'date'}
+                onClick={() => setViewMode('date')}
+              >
+                By Date
+              </Button>
+            </div>
+            <TrackerDateRangeFilter
+              value={dateRangePreset}
+              selectedRange={dateRange}
+              onChange={handleDateRangeChange}
+            />
+            {viewMode === 'date' ? (
+              <Select
+                aria-label="Sort by date"
+                value={dateSortDir}
+                onChange={(event) => setDateSortDir(event.target.value as 'asc' | 'desc')}
+              >
+                <option value="asc">Date: Asc</option>
+                <option value="desc">Date: Desc</option>
+              </Select>
+            ) : null}
             <Input variant="surface" placeholder="Search contact, trainee, trainer..." value={search} onChange={(event) => setSearch(event.target.value)} />
             <Select value={preset} onChange={(event) => setPreset(event.target.value)}>
               {presets.map((item) => <option key={item} value={item}>{item.replace(/_/g, ' ')}</option>)}
@@ -721,6 +773,8 @@ export default function MatchupPage() {
             items={appointments.results}
             count={appointments.count}
             statuses={statuses}
+            viewMode={viewMode}
+            dateSortDir={dateSortDir}
             loading={loading}
             onOpen={(item) => void openAppointmentForEdit(item)}
             onViewDetails={(item) => void openAppointmentDetails(item)}
