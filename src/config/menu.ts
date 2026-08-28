@@ -37,7 +37,15 @@ const MENU_ITEMS = {
   FILE_VAULT: { label: 'File Vault', icon: '📁', path: '/file-vault' } as MenuItem,
   HELP_DESK: { label: 'Help Desk', icon: '❓', path: '/helpdesk' } as MenuItem,
   MATCHUP: { label: 'Matchup', icon: '🤝', path: '/matchup' } as MenuItem,
-  
+
+  // BPM (Business Presentation Meetings)
+  BPM_ADD_GUEST: { label: 'Add Guest', icon: '👤', path: '/bpm/add-guest' } as MenuItem,
+  BPM_VIEW_INVITES: { label: 'View Invites', icon: '📬', path: '/bpm/view-invites' } as MenuItem,
+  BPM_ASSOCIATE_CHECKIN: { label: 'Associate Check-In', icon: '✅', path: '/bpm/associate-checkin' } as MenuItem,
+  BPM_GUEST_CHECKIN: { label: 'Guest Check-In', icon: '✔️', path: '/bpm/guest-checkin' } as MenuItem,
+  BPM_SCHEDULE: { label: 'BPM Schedule', icon: '📅', path: '/bpm/schedule' } as MenuItem,
+
+
   // Licensing items
   TRACK_LICENSE: { label: 'Track My License', icon: '📋', path: '/licensing/track' } as MenuItem,
   LICENSING_DOCS: { label: 'Licensing Documents', icon: '📄', path: '/licensing/documents' } as MenuItem,
@@ -107,6 +115,17 @@ export const PLAN_MENUS = {
       ],
     },
     MENU_ITEMS.MATCHUP,
+    {
+      label: 'BPM',
+      icon: '📊',
+      children: [
+        MENU_ITEMS.BPM_ADD_GUEST,
+        MENU_ITEMS.BPM_VIEW_INVITES,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
+        MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_SCHEDULE,
+      ],
+    },
     MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.FILE_VAULT,
@@ -138,6 +157,17 @@ export const PLAN_MENUS = {
       ],
     },
     MENU_ITEMS.MATCHUP,
+    {
+      label: 'BPM',
+      icon: '📊',
+      children: [
+        MENU_ITEMS.BPM_ADD_GUEST,
+        MENU_ITEMS.BPM_VIEW_INVITES,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
+        MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_SCHEDULE,
+      ],
+    },
     MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.CALENDAR,
@@ -175,6 +205,17 @@ export const PLAN_MENUS = {
       ],
     },
     MENU_ITEMS.MATCHUP,
+    {
+      label: 'BPM',
+      icon: '📊',
+      children: [
+        MENU_ITEMS.BPM_ADD_GUEST,
+        MENU_ITEMS.BPM_VIEW_INVITES,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
+        MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_SCHEDULE,
+      ],
+    },
     MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.CALENDAR,
@@ -213,6 +254,17 @@ export const PLAN_MENUS = {
       ],
     },
     MENU_ITEMS.MATCHUP,
+    {
+      label: 'BPM',
+      icon: '📊',
+      children: [
+        MENU_ITEMS.BPM_ADD_GUEST,
+        MENU_ITEMS.BPM_VIEW_INVITES,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
+        MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_SCHEDULE,
+      ],
+    },
     {
       label: 'Big Event',
       icon: '🎪',
@@ -265,6 +317,17 @@ export const PLAN_MENUS = {
     },
     MENU_ITEMS.MATCHUP,
     {
+      label: 'BPM',
+      icon: '📊',
+      children: [
+        MENU_ITEMS.BPM_ADD_GUEST,
+        MENU_ITEMS.BPM_VIEW_INVITES,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
+        MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_SCHEDULE,
+      ],
+    },
+    {
       label: 'Big Event',
       icon: '🎪',
       children: [
@@ -314,6 +377,17 @@ export const PLAN_MENUS = {
       ],
     },
     MENU_ITEMS.MATCHUP,
+    {
+      label: 'BPM',
+      icon: '📊',
+      children: [
+        MENU_ITEMS.BPM_ADD_GUEST,
+        MENU_ITEMS.BPM_VIEW_INVITES,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
+        MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_SCHEDULE,
+      ],
+    },
     {
       label: 'Big Event',
       icon: '🎪',
@@ -385,6 +459,17 @@ export const PLAN_MENUS = {
       ],
     },
     MENU_ITEMS.MATCHUP,
+    {
+      label: 'BPM',
+      icon: '📊',
+      children: [
+        MENU_ITEMS.BPM_ADD_GUEST,
+        MENU_ITEMS.BPM_VIEW_INVITES,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
+        MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_SCHEDULE,
+      ],
+    },
     {
       label: 'Big Event',
       icon: '🎪',

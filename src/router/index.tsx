@@ -39,6 +39,11 @@ const TrainingCenterPage = lazy(() => import('@/features/training-center/pages/t
 const TrainingSchedulePage = lazy(() => import('@/features/training-schedule/pages/training-schedule-page'));
 const MatchupPage = lazy(() => import('@/features/matchup/pages/matchup-page'));
 const CalendarPage = lazy(() => import('@/features/matchup/pages/calendar-page'));
+const BpmSchedulePage = lazy(() => import('@/features/bpm/pages/bpm-schedule-page'));
+const BpmAddGuestPage = lazy(() => import('@/features/bpm/pages/add-guest-page'));
+const BpmViewInvitesPage = lazy(() => import('@/features/bpm/pages/view-invites-page'));
+const BpmGuestCheckinPage = lazy(() => import('@/features/bpm/pages/guest-checkin-page'));
+const BpmAssociateCheckinPage = lazy(() => import('@/features/bpm/pages/associate-checkin-page'));
 const HelpNeededPage = lazy(() => import('@/features/helpdesk/pages/help-needed-page'));
 const AdminHelpdeskPage = lazy(() => import('@/features/helpdesk/pages/admin-helpdesk-page'));
 const InviteAgentsPage = lazy(() => import('@/features/admin/invite-agents/pages/invite-agents-page'));
@@ -229,6 +234,30 @@ const router = createBrowserRouter([
       {
         path: 'calendar',
         element: lazyLoad(CalendarPage),
+      },
+      {
+        path: 'bpm',
+        element: <Navigate to="/bpm/schedule" replace />,
+      },
+      {
+        path: 'bpm/schedule',
+        element: lazyLoad(BpmSchedulePage),
+      },
+      {
+        path: 'bpm/add-guest',
+        element: lazyLoad(BpmAddGuestPage),
+      },
+      {
+        path: 'bpm/view-invites',
+        element: lazyLoad(BpmViewInvitesPage),
+      },
+      {
+        path: 'bpm/guest-checkin',
+        element: lazyLoad(BpmGuestCheckinPage),
+      },
+      {
+        path: 'bpm/associate-checkin',
+        element: lazyLoad(BpmAssociateCheckinPage),
       },
       {
         path: 'file-vault',
