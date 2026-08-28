@@ -302,7 +302,7 @@ export default function BpmOverviewPage() {
               aria-pressed={listView === 'occurrences'}
               onClick={() => setListView('occurrences')}
             >
-              Occurrences
+              BPM Events
             </Button>
             <Button
               variant={listView === 'guests' ? 'default' : 'outline'}
@@ -414,7 +414,7 @@ export default function BpmOverviewPage() {
         ) : loading ? (
           <LoadingState />
         ) : upcoming.length === 0 ? (
-          <p className="matchup-muted">No BPM occurrences match these filters.</p>
+          <p className="matchup-muted">No BPM events match these filters.</p>
         ) : (
           <div className="matchup-table-wrap">
             <table className="matchup-table">
