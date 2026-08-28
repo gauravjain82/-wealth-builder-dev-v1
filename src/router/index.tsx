@@ -39,6 +39,7 @@ const TrainingCenterPage = lazy(() => import('@/features/training-center/pages/t
 const TrainingSchedulePage = lazy(() => import('@/features/training-schedule/pages/training-schedule-page'));
 const MatchupPage = lazy(() => import('@/features/matchup/pages/matchup-page'));
 const CalendarPage = lazy(() => import('@/features/matchup/pages/calendar-page'));
+const BpmOverviewPage = lazy(() => import('@/features/bpm/pages/bpm-overview-page'));
 const BpmSchedulePage = lazy(() => import('@/features/bpm/pages/bpm-schedule-page'));
 const BpmAddGuestPage = lazy(() => import('@/features/bpm/pages/add-guest-page'));
 const BpmViewInvitesPage = lazy(() => import('@/features/bpm/pages/view-invites-page'));
@@ -237,7 +238,11 @@ const router = createBrowserRouter([
       },
       {
         path: 'bpm',
-        element: <Navigate to="/bpm/schedule" replace />,
+        element: <Navigate to="/bpm/overview" replace />,
+      },
+      {
+        path: 'bpm/overview',
+        element: lazyLoad(BpmOverviewPage),
       },
       {
         path: 'bpm/schedule',

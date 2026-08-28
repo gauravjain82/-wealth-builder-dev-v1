@@ -39,6 +39,7 @@ const MENU_ITEMS = {
   MATCHUP: { label: 'Matchup', icon: '🤝', path: '/matchup' } as MenuItem,
 
   // BPM (Business Presentation Meetings)
+  BPM_OVERVIEW: { label: 'BPM Overview', icon: '📊', path: '/bpm/overview' } as MenuItem,
   BPM_ADD_GUEST: { label: 'Add Guest', icon: '👤', path: '/bpm/add-guest' } as MenuItem,
   BPM_VIEW_INVITES: { label: 'View Invites', icon: '📬', path: '/bpm/view-invites' } as MenuItem,
   BPM_ASSOCIATE_CHECKIN: { label: 'Associate Check-In', icon: '✅', path: '/bpm/associate-checkin' } as MenuItem,
@@ -119,6 +120,7 @@ export const PLAN_MENUS = {
       label: 'BPM',
       icon: '📊',
       children: [
+        MENU_ITEMS.BPM_OVERVIEW,
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
@@ -161,6 +163,7 @@ export const PLAN_MENUS = {
       label: 'BPM',
       icon: '📊',
       children: [
+        MENU_ITEMS.BPM_OVERVIEW,
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
@@ -209,6 +212,7 @@ export const PLAN_MENUS = {
       label: 'BPM',
       icon: '📊',
       children: [
+        MENU_ITEMS.BPM_OVERVIEW,
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
@@ -258,6 +262,7 @@ export const PLAN_MENUS = {
       label: 'BPM',
       icon: '📊',
       children: [
+        MENU_ITEMS.BPM_OVERVIEW,
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
@@ -320,6 +325,7 @@ export const PLAN_MENUS = {
       label: 'BPM',
       icon: '📊',
       children: [
+        MENU_ITEMS.BPM_OVERVIEW,
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
@@ -381,6 +387,7 @@ export const PLAN_MENUS = {
       label: 'BPM',
       icon: '📊',
       children: [
+        MENU_ITEMS.BPM_OVERVIEW,
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
@@ -463,6 +470,7 @@ export const PLAN_MENUS = {
       label: 'BPM',
       icon: '📊',
       children: [
+        MENU_ITEMS.BPM_OVERVIEW,
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,

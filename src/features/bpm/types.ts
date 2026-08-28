@@ -194,6 +194,20 @@ export interface EventFilters {
   page_size?: number;
 }
 
+export interface GoogleStatus {
+  connected: boolean;
+  google_email?: string | null;
+  calendar_id?: string | null;
+}
+
+export interface BPMCapabilities {
+  can_read: boolean;
+  can_create: boolean;
+  can_update: boolean;
+  can_delete: boolean;
+  can_manage_guests: boolean;
+}
+
 export interface OccurrenceFilters {
   event?: number;
   status?: string;

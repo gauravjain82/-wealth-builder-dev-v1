@@ -6,8 +6,10 @@ import type {
   BPMEventListItem,
   BPMEventPayload,
   BPMGuest,
+  BPMCapabilities,
   BPMOccurrence,
   EventFilters,
+  GoogleStatus,
   OccurrenceFilters,
   Office,
   OfficePayload,
@@ -139,6 +141,8 @@ export const bpmService = {
         page_size: filters.page_size,
       })}`,
     ),
+  // Current user's BPM action permissions, for gating UI controls.
+  capabilities: () => request<BPMCapabilities>('/api/bpm/events/capabilities/'),
   event: (id: number) => request<BPMEventDetail>(`/api/bpm/events/${id}/`),
   createEvent: (payload: BPMEventPayload) =>
     request<BPMEventDetail>('/api/bpm/events/', { method: 'POST', body: JSON.stringify(payload) }),
@@ -218,4 +222,15 @@ export const bpmService = {
     request<AssociateCheckIn[]>(`/api/bpm/occurrences/${occurrenceId}/associate-checkins/`),
   cancelOccurrence: (occurrenceId: number) =>
     request<BPMOccurrence>(`/api/bpm/occurrences/${occurrenceId}/cancel/`, { method: 'POST' }),
+
+  // -- google calendar -----------------------------------------------------
+  // BPM reuses the Match Up OAuth credential store: one Google connection per
+  // user grants both calendars (the Match Up authorization already requests the
+  // calendar.app.created scope the BPM "BPM" calendar needs). So the connect /
+  // status / disconnect flow points at the shared Match Up endpoints.
+  googleStatus: () => request<GoogleStatus>('/api/matchup/google/status/'),
+  startGoogleOAuth: () =>
+    request<{ authorization_url: string }>('/api/matchup/google/oauth/start/'),
+  disconnectGoogle: () =>
+    request<GoogleStatus>('/api/matchup/google/status/', { method: 'DELETE' }),
 };
