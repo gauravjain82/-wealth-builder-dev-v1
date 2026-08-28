@@ -6,7 +6,7 @@ import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { GuestList } from '../components/guest-list';
 import { TransferGuestModal } from '../components/transfer-guest-modal';
 import { bpmService } from '../services/bpm-service';
-import type { BPMGuest, BPMOccurrence, InteractionStatus } from '../types';
+import type { BPMGuest, BPMOccurrence, GuestOutcomeField } from '../types';
 
 export default function ViewInvitesPage() {
   const addToast = useToastStore((state) => state.addToast);
@@ -49,9 +49,9 @@ export default function ViewInvitesPage() {
     }
   };
 
-  const handleInteraction = (guest: BPMGuest, status: InteractionStatus) =>
+  const handleOutcome = (guest: BPMGuest, field: GuestOutcomeField, value: boolean) =>
     runMutation('Outcome saved.', () =>
-      bpmService.setInteraction(guest.occurrence, { guest_id: guest.id, status }).then(() => undefined),
+      bpmService.setGuestFlags(guest.occurrence, { guest_id: guest.id, [field]: value }).then(() => undefined),
     );
 
   const handleRemove = (guest: BPMGuest) =>
@@ -69,7 +69,7 @@ export default function ViewInvitesPage() {
           <GuestList
             guests={guests}
             busy={busy}
-            onSetInteraction={handleInteraction}
+            onSetOutcome={handleOutcome}
             onTransfer={(guest) => setTransferTarget(guest)}
             onRemove={handleRemove}
           />

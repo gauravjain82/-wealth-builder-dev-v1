@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Form, FormActions, FormRow, FormRowGroup, Input, Label, Modal, Select } from '@shared/components';
+import { Button, Form, FormActions, FormRow, FormRowGroup, Input, Label, LocationSelect, Modal, Select } from '@shared/components';
 import { useToastStore } from '@/store';
 import { bpmService } from '../services/bpm-service';
 import type { Office, OfficeType } from '../types';
@@ -29,7 +29,7 @@ const emptyForm: OfficeForm = {
   city: '',
   state: '',
   zip_code: '',
-  country: 'USA',
+  country: 'United States',
   latitude: '',
   longitude: '',
 };
@@ -43,8 +43,8 @@ export function OfficeFormModal({ open, onClose, onCreated }: OfficeFormModalPro
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const submit = async () => {
-    if (!form.city.trim() || !form.state.trim()) {
-      addToast({ type: 'error', message: 'City and state are required.' });
+    if (!form.country.trim() || !form.state.trim() || !form.city.trim()) {
+      addToast({ type: 'error', message: 'Country, state, and city are required.' });
       return;
     }
     setSaving(true);
@@ -97,23 +97,18 @@ export function OfficeFormModal({ open, onClose, onCreated }: OfficeFormModalPro
           <Input variant="surface" value={form.address} onChange={(e) => update('address', e.target.value)} />
         </FormRow>
         <FormRowGroup columns={3}>
-          <FormRow>
-            <Label>City *</Label>
-            <Input variant="surface" value={form.city} onChange={(e) => update('city', e.target.value)} />
-          </FormRow>
-          <FormRow>
-            <Label>State *</Label>
-            <Input variant="surface" value={form.state} onChange={(e) => update('state', e.target.value)} />
-          </FormRow>
-          <FormRow>
-            <Label>ZIP</Label>
-            <Input variant="surface" value={form.zip_code} onChange={(e) => update('zip_code', e.target.value)} />
-          </FormRow>
+          <LocationSelect
+            country={form.country}
+            state={form.state}
+            city={form.city}
+            onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+            onCoordinates={(latitude, longitude) => setForm((prev) => ({ ...prev, latitude, longitude }))}
+          />
         </FormRowGroup>
         <FormRowGroup columns={3}>
           <FormRow>
-            <Label>Country</Label>
-            <Input variant="surface" value={form.country} onChange={(e) => update('country', e.target.value)} />
+            <Label>ZIP</Label>
+            <Input variant="surface" value={form.zip_code} onChange={(e) => update('zip_code', e.target.value)} />
           </FormRow>
           <FormRow>
             <Label>Latitude</Label>

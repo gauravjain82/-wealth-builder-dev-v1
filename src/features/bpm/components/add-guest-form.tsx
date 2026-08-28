@@ -5,12 +5,15 @@ import {
   FormActions,
   FormRow,
   FormRowGroup,
-  Input,
   Label,
   Textarea,
   UserAutocompleteDropdown,
+  type UserAutocompleteOption,
 } from '@shared/components';
 import { useToastStore } from '@/store';
+import { AddProspectModal } from '@/features/team/prospect/components/add-prospect-modal';
+import { createProspect, fetchProspects } from '@/features/team/prospect/services/prospect-service';
+import { defaultAddProspectForm, type AddProspectFormData } from '@/features/team/prospect/types';
 import { bpmService } from '../services/bpm-service';
 import type { BPMOccurrence } from '../types';
 
@@ -20,56 +23,176 @@ interface AddGuestFormProps {
 }
 
 interface GuestForm {
-  guest_name: string;
-  phone: string;
-  email: string;
+  prospectId: number | null;
+  prospectLabel: string;
+  prospectMeta: string;
   inviterId: number | null;
   inviterLabel: string;
-  country: string;
-  state: string;
   notes: string;
 }
 
+/** Resolve the logged-in user to auto-select as the inviter. */
+function getLoggedInUser(): { id: number | null; name: string } {
+  let id: number | null = null;
+  let name = '';
+
+  const rawUser = localStorage.getItem('authUser');
+  if (rawUser) {
+    try {
+      const parsed = JSON.parse(rawUser) as {
+        id?: unknown;
+        name?: string;
+        full_name?: string;
+        first_name?: string;
+        last_name?: string;
+        email?: string;
+      };
+      const parsedId = Number.parseInt(String(parsed?.id ?? ''), 10);
+      if (Number.isFinite(parsedId)) id = parsedId;
+      name =
+        parsed?.name ||
+        parsed?.full_name ||
+        `${parsed?.first_name || ''} ${parsed?.last_name || ''}`.trim() ||
+        parsed?.email ||
+        '';
+    } catch {
+      // Ignore malformed local storage and fall back to wb.* keys.
+    }
+  }
+
+  if (id === null) {
+    const storedId = localStorage.getItem('wb.userId');
+    if (storedId) id = Number(storedId);
+  }
+  if (!name) name = localStorage.getItem('wb.name') || '';
+
+  return { id, name };
+}
+
 function defaultForm(): GuestForm {
-  const storedId = localStorage.getItem('wb.userId');
+  const inviter = getLoggedInUser();
   return {
-    guest_name: '',
-    phone: '',
-    email: '',
-    inviterId: storedId ? Number(storedId) : null,
-    inviterLabel: localStorage.getItem('wb.name') || '',
-    country: 'USA',
-    state: '',
+    prospectId: null,
+    prospectLabel: '',
+    prospectMeta: '',
+    inviterId: inviter.id,
+    inviterLabel: inviter.name,
     notes: '',
   };
+}
+
+/** Split a free-text name into first/last for prefilling the new-prospect form. */
+function splitName(name: string): { firstName: string; lastName: string } {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: '', lastName: '' };
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+}
+
+/** Map the Add Prospect form to the createProspect payload (mirrors the prospect tracker page). */
+function formToCreatePayload(formData: AddProspectFormData) {
+  return {
+    first_name: formData.firstName,
+    last_name: formData.lastName,
+    email: formData.email,
+    phone: formData.phone,
+    recruited_by: formData.recruiterId,
+    leader: formData.leaderId,
+    profile: {
+      state: formData.state || undefined,
+      home_address: formData.homeAddress || undefined,
+      home_address2: formData.homeAddress2.trim(),
+      home_city: formData.homeCity || undefined,
+      home_zip: formData.homeZip || undefined,
+      birthday: formData.birthday || null,
+      gender: formData.gender || undefined,
+      occupation: formData.occupation || undefined,
+      how_known: formData.howKnown || undefined,
+      what_told: formData.whatTold || undefined,
+      relationship: formData.relationship ? Number(formData.relationship) : null,
+      dependent_children: formData.dependentKids,
+      flags: {
+        age25Plus: formData.age25Plus,
+        homeowner: formData.homeowner,
+        solidCareer: formData.solidCareer,
+        income75kPlus: formData.income75kPlus,
+        dissatisfied: formData.dissatisfied,
+        entrepreneurial: formData.entrepreneurial,
+        spanishPreferred: formData.spanishPreferred,
+        married: formData.married,
+        dependentKids: formData.dependentKids,
+        language: formData.language,
+      },
+    },
+    prospect_meta: { outcome: 'Both', mark: 'default', hot: false, top25: false },
+  };
+}
+
+async function searchProspects(search: string): Promise<UserAutocompleteOption[]> {
+  const data = await fetchProspects({ search, pageSize: 10 });
+  return data.results.map((prospect) => {
+    const label =
+      prospect.full_name ||
+      `${prospect.first_name || ''} ${prospect.last_name || ''}`.trim() ||
+      prospect.email ||
+      `Prospect #${prospect.id}`;
+    return {
+      id: prospect.id,
+      label,
+      meta: [prospect.phone, prospect.email].filter(Boolean).join(' | '),
+    };
+  });
 }
 
 export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
   const addToast = useToastStore((state) => state.addToast);
   const [form, setForm] = useState<GuestForm>(defaultForm);
   const [saving, setSaving] = useState(false);
+  const [addProspectOpen, setAddProspectOpen] = useState(false);
+  const [creatingProspect, setCreatingProspect] = useState(false);
+  const [prospectInitialForm, setProspectInitialForm] = useState<AddProspectFormData | null>(null);
 
-  const update = <K extends keyof GuestForm>(key: K, value: GuestForm[K]) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+  const openAddProspect = (typedName: string) => {
+    const { firstName, lastName } = splitName(typedName);
+    setProspectInitialForm({ ...defaultAddProspectForm, firstName, lastName });
+    setAddProspectOpen(true);
+  };
+
+  const handleCreateProspect = async (formData: AddProspectFormData) => {
+    setCreatingProspect(true);
+    try {
+      const created = await createProspect(formToCreatePayload(formData));
+      const label =
+        created.full_name || `${created.first_name} ${created.last_name}`.trim() || created.email || `Prospect #${created.id}`;
+      setForm((prev) => ({
+        ...prev,
+        prospectId: created.id,
+        prospectLabel: label,
+        prospectMeta: [created.phone, created.email].filter(Boolean).join(' | '),
+      }));
+      setAddProspectOpen(false);
+      addToast({ type: 'success', message: 'Prospect created and selected.' });
+    } catch (error) {
+      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add prospect' });
+    } finally {
+      setCreatingProspect(false);
+    }
+  };
 
   const submit = async () => {
     if (!occurrence) {
       addToast({ type: 'error', message: 'Select a BPM and date first.' });
       return;
     }
-    if (!form.guest_name.trim()) {
-      addToast({ type: 'error', message: 'Guest name is required.' });
+    if (!form.prospectId) {
+      addToast({ type: 'error', message: 'Select a prospect for the guest.' });
       return;
     }
     setSaving(true);
     try {
       await bpmService.addGuest(occurrence.id, {
-        guest_name: form.guest_name,
-        phone: form.phone,
-        email: form.email,
+        guest_name: form.prospectLabel,
+        prospect: form.prospectId,
         inviter: form.inviterId,
-        country: form.country,
-        state: form.state,
         notes: form.notes,
       });
       addToast({ type: 'success', message: 'Guest added.' });
@@ -83,59 +206,77 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
   };
 
   return (
-    <Form
-      onSubmit={(event) => {
-        event.preventDefault();
-        void submit();
-      }}
-    >
-      <FormRowGroup>
+    <>
+      <Form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
+        }}
+      >
+        <FormRowGroup>
+          <FormRow>
+            <Label>Guest (Prospect) *</Label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <UserAutocompleteDropdown
+                  selectedId={form.prospectId}
+                  selectedLabel={form.prospectLabel}
+                  placeholder="Search prospects"
+                  buttonText="SELECT"
+                  fetchOptions={searchProspects}
+                  onSelect={(option) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      prospectId: option.id,
+                      prospectLabel: option.label,
+                      prospectMeta: option.meta || '',
+                    }))
+                  }
+                  onNoResultsAction={openAddProspect}
+                  noResultsActionLabel="+ Add new prospect"
+                />
+              </div>
+              <Button type="button" variant="secondary" size="sm" onClick={() => openAddProspect('')}>
+                + Add
+              </Button>
+            </div>
+            {form.prospectMeta ? (
+              <span className="mt-1 text-xs text-slate-500 dark:text-white/60">{form.prospectMeta}</span>
+            ) : null}
+          </FormRow>
+          <FormRow>
+            <Label>Inviter</Label>
+            <UserAutocompleteDropdown
+              selectedId={form.inviterId}
+              selectedLabel={form.inviterLabel}
+              placeholder="Select inviter"
+              fetchFromApi
+              onSelect={(option) =>
+                setForm((prev) => ({ ...prev, inviterId: option.id, inviterLabel: option.label }))
+              }
+            />
+          </FormRow>
+        </FormRowGroup>
         <FormRow>
-          <Label>Guest Name *</Label>
-          <Input variant="surface" value={form.guest_name} onChange={(e) => update('guest_name', e.target.value)} />
+          <Label>Notes</Label>
+          <Textarea value={form.notes} onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))} rows={3} />
         </FormRow>
-        <FormRow>
-          <Label>Phone</Label>
-          <Input variant="surface" value={form.phone} onChange={(e) => update('phone', e.target.value)} />
-        </FormRow>
-      </FormRowGroup>
-      <FormRowGroup>
-        <FormRow>
-          <Label>Email</Label>
-          <Input type="email" variant="surface" value={form.email} onChange={(e) => update('email', e.target.value)} />
-        </FormRow>
-        <FormRow>
-          <Label>Inviter</Label>
-          <UserAutocompleteDropdown
-            selectedId={form.inviterId}
-            selectedLabel={form.inviterLabel}
-            placeholder="Select inviter"
-            fetchFromApi
-            onSelect={(option) =>
-              setForm((prev) => ({ ...prev, inviterId: option.id, inviterLabel: option.label }))
-            }
-          />
-        </FormRow>
-      </FormRowGroup>
-      <FormRowGroup>
-        <FormRow>
-          <Label>Country</Label>
-          <Input variant="surface" value={form.country} onChange={(e) => update('country', e.target.value)} />
-        </FormRow>
-        <FormRow>
-          <Label>State</Label>
-          <Input variant="surface" value={form.state} onChange={(e) => update('state', e.target.value)} />
-        </FormRow>
-      </FormRowGroup>
-      <FormRow>
-        <Label>Notes</Label>
-        <Textarea value={form.notes} onChange={(e) => update('notes', e.target.value)} rows={3} />
-      </FormRow>
-      <FormActions>
-        <Button type="submit" disabled={saving || !occurrence}>
-          {saving ? 'Adding…' : 'Add Guest'}
-        </Button>
-      </FormActions>
-    </Form>
+        <FormActions>
+          <Button type="submit" disabled={saving || !occurrence}>
+            {saving ? 'Adding…' : 'Add Guest'}
+          </Button>
+        </FormActions>
+      </Form>
+
+      <AddProspectModal
+        open={addProspectOpen}
+        saving={creatingProspect}
+        title="Add Prospect"
+        submitLabel="Create & Select"
+        initialForm={prospectInitialForm}
+        onClose={() => setAddProspectOpen(false)}
+        onSubmit={handleCreateProspect}
+      />
+    </>
   );
 }

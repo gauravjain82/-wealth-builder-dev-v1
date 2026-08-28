@@ -1,13 +1,12 @@
-import { Button } from '@shared/components';
-import { formatOccurrenceTime } from '../services/bpm-service';
-import type { BPMGuest, InteractionStatus } from '../types';
-import { InteractionStatusSelect } from './interaction-status-select';
+import { Button, Checkbox } from '@shared/components';
+import { formatOccurrenceTime, GUEST_OUTCOME_FIELDS } from '../services/bpm-service';
+import type { BPMGuest, GuestOutcomeField } from '../types';
 
 interface GuestListProps {
   guests: BPMGuest[];
   busy?: boolean;
   /** View Invites actions */
-  onSetInteraction?: (guest: BPMGuest, status: InteractionStatus) => void;
+  onSetOutcome?: (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => void;
   onTransfer?: (guest: BPMGuest) => void;
   onRemove?: (guest: BPMGuest) => void;
   /** Guest Check-In action */
@@ -18,7 +17,7 @@ interface GuestListProps {
 export function GuestList({
   guests,
   busy,
-  onSetInteraction,
+  onSetOutcome,
   onTransfer,
   onRemove,
   onToggleCheckIn,
@@ -32,7 +31,7 @@ export function GuestList({
     );
   }
 
-  const showInteraction = Boolean(onSetInteraction);
+  const showInteraction = Boolean(onSetOutcome);
   const showCheckIn = Boolean(onToggleCheckIn);
   const showRowActions = Boolean(onTransfer || onRemove);
 
@@ -68,15 +67,25 @@ export function GuestList({
               </td>
               <td className="px-3 py-2 text-slate-700 dark:text-white/80">{guest.inviter_name || '—'}</td>
               <td className="px-3 py-2 text-slate-700 dark:text-white/80">
-                {[guest.state, guest.country].filter(Boolean).join(', ') || '—'}
+                {[guest.prospect_detail?.city, guest.prospect_detail?.state].filter(Boolean).join(', ') || '—'}
               </td>
               {showInteraction ? (
                 <td className="px-3 py-2">
-                  <InteractionStatusSelect
-                    value={guest.interaction_status}
-                    disabled={busy}
-                    onChange={(status) => onSetInteraction?.(guest, status)}
-                  />
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {GUEST_OUTCOME_FIELDS.map(({ field, label }) => (
+                      <label
+                        key={field}
+                        className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-white/80"
+                      >
+                        <Checkbox
+                          checked={guest[field]}
+                          disabled={busy}
+                          onChange={(e) => onSetOutcome?.(guest, field, e.target.checked)}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
                 </td>
               ) : null}
               {showCheckIn ? (

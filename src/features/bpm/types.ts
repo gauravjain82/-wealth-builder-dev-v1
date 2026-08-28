@@ -2,7 +2,8 @@ export type EventType = 'ONE_TIME' | 'RECURRING';
 export type BPMFormat = 'IN_PERSON' | 'WEBINAR' | 'WEB_AND_IN_PERSON';
 export type OfficeType = 'PERMANENT' | 'TEMPORARY';
 export type OccurrenceStatus = 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';
-export type InteractionStatus = 'C' | 'LM' | 'NI' | 'RS';
+/** Independent follow-up outcome flags on a guest; multiple may be set at once. */
+export type GuestOutcomeField = 'called' | 'left_message' | 'not_interested' | 'reschedule';
 
 export interface PaginatedResponse<T> {
   count: number;
@@ -119,6 +120,13 @@ export interface BPMGuestProspectCard {
   state: string;
 }
 
+export interface BPMGuestNote {
+  id: number;
+  text: string;
+  created_at?: string;
+  created_by_name?: string | null;
+}
+
 export interface BPMGuest {
   id: number;
   occurrence: number;
@@ -126,11 +134,14 @@ export interface BPMGuest {
   prospect_detail: BPMGuestProspectCard | null;
   inviter: number | null;
   inviter_name: string | null;
-  country: string;
-  state: string;
-  notes: string;
-  interaction_status: InteractionStatus | '';
-  interaction_status_label: string | null;
+  country?: string;
+  state?: string;
+  // Independent follow-up outcome flags (any combination may be set).
+  called: boolean;
+  left_message: boolean;
+  not_interested: boolean;
+  reschedule: boolean;
+  notes: BPMGuestNote[];
   checked_in_at: string | null;
   checked_in_by: number | null;
   checked_in_by_name: string | null;
@@ -173,6 +184,8 @@ export interface BPMEventPayload {
 
 export interface AddGuestPayload {
   guest_name: string;
+  /** Existing prospect (user) id to link this guest to, instead of creating a new prospect. */
+  prospect?: number | null;
   phone?: string;
   email?: string;
   inviter?: number | null;

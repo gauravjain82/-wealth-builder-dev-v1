@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { ButtonIcon } from '../button-icon';
 import { Heading } from '../typography';
@@ -22,9 +23,9 @@ export function Modal({
   contentClassName,
   showCloseButton = true,
 }: ModalProps) {
-  if (!open) return null;
+  if (!open || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <div className={['fixed inset-0 z-[1100] flex items-center justify-center bg-slate-900/40 p-4 dark:bg-black/60', className || ''].join(' ').trim()}>
       <div className={['w-full max-w-[860px] rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl dark:border-white/15 dark:bg-[#1e2431] dark:text-white', contentClassName || ''].join(' ').trim()}>
         {(title || showCloseButton) && (
@@ -43,6 +44,7 @@ export function Modal({
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

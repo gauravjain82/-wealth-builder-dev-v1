@@ -10,6 +10,7 @@ import type {
   BPMOccurrence,
   EventFilters,
   GoogleStatus,
+  GuestOutcomeField,
   OccurrenceFilters,
   Office,
   OfficePayload,
@@ -107,11 +108,11 @@ export const DAY_OF_WEEK_OPTIONS = [
   { value: 6, label: 'Sunday' },
 ];
 
-export const INTERACTION_OPTIONS: { value: 'C' | 'LM' | 'NI' | 'RS'; label: string }[] = [
-  { value: 'C', label: 'Called' },
-  { value: 'LM', label: 'Left Message' },
-  { value: 'NI', label: 'Not Interested' },
-  { value: 'RS', label: 'Reschedule' },
+export const GUEST_OUTCOME_FIELDS: { field: GuestOutcomeField; label: string }[] = [
+  { field: 'called', label: 'Called' },
+  { field: 'left_message', label: 'Left Message' },
+  { field: 'not_interested', label: 'Not Interested' },
+  { field: 'reschedule', label: 'Reschedule' },
 ];
 
 export const bpmService = {
@@ -195,11 +196,16 @@ export const bpmService = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
-  setInteraction: (
+  setGuestFlags: (
     occurrenceId: number,
-    payload: { guest_id: number; status: string; notes?: string },
+    payload: { guest_id: number } & Partial<Record<GuestOutcomeField, boolean>>,
   ) =>
-    request<BPMGuest>(`/api/bpm/occurrences/${occurrenceId}/set-interaction/`, {
+    request<BPMGuest>(`/api/bpm/occurrences/${occurrenceId}/set-guest-flags/`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  addGuestNote: (occurrenceId: number, payload: { guest_id: number; text: string }) =>
+    request<BPMGuest>(`/api/bpm/occurrences/${occurrenceId}/add-guest-note/`, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Button,
-  Checkbox,
   DatePicker,
   Form,
   FormActions,
@@ -44,7 +43,6 @@ interface FormState {
   recurrence_start: string;
   recurrence_end: string;
   email_template: number | null;
-  hide_from_baseshop: boolean;
 }
 
 const defaultForm = (): FormState => ({
@@ -62,7 +60,6 @@ const defaultForm = (): FormState => ({
   recurrence_start: '',
   recurrence_end: '',
   email_template: null,
-  hide_from_baseshop: false,
 });
 
 export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProps) {
@@ -93,7 +90,6 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
         recurrence_start: event.recurrence_start || '',
         recurrence_end: event.recurrence_end || '',
         email_template: event.email_template,
-        hide_from_baseshop: event.hide_from_baseshop,
       });
       setSmds(toSelectedUsers(event.participating_smds_detail));
       setTrainers(toSelectedUsers(event.trainers_detail));
@@ -153,7 +149,6 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
       trainers: trainers.map((user) => user.id),
       checkin_permitted_users: checkinUsers.map((user) => user.id),
       email_template: form.email_template,
-      hide_from_baseshop: form.hide_from_baseshop,
     };
     if (form.event_type === 'ONE_TIME') {
       payload.event_date = form.event_date;
@@ -314,16 +309,6 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
                 </option>
               ))}
             </Select>
-          </FormRow>
-          <FormRow>
-            <Label>Visibility</Label>
-            <label className="flex h-8 items-center gap-2 text-sm text-slate-700 dark:text-white/80">
-              <Checkbox
-                checked={form.hide_from_baseshop}
-                onChange={(e) => update('hide_from_baseshop', e.target.checked)}
-              />
-              Hide from my baseshop
-            </label>
           </FormRow>
         </FormRowGroup>
 

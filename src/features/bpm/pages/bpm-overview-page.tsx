@@ -13,7 +13,7 @@ import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { GuestList } from '../components/guest-list';
 import { TransferGuestModal } from '../components/transfer-guest-modal';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
-import type { AssociateCheckIn, BPMCapabilities, BPMEventDetail, BPMGuest, BPMOccurrence, GoogleStatus, InteractionStatus, OccurrenceFilters } from '../types';
+import type { AssociateCheckIn, BPMCapabilities, BPMEventDetail, BPMGuest, BPMOccurrence, GoogleStatus, GuestOutcomeField, OccurrenceFilters } from '../types';
 // Reuse the Matchup dashboard styling so the BPM overview matches it 1:1.
 import '@/features/matchup/pages/matchup-page.css';
 
@@ -202,9 +202,9 @@ export default function BpmOverviewPage() {
     }
   };
 
-  const setGuestInteraction = (guest: BPMGuest, status: InteractionStatus) =>
+  const setGuestOutcome = (guest: BPMGuest, field: GuestOutcomeField, value: boolean) =>
     runGuestMutation('Outcome saved.', () =>
-      bpmService.setInteraction(guest.occurrence, { guest_id: guest.id, status }).then(() => undefined),
+      bpmService.setGuestFlags(guest.occurrence, { guest_id: guest.id, [field]: value }).then(() => undefined),
     );
 
   const removeGuest = (guest: BPMGuest) =>
@@ -348,7 +348,7 @@ export default function BpmOverviewPage() {
               <GuestList
                 guests={filteredGuests}
                 busy={busy}
-                onSetInteraction={setGuestInteraction}
+                onSetOutcome={setGuestOutcome}
                 onTransfer={setTransferTarget}
                 onRemove={removeGuest}
               />

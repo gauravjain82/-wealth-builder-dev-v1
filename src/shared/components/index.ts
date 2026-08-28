@@ -9,6 +9,7 @@ export { Checkbox, type CheckboxProps } from './ui/checkbox';
 export { Modal } from './ui/modal';
 export { ConfirmationDialog } from './ui/confirmation-dialog';
 export { Label, type LabelProps } from './ui/label';
+export { LocationSelect, type LocationSelectProps } from './location-select';
 export {
 	Tooltip,
 	type TooltipProps,
