@@ -278,6 +278,7 @@ export interface ProductionTrackerQuery {
   pageSize?: number;
   sort?: string;
   segment?: string;
+  userId?: number | null;
   filters?: Record<string, string>;
 }
 
@@ -698,6 +699,9 @@ export async function fetchProductionTracker(
   if (query.segment) {
     params.set('segment', query.segment);
   }
+  if (query.userId) {
+    params.set('user_id', String(query.userId));
+  }
   if (query.filters) {
     Object.entries(query.filters).forEach(([key, value]) => {
       const normalized = value?.trim();
@@ -765,7 +769,7 @@ export async function deleteProductionRecord(recordId: number): Promise<void> {
 
 export async function fetchProductionPointsSummary(
   userId?: number | null,
-  options?: { fromDate?: string | null; toDate?: string | null; segment?: string | null }
+  options?: { fromDate?: string | null; toDate?: string | null; segment?: string | null; filterKey?: string | null }
 ): Promise<ProductionPointsSummary> {
   const params = new URLSearchParams();
   if (userId) {
@@ -779,6 +783,9 @@ export async function fetchProductionPointsSummary(
   }
   if (options?.toDate) {
     params.set('to_date', options.toDate);
+  }
+  if (options?.filterKey) {
+    params.set('filterkey', options.filterKey);
   }
   const suffix = params.toString() ? `?${params.toString()}` : '';
   return fetchJson<ProductionPointsSummary>(`${API_BASE_URL}/api/tracker/policies/points_summary/${suffix}`);

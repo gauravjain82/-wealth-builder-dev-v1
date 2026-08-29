@@ -57,14 +57,10 @@ function toSortParam(sort: { key: string; direction: SortDirection } | null): st
 }
 
 function toBackendFilters(filters: Record<string, string>): Record<string, string> {
-  const keyMap: Record<string, string> = {
-    from_date: 'date_written_from',
-    to_date: 'date_written_to',
-  };
   return Object.entries(filters).reduce<Record<string, string>>((acc, [key, value]) => {
     const normalized = value.trim();
     if (!normalized) return acc;
-    acc[keyMap[key] || key] = normalized;
+    acc[key] = normalized;
     return acc;
   }, {});
 }
@@ -217,7 +213,6 @@ export default function ProductionTrackerPage() {
   const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>(() => ({
     filterkey: 'all',
-    ...(initialBrokerId ? { broker_id: initialBrokerId } : {}),
   }));
   const [dateRangePreset, setDateRangePreset] = useState<DatePresetKey>('all');
   const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
@@ -275,15 +270,6 @@ export default function ProductionTrackerPage() {
   const handleTeamScopeChange = useCallback((next: { scope: TrackerTeamScope; user: { id: string; name: string } | null }) => {
     setTeamScope(next.scope);
     setTeamScopeUserId(next.user?.id || null);
-
-    setFilters((prev) => {
-      const updated = { ...prev };
-      delete updated.broker_id;
-      if (next.user?.id) {
-        updated.broker_id = next.user.id;
-      }
-      return updated;
-    });
   }, []);
 
   const selectedDateRange = useMemo(
@@ -498,14 +484,15 @@ export default function ProductionTrackerPage() {
           });
         }
 
+        const summaryUserId = teamScopeUserId ? Number(teamScopeUserId) : currentUserId;
         const query: ProductionTrackerQuery = {
           page: 1,
           pageSize,
           sort: toSortParam(sortState),
           segment: toSegmentParam(teamScope),
+          userId: summaryUserId,
           filters: toBackendFilters(filters),
         };
-        const summaryUserId = teamScopeUserId ? Number(teamScopeUserId) : currentUserId;
         const shouldRefreshTopPerformers = !hasDateFilter && !teamScopeUserId;
 
         const [refreshed, refreshedSummary, refreshedTopPerformers] = await Promise.all([
@@ -514,6 +501,7 @@ export default function ProductionTrackerPage() {
             segment: toSegmentParam(teamScope),
             fromDate: filters.from_date,
             toDate: filters.to_date,
+            filterKey: filters.filterkey,
           }),
           shouldRefreshTopPerformers ? fetchProductionTopPerformers() : Promise.resolve(null),
         ]);
@@ -778,6 +766,7 @@ export default function ProductionTrackerPage() {
             segment: toSegmentParam(teamScope),
             fromDate: filters.from_date,
             toDate: filters.to_date,
+            filterKey: filters.filterkey,
           }
         );
         if (isMounted) {
@@ -795,7 +784,7 @@ export default function ProductionTrackerPage() {
     return () => {
       isMounted = false;
     };
-  }, [currentUserId, teamScope, teamScopeUserId, filters.from_date, filters.to_date]);
+  }, [currentUserId, teamScope, teamScopeUserId, filters.from_date, filters.to_date, filters.filterkey]);
 
   useEffect(() => {
     let isMounted = true;
@@ -846,6 +835,7 @@ export default function ProductionTrackerPage() {
           pageSize,
           sort: toSortParam(nextSort),
           segment: toSegmentParam(teamScope),
+          userId: teamScopeUserId ? Number(teamScopeUserId) : currentUserId,
           filters: toBackendFilters(nextFilters),
         };
 
@@ -881,7 +871,7 @@ export default function ProductionTrackerPage() {
         }
       }
     },
-    [addToast, teamScope]
+    [addToast, teamScope, teamScopeUserId, currentUserId]
   );
 
   const refreshCurrentView = useCallback(async () => {
@@ -894,6 +884,7 @@ export default function ProductionTrackerPage() {
           segment: toSegmentParam(teamScope),
           fromDate: filters.from_date,
           toDate: filters.to_date,
+          filterKey: filters.filterkey,
         }
       );
       setPointsSummary(summary);
@@ -944,6 +935,7 @@ export default function ProductionTrackerPage() {
           pageSize: 200,
           sort: toSortParam(sortState),
           segment: toSegmentParam(teamScope),
+          userId: teamScopeUserId ? Number(teamScopeUserId) : currentUserId,
           filters: toBackendFilters(filters),
         });
 
@@ -961,7 +953,7 @@ export default function ProductionTrackerPage() {
     } finally {
       setExporting(false);
     }
-  }, [addToast, filters, sortState, teamScope]);
+  }, [addToast, filters, sortState, teamScope, teamScopeUserId, currentUserId]);
 
   const handleImportCsv = useCallback(async () => {
     if (!importFile) {
