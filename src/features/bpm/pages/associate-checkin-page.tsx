@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LoadingState, UserAutocompleteDropdown } from '@shared/components';
+import { Button, LoadingState, UserAutocompleteDropdown } from '@shared/components';
 import { useToastStore } from '@/store';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
@@ -46,6 +46,20 @@ export default function AssociateCheckinPage() {
     }
   };
 
+  const undoCheckIn = async (userId: number) => {
+    if (!occurrence) return;
+    setBusy(true);
+    try {
+      await bpmService.undoCheckInAssociate(occurrence.id, userId);
+      addToast({ type: 'success', message: 'Check-in undone.' });
+      await load(occurrence.id);
+    } catch (error) {
+      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Undo failed' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <BPMPageShell title="Associate Check-In" description="Record associate/member attendance at a BPM.">
       <BPMCard className="mb-4">
@@ -75,11 +89,16 @@ export default function AssociateCheckinPage() {
         ) : (
           <ul className="divide-y divide-slate-100 dark:divide-white/10">
             {records.map((record) => (
-              <li key={record.id} className="flex items-center justify-between py-2 text-sm">
+              <li key={record.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                 <span className="text-slate-900 dark:text-white">{record.user_name || `User #${record.user}`}</span>
-                <span className="text-xs text-slate-500 dark:text-white/60">
-                  {formatOccurrenceTime(record.checked_in_at, { weekday: undefined })}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-500 dark:text-white/60">
+                    {formatOccurrenceTime(record.checked_in_at, { weekday: undefined })}
+                  </span>
+                  <Button size="sm" variant="secondary" disabled={busy} onClick={() => void undoCheckIn(record.user)}>
+                    Undo
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>

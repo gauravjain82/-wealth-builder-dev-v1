@@ -7,6 +7,7 @@ interface GuestListProps {
   busy?: boolean;
   /** View Invites actions */
   onSetOutcome?: (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => void;
+  onFollowUp?: (guest: BPMGuest) => void;
   onTransfer?: (guest: BPMGuest) => void;
   onRemove?: (guest: BPMGuest) => void;
   /** Guest Check-In action */
@@ -18,6 +19,7 @@ export function GuestList({
   guests,
   busy,
   onSetOutcome,
+  onFollowUp,
   onTransfer,
   onRemove,
   onToggleCheckIn,
@@ -33,7 +35,7 @@ export function GuestList({
 
   const showInteraction = Boolean(onSetOutcome);
   const showCheckIn = Boolean(onToggleCheckIn);
-  const showRowActions = Boolean(onTransfer || onRemove);
+  const showRowActions = Boolean(onFollowUp || onTransfer || onRemove);
 
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-white/10">
@@ -61,6 +63,17 @@ export function GuestList({
                 <div className="text-xs text-slate-500 dark:text-white/50">
                   {guest.prospect_detail?.email || ''}
                 </div>
+                {guest.followup ? (
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 dark:bg-emerald-400/10">
+                      Follow-up · {guest.followup.interests.length} interest
+                      {guest.followup.interests.length === 1 ? '' : 's'}
+                    </span>
+                    {guest.followup.appointment ? (
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 dark:bg-emerald-400/10">Appt linked</span>
+                    ) : null}
+                  </div>
+                ) : null}
               </td>
               <td className="px-3 py-2 text-slate-700 dark:text-white/80">
                 {guest.prospect_detail?.phone || '—'}
@@ -110,6 +123,16 @@ export function GuestList({
                         onClick={() => onToggleCheckIn?.(guest)}
                       >
                         {guest.checked_in_at ? 'Undo' : 'Check in'}
+                      </Button>
+                    ) : null}
+                    {onFollowUp ? (
+                      <Button
+                        size="sm"
+                        variant={guest.followup ? 'secondary' : 'default'}
+                        disabled={busy}
+                        onClick={() => onFollowUp(guest)}
+                      >
+                        {guest.followup ? 'Edit follow-up' : 'Follow up'}
                       </Button>
                     ) : null}
                     {onTransfer ? (

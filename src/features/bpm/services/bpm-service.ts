@@ -7,6 +7,9 @@ import type {
   BPMEventPayload,
   BPMGuest,
   BPMCapabilities,
+  BPMInterestGroup,
+  BPMInterestOption,
+  BPMInterestOptionPayload,
   BPMOccurrence,
   EventFilters,
   GoogleStatus,
@@ -15,6 +18,7 @@ import type {
   Office,
   OfficePayload,
   PaginatedResponse,
+  SaveGuestFollowupPayload,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -126,6 +130,32 @@ export const bpmService = {
   emailTemplates: () =>
     request<PaginatedResponse<BPMEmailTemplate>>('/api/bpm/email-templates/'),
 
+  // -- interest options (follow-up catalog) --------------------------------
+  // Read is open to any authed user; write requires bpm_templates:manage.
+  // The endpoint may return a bare array or a paginated envelope — normalize to an array.
+  interestOptions: async (params: { group?: BPMInterestGroup; is_active?: boolean; ordering?: string } = {}) => {
+    const data = await request<BPMInterestOption[] | PaginatedResponse<BPMInterestOption>>(
+      `/api/bpm/interest-options/${buildQuery({
+        group: params.group,
+        is_active: params.is_active,
+        ordering: params.ordering,
+      })}`,
+    );
+    return Array.isArray(data) ? data : data.results;
+  },
+  createInterestOption: (payload: BPMInterestOptionPayload) =>
+    request<BPMInterestOption>('/api/bpm/interest-options/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateInterestOption: (id: number, payload: BPMInterestOptionPayload) =>
+    request<BPMInterestOption>(`/api/bpm/interest-options/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteInterestOption: (id: number) =>
+    request<void>(`/api/bpm/interest-options/${id}/`, { method: 'DELETE' }),
+
   // -- events --------------------------------------------------------------
   events: (filters: EventFilters = {}) =>
     request<PaginatedResponse<BPMEventListItem>>(
@@ -209,6 +239,11 @@ export const bpmService = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  saveGuestFollowup: (occurrenceId: number, payload: SaveGuestFollowupPayload) =>
+    request<BPMGuest>(`/api/bpm/occurrences/${occurrenceId}/save-guest-followup/`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   checkInGuest: (occurrenceId: number, guestId: number) =>
     request<BPMGuest>(`/api/bpm/occurrences/${occurrenceId}/check-in-guest/`, {
       method: 'POST',
@@ -221,6 +256,11 @@ export const bpmService = {
     }),
   checkInAssociate: (occurrenceId: number, userId: number) =>
     request<AssociateCheckIn>(`/api/bpm/occurrences/${occurrenceId}/check-in-associate/`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    }),
+  undoCheckInAssociate: (occurrenceId: number, userId: number) =>
+    request<{ removed: boolean }>(`/api/bpm/occurrences/${occurrenceId}/undo-check-in-associate/`, {
       method: 'POST',
       body: JSON.stringify({ user_id: userId }),
     }),

@@ -1,9 +1,13 @@
+import type { AppointmentListItem } from '@/features/matchup/types';
+
 export type EventType = 'ONE_TIME' | 'RECURRING';
 export type BPMFormat = 'IN_PERSON' | 'WEBINAR' | 'WEB_AND_IN_PERSON';
 export type OfficeType = 'PERMANENT' | 'TEMPORARY';
 export type OccurrenceStatus = 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';
 /** Independent follow-up outcome flags on a guest; multiple may be set at once. */
 export type GuestOutcomeField = 'called' | 'left_message' | 'not_interested' | 'reschedule';
+/** Section a follow-up interest option belongs to (drives the checkbox groups). */
+export type BPMInterestGroup = 'GOALS' | 'BUSINESS' | 'SELF_IMPROVEMENT';
 
 export interface PaginatedResponse<T> {
   count: number;
@@ -127,6 +131,41 @@ export interface BPMGuestNote {
   created_by_name?: string | null;
 }
 
+/** Admin-configurable "I am interested in…" option; drives the follow-up checkbox groups. */
+export interface BPMInterestOption {
+  id: number;
+  group: BPMInterestGroup;
+  group_display: string;
+  label: string;
+  slug: string;
+  sort_order: number;
+  is_active: boolean;
+  created_by: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BPMInterestOptionPayload {
+  group?: BPMInterestGroup;
+  label?: string;
+  slug?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+/** A guest's follow-up questionnaire result (one record per guest). */
+export interface BPMGuestFollowup {
+  spouse_name: string;
+  /** Selected interest option slugs — map to labels via the interest-options catalog. */
+  interests: string[];
+  appointment: number | null;
+  appointment_detail: AppointmentListItem | null;
+  submitted_by: number | null;
+  created_at?: string;
+  updated_at?: string;
+  visited?: boolean;
+}
+
 export interface BPMGuest {
   id: number;
   occurrence: number;
@@ -142,6 +181,7 @@ export interface BPMGuest {
   not_interested: boolean;
   reschedule: boolean;
   notes: BPMGuestNote[];
+  followup: BPMGuestFollowup | null;
   checked_in_at: string | null;
   checked_in_by: number | null;
   checked_in_by_name: string | null;
@@ -219,6 +259,18 @@ export interface BPMCapabilities {
   can_update: boolean;
   can_delete: boolean;
   can_manage_guests: boolean;
+  /** bpm_templates:manage — gates the interest-options catalog admin UI. */
+  can_manage_templates?: boolean;
+}
+
+export interface SaveGuestFollowupPayload {
+  guest_id: number;
+  /** Interest option slugs. */
+  interests?: string[];
+  /** Match Up appointment id to link (its contact must be the guest's prospect). */
+  appointment_id?: number | null;
+  /** Free text → written to the prospect's BPM notes timeline. */
+  notes?: string;
 }
 
 export interface OccurrenceFilters {
