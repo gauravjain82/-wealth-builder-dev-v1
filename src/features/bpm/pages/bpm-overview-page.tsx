@@ -5,6 +5,8 @@ import { useToastStore } from '@/store';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { hasRoleAtLeast } from '@core/constants/roles';
 import { Plan } from '@core/types';
+import { matchupService } from '@/features/matchup/services/matchup-service';
+import type { AppointmentType } from '@/features/matchup/types';
 import { BPMMetricsCards } from '../components/bpm-metrics-cards';
 import { BPMMonthCalendar } from '../components/bpm-month-calendar';
 import { AddGuestModal } from '../components/add-guest-modal';
@@ -12,8 +14,9 @@ import { BPMFormModal } from '../components/bpm-form-modal';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { GuestList } from '../components/guest-list';
 import { TransferGuestModal } from '../components/transfer-guest-modal';
+import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
-import type { AssociateCheckIn, BPMCapabilities, BPMEventDetail, BPMGuest, BPMOccurrence, GoogleStatus, GuestOutcomeField, OccurrenceFilters } from '../types';
+import type { AssociateCheckIn, BPMCapabilities, BPMEventDetail, BPMGuest, BPMInterestOption, BPMOccurrence, GoogleStatus, GuestOutcomeField, OccurrenceFilters } from '../types';
 // Reuse the Matchup dashboard styling so the BPM overview matches it 1:1.
 import '@/features/matchup/pages/matchup-page.css';
 
@@ -54,6 +57,9 @@ export default function BpmOverviewPage() {
   const [guestsLoading, setGuestsLoading] = useState(false);
   const [guestSearch, setGuestSearch] = useState('');
   const [transferTarget, setTransferTarget] = useState<BPMGuest | null>(null);
+  const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
+  const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
+  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
   const [associates, setAssociates] = useState<AssociateCheckIn[]>([]);
   const [associatesLoading, setAssociatesLoading] = useState(false);
   const [associateSearch, setAssociateSearch] = useState('');
@@ -93,6 +99,12 @@ export default function BpmOverviewPage() {
   // Load the user's BPM permissions once; gates the "Create BPM" control.
   useEffect(() => {
     bpmService.capabilities().then(setCapabilities).catch(() => setCapabilities(null));
+  }, []);
+
+  // Follow-up form data: interest options and appointment types.
+  useEffect(() => {
+    bpmService.interestOptions({ ordering: 'sort_order' }).then(setInterestOptions).catch(() => setInterestOptions([]));
+    matchupService.appointmentTypes().then(setAppointmentTypes).catch(() => setAppointmentTypes([]));
   }, []);
 
   const connectGoogle = async () => {
@@ -209,6 +221,10 @@ export default function BpmOverviewPage() {
 
   const removeGuest = (guest: BPMGuest) =>
     runGuestMutation('Guest removed.', () => bpmService.removeGuest(guest.occurrence, guest.id).then(() => undefined));
+
+  // The save endpoint returns the full updated guest, so patch it into the list in place.
+  const handleFollowUpSaved = (updated: BPMGuest) =>
+    setGuests((prev) => prev.map((guest) => (guest.id === updated.id ? updated : guest)));
 
   const checkInAssociate = async (userId: number) => {
     if (!detailOccurrence) return;
@@ -349,6 +365,7 @@ export default function BpmOverviewPage() {
                 guests={filteredGuests}
                 busy={busy}
                 onSetOutcome={setGuestOutcome}
+                onFollowUp={setFollowUpTarget}
                 onTransfer={setTransferTarget}
                 onRemove={removeGuest}
               />
@@ -486,6 +503,14 @@ export default function BpmOverviewPage() {
         guest={transferTarget}
         onClose={() => setTransferTarget(null)}
         onTransferred={() => { if (detailOccurrence) void loadGuests(detailOccurrence.id); }}
+      />
+      <FollowUpGuestModal
+        open={Boolean(followUpTarget)}
+        guest={followUpTarget}
+        interestOptions={interestOptions}
+        appointmentTypes={appointmentTypes}
+        onClose={() => setFollowUpTarget(null)}
+        onSaved={handleFollowUpSaved}
       />
     </main>
   );

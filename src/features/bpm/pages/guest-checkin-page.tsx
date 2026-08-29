@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Input, LoadingState } from '@shared/components';
 import { useToastStore } from '@/store';
+import { matchupService } from '@/features/matchup/services/matchup-service';
+import type { AppointmentType } from '@/features/matchup/types';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
+import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
 import { bpmService } from '../services/bpm-service';
-import type { BPMGuest, BPMOccurrence, GuestOutcomeField } from '../types';
+import type { BPMGuest, BPMInterestOption, BPMOccurrence, GuestOutcomeField } from '../types';
 
 type GuestFilter = 'all' | 'checked_in' | 'called' | 'left_message' | 'not_interested' | 'reschedule';
 
@@ -26,6 +29,14 @@ export default function GuestCheckinPage() {
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState<GuestFilter>('all');
   const [search, setSearch] = useState('');
+  const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
+  const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
+  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
+
+  useEffect(() => {
+    bpmService.interestOptions({ ordering: 'sort_order' }).then(setInterestOptions).catch(() => setInterestOptions([]));
+    matchupService.appointmentTypes().then(setAppointmentTypes).catch(() => setAppointmentTypes([]));
+  }, []);
 
   const load = useCallback(
     async (occurrenceId: number) => {
@@ -77,6 +88,10 @@ export default function GuestCheckinPage() {
       setBusy(false);
     }
   };
+
+  // The save endpoint returns the full updated guest, so patch it into the list in place.
+  const handleFollowUpSaved = (updated: BPMGuest) =>
+    setGuests((prev) => prev.map((guest) => (guest.id === updated.id ? updated : guest)));
 
   const addGuestNote = async (guest: BPMGuest, text: string) => {
     if (!occurrence) return;
@@ -175,6 +190,7 @@ export default function GuestCheckinPage() {
                 onToggleCheckIn={toggleCheckIn}
                 onSetOutcome={setGuestOutcome}
                 onAddNote={addGuestNote}
+                onFollowUp={setFollowUpTarget}
               />
             )}
           </BPMCard>
@@ -186,6 +202,15 @@ export default function GuestCheckinPage() {
           </p>
         </BPMCard>
       )}
+
+      <FollowUpGuestModal
+        open={Boolean(followUpTarget)}
+        guest={followUpTarget}
+        interestOptions={interestOptions}
+        appointmentTypes={appointmentTypes}
+        onClose={() => setFollowUpTarget(null)}
+        onSaved={handleFollowUpSaved}
+      />
     </BPMPageShell>
   );
 }

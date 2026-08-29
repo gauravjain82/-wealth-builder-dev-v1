@@ -11,6 +11,7 @@ interface GuestCheckinTableProps {
   onToggleCheckIn: (guest: BPMGuest) => void;
   onSetOutcome?: (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => void;
   onAddNote?: (guest: BPMGuest, text: string) => void;
+  onFollowUp?: (guest: BPMGuest) => void;
 }
 
 /** Read a note's text, tolerant of either a note object or a plain string. */
@@ -109,6 +110,22 @@ function OutcomeChecklist({
   );
 }
 
+/** Small pill summarising a saved follow-up (interest count + linked appointment). */
+function FollowUpBadge({ guest }: { guest: BPMGuest }) {
+  if (!guest.followup) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
+      <span className="rounded-full bg-emerald-50 px-2 py-0.5 dark:bg-emerald-400/10">
+        Follow-up · {guest.followup.interests.length} interest
+        {guest.followup.interests.length === 1 ? '' : 's'}
+      </span>
+      {guest.followup.appointment ? (
+        <span className="rounded-full bg-emerald-50 px-2 py-0.5 dark:bg-emerald-400/10">Appt linked</span>
+      ) : null}
+    </div>
+  );
+}
+
 /** Compact stacked card used on phones and tablets where the wide table can't fit. */
 function GuestCheckinCard({
   guest,
@@ -118,6 +135,7 @@ function GuestCheckinCard({
   onToggleCheckIn,
   onSetOutcome,
   onAddNote,
+  onFollowUp,
 }: {
   guest: BPMGuest;
   index: number;
@@ -126,6 +144,7 @@ function GuestCheckinCard({
   onToggleCheckIn: (guest: BPMGuest) => void;
   onSetOutcome?: (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => void;
   onAddNote?: (guest: BPMGuest, text: string) => void;
+  onFollowUp?: (guest: BPMGuest) => void;
 }) {
   const location = [guest.prospect_detail?.city, guest.prospect_detail?.state].filter(Boolean).join(', ');
   const email = guest.prospect_detail?.email;
@@ -187,6 +206,21 @@ function GuestCheckinCard({
         </div>
       ) : null}
 
+      {onFollowUp ? (
+        <div className="mt-3 border-t border-slate-100 pt-3 dark:border-white/10">
+          <Button
+            size="sm"
+            variant={guest.followup ? 'secondary' : 'default'}
+            disabled={busy}
+            onClick={() => onFollowUp(guest)}
+            className="w-full"
+          >
+            {guest.followup ? 'Edit follow-up' : 'Follow up'}
+          </Button>
+          {guest.followup ? <div className="mt-1.5"><FollowUpBadge guest={guest} /></div> : null}
+        </div>
+      ) : null}
+
       <div className="mt-3 border-t border-slate-100 pt-3 dark:border-white/10">
         <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-white/40">Notes</div>
         <NoteCell guest={guest} busy={busy} onAddNote={onAddNote} />
@@ -202,8 +236,10 @@ export function GuestCheckinTable({
   onToggleCheckIn,
   onSetOutcome,
   onAddNote,
+  onFollowUp,
 }: GuestCheckinTableProps) {
   const showOutcome = Boolean(onSetOutcome);
+  const showFollowUp = Boolean(onFollowUp);
   if (guests.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500 dark:border-white/15 dark:text-white/60">
@@ -226,6 +262,7 @@ export function GuestCheckinTable({
             onToggleCheckIn={onToggleCheckIn}
             onSetOutcome={onSetOutcome}
             onAddNote={onAddNote}
+            onFollowUp={onFollowUp}
           />
         ))}
       </div>
@@ -242,6 +279,7 @@ export function GuestCheckinTable({
             <th className="px-3 py-2">Phone#</th>
             <th className="px-3 py-2">Invited By</th>
             {showOutcome ? <th className="px-3 py-2">Outcome</th> : null}
+            {showFollowUp ? <th className="px-3 py-2">Follow-up</th> : null}
             <th className="px-3 py-2">Notes</th>
           </tr>
         </thead>
@@ -282,6 +320,21 @@ export function GuestCheckinTable({
                 {showOutcome ? (
                   <td className="px-3 py-2">
                     <OutcomeChecklist guest={guest} busy={busy} onSetOutcome={onSetOutcome} />
+                  </td>
+                ) : null}
+                {showFollowUp ? (
+                  <td className="px-3 py-2 align-top">
+                    <div className="flex flex-col items-start gap-1">
+                      <Button
+                        size="sm"
+                        variant={guest.followup ? 'secondary' : 'default'}
+                        disabled={busy}
+                        onClick={() => onFollowUp?.(guest)}
+                      >
+                        {guest.followup ? 'Edit follow-up' : 'Follow up'}
+                      </Button>
+                      <FollowUpBadge guest={guest} />
+                    </div>
                   </td>
                 ) : null}
                 <td className="px-3 py-2 align-top">
