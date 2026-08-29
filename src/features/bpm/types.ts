@@ -197,6 +197,10 @@ export interface AssociateCheckIn {
   checked_in_at: string;
   checked_in_by: number | null;
   checked_in_by_name: string | null;
+  /** 4X4 mission tracker milestones. Green dot when true, red when false. */
+  finish_1st_recruit: boolean;
+  finish_1st_savings: boolean;
+  big_event_1st: boolean;
 }
 
 // -- payloads --------------------------------------------------------------

@@ -90,7 +90,10 @@ export default function AssociateCheckinPage() {
           <ul className="divide-y divide-slate-100 dark:divide-white/10">
             {records.map((record) => (
               <li key={record.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                <span className="text-slate-900 dark:text-white">{record.user_name || `User #${record.user}`}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-900 dark:text-white">{record.user_name || `User #${record.user}`}</span>
+                  <MissionTrackerDots record={record} />
+                </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-slate-500 dark:text-white/60">
                     {formatOccurrenceTime(record.checked_in_at, { weekday: undefined })}
@@ -105,5 +108,27 @@ export default function AssociateCheckinPage() {
         )}
       </BPMCard>
     </BPMPageShell>
+  );
+}
+
+/** Three 4X4 mission-tracker dots: green when the milestone is done, red when not. */
+function MissionTrackerDots({ record }: { record: AssociateCheckIn }) {
+  const dots: Array<{ label: string; done: boolean }> = [
+    { label: '1st Recruit', done: record.finish_1st_recruit },
+    { label: 'Personal Savings', done: record.finish_1st_savings },
+    { label: 'Big Event', done: record.big_event_1st },
+  ];
+  return (
+    <span className="flex items-center gap-1">
+      {dots.map((dot) => (
+        <span
+          key={dot.label}
+          title={`${dot.label}: ${dot.done ? 'Done' : 'Not done'}`}
+          className={`inline-block h-2.5 w-2.5 rounded-full ${
+            dot.done ? 'bg-emerald-500' : 'bg-red-500'
+          }`}
+        />
+      ))}
+    </span>
   );
 }
