@@ -62,7 +62,7 @@ export type FileVaultSectionPayload = {
   section_key: string;
   label: string;
   icon: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 };
 
@@ -75,7 +75,7 @@ export type FileVaultItemPayload = {
   gcs_blob_name?: string;
   thumb_gcs_blob_name?: string;
   resource_type: string;
-  sort_order: number;
+  sort_order?: number;
   is_active: boolean;
 };
 

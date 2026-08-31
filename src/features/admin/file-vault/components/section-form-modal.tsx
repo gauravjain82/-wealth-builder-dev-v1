@@ -11,7 +11,6 @@ type SectionFormModalProps = {
     section_key: string;
     label: string;
     icon: string;
-    sort_order: number;
     is_active: boolean;
     roles: string[];
   }) => Promise<void>;
@@ -21,7 +20,6 @@ export function SectionFormModal({ open, section, onClose, onSave }: SectionForm
   const [sectionKey, setSectionKey] = useState('');
   const [label, setLabel] = useState('');
   const [icon, setIcon] = useState('📁');
-  const [sortOrder, setSortOrder] = useState(0);
   const [isActive, setIsActive] = useState(true);
   const [roles, setRoles] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -31,7 +29,6 @@ export function SectionFormModal({ open, section, onClose, onSave }: SectionForm
     setSectionKey(section?.section_key ?? '');
     setLabel(section?.label ?? '');
     setIcon(section?.icon ?? '📁');
-    setSortOrder(section?.sort_order ?? 0);
     setIsActive(section?.is_active ?? true);
     setRoles(section?.allowed_roles ?? []);
   }, [open, section]);
@@ -46,7 +43,6 @@ export function SectionFormModal({ open, section, onClose, onSave }: SectionForm
         section_key: sectionKey.trim(),
         label: label.trim(),
         icon: icon.trim() || '📁',
-        sort_order: sortOrder,
         is_active: isActive,
         roles,
       });
@@ -88,20 +84,13 @@ export function SectionFormModal({ open, section, onClose, onSave }: SectionForm
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm text-white/70">Icon</label>
-              <Input value={icon} onChange={(event) => setIcon(event.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm text-white/70">Sort order</label>
-              <Input
-                type="number"
-                value={sortOrder}
-                onChange={(event) => setSortOrder(Number(event.target.value))}
-              />
-            </div>
+          <div>
+            <label className="mb-1 block text-sm text-white/70">Icon</label>
+            <Input value={icon} onChange={(event) => setIcon(event.target.value)} />
           </div>
+          <p className="text-xs text-white/60">
+            New sections are added to the end. Use the ↑ ↓ buttons in the list to reorder.
+          </p>
           <label className="flex items-center gap-2 text-sm text-white/80">
             <input
               type="checkbox"

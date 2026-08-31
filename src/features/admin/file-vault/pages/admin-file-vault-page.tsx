@@ -71,7 +71,6 @@ export default function AdminFileVaultPage() {
     section_key: string;
     label: string;
     icon: string;
-    sort_order: number;
     is_active: boolean;
     roles: string[];
   }) => {
@@ -96,7 +95,6 @@ export default function AdminFileVaultPage() {
     gcs_blob_name?: string;
     thumb_gcs_blob_name?: string;
     resource_type: string;
-    sort_order: number;
     is_active: boolean;
     roles: string[];
   }) => {

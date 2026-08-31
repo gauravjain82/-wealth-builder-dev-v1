@@ -25,7 +25,6 @@ type ItemFormModalProps = {
     gcs_blob_name?: string;
     thumb_gcs_blob_name?: string;
     resource_type: string;
-    sort_order: number;
     is_active: boolean;
     roles: string[];
   }) => Promise<FileVaultItemAdmin>;
@@ -48,7 +47,6 @@ export function ItemFormModal({
   const [itemViewType, setItemViewType] = useState<'row' | 'card'>('card');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [resourceType, setResourceType] = useState('link');
-  const [sortOrder, setSortOrder] = useState(0);
   const [isActive, setIsActive] = useState(true);
   const [roles, setRoles] = useState<string[]>([]);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
@@ -65,7 +63,6 @@ export function ItemFormModal({
     setItemViewType(item?.item_view_type ?? 'card');
     setThumbnailUrl(item?.thumbnail_url ?? '');
     setResourceType(item?.resource_type ?? 'link');
-    setSortOrder(item?.sort_order ?? 0);
     setIsActive(item?.is_active ?? true);
     setRoles(item?.allowed_roles ?? []);
     setDocumentFile(null);
@@ -107,7 +104,6 @@ export function ItemFormModal({
         gcs_blob_name: isLink ? '' : item?.gcs_blob_name ?? '',
         thumb_gcs_blob_name: isLink ? '' : item?.thumb_gcs_blob_name ?? '',
         resource_type: resourceType,
-        sort_order: sortOrder,
         is_active: isActive,
         roles,
       });
@@ -238,14 +234,9 @@ export function ItemFormModal({
             </div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm text-white/70">Sort order</label>
-            <Input
-              type="number"
-              value={sortOrder}
-              onChange={(event) => setSortOrder(Number(event.target.value))}
-            />
-          </div>
+          <p className="text-xs text-white/60">
+            New documents are added to the end of this section. Use the ↑ ↓ buttons to reorder.
+          </p>
 
           <label className="flex items-center gap-2 text-sm text-white/80">
             <input
