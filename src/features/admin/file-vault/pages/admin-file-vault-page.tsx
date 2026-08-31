@@ -93,6 +93,8 @@ export default function AdminFileVaultPage() {
     href: string;
     item_view_type: 'row' | 'card';
     thumbnail_url: string;
+    gcs_blob_name?: string;
+    thumb_gcs_blob_name?: string;
     resource_type: string;
     sort_order: number;
     is_active: boolean;
@@ -102,11 +104,11 @@ export default function AdminFileVaultPage() {
     const { roles, ...itemPayload } = payload;
 
     if (editingItem) {
-      await updateFileVaultItem(editingItem.id, itemPayload);
+      const updated = await updateFileVaultItem(editingItem.id, itemPayload);
       await updateFileVaultItemRoles(editingItem.id, roles);
       addToast({ type: 'success', message: 'Document updated' });
       await loadData();
-      return editingItem;
+      return updated;
     }
 
     const created = await createFileVaultItem({

@@ -72,6 +72,8 @@ export type FileVaultItemPayload = {
   href: string;
   item_view_type: 'row' | 'card';
   thumbnail_url?: string;
+  gcs_blob_name?: string;
+  thumb_gcs_blob_name?: string;
   resource_type: string;
   sort_order: number;
   is_active: boolean;
