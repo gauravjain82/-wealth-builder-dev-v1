@@ -183,6 +183,7 @@ export async function uploadFileVaultItemFile(
     {
       method: 'POST',
       headers: getAuthHeaders(),
+      body: formData,
     }
   );
   if (!response.ok) throw new Error(await parseError(response));
