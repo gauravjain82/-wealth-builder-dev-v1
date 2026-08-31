@@ -8,14 +8,17 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-function getAuthHeaders(contentType?: string): HeadersInit {
+function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem('wb.authToken');
   if (!token) throw new Error('No authentication token found');
-  const headers: HeadersInit = { Authorization: `Token ${token}` };
-  if (contentType) {
-    headers['Content-Type'] = contentType;
-  }
-  return headers;
+  return { Authorization: `Token ${token}` };
+}
+
+function getJsonHeaders(): HeadersInit {
+  return {
+    ...getAuthHeaders(),
+    'Content-Type': 'application/json',
+  };
 }
 
 async function parseError(response: Response): Promise<string> {
@@ -54,7 +57,7 @@ export async function updateFileVaultConfig(
 ): Promise<FileVaultConfig> {
   return request<FileVaultConfig>('/api/content/admin/file-vault/config/', {
     method: 'PATCH',
-    headers: getAuthHeaders(),
+    headers: getJsonHeaders(),
     body: JSON.stringify(payload),
   });
 }
@@ -70,7 +73,7 @@ export async function createFileVaultSection(
 ): Promise<FileVaultSectionAdmin> {
   return request<FileVaultSectionAdmin>('/api/content/admin/file-vault/sections/', {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: getJsonHeaders(),
     body: JSON.stringify(payload),
   });
 }
@@ -81,7 +84,7 @@ export async function updateFileVaultSection(
 ): Promise<FileVaultSectionAdmin> {
   return request<FileVaultSectionAdmin>(`/api/content/admin/file-vault/sections/${id}/`, {
     method: 'PATCH',
-    headers: getAuthHeaders(),
+    headers: getJsonHeaders(),
     body: JSON.stringify(payload),
   });
 }
@@ -99,7 +102,7 @@ export async function updateFileVaultSectionRoles(
 ): Promise<FileVaultSectionAdmin> {
   return request<FileVaultSectionAdmin>(`/api/content/admin/file-vault/sections/${id}/roles/`, {
     method: 'PUT',
-    headers: getAuthHeaders(),
+    headers: getJsonHeaders(),
     body: JSON.stringify({ roles }),
   });
 }
@@ -107,7 +110,7 @@ export async function updateFileVaultSectionRoles(
 export async function reorderFileVaultSections(ids: number[]): Promise<void> {
   await request('/api/content/admin/file-vault/sections/reorder/', {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: getJsonHeaders(),
     body: JSON.stringify({ ids }),
   });
 }
@@ -124,7 +127,7 @@ export async function createFileVaultItem(
 ): Promise<FileVaultItemAdmin> {
   return request<FileVaultItemAdmin>('/api/content/admin/file-vault/items/', {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: getJsonHeaders(),
     body: JSON.stringify(payload),
   });
 }
@@ -135,7 +138,7 @@ export async function updateFileVaultItem(
 ): Promise<FileVaultItemAdmin> {
   return request<FileVaultItemAdmin>(`/api/content/admin/file-vault/items/${id}/`, {
     method: 'PATCH',
-    headers: getAuthHeaders(),
+    headers: getJsonHeaders(),
     body: JSON.stringify(payload),
   });
 }
@@ -153,7 +156,7 @@ export async function updateFileVaultItemRoles(
 ): Promise<FileVaultItemAdmin> {
   return request<FileVaultItemAdmin>(`/api/content/admin/file-vault/items/${id}/roles/`, {
     method: 'PUT',
-    headers: getAuthHeaders(),
+    headers: getJsonHeaders(),
     body: JSON.stringify({ roles }),
   });
 }
@@ -161,7 +164,7 @@ export async function updateFileVaultItemRoles(
 export async function reorderFileVaultItems(ids: number[]): Promise<void> {
   await request('/api/content/admin/file-vault/items/reorder/', {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: getJsonHeaders(),
     body: JSON.stringify({ ids }),
   });
 }
@@ -179,10 +182,7 @@ export async function uploadFileVaultItemFile(
     `${API_BASE_URL}/api/content/admin/file-vault/items/${id}/upload/`,
     {
       method: 'POST',
-      headers: {
-        Authorization: `Token ${localStorage.getItem('wb.authToken')}`,
-      },
-      body: formData,
+      headers: getAuthHeaders(),
     }
   );
   if (!response.ok) throw new Error(await parseError(response));
