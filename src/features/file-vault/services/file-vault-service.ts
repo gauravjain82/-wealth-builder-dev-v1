@@ -38,3 +38,51 @@ export async function fetchFileVault(): Promise<FileVaultResponse> {
   }
   return response.json() as Promise<FileVaultResponse>;
 }
+
+export type FileVaultItemAccess = {
+  href: string;
+  thumb: string;
+};
+
+export async function fetchFileVaultItemAccess(id: number): Promise<FileVaultItemAccess> {
+  const response = await fetch(`${API_BASE_URL}/api/content/file-vault/items/${id}/access/`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+  return response.json() as Promise<FileVaultItemAccess>;
+}
+
+export async function openFileVaultItem(id: number, fallbackHref?: string): Promise<void> {
+  const popup = window.open('about:blank', '_blank');
+
+  const navigate = (url: string) => {
+    if (popup) {
+      popup.opener = null;
+      popup.location.replace(url);
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const closePopup = () => {
+    popup?.close();
+  };
+
+  try {
+    const access = await fetchFileVaultItemAccess(id);
+    const url = access.href || fallbackHref || '';
+    if (url && url !== '#') {
+      navigate(url);
+      return;
+    }
+    closePopup();
+  } catch {
+    if (fallbackHref && fallbackHref.startsWith('http')) {
+      navigate(fallbackHref);
+      return;
+    }
+    closePopup();
+  }
+}

@@ -5,6 +5,6 @@ export function useFileVault() {
   return useQuery({
     queryKey: ['file-vault'],
     queryFn: fetchFileVault,
-    staleTime: 60_000,
+    staleTime: 0,
   });
 }

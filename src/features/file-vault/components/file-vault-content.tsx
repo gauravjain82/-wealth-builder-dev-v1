@@ -1,4 +1,5 @@
 import type { FileVaultItem, FileVaultSection } from '../types';
+import { openFileVaultItem } from '../services/file-vault-service';
 
 type FileVaultContentProps = {
   activeSection: FileVaultSection;
@@ -43,6 +44,10 @@ export function FileVaultContent({
               href={item.href}
               target={item.href.startsWith('http') ? '_blank' : undefined}
               rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
+              onClick={(event) => {
+                event.preventDefault();
+                void openFileVaultItem(item.id, item.href);
+              }}
             >
               <span className="file-vault-row__title">{item.title}</span>
               <span className="file-vault-row__arrow">›</span>
@@ -54,6 +59,10 @@ export function FileVaultContent({
               href={item.href}
               target={item.href.startsWith('http') ? '_blank' : undefined}
               rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
+              onClick={(event) => {
+                event.preventDefault();
+                void openFileVaultItem(item.id, item.href);
+              }}
             >
               <div className="file-vault-card__thumb">
                 <img src={item.thumb} alt={item.title} loading="lazy" />

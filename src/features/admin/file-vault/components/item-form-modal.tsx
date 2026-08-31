@@ -99,9 +99,9 @@ export function ItemFormModal({
       const isEdit = Boolean(item?.id);
       const saved = await onSave({
         title: title.trim(),
-        href: isLink ? href.trim() : isEdit ? (item?.href ?? '') : '',
+        href: isLink ? href.trim() : '',
         item_view_type: itemViewType,
-        thumbnail_url: isLink ? thumbnailUrl.trim() : isEdit ? (item?.thumbnail_url ?? '') : '',
+        thumbnail_url: isLink ? thumbnailUrl.trim() : '',
         gcs_blob_name: isLink ? '' : isEdit ? (item?.gcs_blob_name ?? '') : '',
         thumb_gcs_blob_name: isLink ? '' : isEdit ? (item?.thumb_gcs_blob_name ?? '') : '',
         resource_type: resourceType,
@@ -200,16 +200,19 @@ export function ItemFormModal({
                   onFileChange={setThumbnailFile}
                 />
               )}
-              {(resolvedHref || item?.resolved_href) && (
-                <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/70">
-                  <p className="font-medium text-white/90">Linked document</p>
-                  <p className="mt-1 break-all">{resolvedHref || item?.resolved_href}</p>
-                </div>
+              {(item?.gcs_blob_name || documentFile) && (
+                <p className="text-xs text-white/60">
+                  The file location is stored. A fresh download link is generated each time someone opens it.
+                </p>
               )}
               {(resolvedThumb || item?.resolved_thumb) && itemViewType === 'card' && (
                 <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/70">
                   <p className="font-medium text-white/90">Thumbnail preview</p>
-                  <p className="mt-1 break-all">{resolvedThumb || item?.resolved_thumb}</p>
+                  <img
+                    src={resolvedThumb || item?.resolved_thumb}
+                    alt=""
+                    className="mt-2 h-16 w-24 rounded object-cover"
+                  />
                 </div>
               )}
             </>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Block, Button, ConfirmationDialog } from '@/shared/components';
 import { useToastStore } from '@/store';
 import type { FileVaultConfig, FileVaultItemAdmin, FileVaultSectionAdmin } from '@/features/file-vault/types';
+import { openFileVaultItem } from '@/features/file-vault/services/file-vault-service';
 import { ItemFormModal } from '../components/item-form-modal';
 import { SectionFormModal } from '../components/section-form-modal';
 import {
@@ -291,16 +292,17 @@ export default function AdminFileVaultPage() {
                           ? ` · roles: ${item.allowed_roles.join(', ')}`
                           : ' · all roles'}
                       </p>
-                      {item.resolved_href && (
-                        <a
-                          href={item.resolved_href}
-                          target="_blank"
-                          rel="noreferrer"
+                      {item.gcs_blob_name || item.resolved_href ? (
+                        <button
+                          type="button"
                           className="text-xs text-amber-300 hover:underline"
+                          onClick={() =>
+                            void openFileVaultItem(item.id, item.resolved_href || item.href)
+                          }
                         >
                           Open link
-                        </a>
-                      )}
+                        </button>
+                      ) : null}
                     </div>
                     {item.resolved_thumb && item.item_view_type === 'card' && (
                       <img
