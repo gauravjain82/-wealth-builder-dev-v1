@@ -105,6 +105,7 @@ function PdfThumbnail({
 
 interface PdfAnnotatorProps {
   src: string;
+  httpHeaders?: Record<string, string>;
 }
 
 type Stroke = {
@@ -125,7 +126,7 @@ type PageAnnotations = { strokes: Stroke[]; texts: TextItem[] };
  * page coordinates (not screen coordinates), so they scroll and zoom with
  * the page they belong to.
  */
-export default function PdfAnnotator({ src }: PdfAnnotatorProps) {
+export default function PdfAnnotator({ src, httpHeaders }: PdfAnnotatorProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRefs = useRef<Map<number, HTMLCanvasElement | null>>(new Map());
   const pageSizeRef = useRef<Map<number, { width: number; height: number }>>(
@@ -442,10 +443,12 @@ export default function PdfAnnotator({ src }: PdfAnnotatorProps) {
   const documentOptions = useMemo(
     () => ({
       // Workaround for some hosts that don't send range-request friendly headers.
-      disableStream: false,
+      disableStream: Boolean(httpHeaders),
       disableAutoFetch: false,
+      disableRange: Boolean(httpHeaders),
+      ...(httpHeaders ? { httpHeaders } : {}),
     }),
-    []
+    [httpHeaders]
   );
 
   return (

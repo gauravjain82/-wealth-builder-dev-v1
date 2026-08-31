@@ -25,6 +25,7 @@ type ItemFormModalProps = {
     gcs_blob_name?: string;
     thumb_gcs_blob_name?: string;
     resource_type: string;
+    allow_download: boolean;
     is_active: boolean;
     roles: string[];
   }) => Promise<FileVaultItemAdmin>;
@@ -47,6 +48,7 @@ export function ItemFormModal({
   const [itemViewType, setItemViewType] = useState<'row' | 'card'>('card');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [resourceType, setResourceType] = useState('link');
+  const [allowDownload, setAllowDownload] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [roles, setRoles] = useState<string[]>([]);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
@@ -63,6 +65,7 @@ export function ItemFormModal({
     setItemViewType(item?.item_view_type ?? 'card');
     setThumbnailUrl(item?.thumbnail_url ?? '');
     setResourceType(item?.resource_type ?? 'link');
+    setAllowDownload(item?.allow_download ?? false);
     setIsActive(item?.is_active ?? true);
     setRoles(item?.allowed_roles ?? []);
     setDocumentFile(null);
@@ -105,6 +108,7 @@ export function ItemFormModal({
         gcs_blob_name: isLink ? '' : isEdit ? (item?.gcs_blob_name ?? '') : '',
         thumb_gcs_blob_name: isLink ? '' : isEdit ? (item?.thumb_gcs_blob_name ?? '') : '',
         resource_type: resourceType,
+        allow_download: allowDownload,
         is_active: isActive,
         roles,
       });
@@ -247,6 +251,24 @@ export function ItemFormModal({
           <p className="text-xs text-white/60">
             New documents are added to the end of this section. Use the ↑ ↓ buttons to reorder.
           </p>
+
+          {(resourceType === 'pdf' ||
+            documentFile?.name.toLowerCase().endsWith('.pdf') ||
+            item?.gcs_blob_name?.toLowerCase().endsWith('.pdf')) && (
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <label className="flex items-center gap-2 text-sm text-white/80">
+                <input
+                  type="checkbox"
+                  checked={allowDownload}
+                  onChange={(event) => setAllowDownload(event.target.checked)}
+                />
+                Allow download
+              </label>
+              <p className="mt-1 text-xs text-white/50">
+                Off by default. When off, the PDF opens in a view-only viewer like Trainer Manual.
+              </p>
+            </div>
+          )}
 
           <label className="flex items-center gap-2 text-sm text-white/80">
             <input

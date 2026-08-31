@@ -12,6 +12,8 @@ export type FileVaultItem = {
   type?: 'row' | null;
   item_view_type: 'row' | 'card';
   resource_type: string;
+  allow_download: boolean;
+  is_pdf: boolean;
   sort_order: number;
 };
 
@@ -52,6 +54,7 @@ export type FileVaultItemAdmin = {
   gcs_blob_name: string;
   thumb_gcs_blob_name: string;
   resource_type: string;
+  allow_download: boolean;
   sort_order: number;
   is_active: boolean;
   allowed_roles: string[];
@@ -75,6 +78,7 @@ export type FileVaultItemPayload = {
   gcs_blob_name?: string;
   thumb_gcs_blob_name?: string;
   resource_type: string;
+  allow_download?: boolean;
   sort_order?: number;
   is_active: boolean;
 };

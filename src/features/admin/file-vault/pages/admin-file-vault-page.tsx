@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Block, Button, ConfirmationDialog } from '@/shared/components';
 import { useToastStore } from '@/store';
 import type { FileVaultConfig, FileVaultItemAdmin, FileVaultSectionAdmin } from '@/features/file-vault/types';
-import { openFileVaultItem } from '@/features/file-vault/services/file-vault-service';
+import { openFileVaultDocumentFromClick, type FileVaultViewerTarget } from '@/features/file-vault/services/file-vault-service';
+import FullscreenViewer from '@/features/systematic-tools/components/fullscreen-viewer';
 import { ItemFormModal } from '../components/item-form-modal';
 import { SectionFormModal } from '../components/section-form-modal';
 import {
@@ -33,6 +34,7 @@ export default function AdminFileVaultPage() {
   const [editingItem, setEditingItem] = useState<FileVaultItemAdmin | null>(null);
   const [deleteSectionTarget, setDeleteSectionTarget] = useState<FileVaultSectionAdmin | null>(null);
   const [deleteItemTarget, setDeleteItemTarget] = useState<FileVaultItemAdmin | null>(null);
+  const [viewer, setViewer] = useState<FileVaultViewerTarget | null>(null);
 
   const activeSection = useMemo(
     () => sections.find((section) => section.id === activeSectionId) ?? null,
@@ -96,6 +98,7 @@ export default function AdminFileVaultPage() {
     gcs_blob_name?: string;
     thumb_gcs_blob_name?: string;
     resource_type: string;
+    allow_download: boolean;
     is_active: boolean;
     roles: string[];
   }) => {
@@ -288,6 +291,11 @@ export default function AdminFileVaultPage() {
                       <p className="font-medium text-white">{item.title}</p>
                       <p className="text-xs text-white/50">
                         {item.item_view_type} · {item.resource_type}
+                        {item.resource_type === 'pdf' || item.gcs_blob_name.toLowerCase().endsWith('.pdf')
+                          ? item.allow_download
+                            ? ' · download allowed'
+                            : ' · view only'
+                          : ''}
                         {item.allowed_roles.length
                           ? ` · roles: ${item.allowed_roles.join(', ')}`
                           : ' · all roles'}
@@ -296,11 +304,26 @@ export default function AdminFileVaultPage() {
                         <button
                           type="button"
                           className="text-xs text-amber-300 hover:underline"
-                          onClick={() =>
-                            void openFileVaultItem(item.id, item.resolved_href || item.href)
-                          }
+                          onClick={() => {
+                            void openFileVaultDocumentFromClick({
+                              id: item.id,
+                              title: item.title,
+                              href: item.resolved_href || item.href,
+                              resource_type: item.resource_type,
+                              allow_download: item.allow_download,
+                              gcs_blob_name: item.gcs_blob_name,
+                            }).then((result) => {
+                              if ('viewer' in result) {
+                                setViewer(result.viewer);
+                                return;
+                              }
+                              if ('failed' in result) {
+                                addToast({ type: 'error', message: 'Unable to open this file.' });
+                              }
+                            });
+                          }}
                         >
-                          Open link
+                          Open
                         </button>
                       ) : null}
                     </div>
@@ -411,6 +434,16 @@ export default function AdminFileVaultPage() {
           await loadData();
         }}
         onClose={() => setDeleteItemTarget(null)}
+      />
+
+      <FullscreenViewer
+        isOpen={Boolean(viewer)}
+        src={viewer?.src ?? ''}
+        title={viewer?.title ?? ''}
+        allowDownload={viewer?.allowDownload}
+        httpHeaders={viewer?.httpHeaders}
+        forcePdf={viewer?.forcePdf}
+        onClose={() => setViewer(null)}
       />
     </div>
   );

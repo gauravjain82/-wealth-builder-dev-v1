@@ -1,5 +1,4 @@
 import type { FileVaultItem, FileVaultSection } from '../types';
-import { openFileVaultItem } from '../services/file-vault-service';
 
 type FileVaultContentProps = {
   activeSection: FileVaultSection;
@@ -7,6 +6,7 @@ type FileVaultContentProps = {
   onQueryChange: (value: string) => void;
   filteredItems: FileVaultItem[];
   searchEnabled?: boolean;
+  onOpenItem: (item: FileVaultItem) => void;
 };
 
 export function FileVaultContent({
@@ -15,6 +15,7 @@ export function FileVaultContent({
   onQueryChange,
   filteredItems,
   searchEnabled = true,
+  onOpenItem,
 }: FileVaultContentProps) {
   return (
     <main className="file-vault-content">
@@ -46,7 +47,7 @@ export function FileVaultContent({
               rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
               onClick={(event) => {
                 event.preventDefault();
-                void openFileVaultItem(item.id, item.href);
+                onOpenItem(item);
               }}
             >
               <span className="file-vault-row__title">{item.title}</span>
@@ -61,7 +62,7 @@ export function FileVaultContent({
               rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
               onClick={(event) => {
                 event.preventDefault();
-                void openFileVaultItem(item.id, item.href);
+                onOpenItem(item);
               }}
             >
               <div className="file-vault-card__thumb">

@@ -42,6 +42,9 @@ interface FullscreenViewerProps {
   src: string;
   title: string;
   onClose: () => void;
+  allowDownload?: boolean;
+  httpHeaders?: Record<string, string>;
+  forcePdf?: boolean;
 }
 
 const FullscreenViewer: React.FC<FullscreenViewerProps> = ({
@@ -49,12 +52,36 @@ const FullscreenViewer: React.FC<FullscreenViewerProps> = ({
   src,
   title,
   onClose,
+  allowDownload = false,
+  httpHeaders,
+  forcePdf = false,
 }) => {
   if (!isOpen) return null;
 
   const slides = isSlidesUrl(src);
-  const pdf = isPdfUrl(src);
-  const directPdf = pdf && isDirectPdfUrl(src);
+  const pdf = forcePdf || isPdfUrl(src);
+  const directPdf = pdf && (src.includes('drive.google.com') ? false : forcePdf || isDirectPdfUrl(src));
+
+  const handleDownload = async () => {
+    if (!allowDownload) return;
+    const downloadUrl = src.includes('?') ? `${src}&download=1` : `${src}?download=1`;
+    const target = httpHeaders ? downloadUrl : src;
+    try {
+      const response = await fetch(target, { headers: httpHeaders });
+      if (!response.ok) return;
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = title.toLowerCase().endsWith('.pdf') ? title : `${title}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      window.open(src, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
     <div
@@ -122,10 +149,38 @@ const FullscreenViewer: React.FC<FullscreenViewerProps> = ({
           ×
         </button>
 
+        {allowDownload ? (
+          <button
+            aria-label="Download"
+            onClick={() => void handleDownload()}
+            style={{
+              position: 'fixed',
+              top: 12,
+              right: 64,
+              height: 40,
+              padding: '0 14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              background: 'rgba(0,0,0,0.65)',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              zIndex: 10001,
+              borderRadius: 999,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+            }}
+          >
+            Download
+          </button>
+        ) : null}
+
         {slides ? (
           <SecureSlidePlayer embedSrc={src} fillContainer />
         ) : directPdf ? (
-          <PdfAnnotator src={src} />
+          <PdfAnnotator src={src} httpHeaders={httpHeaders} />
         ) : pdf ? (
           <SecureSlidePlayer
             embedSrc={toEmbeddablePdfUrl(src)}

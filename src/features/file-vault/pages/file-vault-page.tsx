@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ErrorState, LoadingState } from '@/shared/components';
+import { useToastStore } from '@/store';
+import FullscreenViewer from '@/features/systematic-tools/components/fullscreen-viewer';
 import { FileVaultSidebar } from '../components/file-vault-sidebar';
 import { FileVaultContent } from '../components/file-vault-content';
 import { useFileVault } from '../hooks/use-file-vault';
-import type { FileVaultSection } from '../types';
+import { openFileVaultDocumentFromClick, type FileVaultViewerTarget } from '../services/file-vault-service';
+import type { FileVaultItem, FileVaultSection } from '../types';
 import './file-vault-page.css';
 
 const EMPTY_SECTION: FileVaultSection = {
@@ -16,8 +19,10 @@ const EMPTY_SECTION: FileVaultSection = {
 
 export default function FileVaultPage() {
   const { data, isLoading, isError, error, refetch } = useFileVault();
+  const { addToast } = useToastStore();
   const [query, setQuery] = useState('');
   const [activeId, setActiveId] = useState('');
+  const [viewer, setViewer] = useState<FileVaultViewerTarget | null>(null);
 
   const vaultData = data?.sections ?? [];
 
@@ -53,6 +58,17 @@ export default function FileVaultPage() {
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       setActiveId(vaultData[(index - 1 + vaultData.length) % vaultData.length].id);
+    }
+  };
+
+  const handleOpenItem = async (item: FileVaultItem) => {
+    const result = await openFileVaultDocumentFromClick(item);
+    if ('viewer' in result) {
+      setViewer(result.viewer);
+      return;
+    }
+    if ('failed' in result) {
+      addToast({ type: 'error', message: 'Unable to open this file.' });
     }
   };
 
@@ -92,8 +108,19 @@ export default function FileVaultPage() {
           onQueryChange={setQuery}
           filteredItems={filteredItems}
           searchEnabled={data?.config.search_enabled ?? true}
+          onOpenItem={(item) => void handleOpenItem(item)}
         />
       </div>
+
+      <FullscreenViewer
+        isOpen={Boolean(viewer)}
+        src={viewer?.src ?? ''}
+        title={viewer?.title ?? ''}
+        allowDownload={viewer?.allowDownload}
+        httpHeaders={viewer?.httpHeaders}
+        forcePdf={viewer?.forcePdf}
+        onClose={() => setViewer(null)}
+      />
     </div>
   );
 }
