@@ -175,7 +175,11 @@ export async function uploadFileVaultItemFile(
   uploadType: 'file' | 'thumbnail' = 'file'
 ): Promise<{ blob_name: string; url: string; item: FileVaultItemAdmin }> {
   const formData = new FormData();
-  formData.append('file', file);
+  if (uploadType === 'thumbnail') {
+    formData.append('thumbnail', file);
+  } else {
+    formData.append('file', file);
+  }
   formData.append('upload_type', uploadType);
 
   const response = await fetch(

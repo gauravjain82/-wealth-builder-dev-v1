@@ -96,13 +96,14 @@ export function ItemFormModal({
     setSaving(true);
     try {
       const isLink = deliveryMode === 'link';
+      const isEdit = Boolean(item?.id);
       const saved = await onSave({
         title: title.trim(),
-        href: isLink ? href.trim() : '',
+        href: isLink ? href.trim() : isEdit ? (item?.href ?? '') : '',
         item_view_type: itemViewType,
-        thumbnail_url: isLink ? thumbnailUrl.trim() : '',
-        gcs_blob_name: isLink ? '' : item?.gcs_blob_name ?? '',
-        thumb_gcs_blob_name: isLink ? '' : item?.thumb_gcs_blob_name ?? '',
+        thumbnail_url: isLink ? thumbnailUrl.trim() : isEdit ? (item?.thumbnail_url ?? '') : '',
+        gcs_blob_name: isLink ? '' : isEdit ? (item?.gcs_blob_name ?? '') : '',
+        thumb_gcs_blob_name: isLink ? '' : isEdit ? (item?.thumb_gcs_blob_name ?? '') : '',
         resource_type: resourceType,
         is_active: isActive,
         roles,
@@ -114,13 +115,13 @@ export function ItemFormModal({
       if (deliveryMode === 'upload') {
         if (documentFile) {
           const upload = await uploadFileVaultItemFile(saved.id, documentFile, 'file');
-          nextHref = upload.url;
-          setResolvedHref(upload.url);
+          nextHref = upload.item.resolved_href ?? upload.url;
+          setResolvedHref(nextHref);
         }
         if (thumbnailFile) {
           const upload = await uploadFileVaultItemFile(saved.id, thumbnailFile, 'thumbnail');
-          nextThumb = upload.url;
-          setResolvedThumb(upload.url);
+          nextThumb = upload.item.resolved_thumb ?? upload.url;
+          setResolvedThumb(nextThumb);
         } else if (!thumbnailFile && item?.resolved_thumb) {
           nextThumb = item.resolved_thumb;
         }
@@ -201,8 +202,14 @@ export function ItemFormModal({
               )}
               {(resolvedHref || item?.resolved_href) && (
                 <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/70">
-                  <p className="font-medium text-white/90">Linked file</p>
+                  <p className="font-medium text-white/90">Linked document</p>
                   <p className="mt-1 break-all">{resolvedHref || item?.resolved_href}</p>
+                </div>
+              )}
+              {(resolvedThumb || item?.resolved_thumb) && itemViewType === 'card' && (
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/70">
+                  <p className="font-medium text-white/90">Thumbnail preview</p>
+                  <p className="mt-1 break-all">{resolvedThumb || item?.resolved_thumb}</p>
                 </div>
               )}
             </>
