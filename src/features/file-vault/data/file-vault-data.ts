@@ -1,3 +1,7 @@
+/**
+ * Legacy static seed data — used by `python manage.py seed_file_vault`.
+ * Runtime File Vault content is loaded from GET /api/content/file-vault/.
+ */
 import { Plan } from '@core/types';
 
 export type VaultItem = {

@@ -1,10 +1,11 @@
-import type { VaultItem, VaultSection } from '../data/file-vault-data';
+import type { FileVaultItem, FileVaultSection } from '../types';
 
 type FileVaultContentProps = {
-  activeSection: VaultSection;
+  activeSection: FileVaultSection;
   query: string;
   onQueryChange: (value: string) => void;
-  filteredItems: VaultItem[];
+  filteredItems: FileVaultItem[];
+  searchEnabled?: boolean;
 };
 
 export function FileVaultContent({
@@ -12,6 +13,7 @@ export function FileVaultContent({
   query,
   onQueryChange,
   filteredItems,
+  searchEnabled = true,
 }: FileVaultContentProps) {
   return (
     <main className="file-vault-content">
@@ -20,21 +22,23 @@ export function FileVaultContent({
           <h2>{activeSection.label || 'File Vault'}</h2>
         </div>
 
-        <label className="file-vault-search">
-          <span className="sr-only">Search in this section</span>
-          <input
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search in this section"
-          />
-        </label>
+        {searchEnabled && (
+          <label className="file-vault-search">
+            <span className="sr-only">Search in this section</span>
+            <input
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder="Search in this section"
+            />
+          </label>
+        )}
       </header>
 
       <section className="file-vault-grid">
         {filteredItems.map((item) =>
-          item.type === 'row' || !item.thumb ? (
+          item.type === 'row' || item.item_view_type === 'row' || !item.thumb ? (
             <a
-              key={item.title}
+              key={item.id}
               className="file-vault-row"
               href={item.href}
               target={item.href.startsWith('http') ? '_blank' : undefined}
@@ -45,7 +49,7 @@ export function FileVaultContent({
             </a>
           ) : (
             <a
-              key={item.title}
+              key={item.id}
               className="file-vault-card"
               href={item.href}
               target={item.href.startsWith('http') ? '_blank' : undefined}
@@ -63,7 +67,13 @@ export function FileVaultContent({
 
         {filteredItems.length === 0 && (
           <div className="file-vault-empty">
-            No results for <strong>{query}</strong>.
+            {query.trim() ? (
+              <>
+                No results for <strong>{query}</strong>.
+              </>
+            ) : (
+              'No documents in this section yet.'
+            )}
           </div>
         )}
       </section>
