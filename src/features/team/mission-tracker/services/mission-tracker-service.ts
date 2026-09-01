@@ -9,12 +9,55 @@ export async function deleteMissionRingProofAttachment(userId: number, blobName:
   if (!resp.ok) throw new Error('Failed to delete attachment');
 }
 // Mission Ring Proof Attachments API
+export type MissionRingProofType = '1st_recruit' | 'personal_saving' | 'convention' | 'others';
+
+export const MISSION_RING_PROOF_TYPE_OPTIONS: { value: MissionRingProofType; label: string }[] = [
+  { value: '1st_recruit', label: '1st Recruit Proof' },
+  { value: 'personal_saving', label: 'Personal Saving Proof' },
+  { value: 'convention', label: 'Convention' },
+  { value: 'others', label: 'Others' },
+];
+
 export interface MissionRingProofAttachment {
   id: number;
   file_name: string;
   uploaded_at: string;
   url: string;
   blob_name?: string;
+  proof_type?: MissionRingProofType | string;
+  notes?: string;
+}
+
+export function normalizeMissionRingProofType(value: unknown): MissionRingProofType {
+  if (
+    value === '1st_recruit' ||
+    value === 'personal_saving' ||
+    value === 'convention' ||
+    value === 'others'
+  ) {
+    return value;
+  }
+  return 'others';
+}
+
+const PROOF_TYPE_IN_NAME: MissionRingProofType[] = [
+  '1st_recruit',
+  'personal_saving',
+  'convention',
+  'others',
+];
+
+export function inferMissionRingProofType(attachment: Pick<MissionRingProofAttachment, 'proof_type' | 'file_name' | 'blob_name'>): MissionRingProofType {
+  const explicit = normalizeMissionRingProofType(attachment.proof_type);
+  if (attachment.proof_type && explicit !== 'others') {
+    return explicit;
+  }
+  if (attachment.proof_type === 'others') {
+    return 'others';
+  }
+  const haystack = `${attachment.file_name || ''} ${attachment.blob_name || ''}`.toLowerCase();
+  const matched = PROOF_TYPE_IN_NAME.find((type) => type !== 'others' && haystack.includes(`_${type}_`));
+  return matched || 'others';
 }
 
 export function normalizeMissionRingProofAttachments(value: unknown): MissionRingProofAttachment[] {
@@ -22,32 +65,43 @@ export function normalizeMissionRingProofAttachments(value: unknown): MissionRin
 
   return value.map((item, idx) => {
     const attachment = item as Partial<MissionRingProofAttachment>;
-    return {
+    const normalized: MissionRingProofAttachment = {
       id: attachment.id ?? idx,
       file_name: attachment.file_name || '',
       uploaded_at: attachment.uploaded_at || '',
       url: attachment.url || '',
       blob_name: attachment.blob_name,
+      proof_type: attachment.proof_type,
+      notes: attachment.notes || '',
+    };
+    return {
+      ...normalized,
+      proof_type: inferMissionRingProofType(normalized),
     };
   });
 }
 
 export async function listMissionRingProofAttachments(userId: number): Promise<MissionRingProofAttachment[]> {
-  // GET /api/trackers/4X4/{user_id}/
   const response = await fetch(`${API_BASE_URL}/api/tracker/trackers/4X4/${userId}/`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch mission ring proof attachments');
   const data = await response.json();
-  // The field is mission_ring_proof: Array<{file_name, uploaded_at, url, blob_name, ...}>
   return normalizeMissionRingProofAttachments(data.mission_ring_proof);
 }
 
-export async function uploadMissionRingProofAttachment(userId: number, file: File): Promise<void> {
-  // POST /api/trackers/4X4/{user_id}/mission-ring-proof/
+export async function uploadMissionRingProofAttachment(
+  userId: number,
+  files: File[],
+  proofType: MissionRingProofType,
+  notes?: string,
+): Promise<MissionRingProofAttachment[]> {
+  if (files.length === 0) return [];
   const formData = new FormData();
-  formData.append('file', file);
-  // Only set Authorization header, NOT Content-Type
+  files.forEach((file) => formData.append('files', file));
+  formData.append('proof_type', proofType);
+  const trimmedNotes = notes?.trim();
+  if (trimmedNotes) formData.append('notes', trimmedNotes);
   const token = localStorage.getItem('wb.authToken');
   const headers: Record<string, string> = token ? { Authorization: `Token ${token}` } : {};
   const response = await fetch(`${API_BASE_URL}/api/tracker/trackers/4X4/${userId}/mission-ring-proof/`, {
@@ -56,6 +110,8 @@ export async function uploadMissionRingProofAttachment(userId: number, file: Fil
     body: formData,
   });
   if (!response.ok) throw new Error('Failed to upload mission ring proof attachment');
+  const data = await response.json();
+  return normalizeMissionRingProofAttachments(data.mission_ring_proof);
 }
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const MISSION_TRACKER_API_KEY = ['4', 'X4'].join('');

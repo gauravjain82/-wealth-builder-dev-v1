@@ -8,7 +8,7 @@ import {
   resolveTrackerUserIdByName,
 } from '@/features/team/services/tracker-user-profile-service';
 import { DatePicker } from '@/shared/components/ui/date-picker';
-import type { MissionRingProofAttachment, MissionTrackerRecord } from './services/mission-tracker-service';
+import type { MissionRingProofAttachment, MissionRingProofType, MissionTrackerRecord } from './services/mission-tracker-service';
 import { MissionRingProofAttachmentsAction } from './components/mission-ringproof-attachments-action';
 import { listMissionRingProofAttachments, uploadMissionRingProofAttachment } from './services/mission-tracker-service';
 
@@ -37,7 +37,12 @@ interface BuildMissionTrackerColumnsOptions {
 
   // For Mission Ring Proof attachments
   listMissionRingProofAttachments: (userId: number) => Promise<MissionRingProofAttachment[]>;
-  uploadMissionRingProofAttachment: (userId: number, file: File) => Promise<void>;
+  uploadMissionRingProofAttachment: (
+    userId: number,
+    files: File[],
+    proofType: MissionRingProofType,
+    notes?: string,
+  ) => Promise<MissionRingProofAttachment[] | void>;
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -86,6 +91,14 @@ function getCountdownFromAma(row: MissionTrackerRecord): {
     endDateISO: endDate.toISOString(),
     label: `${daysLeft > 0 ? daysLeft : 0}d`,
   };
+}
+
+function isMissionRingEligible(row: MissionTrackerRecord): boolean {
+  if (!row.finish_1st_recruit || !row.finish_1st_savings || !row.big_event_1st) {
+    return false;
+  }
+  const countdown = getCountdownFromAma(row);
+  return Boolean(countdown.hasAma && countdown.daysLeft !== null && countdown.daysLeft < 0);
 }
 
 function renderCheckbox(
@@ -480,7 +493,7 @@ export function buildMissionTrackerColumns(options: BuildMissionTrackerColumnsOp
     {
       key: 'mission_ring_proof',
       label: 'Mission Ring Proof',
-      width: 170,
+      width: 168,
       align: 'center',
       sortable: false,
       searchable: false,
@@ -488,6 +501,7 @@ export function buildMissionTrackerColumns(options: BuildMissionTrackerColumnsOp
       render: (row) => (
         <MissionRingProofAttachmentsAction
           userId={row.user_id}
+          eligible={isMissionRingEligible(row)}
           listAttachments={mergedOptions.listMissionRingProofAttachments}
           uploadAttachment={mergedOptions.uploadMissionRingProofAttachment}
           missionRingProofList={row.mission_ring_proof || EMPTY_MISSION_RING_PROOF_ATTACHMENTS}
