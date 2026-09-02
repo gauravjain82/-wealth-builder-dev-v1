@@ -1,61 +1,27 @@
+import {
+  API_BASE_URL,
+  getAuthHeaders,
+  getJsonHeaders,
+  parseError,
+  request,
+} from '@shared/services/content-page-service';
 import type {
   FileVaultConfig,
   FileVaultItemAdmin,
-  FileVaultItemPayload,
   FileVaultSectionAdmin,
-  FileVaultSectionPayload,
 } from '@/features/file-vault/types';
+import type { ContentUploadResult } from '@/features/admin/content-pages/types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
-function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem('wb.authToken');
-  if (!token) throw new Error('No authentication token found');
-  return { Authorization: `Token ${token}` };
-}
-
-function getJsonHeaders(): HeadersInit {
-  return {
-    ...getAuthHeaders(),
-    'Content-Type': 'application/json',
-  };
-}
-
-async function parseError(response: Response): Promise<string> {
-  const data = (await response.json().catch(() => null)) as unknown;
-  if (!data || typeof data !== 'object') return `Request failed (${response.status})`;
-
-  const record = data as Record<string, unknown>;
-  const detail = record.detail;
-  if (Array.isArray(detail)) return detail.join(', ');
-  if (typeof detail === 'string') return detail;
-
-  for (const value of Object.values(record)) {
-    if (Array.isArray(value) && value.length && typeof value[0] === 'string') {
-      return value[0];
-    }
-    if (typeof value === 'string') return value;
-  }
-  return `Request failed (${response.status})`;
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, init);
-  if (response.status === 204) return undefined as T;
-  if (!response.ok) throw new Error(await parseError(response));
-  return response.json() as Promise<T>;
-}
+const BASE = '/api/content/admin/file-vault';
 
 export async function fetchFileVaultConfig(): Promise<FileVaultConfig> {
-  return request<FileVaultConfig>('/api/content/admin/file-vault/config/', {
-    headers: getAuthHeaders(),
-  });
+  return request<FileVaultConfig>(`${BASE}/config/`, { headers: getAuthHeaders() });
 }
 
 export async function updateFileVaultConfig(
   payload: Partial<Pick<FileVaultConfig, 'page_title' | 'search_enabled'>>
 ): Promise<FileVaultConfig> {
-  return request<FileVaultConfig>('/api/content/admin/file-vault/config/', {
+  return request<FileVaultConfig>(`${BASE}/config/`, {
     method: 'PATCH',
     headers: getJsonHeaders(),
     body: JSON.stringify(payload),
@@ -63,15 +29,15 @@ export async function updateFileVaultConfig(
 }
 
 export async function listFileVaultSections(): Promise<FileVaultSectionAdmin[]> {
-  return request<FileVaultSectionAdmin[]>('/api/content/admin/file-vault/sections/', {
+  return request<FileVaultSectionAdmin[]>(`${BASE}/sections/`, {
     headers: getAuthHeaders(),
   });
 }
 
 export async function createFileVaultSection(
-  payload: FileVaultSectionPayload
+  payload: Record<string, unknown>
 ): Promise<FileVaultSectionAdmin> {
-  return request<FileVaultSectionAdmin>('/api/content/admin/file-vault/sections/', {
+  return request<FileVaultSectionAdmin>(`${BASE}/sections/`, {
     method: 'POST',
     headers: getJsonHeaders(),
     body: JSON.stringify(payload),
@@ -80,9 +46,9 @@ export async function createFileVaultSection(
 
 export async function updateFileVaultSection(
   id: number,
-  payload: Partial<FileVaultSectionPayload>
+  payload: Record<string, unknown>
 ): Promise<FileVaultSectionAdmin> {
-  return request<FileVaultSectionAdmin>(`/api/content/admin/file-vault/sections/${id}/`, {
+  return request<FileVaultSectionAdmin>(`${BASE}/sections/${id}/`, {
     method: 'PATCH',
     headers: getJsonHeaders(),
     body: JSON.stringify(payload),
@@ -90,7 +56,7 @@ export async function updateFileVaultSection(
 }
 
 export async function deleteFileVaultSection(id: number): Promise<void> {
-  await request<void>(`/api/content/admin/file-vault/sections/${id}/`, {
+  await request<void>(`${BASE}/sections/${id}/`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -100,7 +66,7 @@ export async function updateFileVaultSectionRoles(
   id: number,
   roles: string[]
 ): Promise<FileVaultSectionAdmin> {
-  return request<FileVaultSectionAdmin>(`/api/content/admin/file-vault/sections/${id}/roles/`, {
+  return request<FileVaultSectionAdmin>(`${BASE}/sections/${id}/roles/`, {
     method: 'PUT',
     headers: getJsonHeaders(),
     body: JSON.stringify({ roles }),
@@ -108,7 +74,7 @@ export async function updateFileVaultSectionRoles(
 }
 
 export async function reorderFileVaultSections(ids: number[]): Promise<void> {
-  await request('/api/content/admin/file-vault/sections/reorder/', {
+  await request(`${BASE}/sections/reorder/`, {
     method: 'POST',
     headers: getJsonHeaders(),
     body: JSON.stringify({ ids }),
@@ -116,16 +82,15 @@ export async function reorderFileVaultSections(ids: number[]): Promise<void> {
 }
 
 export async function listFileVaultItems(sectionId: number): Promise<FileVaultItemAdmin[]> {
-  return request<FileVaultItemAdmin[]>(
-    `/api/content/admin/file-vault/items/?section=${sectionId}`,
-    { headers: getAuthHeaders() }
-  );
+  return request<FileVaultItemAdmin[]>(`${BASE}/items/?section=${sectionId}`, {
+    headers: getAuthHeaders(),
+  });
 }
 
 export async function createFileVaultItem(
-  payload: FileVaultItemPayload
+  payload: Record<string, unknown>
 ): Promise<FileVaultItemAdmin> {
-  return request<FileVaultItemAdmin>('/api/content/admin/file-vault/items/', {
+  return request<FileVaultItemAdmin>(`${BASE}/items/`, {
     method: 'POST',
     headers: getJsonHeaders(),
     body: JSON.stringify(payload),
@@ -134,9 +99,9 @@ export async function createFileVaultItem(
 
 export async function updateFileVaultItem(
   id: number,
-  payload: Partial<FileVaultItemPayload>
+  payload: Record<string, unknown>
 ): Promise<FileVaultItemAdmin> {
-  return request<FileVaultItemAdmin>(`/api/content/admin/file-vault/items/${id}/`, {
+  return request<FileVaultItemAdmin>(`${BASE}/items/${id}/`, {
     method: 'PATCH',
     headers: getJsonHeaders(),
     body: JSON.stringify(payload),
@@ -144,7 +109,7 @@ export async function updateFileVaultItem(
 }
 
 export async function deleteFileVaultItem(id: number): Promise<void> {
-  await request<void>(`/api/content/admin/file-vault/items/${id}/`, {
+  await request<void>(`${BASE}/items/${id}/`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -154,7 +119,7 @@ export async function updateFileVaultItemRoles(
   id: number,
   roles: string[]
 ): Promise<FileVaultItemAdmin> {
-  return request<FileVaultItemAdmin>(`/api/content/admin/file-vault/items/${id}/roles/`, {
+  return request<FileVaultItemAdmin>(`${BASE}/items/${id}/roles/`, {
     method: 'PUT',
     headers: getJsonHeaders(),
     body: JSON.stringify({ roles }),
@@ -162,7 +127,7 @@ export async function updateFileVaultItemRoles(
 }
 
 export async function reorderFileVaultItems(ids: number[]): Promise<void> {
-  await request('/api/content/admin/file-vault/items/reorder/', {
+  await request(`${BASE}/items/reorder/`, {
     method: 'POST',
     headers: getJsonHeaders(),
     body: JSON.stringify({ ids }),
@@ -173,23 +138,16 @@ export async function uploadFileVaultItemFile(
   id: number,
   file: File,
   uploadType: 'file' | 'thumbnail' = 'file'
-): Promise<{ blob_name: string; url: string; item: FileVaultItemAdmin }> {
+): Promise<ContentUploadResult> {
   const formData = new FormData();
-  if (uploadType === 'thumbnail') {
-    formData.append('thumbnail', file);
-  } else {
-    formData.append('file', file);
-  }
+  formData.append(uploadType === 'thumbnail' ? 'thumbnail' : 'file', file);
   formData.append('upload_type', uploadType);
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/content/admin/file-vault/items/${id}/upload/`,
-    {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: formData,
-    }
-  );
+  const response = await fetch(`${API_BASE_URL}${BASE}/items/${id}/upload/`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: formData,
+  });
   if (!response.ok) throw new Error(await parseError(response));
-  return response.json() as Promise<{ blob_name: string; url: string; item: FileVaultItemAdmin }>;
+  return response.json() as Promise<ContentUploadResult>;
 }

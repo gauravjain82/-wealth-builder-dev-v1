@@ -1,54 +1,66 @@
 import { useEffect, useState } from 'react';
 import { Button, Input } from '@/shared/components';
-import type { FileVaultSectionAdmin } from '@/features/file-vault/types';
 import { RoleAccessPicker } from './role-access-picker';
+import type { ContentSectionAdmin, ContentSectionFormPayload } from '../types';
 
-type SectionFormModalProps = {
+type ContentSectionFormModalProps = {
   open: boolean;
-  section?: FileVaultSectionAdmin | null;
+  section?: ContentSectionAdmin | null;
   onClose: () => void;
-  onSave: (payload: {
-    section_key: string;
-    label: string;
-    icon: string;
-    is_active: boolean;
-    roles: string[];
-  }) => Promise<void>;
+  onSave: (payload: ContentSectionFormPayload) => Promise<void>;
+  nounSingular?: string;
+  defaultIcon?: string;
+  keyPlaceholder?: string;
+  labelPlaceholder?: string;
 };
 
-export function SectionFormModal({ open, section, onClose, onSave }: SectionFormModalProps) {
+export function ContentSectionFormModal({
+  open,
+  section,
+  onClose,
+  onSave,
+  nounSingular = 'section',
+  defaultIcon = '📁',
+  keyPlaceholder = 'presentations',
+  labelPlaceholder = 'Presentations',
+}: ContentSectionFormModalProps) {
   const [sectionKey, setSectionKey] = useState('');
   const [label, setLabel] = useState('');
-  const [icon, setIcon] = useState('📁');
+  const [icon, setIcon] = useState(defaultIcon);
   const [isActive, setIsActive] = useState(true);
   const [roles, setRoles] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setSectionKey(section?.section_key ?? '');
     setLabel(section?.label ?? '');
-    setIcon(section?.icon ?? '📁');
+    setIcon(section?.icon ?? defaultIcon);
     setIsActive(section?.is_active ?? true);
     setRoles(section?.allowed_roles ?? []);
-  }, [open, section]);
+    setErrorMessage('');
+  }, [open, section, defaultIcon]);
 
   if (!open) return null;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
+    setErrorMessage('');
     try {
       await onSave({
         section_key: sectionKey.trim(),
         label: label.trim(),
-        icon: icon.trim() || '📁',
+        icon: icon.trim() || defaultIcon,
         is_active: isActive,
         roles,
       });
       onClose();
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to save section');
+      setErrorMessage(
+        error instanceof Error ? error.message : `Failed to save ${nounSingular}`
+      );
     } finally {
       setSaving(false);
     }
@@ -61,16 +73,16 @@ export function SectionFormModal({ open, section, onClose, onSave }: SectionForm
         className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#1a1d25] p-6 shadow-xl"
       >
         <h2 className="mb-4 text-lg font-semibold text-white">
-          {section ? 'Edit section' : 'Add section'}
+          {section ? `Edit ${nounSingular}` : `Add ${nounSingular}`}
         </h2>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm text-white/70">Section key</label>
+            <label className="mb-1 block text-sm text-white/70">Key</label>
             <Input
               value={sectionKey}
               onChange={(event) => setSectionKey(event.target.value)}
-              placeholder="presentations"
+              placeholder={keyPlaceholder}
               required
               disabled={Boolean(section)}
             />
@@ -80,7 +92,7 @@ export function SectionFormModal({ open, section, onClose, onSave }: SectionForm
             <Input
               value={label}
               onChange={(event) => setLabel(event.target.value)}
-              placeholder="Presentations"
+              placeholder={labelPlaceholder}
               required
             />
           </div>
@@ -89,7 +101,7 @@ export function SectionFormModal({ open, section, onClose, onSave }: SectionForm
             <Input value={icon} onChange={(event) => setIcon(event.target.value)} />
           </div>
           <p className="text-xs text-white/60">
-            New sections are added to the end. Use the ↑ ↓ buttons in the list to reorder.
+            New entries are added to the end. Use the ↑ ↓ buttons in the list to reorder.
           </p>
           <label className="flex items-center gap-2 text-sm text-white/80">
             <input
@@ -106,8 +118,10 @@ export function SectionFormModal({ open, section, onClose, onSave }: SectionForm
           />
         </div>
 
+        {errorMessage && <p className="mt-4 text-sm text-red-400">{errorMessage}</p>}
+
         <div className="mt-6 flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
           <Button type="submit" disabled={saving}>

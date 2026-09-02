@@ -1,68 +1,83 @@
 import { useEffect, useState } from 'react';
 import { Button, Input, Select } from '@/shared/components';
-import type { FileVaultItemAdmin } from '@/features/file-vault/types';
-import { uploadFileVaultItemFile } from '../services/file-vault-admin-service';
-import { DeliveryModeSelector, type DeliveryMode } from './delivery-mode-selector';
+import { DeliveryModeSelector } from './delivery-mode-selector';
 import { RoleAccessPicker } from './role-access-picker';
+import { SchemaField } from './schema-field';
 import { StagedFilePicker } from './staged-file-picker';
 import {
   existingDocumentLabel,
   existingThumbnailLabel,
   guessResourceTypeFromFile,
   inferDeliveryMode,
+  isPdfLike,
+  type DeliveryMode,
 } from '../utils/delivery-mode';
+import {
+  defaultFieldValue,
+  type ContentFieldSchema,
+  type ContentItemAdmin,
+  type ContentItemFormPayload,
+  type ContentUploadResult,
+  type FieldValue,
+} from '../types';
 
-type ItemFormModalProps = {
+const DEFAULT_RESOURCE_TYPES = ['link', 'video', 'pdf', 'doc', 'ppt', 'image'];
+
+type ContentItemFormModalProps<TItem extends ContentItemAdmin> = {
   open: boolean;
   sectionId: number;
-  item?: FileVaultItemAdmin | null;
+  item?: TItem | null;
   onClose: () => void;
-  onSave: (payload: {
-    title: string;
-    href: string;
-    item_view_type: 'row' | 'card';
-    thumbnail_url: string;
-    gcs_blob_name?: string;
-    thumb_gcs_blob_name?: string;
-    resource_type: string;
-    allow_download: boolean;
-    is_active: boolean;
-    roles: string[];
-  }) => Promise<FileVaultItemAdmin>;
+  onSave: (payload: ContentItemFormPayload) => Promise<TItem>;
+  uploadFile: (
+    id: number,
+    file: File,
+    uploadType: 'file' | 'thumbnail'
+  ) => Promise<ContentUploadResult>;
   onRefresh?: () => void;
+  /** Page-specific fields, e.g. `xp` for Training Center or `item_view_type` for File Vault. */
+  fields?: ContentFieldSchema[];
+  /** Hide thumbnail inputs when a page-specific field says they don't apply. */
+  showThumbnail?: (extras: Record<string, FieldValue>) => boolean;
+  resourceTypes?: string[];
+  nounSingular?: string;
+  deliveryPrompt?: string;
 };
 
-const RESOURCE_TYPES = ['link', 'video', 'pdf', 'doc', 'ppt', 'image'];
-
-export function ItemFormModal({
+export function ContentItemFormModal<TItem extends ContentItemAdmin>({
   open,
   sectionId,
   item,
   onClose,
   onSave,
+  uploadFile,
   onRefresh,
-}: ItemFormModalProps) {
+  fields = [],
+  showThumbnail,
+  resourceTypes = DEFAULT_RESOURCE_TYPES,
+  nounSingular = 'document',
+  deliveryPrompt,
+}: ContentItemFormModalProps<TItem>) {
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('link');
   const [title, setTitle] = useState('');
   const [href, setHref] = useState('');
-  const [itemViewType, setItemViewType] = useState<'row' | 'card'>('card');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [resourceType, setResourceType] = useState('link');
   const [allowDownload, setAllowDownload] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [roles, setRoles] = useState<string[]>([]);
+  const [extras, setExtras] = useState<Record<string, FieldValue>>({});
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [resolvedHref, setResolvedHref] = useState('');
   const [resolvedThumb, setResolvedThumb] = useState('');
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setDeliveryMode(inferDeliveryMode(item));
     setTitle(item?.title ?? '');
     setHref(item?.href ?? '');
-    setItemViewType(item?.item_view_type ?? 'card');
     setThumbnailUrl(item?.thumbnail_url ?? '');
     setResourceType(item?.resource_type ?? 'link');
     setAllowDownload(item?.allow_download ?? false);
@@ -70,29 +85,50 @@ export function ItemFormModal({
     setRoles(item?.allowed_roles ?? []);
     setDocumentFile(null);
     setThumbnailFile(null);
-    setResolvedHref(item?.resolved_href ?? item?.href ?? '');
     setResolvedThumb(item?.resolved_thumb ?? item?.thumbnail_url ?? '');
+    setErrorMessage('');
+
+    const record = item as unknown as Record<string, FieldValue> | null | undefined;
+    setExtras(
+      Object.fromEntries(
+        fields.map((field) => {
+          const current = record?.[field.name];
+          return [
+            field.name,
+            current === undefined || current === null
+              ? defaultFieldValue(field)
+              : current,
+          ];
+        })
+      )
+    );
+    // `fields` is a stable module-level constant per page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, item]);
 
   if (!open) return null;
 
+  const thumbnailVisible = showThumbnail ? showThumbnail(extras) : true;
+
+  const handleExtraChange = (name: string, value: FieldValue) => {
+    setExtras((current) => ({ ...current, [name]: value }));
+  };
+
   const handleDocumentFileChange = (file: File | null) => {
     setDocumentFile(file);
-    if (file) {
-      setResourceType(guessResourceTypeFromFile(file));
-    }
+    if (file) setResourceType(guessResourceTypeFromFile(file));
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setErrorMessage('');
 
     if (deliveryMode === 'link' && !href.trim()) {
-      alert('Enter a link URL or switch to Upload file.');
+      setErrorMessage('Enter a link URL or switch to Upload file.');
       return;
     }
-
     if (deliveryMode === 'upload' && !documentFile && !item?.gcs_blob_name) {
-      alert('Choose a document file to upload.');
+      setErrorMessage('Choose a file to upload.');
       return;
     }
 
@@ -101,10 +137,10 @@ export function ItemFormModal({
       const isLink = deliveryMode === 'link';
       const isEdit = Boolean(item?.id);
       const saved = await onSave({
+        ...extras,
         title: title.trim(),
         href: isLink ? href.trim() : '',
-        item_view_type: itemViewType,
-        thumbnail_url: isLink ? thumbnailUrl.trim() : '',
+        thumbnail_url: isLink && thumbnailVisible ? thumbnailUrl.trim() : '',
         gcs_blob_name: isLink ? '' : isEdit ? (item?.gcs_blob_name ?? '') : '',
         thumb_gcs_blob_name: isLink ? '' : isEdit ? (item?.thumb_gcs_blob_name ?? '') : '',
         resource_type: resourceType,
@@ -113,37 +149,28 @@ export function ItemFormModal({
         roles,
       });
 
-      let nextHref = isLink ? href.trim() : resolvedHref;
-      let nextThumb = isLink ? thumbnailUrl.trim() : resolvedThumb;
-
       if (deliveryMode === 'upload') {
         if (documentFile) {
-          const upload = await uploadFileVaultItemFile(saved.id, documentFile, 'file');
-          nextHref = upload.item.resolved_href ?? upload.url;
-          setResolvedHref(nextHref);
+          await uploadFile(saved.id, documentFile, 'file');
         }
         if (thumbnailFile) {
-          const upload = await uploadFileVaultItemFile(saved.id, thumbnailFile, 'thumbnail');
-          nextThumb = upload.item.resolved_thumb ?? upload.url;
-          setResolvedThumb(nextThumb);
-        } else if (!thumbnailFile && item?.resolved_thumb) {
-          nextThumb = item.resolved_thumb;
+          const upload = await uploadFile(saved.id, thumbnailFile, 'thumbnail');
+          setResolvedThumb(upload.item.resolved_thumb ?? upload.url);
         }
-      }
-
-      if (deliveryMode === 'link') {
-        setResolvedHref(nextHref);
-        setResolvedThumb(nextThumb);
       }
 
       onRefresh?.();
       onClose();
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to save item');
+      setErrorMessage(
+        error instanceof Error ? error.message : `Failed to save ${nounSingular}`
+      );
     } finally {
       setSaving(false);
     }
   };
+
+  const pdfLike = isPdfLike(resourceType, documentFile, item?.gcs_blob_name);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -152,7 +179,7 @@ export function ItemFormModal({
         className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/10 bg-[#1a1d25] p-6 shadow-xl"
       >
         <h2 className="mb-4 text-lg font-semibold text-white">
-          {item ? 'Edit document' : 'Add document'}
+          {item ? `Edit ${nounSingular}` : `Add ${nounSingular}`}
         </h2>
 
         <div className="space-y-4">
@@ -161,7 +188,11 @@ export function ItemFormModal({
             <Input value={title} onChange={(event) => setTitle(event.target.value)} required />
           </div>
 
-          <DeliveryModeSelector value={deliveryMode} onChange={setDeliveryMode} />
+          <DeliveryModeSelector
+            value={deliveryMode}
+            onChange={setDeliveryMode}
+            prompt={deliveryPrompt}
+          />
 
           {deliveryMode === 'link' ? (
             <>
@@ -174,9 +205,11 @@ export function ItemFormModal({
                   required
                 />
               </div>
-              {itemViewType === 'card' && (
+              {thumbnailVisible && (
                 <div>
-                  <label className="mb-1 block text-sm text-white/70">Thumbnail URL (optional)</label>
+                  <label className="mb-1 block text-sm text-white/70">
+                    Thumbnail URL (optional)
+                  </label>
                   <Input
                     value={thumbnailUrl}
                     onChange={(event) => setThumbnailUrl(event.target.value)}
@@ -188,16 +221,16 @@ export function ItemFormModal({
           ) : (
             <>
               <StagedFilePicker
-                label="Document file"
+                label="File"
                 hint="Saved and linked automatically when you click Save."
                 file={documentFile}
                 existingName={existingDocumentLabel(item)}
                 onFileChange={handleDocumentFileChange}
               />
-              {itemViewType === 'card' && (
+              {thumbnailVisible && (
                 <StagedFilePicker
                   label="Thumbnail image (optional)"
-                  hint="Shown on the card in File Vault."
+                  hint="Shown on the card."
                   accept="image/*"
                   file={thumbnailFile}
                   existingName={existingThumbnailLabel(item)}
@@ -206,55 +239,48 @@ export function ItemFormModal({
               )}
               {(item?.gcs_blob_name || documentFile) && (
                 <p className="text-xs text-white/60">
-                  The file location is stored. A fresh download link is generated each time someone opens it.
+                  The file location is stored. A fresh download link is generated each time
+                  someone opens it.
                 </p>
               )}
-              {(resolvedThumb || item?.resolved_thumb) && itemViewType === 'card' && (
+              {resolvedThumb && thumbnailVisible && (
                 <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/70">
                   <p className="font-medium text-white/90">Thumbnail preview</p>
-                  <img
-                    src={resolvedThumb || item?.resolved_thumb}
-                    alt=""
-                    className="mt-2 h-16 w-24 rounded object-cover"
-                  />
+                  <img src={resolvedThumb} alt="" className="mt-2 h-16 w-24 rounded object-cover" />
                 </div>
               )}
             </>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm text-white/70">View type</label>
-              <Select
-                value={itemViewType}
-                onChange={(event) => setItemViewType(event.target.value as 'row' | 'card')}
-              >
-                <option value="card">Card</option>
-                <option value="row">Row</option>
-              </Select>
-            </div>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm text-white/70">Resource type</label>
               <Select
                 value={resourceType}
                 onChange={(event) => setResourceType(event.target.value)}
               >
-                {RESOURCE_TYPES.map((type) => (
+                {resourceTypes.map((type) => (
                   <option key={type} value={type}>
                     {type}
                   </option>
                 ))}
               </Select>
             </div>
+            {fields.map((field) => (
+              <SchemaField
+                key={field.name}
+                field={field}
+                value={extras[field.name] ?? defaultFieldValue(field)}
+                onChange={handleExtraChange}
+              />
+            ))}
           </div>
 
           <p className="text-xs text-white/60">
-            New documents are added to the end of this section. Use the ↑ ↓ buttons to reorder.
+            New entries are added to the end of this section. Use the ↑ ↓ buttons to reorder.
           </p>
 
-          {(resourceType === 'pdf' ||
-            documentFile?.name.toLowerCase().endsWith('.pdf') ||
-            item?.gcs_blob_name?.toLowerCase().endsWith('.pdf')) && (
+          {pdfLike && (
             <div className="rounded-lg border border-white/10 bg-white/5 p-3">
               <label className="flex items-center gap-2 text-sm text-white/80">
                 <input
@@ -265,7 +291,7 @@ export function ItemFormModal({
                 Allow download
               </label>
               <p className="mt-1 text-xs text-white/50">
-                Off by default. When off, the PDF opens in a view-only viewer like Trainer Manual.
+                Off by default. When off, the PDF opens in a view-only viewer.
               </p>
             </div>
           )}
@@ -283,6 +309,8 @@ export function ItemFormModal({
         </div>
 
         <input type="hidden" value={sectionId} readOnly />
+
+        {errorMessage && <p className="mt-4 text-sm text-red-400">{errorMessage}</p>}
 
         <div className="mt-6 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose} disabled={saving}>

@@ -1,15 +1,21 @@
-export type DeliveryMode = 'link' | 'upload';
+import type { DeliveryMode } from '../utils/delivery-mode';
 
 type DeliveryModeSelectorProps = {
   value: DeliveryMode;
   onChange: (mode: DeliveryMode) => void;
   disabled?: boolean;
+  prompt?: string;
 };
 
-export function DeliveryModeSelector({ value, onChange, disabled }: DeliveryModeSelectorProps) {
+export function DeliveryModeSelector({
+  value,
+  onChange,
+  disabled,
+  prompt = 'How should users access this document?',
+}: DeliveryModeSelectorProps) {
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-white">How should users access this document?</p>
+      <p className="text-sm font-medium text-white">{prompt}</p>
       <div className="grid grid-cols-2 gap-2">
         {(
           [

@@ -537,6 +537,18 @@
   color: var(--tc-text);
 }
 
+.module-description {
+  margin: -4px 0 12px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--tc-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .module-xp {
   display: flex;
   align-items: center;

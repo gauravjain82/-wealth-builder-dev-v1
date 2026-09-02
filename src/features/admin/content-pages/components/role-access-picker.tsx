@@ -1,10 +1,11 @@
-import { FILE_VAULT_ROLES } from '@/features/file-vault/types';
+import { CONTENT_ROLES } from '../types';
 
 type RoleAccessPickerProps = {
   value: string[];
   onChange: (roles: string[]) => void;
   label?: string;
   hint?: string;
+  roles?: readonly string[];
 };
 
 export function RoleAccessPicker({
@@ -12,6 +13,7 @@ export function RoleAccessPicker({
   onChange,
   label = 'Who can see this?',
   hint = 'Leave empty to allow all roles that can access the parent section.',
+  roles = CONTENT_ROLES,
 }: RoleAccessPickerProps) {
   const toggleRole = (role: string) => {
     if (value.includes(role)) {
@@ -28,7 +30,7 @@ export function RoleAccessPicker({
         {hint && <p className="text-xs text-slate-500 dark:text-white/60">{hint}</p>}
       </div>
       <div className="flex flex-wrap gap-2">
-        {FILE_VAULT_ROLES.map((role) => {
+        {roles.map((role) => {
           const selected = value.includes(role);
           return (
             <button
