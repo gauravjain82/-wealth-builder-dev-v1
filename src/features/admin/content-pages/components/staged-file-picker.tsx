@@ -79,7 +79,6 @@ export function StagedFilePicker({
           link (Vimeo, Google Drive) instead of uploading the file through this form.
         </p>
       )}
-      </div>
     </div>
   );
 }
