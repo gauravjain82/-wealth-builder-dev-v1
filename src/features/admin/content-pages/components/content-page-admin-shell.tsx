@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Block, Button, ConfirmationDialog } from '@/shared/components';
 import { useToastStore } from '@/store';
 import FullscreenViewer from '@/features/systematic-tools/components/fullscreen-viewer';
@@ -67,6 +67,7 @@ export function ContentPageAdminShell<
   const [sections, setSections] = useState<TSection[]>([]);
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
   const [sectionModalOpen, setSectionModalOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<TSection | null>(null);
   const [itemModalOpen, setItemModalOpen] = useState(false);
@@ -81,7 +82,10 @@ export function ContentPageAdminShell<
   );
 
   const loadData = useCallback(async () => {
-    setLoading(true);
+    // After the first fetch, refresh in the background. Setting `loading`
+    // unmounts open item modals and re-enables Save while a GCS upload is
+    // still pending.
+    if (!hasLoadedRef.current) setLoading(true);
     try {
       const sectionData = await api.listSections();
       setSections(sectionData);
@@ -89,6 +93,7 @@ export function ContentPageAdminShell<
         if (current && sectionData.some((section) => section.id === current)) return current;
         return sectionData[0]?.id ?? null;
       });
+      hasLoadedRef.current = true;
     } catch (error) {
       addToast({
         type: 'error',
@@ -125,20 +130,22 @@ export function ContentPageAdminShell<
 
   const handleSaveItem = async (payload: Record<string, unknown>) => {
     if (!activeSection) throw new Error(`Select a ${nouns.section.toLowerCase()} first`);
-    const { roles, ...itemPayload } = payload as { roles: string[] } & Record<string, unknown>;
+    const { roles, id: payloadId, ...itemPayload } = payload as {
+      roles: string[];
+      id?: number;
+    } & Record<string, unknown>;
+    const existingId = typeof payloadId === 'number' ? payloadId : editingItem?.id;
 
-    if (editingItem) {
-      const updated = await api.updateItem(editingItem.id, itemPayload);
-      await api.updateItemRoles(editingItem.id, roles);
-      addToast({ type: 'success', message: `${nouns.item} updated` });
-      await loadData();
+    // Metadata save only. The modal uploads to GCS afterwards and toasts once
+    // that finishes, so we do not refresh or close anything here.
+    if (existingId) {
+      const updated = await api.updateItem(existingId, itemPayload);
+      await api.updateItemRoles(existingId, roles);
       return updated;
     }
 
     const created = await api.createItem({ ...itemPayload, section: activeSection.id });
     await api.updateItemRoles(created.id, roles);
-    addToast({ type: 'success', message: `${nouns.item} created` });
-    await loadData();
     return created;
   };
 
@@ -412,6 +419,9 @@ export function ContentPageAdminShell<
           onSave={handleSaveItem}
           uploadFile={api.uploadItemFile}
           onRefresh={() => void loadData()}
+          onSaved={(_saved, action) => {
+            addToast({ type: 'success', message: `${nouns.item} ${action}` });
+          }}
           fields={itemFields}
           showThumbnail={showThumbnail}
           resourceTypes={resourceTypes}

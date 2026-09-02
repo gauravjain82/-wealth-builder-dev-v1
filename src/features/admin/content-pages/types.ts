@@ -57,6 +57,7 @@ export type ContentSectionFormPayload = {
 
 /** Common item fields plus whatever page-specific fields the schema declares. */
 export type ContentItemFormPayload = {
+  id?: number;
   title: string;
   href: string;
   thumbnail_url: string;

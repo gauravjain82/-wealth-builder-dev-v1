@@ -24,6 +24,10 @@ export function getJsonHeaders(): Record<string, string> {
 }
 
 export async function parseError(response: Response): Promise<string> {
+  if (response.status === 413) {
+    return 'This file is too large for the server (HTTP 413). The API proxy rejected it before it reached cloud storage. For videos, use External link instead of uploading the file here.';
+  }
+
   const data = (await response.json().catch(() => null)) as unknown;
   if (!data || typeof data !== 'object') return `Request failed (${response.status})`;
 

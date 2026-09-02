@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Input, Select } from '@/shared/components';
 import { DeliveryModeSelector } from './delivery-mode-selector';
 import { RoleAccessPicker } from './role-access-picker';
@@ -35,6 +35,7 @@ type ContentItemFormModalProps<TItem extends ContentItemAdmin> = {
     uploadType: 'file' | 'thumbnail'
   ) => Promise<ContentUploadResult>;
   onRefresh?: () => void;
+  onSaved?: (item: TItem, action: 'created' | 'updated') => void;
   /** Page-specific fields, e.g. `xp` for Training Center or `item_view_type` for File Vault. */
   fields?: ContentFieldSchema[];
   /** Hide thumbnail inputs when a page-specific field says they don't apply. */
@@ -52,6 +53,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
   onSave,
   uploadFile,
   onRefresh,
+  onSaved,
   fields = [],
   showThumbnail,
   resourceTypes = DEFAULT_RESOURCE_TYPES,
@@ -70,8 +72,10 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [resolvedThumb, setResolvedThumb] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [persistedId, setPersistedId] = useState<number | null>(null);
+  const [savePhase, setSavePhase] = useState<'idle' | 'saving' | 'uploading'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
     if (!open) return;
@@ -86,6 +90,9 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
     setDocumentFile(null);
     setThumbnailFile(null);
     setResolvedThumb(item?.resolved_thumb ?? item?.thumbnail_url ?? '');
+    setPersistedId(item?.id ?? null);
+    setSavePhase('idle');
+    inFlightRef.current = false;
     setErrorMessage('');
 
     const record = item as unknown as Record<string, FieldValue> | null | undefined;
@@ -108,6 +115,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
 
   if (!open) return null;
 
+  const busy = savePhase !== 'idle';
   const thumbnailVisible = showThumbnail ? showThumbnail(extras) : true;
 
   const handleExtraChange = (name: string, value: FieldValue) => {
@@ -121,6 +129,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (inFlightRef.current) return;
     setErrorMessage('');
 
     if (deliveryMode === 'link' && !href.trim()) {
@@ -132,24 +141,36 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
       return;
     }
 
-    setSaving(true);
+    const wasCreate = !item?.id && !persistedId;
+    const pendingUploads =
+      deliveryMode === 'upload' && Boolean(documentFile || thumbnailFile);
+    const keepExistingBlob = Boolean(persistedId || item?.id);
+
+    inFlightRef.current = true;
+    setSavePhase('saving');
     try {
       const isLink = deliveryMode === 'link';
-      const isEdit = Boolean(item?.id);
       const saved = await onSave({
         ...extras,
+        ...(persistedId ? { id: persistedId } : {}),
         title: title.trim(),
         href: isLink ? href.trim() : '',
         thumbnail_url: isLink && thumbnailVisible ? thumbnailUrl.trim() : '',
-        gcs_blob_name: isLink ? '' : isEdit ? (item?.gcs_blob_name ?? '') : '',
-        thumb_gcs_blob_name: isLink ? '' : isEdit ? (item?.thumb_gcs_blob_name ?? '') : '',
+        gcs_blob_name: isLink ? '' : keepExistingBlob ? (item?.gcs_blob_name ?? '') : '',
+        thumb_gcs_blob_name: isLink
+          ? ''
+          : keepExistingBlob
+            ? (item?.thumb_gcs_blob_name ?? '')
+            : '',
         resource_type: resourceType,
         allow_download: allowDownload,
         is_active: isActive,
         roles,
       });
+      setPersistedId(saved.id);
 
-      if (deliveryMode === 'upload') {
+      if (pendingUploads) {
+        setSavePhase('uploading');
         if (documentFile) {
           await uploadFile(saved.id, documentFile, 'file');
         }
@@ -159,6 +180,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
         }
       }
 
+      onSaved?.(saved, wasCreate ? 'created' : 'updated');
       onRefresh?.();
       onClose();
     } catch (error) {
@@ -166,7 +188,8 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
         error instanceof Error ? error.message : `Failed to save ${nounSingular}`
       );
     } finally {
-      setSaving(false);
+      inFlightRef.current = false;
+      setSavePhase('idle');
     }
   };
 
@@ -185,12 +208,18 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-sm text-white/70">Title</label>
-            <Input value={title} onChange={(event) => setTitle(event.target.value)} required />
+            <Input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              required
+              disabled={busy}
+            />
           </div>
 
           <DeliveryModeSelector
             value={deliveryMode}
             onChange={setDeliveryMode}
+            disabled={busy}
             prompt={deliveryPrompt}
           />
 
@@ -203,6 +232,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
                   onChange={(event) => setHref(event.target.value)}
                   placeholder="https://docs.google.com/..."
                   required
+                  disabled={busy}
                 />
               </div>
               {thumbnailVisible && (
@@ -214,6 +244,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
                     value={thumbnailUrl}
                     onChange={(event) => setThumbnailUrl(event.target.value)}
                     placeholder="https://..."
+                    disabled={busy}
                   />
                 </div>
               )}
@@ -222,10 +253,11 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
             <>
               <StagedFilePicker
                 label="File"
-                hint="Saved and linked automatically when you click Save."
+                hint="Saved and linked automatically when you click Save. Keep this window open until the upload finishes."
                 file={documentFile}
                 existingName={existingDocumentLabel(item)}
                 onFileChange={handleDocumentFileChange}
+                disabled={busy}
               />
               {thumbnailVisible && (
                 <StagedFilePicker
@@ -235,6 +267,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
                   file={thumbnailFile}
                   existingName={existingThumbnailLabel(item)}
                   onFileChange={setThumbnailFile}
+                  disabled={busy}
                 />
               )}
               {(item?.gcs_blob_name || documentFile) && (
@@ -258,6 +291,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
               <Select
                 value={resourceType}
                 onChange={(event) => setResourceType(event.target.value)}
+                disabled={busy}
               >
                 {resourceTypes.map((type) => (
                   <option key={type} value={type}>
@@ -272,6 +306,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
                 field={field}
                 value={extras[field.name] ?? defaultFieldValue(field)}
                 onChange={handleExtraChange}
+                disabled={busy}
               />
             ))}
           </div>
@@ -287,6 +322,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
                   type="checkbox"
                   checked={allowDownload}
                   onChange={(event) => setAllowDownload(event.target.checked)}
+                  disabled={busy}
                 />
                 Allow download
               </label>
@@ -301,23 +337,34 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
               type="checkbox"
               checked={isActive}
               onChange={(event) => setIsActive(event.target.checked)}
+              disabled={busy}
             />
             Active
           </label>
 
-          <RoleAccessPicker value={roles} onChange={setRoles} />
+          <RoleAccessPicker value={roles} onChange={setRoles} disabled={busy} />
         </div>
 
         <input type="hidden" value={sectionId} readOnly />
 
         {errorMessage && <p className="mt-4 text-sm text-red-400">{errorMessage}</p>}
+        {savePhase === 'uploading' && (
+          <p className="mt-4 text-sm text-amber-300">
+            Uploading to cloud storage. This can take a moment for larger files. Please wait
+            until it finishes before leaving this page.
+          </p>
+        )}
 
         <div className="mt-6 flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? 'Saving...' : 'Save'}
+          <Button type="submit" disabled={busy}>
+            {savePhase === 'uploading'
+              ? 'Uploading...'
+              : savePhase === 'saving'
+                ? 'Saving...'
+                : 'Save'}
           </Button>
         </div>
       </form>

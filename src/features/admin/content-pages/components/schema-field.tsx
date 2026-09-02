@@ -5,10 +5,11 @@ type SchemaFieldProps = {
   field: ContentFieldSchema;
   value: FieldValue;
   onChange: (name: string, value: FieldValue) => void;
+  disabled?: boolean;
 };
 
 /** Renders one page-specific form field from its schema entry. */
-export function SchemaField({ field, value, onChange }: SchemaFieldProps) {
+export function SchemaField({ field, value, onChange, disabled }: SchemaFieldProps) {
   if (field.kind === 'checkbox') {
     return (
       <div>
@@ -16,6 +17,7 @@ export function SchemaField({ field, value, onChange }: SchemaFieldProps) {
           <input
             type="checkbox"
             checked={Boolean(value)}
+            disabled={disabled}
             onChange={(event) => onChange(field.name, event.target.checked)}
           />
           {field.label}
@@ -33,6 +35,7 @@ export function SchemaField({ field, value, onChange }: SchemaFieldProps) {
         <Input
           value={String(value ?? '')}
           placeholder={field.placeholder}
+          disabled={disabled}
           onChange={(event) => onChange(field.name, event.target.value)}
         />
       )}
@@ -43,6 +46,7 @@ export function SchemaField({ field, value, onChange }: SchemaFieldProps) {
           min={field.min}
           max={field.max}
           value={String(value ?? '')}
+          disabled={disabled}
           onChange={(event) =>
             onChange(field.name, event.target.value === '' ? '' : Number(event.target.value))
           }
@@ -53,6 +57,7 @@ export function SchemaField({ field, value, onChange }: SchemaFieldProps) {
         <Textarea
           rows={field.rows ?? 3}
           value={String(value ?? '')}
+          disabled={disabled}
           onChange={(event) => onChange(field.name, event.target.value)}
         />
       )}
@@ -60,6 +65,7 @@ export function SchemaField({ field, value, onChange }: SchemaFieldProps) {
       {field.kind === 'select' && (
         <Select
           value={String(value ?? '')}
+          disabled={disabled}
           onChange={(event) => onChange(field.name, event.target.value)}
         >
           {field.options.map((option) => (
