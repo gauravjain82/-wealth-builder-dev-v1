@@ -65,7 +65,7 @@ const MENU_ITEMS = {
   TERMINATED_USERS: { label: 'Terminated Users', icon: '🚫', path: '/terminated-users' } as MenuItem,
   
   // Big Event items
-  BIG_EVENT_BUILDER: { label: 'Big Event Builder', icon: '🎪', path: '/events/builder' } as MenuItem,
+  BIG_EVENT_BUILDER: { label: 'Big Event Builder', icon: '🎪', path: '/events' } as MenuItem,
   PURCHASES: { label: 'Purchases', icon: '🛒', path: '/events/purchases' } as MenuItem,
   CHECK_IN: { label: 'Check-in', icon: '✅', path: '/events/check-in' } as MenuItem,
   PERMISSIONS: { label: 'Permissions', icon: '🔐', path: '/events/permissions' } as MenuItem,
