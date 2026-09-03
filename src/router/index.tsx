@@ -10,7 +10,19 @@ import { LoginPage, SignupPage } from '@/features/auth';
 
 // Lazy load pages for code splitting
 const HomePage = lazy(() => import('@/features/home/pages/home-page'));
-const EventsPage = lazy(() => import('@/features/events/pages/events-page'));
+const EventsListPage = lazy(() => import('@/features/events/pages/events-list-page'));
+const EventBuilderPage = lazy(() => import('@/features/events/pages/event-builder-page'));
+const EventOrdersPage = lazy(() => import('@/features/events/pages/event-orders-page'));
+const EventMyTicketsPage = lazy(() => import('@/features/events/pages/event-my-tickets-page'));
+const EventCheckinPage = lazy(() => import('@/features/events/pages/event-checkin-page'));
+const EventRecognitionPage = lazy(() => import('@/features/events/pages/event-recognition-page'));
+const EventEmailsPage = lazy(() => import('@/features/events/pages/event-emails-page'));
+const EventQuestionsPage = lazy(() => import('@/features/events/pages/event-questions-page'));
+const EventPermissionsPage = lazy(() => import('@/features/events/pages/event-permissions-page'));
+const EventLandingPage = lazy(() => import('@/features/events/pages/public/event-landing-page'));
+const EventCheckoutPage = lazy(() => import('@/features/events/pages/public/event-checkout-page'));
+const EventTransferPage = lazy(() => import('@/features/events/pages/public/event-transfer-page'));
+const EventTicketPage = lazy(() => import('@/features/events/pages/public/event-ticket-page'));
 const EducationPage = lazy(() => import('@/features/education/pages/education-page'));
 const ProspectTrackerPage = lazy(() => import('@/features/team/prospect/pages/prospect-tracker-page'));
 const OrgChartPage = lazy(() => import('@/features/team/org-chart/pages/org-chart-page'));
@@ -176,7 +188,39 @@ const router = createBrowserRouter([
       },
       {
         path: 'events',
-        element: lazyLoad(EventsPage),
+        element: lazyLoad(EventsListPage),
+      },
+      {
+        path: 'events/:eventId/builder',
+        element: lazyLoad(EventBuilderPage),
+      },
+      {
+        path: 'events/:eventId/orders',
+        element: lazyLoad(EventOrdersPage),
+      },
+      {
+        path: 'events/:eventId/my-tickets',
+        element: lazyLoad(EventMyTicketsPage),
+      },
+      {
+        path: 'events/:eventId/checkin',
+        element: lazyLoad(EventCheckinPage),
+      },
+      {
+        path: 'events/:eventId/recognition',
+        element: lazyLoad(EventRecognitionPage),
+      },
+      {
+        path: 'events/:eventId/emails',
+        element: lazyLoad(EventEmailsPage),
+      },
+      {
+        path: 'events/:eventId/questions',
+        element: lazyLoad(EventQuestionsPage),
+      },
+      {
+        path: 'events/:eventId/access',
+        element: lazyLoad(EventPermissionsPage),
       },
       {
         path: 'systematic-tools',
@@ -351,6 +395,28 @@ const router = createBrowserRouter([
         element: lazyLoad(ComponentsShowcase),
       },
     ],
+  },
+
+  // Public event pages (no auth required)
+  {
+    path: '/event/:shortcut',
+    element: lazyLoad(EventLandingPage),
+    errorElement: <RouteErrorFallback />,
+  },
+  {
+    path: '/event/:shortcut/checkout',
+    element: lazyLoad(EventCheckoutPage),
+    errorElement: <RouteErrorFallback />,
+  },
+  {
+    path: '/event/:shortcut/transfer',
+    element: lazyLoad(EventTransferPage),
+    errorElement: <RouteErrorFallback />,
+  },
+  {
+    path: '/event/ticket/:qrToken',
+    element: lazyLoad(EventTicketPage),
+    errorElement: <RouteErrorFallback />,
   },
 
   // Catch all - 404
