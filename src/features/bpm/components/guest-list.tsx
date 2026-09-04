@@ -53,14 +53,15 @@ export function GuestList({
   return (
     <>
       <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-white/10">
-        <table className="w-full min-w-[720px] border-collapse text-sm">
+        <table className="w-full min-w-[860px] border-collapse text-sm">
           <thead>
             <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-white/5 dark:text-white/60">
               <th className="px-3 py-2">Guest</th>
               <th className="px-3 py-2">Phone</th>
+              <th className="px-3 py-2">Email</th>
               <th className="px-3 py-2">Inviter</th>
-              <th className="px-3 py-2">Notes</th>
               {showInteraction ? <th className="px-3 py-2">Outcome</th> : null}
+              <th className="px-3 py-2">Notes</th>
               {showCheckIn ? <th className="px-3 py-2">Checked in</th> : null}
               {showRowActions || showCheckIn ? (
                 <th className="px-3 py-2 text-right">Actions</th>
@@ -73,9 +74,6 @@ export function GuestList({
                 <td className="px-3 py-2">
                   <div className="font-medium text-slate-900 dark:text-white">
                     {guest.prospect_detail?.name || '—'}
-                  </div>
-                  <div className="text-xs text-slate-500 dark:text-white/50">
-                    {guest.prospect_detail?.email || ''}
                   </div>
                   {guest.followup ? (
                     <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
@@ -92,10 +90,10 @@ export function GuestList({
                 <td className="px-3 py-2 text-slate-700 dark:text-white/80">
                   {guest.prospect_detail?.phone || '—'}
                 </td>
-                <td className="px-3 py-2 text-slate-700 dark:text-white/80">{guest.inviter_name || '—'}</td>
-                <td className="px-3 py-2">
-                  <GuestNotesCell guest={guest} onOpen={() => setNotesGuestId(guest.id)} />
+                <td className="px-3 py-2 text-slate-700 dark:text-white/80">
+                  {guest.prospect_detail?.email || '—'}
                 </td>
+                <td className="px-3 py-2 text-slate-700 dark:text-white/80">{guest.inviter_name || '—'}</td>
                 {showInteraction ? (
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-x-4 gap-y-1">
@@ -115,6 +113,9 @@ export function GuestList({
                     </div>
                   </td>
                 ) : null}
+                <td className="px-3 py-2">
+                  <GuestNotesCell guest={guest} onOpen={() => setNotesGuestId(guest.id)} />
+                </td>
                 {showCheckIn ? (
                   <td className="px-3 py-2">
                     {guest.checked_in_at ? (
