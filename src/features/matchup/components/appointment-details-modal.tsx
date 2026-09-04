@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { CalendarClock, Check, Copy, History, MapPin, UserRound } from 'lucide-react';
-import { Modal } from '@shared/components/ui';
+import { CalendarClock, Check, Copy, History, MapPin, Pencil, UserRound } from 'lucide-react';
+import { Button, Modal } from '@shared/components/ui';
 import { formatAppointmentTime } from '../services/matchup-service';
 import type { AppointmentDetail } from '../types';
 
 interface AppointmentDetailsModalProps {
   appointment: AppointmentDetail | null;
   onClose: () => void;
+  onEdit?: (appointment: AppointmentDetail) => void;
 }
 
 function value(value: unknown) {
@@ -15,7 +16,7 @@ function value(value: unknown) {
   return String(value).replace(/_/g, ' ');
 }
 
-export function AppointmentDetailsModal({ appointment, onClose }: AppointmentDetailsModalProps) {
+export function AppointmentDetailsModal({ appointment, onClose, onEdit }: AppointmentDetailsModalProps) {
   const [copied, setCopied] = useState(false);
   if (!appointment) return null;
   const types = appointment.types_detail || [];
@@ -55,6 +56,11 @@ export function AppointmentDetailsModal({ appointment, onClose }: AppointmentDet
             {appointment.kind === 'REQUEST_TRAINER' ? 'Request Trainer' : 'Personal'}
           </span>
           <strong>{value(appointment.status_label || appointment.status)}</strong>
+          {onEdit ? (
+            <Button type="button" onClick={() => onEdit(appointment)}>
+              <Pencil size={16} /> Edit Appointment
+            </Button>
+          ) : null}
         </div>
       </div>
 

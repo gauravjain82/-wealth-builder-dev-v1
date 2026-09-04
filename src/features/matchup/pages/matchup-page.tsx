@@ -811,7 +811,16 @@ export default function MatchupPage() {
         onAddProspect={openAddProspect}
         addedContact={newAppointmentContact}
       />
-      <AppointmentDetailsModal appointment={detailsTarget} onClose={() => setDetailsTarget(null)} />
+      <AppointmentDetailsModal
+        appointment={detailsTarget}
+        onClose={() => setDetailsTarget(null)}
+        onEdit={(appointment) => {
+          setDetailsTarget(null);
+          setFollowUpDefaults(null);
+          setEditingTarget(appointment);
+          setFormOpen(true);
+        }}
+      />
       <ProspectDetailsModal
         open={Boolean(contactProfileOpenFor)}
         prospectId={contactProfileOpenFor?.userId ?? null}

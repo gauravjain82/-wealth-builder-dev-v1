@@ -1359,6 +1359,7 @@
 .matchup-details-people-row b { color:#475569; font-size:.62rem; letter-spacing:.08em; text-transform:uppercase; }
 .dark .matchup-details-people-row b { color:#94a3b8; }
 .matchup-details-hero-meta { display:flex; align-items:flex-end; flex-direction:column; gap:9px; }
+.matchup-details-hero-meta > button { white-space:nowrap; }
 .matchup-details-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:14px; }
 .matchup-details-grid section { display:flex; min-width:0; gap:10px; padding:13px; border:1px solid rgba(148,163,184,.25); border-radius:12px; background:rgba(148,163,184,.08); }
 .matchup-details-grid section div { display:flex; min-width:0; flex-direction:column; gap:2px; }

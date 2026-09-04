@@ -17,6 +17,7 @@ export default function CalendarPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [detailsTarget, setDetailsTarget] = useState<AppointmentDetail | null>(null);
+  const [editingTarget, setEditingTarget] = useState<AppointmentDetail | null>(null);
   const filters = useMemo<AppointmentFilters>(() => ({ pageSize: 25 }), []);
 
   const {
@@ -29,15 +30,29 @@ export default function CalendarPage() {
     reload,
   } = useMatchupDashboard(filters, calendarMonth, { personal: true });
 
-  const saveAppointment = async (payload: CreateAppointmentPayload) => {
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingTarget(null);
+  };
+
+  const saveAppointment = async (payload: CreateAppointmentPayload, id?: number) => {
     setBusy(true);
     try {
-      await matchupService.createAppointment(payload);
-      addToast({ type: 'success', message: 'Appointment created.' });
-      setFormOpen(false);
+      if (id) {
+        await matchupService.updateAppointment(id, payload);
+        addToast({ type: 'success', message: 'Appointment updated.' });
+      } else {
+        await matchupService.createAppointment(payload);
+        addToast({ type: 'success', message: 'Appointment created.' });
+      }
+      closeForm();
+      setDetailsTarget(null);
       await reload();
     } catch (err) {
-      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to create appointment.' });
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : id ? 'Failed to update appointment.' : 'Failed to create appointment.',
+      });
     } finally {
       setBusy(false);
     }
@@ -54,6 +69,17 @@ export default function CalendarPage() {
     }
   };
 
+  const openEdit = (appointment: AppointmentDetail) => {
+    setDetailsTarget(null);
+    setEditingTarget(appointment);
+    setFormOpen(true);
+  };
+
+  const openNewAppointment = () => {
+    setEditingTarget(null);
+    setFormOpen(true);
+  };
+
   return (
     <main className="matchup-page matchup-calendar-page">
       <header className="matchup-hero">
@@ -66,7 +92,7 @@ export default function CalendarPage() {
           <Button variant="outline" onClick={() => void reload()} disabled={loading || busy}>
             <RefreshCw size={16} /> Refresh
           </Button>
-          <Button onClick={() => setFormOpen(true)}>
+          <Button onClick={openNewAppointment}>
             <Plus size={16} /> New Appointment
           </Button>
         </div>
@@ -104,15 +130,19 @@ export default function CalendarPage() {
         onItemClick={(id) => void openDetails(id)}
       />
 
-      <AppointmentDetailsModal appointment={detailsTarget} onClose={() => setDetailsTarget(null)} />
+      <AppointmentDetailsModal
+        appointment={detailsTarget}
+        onClose={() => setDetailsTarget(null)}
+        onEdit={openEdit}
+      />
 
       <AppointmentFormModal
         open={formOpen}
-        appointment={null}
-        initialValues={{ kind: 'PERSONAL' }}
+        appointment={editingTarget}
+        initialValues={editingTarget ? null : { kind: 'PERSONAL' }}
         appointmentTypes={appointmentTypes}
         saving={busy}
-        onClose={() => setFormOpen(false)}
+        onClose={closeForm}
         onSubmit={saveAppointment}
       />
     </main>
