@@ -12,9 +12,11 @@ export interface CurrentUserDetails {
   level?: { id?: number | null; code?: string | null; name?: string | null } | string | null;
   agency_code?: string | null;
   polo_size?: string | null;
+  ring_size?: string | null;
   spouse_name?: string | null;
   spouse_phone?: string | null;
   spouse_polo_size?: string | null;
+  spouse_ring_size?: string | null;
   avatar_url?: string | null;
   profile?: {
     photo_url?: string | null;
@@ -33,9 +35,11 @@ export interface CurrentUserDetails {
 export interface CurrentUserProfileUpdatePayload {
   email?: string;
   polo_size?: string;
+  ring_size?: string;
   spouse_name?: string;
   spouse_phone?: string;
   spouse_polo_size?: string;
+  spouse_ring_size?: string;
   profile?: {
     birthday?: string | null;
     state?: string;

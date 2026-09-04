@@ -90,11 +90,17 @@ export async function listMissionRingProofAttachments(userId: number): Promise<M
   return normalizeMissionRingProofAttachments(data.mission_ring_proof);
 }
 
+export interface MissionRingProofUploadExtras {
+  personRingSize?: string;
+  spouseRingSize?: string;
+}
+
 export async function uploadMissionRingProofAttachment(
   userId: number,
   files: File[],
   proofType: MissionRingProofType,
   notes?: string,
+  extras?: MissionRingProofUploadExtras,
 ): Promise<MissionRingProofAttachment[]> {
   if (files.length === 0) return [];
   const formData = new FormData();
@@ -102,6 +108,12 @@ export async function uploadMissionRingProofAttachment(
   formData.append('proof_type', proofType);
   const trimmedNotes = notes?.trim();
   if (trimmedNotes) formData.append('notes', trimmedNotes);
+  if (extras?.personRingSize !== undefined) {
+    formData.append('person_ring_size', extras.personRingSize.trim());
+  }
+  if (extras?.spouseRingSize !== undefined) {
+    formData.append('spouse_ring_size', extras.spouseRingSize.trim());
+  }
   const token = localStorage.getItem('wb.authToken');
   const headers: Record<string, string> = token ? { Authorization: `Token ${token}` } : {};
   const response = await fetch(`${API_BASE_URL}/api/tracker/trackers/4X4/${userId}/mission-ring-proof/`, {
@@ -159,6 +171,8 @@ export interface MissionTrackerRecord {
   promotion_access_approved: boolean;
   has_promotion_access: boolean;
   mission_ring_proof?: MissionRingProofAttachment[];
+  ring_size?: string | null;
+  spouse_ring_size?: string | null;
 }
 
 interface PaginatedTrackerResponse<T> {

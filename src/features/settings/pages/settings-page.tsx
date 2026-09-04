@@ -53,9 +53,11 @@ interface ProfileFormState {
   homeAddress2: string;
   homeCity: string;
   poloSize: string;
+  ringSize: string;
   spouseName: string;
   spousePhone: string;
   spousePoloSize: string;
+  spouseRingSize: string;
   dateOfBirth: string;
 }
 
@@ -67,9 +69,11 @@ const DEFAULT_PROFILE_FORM: ProfileFormState = {
   homeAddress2: '',
   homeCity: '',
   poloSize: '',
+  ringSize: '',
   spouseName: '',
   spousePhone: '',
   spousePoloSize: '',
+  spouseRingSize: '',
   dateOfBirth: '',
 };
 
@@ -808,9 +812,11 @@ export default function SettingsPage() {
       homeAddress2: userDetails.profile?.home_address2 || '',
       homeCity: userDetails.profile?.home_city || '',
       poloSize: userDetails.polo_size || '',
+      ringSize: userDetails.ring_size || '',
       spouseName: userDetails.spouse_name || '',
       spousePhone: userDetails.spouse_phone || '',
       spousePoloSize: userDetails.spouse_polo_size || '',
+      spouseRingSize: userDetails.spouse_ring_size || '',
       dateOfBirth: userDetails.profile?.birthday?.split('T')[0] || '',
     });
   }, [userDetails]);
@@ -942,9 +948,11 @@ export default function SettingsPage() {
       await updateCurrentUserDetails(userDetails.id, {
         email: normalizedEmail,
         polo_size: profileForm.poloSize.trim(),
+        ring_size: profileForm.ringSize.trim(),
         spouse_name: profileForm.spouseName.trim(),
         spouse_phone: profileForm.spousePhone.trim(),
         spouse_polo_size: profileForm.spousePoloSize.trim(),
+        spouse_ring_size: profileForm.spouseRingSize.trim(),
         profile: {
           birthday: profileForm.dateOfBirth || null,
           state: profileForm.state.trim(),
@@ -1244,6 +1252,16 @@ export default function SettingsPage() {
                       ))}
                     </select>
                   </div>
+                  <div className="field-group">
+                    <label>Ring Size</label>
+                    <input
+                      className="input-field"
+                      value={profileForm.ringSize}
+                      onChange={(e) => updateProfileField('ringSize', e.target.value)}
+                      maxLength={32}
+                      disabled={savingProfile}
+                    />
+                  </div>
                 </div>
 
                 <div className="field-row field-row-four">
@@ -1279,6 +1297,16 @@ export default function SettingsPage() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                  <div className="field-group">
+                    <label>Spouse Ring Size</label>
+                    <input
+                      className="input-field"
+                      value={profileForm.spouseRingSize}
+                      onChange={(e) => updateProfileField('spouseRingSize', e.target.value)}
+                      maxLength={32}
+                      disabled={savingProfile}
+                    />
                   </div>
                 </div>
 

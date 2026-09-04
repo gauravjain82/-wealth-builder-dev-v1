@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IconUpload, IconX } from '@tabler/icons-react';
-import { Button, ConfirmationDialog, Modal, Textarea } from '@/shared/components';
+import { Button, ConfirmationDialog, Input, Modal, Textarea } from '@/shared/components';
 import {
   MISSION_RING_PROOF_TYPE_OPTIONS,
   inferMissionRingProofType,
@@ -9,6 +9,16 @@ import {
 } from '../services/mission-tracker-service';
 import { deleteMissionRingProofAttachment } from '../services/mission-tracker-service';
 import { MissionRingIcon } from './mission-ring-icon';
+
+/** Required-proof guidance shown per qualifying activity in the upload modal. */
+const MISSION_RING_PROOF_REQUIREMENTS: Record<MissionRingProofType, string> = {
+  '1st_recruit': 'Obtained first recruit — proof: AMA date of the new recruit.',
+  personal_saving:
+    'Obtained a policy — proof: provider documentation showing policy status, submission date, and application/policy number.',
+  convention:
+    'Registered for convention — proof: invoice showing the registration confirmation number.',
+  others: 'Any other supporting documentation.',
+};
 
 const EMPTY_FILES: Record<MissionRingProofType, File[]> = {
   '1st_recruit': [],
@@ -35,8 +45,11 @@ interface MissionRingProofAttachmentsActionProps {
     files: File[],
     proofType: MissionRingProofType,
     notes?: string,
+    extras?: { personRingSize?: string; spouseRingSize?: string },
   ) => Promise<MissionRingProofAttachment[] | void>;
   missionRingProofList?: MissionRingProofAttachment[];
+  ringSize?: string | null;
+  spouseRingSize?: string | null;
 }
 
 export function MissionRingProofAttachmentsAction({
@@ -45,6 +58,8 @@ export function MissionRingProofAttachmentsAction({
   listAttachments,
   uploadAttachment,
   missionRingProofList,
+  ringSize,
+  spouseRingSize,
 }: MissionRingProofAttachmentsActionProps) {
   const [attachments, setAttachments] = useState<MissionRingProofAttachment[]>(missionRingProofList || []);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -53,6 +68,8 @@ export function MissionRingProofAttachmentsAction({
   const [viewingFiles, setViewingFiles] = useState(false);
   const [filesByType, setFilesByType] = useState<Record<MissionRingProofType, File[]>>(EMPTY_FILES);
   const [notes, setNotes] = useState('');
+  const [personRingSize, setPersonRingSize] = useState('');
+  const [spouseRingSizeInput, setSpouseRingSizeInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,6 +134,8 @@ export function MissionRingProofAttachmentsAction({
   const resetModalForm = () => {
     setFilesByType(emptyFileMap());
     setNotes('');
+    setPersonRingSize(ringSize || '');
+    setSpouseRingSizeInput(spouseRingSize || '');
     setError(null);
     setViewingFiles(false);
   };
@@ -137,10 +156,14 @@ export function MissionRingProofAttachmentsAction({
     try {
       let latest = attachments;
       const knownBlobs = new Set(attachments.map((attachment) => attachment.blob_name).filter(Boolean));
+      const ringExtras = {
+        personRingSize: personRingSize.trim(),
+        spouseRingSize: spouseRingSizeInput.trim(),
+      };
       for (const option of MISSION_RING_PROOF_TYPE_OPTIONS) {
         const files = filesByType[option.value];
         if (files.length === 0) continue;
-        const uploaded = await uploadAttachment(userId, files, option.value, notes);
+        const uploaded = await uploadAttachment(userId, files, option.value, notes, ringExtras);
         if (Array.isArray(uploaded) && uploaded.length > 0) {
           latest = uploaded.map((attachment) => {
             const isNew = attachment.blob_name && !knownBlobs.has(attachment.blob_name);
@@ -220,12 +243,30 @@ export function MissionRingProofAttachmentsAction({
       >
         <div className="grid gap-4">
           {eligible ? (
-            <div className="flex items-center gap-3 rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-2">
-              <MissionRingIcon size={36} className="drop-shadow-[0_0_8px_rgba(255,213,74,0.7)]" />
-              <p className="text-sm text-amber-100/90">
-                Choose files in the matching row, then click Upload. You can review already-uploaded files with View files.
-              </p>
-            </div>
+            <>
+              <div className="flex items-center gap-3 rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-2">
+                <MissionRingIcon size={36} className="drop-shadow-[0_0_8px_rgba(255,213,74,0.7)]" />
+                <p className="text-sm text-amber-100/90">
+                  Choose files in the matching row, then click Upload. You can review already-uploaded files with View files.
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-white/10 dark:bg-white/5">
+                <p className="font-semibold text-slate-900 dark:text-white">Submission Requirements</p>
+                <p className="mt-1 text-slate-600 dark:text-white/70">
+                  Submit this record only if the person met the qualification criteria within{' '}
+                  <span className="font-medium">10 days of their AMA date</span>. They must have completed at
+                  least one of the following qualifying activities, with the required proof:
+                </p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600 dark:text-white/70">
+                  <li>{MISSION_RING_PROOF_REQUIREMENTS['1st_recruit']}</li>
+                  <li>{MISSION_RING_PROOF_REQUIREMENTS.personal_saving}</li>
+                  <li>{MISSION_RING_PROOF_REQUIREMENTS.convention}</li>
+                </ul>
+                <p className="mt-2 text-slate-600 dark:text-white/70">
+                  Also record the person&apos;s ring size (and spouse&apos;s ring size, if applicable) below.
+                </p>
+              </div>
+            </>
           ) : (
             <p className="text-sm text-slate-600 dark:text-white/70">
               Proof files already uploaded for this associate.
@@ -237,9 +278,14 @@ export function MissionRingProofAttachmentsAction({
             if (!eligible) return null;
             return (
               <div key={option.value} className="rounded-lg border border-slate-200 p-3 dark:border-white/10">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <div className="text-sm font-medium text-slate-900 dark:text-white">{option.label}</div>
-                  <label className="inline-flex h-8 cursor-pointer items-center rounded border border-amber-300/40 bg-amber-500/10 px-3 text-xs text-amber-700 hover:bg-amber-500/20 dark:text-amber-200">
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-slate-900 dark:text-white">{option.label}</div>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-white/45">
+                      {MISSION_RING_PROOF_REQUIREMENTS[option.value]}
+                    </p>
+                  </div>
+                  <label className="inline-flex h-8 shrink-0 cursor-pointer items-center rounded border border-amber-300/40 bg-amber-500/10 px-3 text-xs text-amber-700 hover:bg-amber-500/20 dark:text-amber-200">
                     <input
                       type="file"
                       multiple
@@ -289,16 +335,40 @@ export function MissionRingProofAttachmentsAction({
           })}
 
           {eligible ? (
-            <label className="grid gap-1.5">
-              <span className="text-sm font-medium text-slate-900 dark:text-white">Notes (optional)</span>
-              <Textarea
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder="Add a note about this proof upload…"
-                rows={3}
-                disabled={uploading}
-              />
-            </label>
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1.5">
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">Person&apos;s ring size</span>
+                  <Input
+                    value={personRingSize}
+                    onChange={(event) => setPersonRingSize(event.target.value)}
+                    placeholder="e.g. 8"
+                    maxLength={32}
+                    disabled={uploading}
+                  />
+                </label>
+                <label className="grid gap-1.5">
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">Spouse&apos;s ring size (optional)</span>
+                  <Input
+                    value={spouseRingSizeInput}
+                    onChange={(event) => setSpouseRingSizeInput(event.target.value)}
+                    placeholder="e.g. 6"
+                    maxLength={32}
+                    disabled={uploading}
+                  />
+                </label>
+              </div>
+              <label className="grid gap-1.5">
+                <span className="text-sm font-medium text-slate-900 dark:text-white">Notes (optional)</span>
+                <Textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  placeholder="Add a note about this proof upload…"
+                  rows={3}
+                  disabled={uploading}
+                />
+              </label>
+            </>
           ) : null}
 
           <div className="rounded-lg border border-white/10">

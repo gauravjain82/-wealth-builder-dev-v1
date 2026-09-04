@@ -42,6 +42,7 @@ interface BuildMissionTrackerColumnsOptions {
     files: File[],
     proofType: MissionRingProofType,
     notes?: string,
+    extras?: { personRingSize?: string; spouseRingSize?: string },
   ) => Promise<MissionRingProofAttachment[] | void>;
 }
 
@@ -505,6 +506,8 @@ export function buildMissionTrackerColumns(options: BuildMissionTrackerColumnsOp
           listAttachments={mergedOptions.listMissionRingProofAttachments}
           uploadAttachment={mergedOptions.uploadMissionRingProofAttachment}
           missionRingProofList={row.mission_ring_proof || EMPTY_MISSION_RING_PROOF_ATTACHMENTS}
+          ringSize={row.ring_size}
+          spouseRingSize={row.spouse_ring_size}
         />
       ),
     },
