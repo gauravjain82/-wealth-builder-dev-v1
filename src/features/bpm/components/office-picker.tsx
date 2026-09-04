@@ -4,6 +4,7 @@ import { useToastStore } from '@/store';
 import { bpmService } from '../services/bpm-service';
 import type { Office } from '../types';
 import { OfficeFormModal } from './office-form-modal';
+import { ManageOfficesModal } from './manage-offices-modal';
 
 interface OfficePickerProps {
   value: number | null;
@@ -14,6 +15,7 @@ export function OfficePicker({ value, onChange }: OfficePickerProps) {
   const addToast = useToastStore((state) => state.addToast);
   const [offices, setOffices] = useState<Office[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -45,12 +47,26 @@ export function OfficePicker({ value, onChange }: OfficePickerProps) {
       <Button type="button" variant="secondary" size="sm" onClick={() => setModalOpen(true)}>
         Add
       </Button>
+      <Button type="button" variant="outline" size="sm" onClick={() => setManageOpen(true)}>
+        Manage
+      </Button>
       <OfficeFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onCreated={(office) => {
+        onSaved={(office) => {
           setOffices((prev) => [office, ...prev]);
           onChange(office.id);
+        }}
+      />
+      <ManageOfficesModal
+        open={manageOpen}
+        onClose={() => setManageOpen(false)}
+        onChanged={(next) => {
+          setOffices(next);
+          // Clear the selection if the currently picked office was deleted.
+          if (value !== null && !next.some((office) => office.id === value)) {
+            onChange(null);
+          }
         }}
       />
     </div>

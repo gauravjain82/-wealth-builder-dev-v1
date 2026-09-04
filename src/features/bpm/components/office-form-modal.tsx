@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Form, FormActions, FormRow, FormRowGroup, Input, Label, LocationSelect, Modal, Select } from '@shared/components';
 import { useToastStore } from '@/store';
 import { bpmService } from '../services/bpm-service';
@@ -6,8 +6,11 @@ import type { Office, OfficeType } from '../types';
 
 interface OfficeFormModalProps {
   open: boolean;
+  /** When provided, the modal edits this office instead of creating a new one. */
+  office?: Office | null;
   onClose: () => void;
-  onCreated: (office: Office) => void;
+  /** Called with the created or updated office after a successful save. */
+  onSaved: (office: Office) => void;
 }
 
 interface OfficeForm {
@@ -38,10 +41,30 @@ const emptyForm: OfficeForm = {
   longitude: '',
 };
 
-export function OfficeFormModal({ open, onClose, onCreated }: OfficeFormModalProps) {
+const toForm = (office: Office): OfficeForm => ({
+  name: office.name ?? '',
+  office_type: office.office_type,
+  host_name: office.host_name ?? '',
+  phone_number: office.phone_number ?? '',
+  address: office.address ?? '',
+  city: office.city ?? '',
+  state: office.state ?? '',
+  zip_code: office.zip_code ?? '',
+  country: office.country || 'United States',
+  latitude: office.latitude ?? '',
+  longitude: office.longitude ?? '',
+});
+
+export function OfficeFormModal({ open, office, onClose, onSaved }: OfficeFormModalProps) {
   const addToast = useToastStore((state) => state.addToast);
+  const isEdit = Boolean(office);
   const [form, setForm] = useState<OfficeForm>(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(office ? toForm(office) : emptyForm);
+  }, [open, office]);
 
   const update = <K extends keyof OfficeForm>(key: K, value: OfficeForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -53,7 +76,7 @@ export function OfficeFormModal({ open, onClose, onCreated }: OfficeFormModalPro
     }
     setSaving(true);
     try {
-      const office = await bpmService.createOffice({
+      const payload = {
         name: form.name,
         office_type: form.office_type,
         host_name: form.host_name,
@@ -65,20 +88,26 @@ export function OfficeFormModal({ open, onClose, onCreated }: OfficeFormModalPro
         country: form.country,
         latitude: form.latitude || null,
         longitude: form.longitude || null,
-      });
-      addToast({ type: 'success', message: 'Office added.' });
-      onCreated(office);
+      };
+      const saved = office
+        ? await bpmService.updateOffice(office.id, payload)
+        : await bpmService.createOffice(payload);
+      addToast({ type: 'success', message: isEdit ? 'Office updated.' : 'Office added.' });
+      onSaved(saved);
       setForm(emptyForm);
       onClose();
     } catch (error) {
-      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add office' });
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : `Failed to ${isEdit ? 'update' : 'add'} office`,
+      });
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal open={open} title="Add Office" onClose={onClose} contentClassName="max-w-[640px]">
+    <Modal open={open} title={isEdit ? 'Edit Office' : 'Add Office'} onClose={onClose} contentClassName="max-w-[640px]">
       <Form
         onSubmit={(event) => {
           event.preventDefault();
@@ -140,7 +169,7 @@ export function OfficeFormModal({ open, onClose, onCreated }: OfficeFormModalPro
             Cancel
           </Button>
           <Button type="submit" disabled={saving}>
-            {saving ? 'Saving…' : 'Add Office'}
+            {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Office'}
           </Button>
         </FormActions>
       </Form>

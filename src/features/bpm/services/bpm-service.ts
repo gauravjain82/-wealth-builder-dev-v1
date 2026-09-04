@@ -126,6 +126,10 @@ export const bpmService = {
     request<PaginatedResponse<Office>>(`/api/bpm/offices/${buildQuery({ search, page_size: 100 })}`),
   createOffice: (payload: OfficePayload) =>
     request<Office>('/api/bpm/offices/', { method: 'POST', body: JSON.stringify(payload) }),
+  updateOffice: (id: number, payload: Partial<OfficePayload>) =>
+    request<Office>(`/api/bpm/offices/${id}/`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deleteOffice: (id: number) =>
+    request<void>(`/api/bpm/offices/${id}/`, { method: 'DELETE' }),
 
   // -- email templates -----------------------------------------------------
   emailTemplates: () =>
