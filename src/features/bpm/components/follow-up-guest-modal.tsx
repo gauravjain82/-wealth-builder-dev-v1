@@ -12,6 +12,8 @@ interface FollowUpGuestModalProps {
   guest: BPMGuest | null;
   interestOptions: BPMInterestOption[];
   appointmentTypes: AppointmentType[];
+  /** Heading used in the popup title and save button. View Invites uses "Blue card". */
+  heading?: string;
   onClose: () => void;
   onSaved: (updated: BPMGuest) => void;
 }
@@ -44,6 +46,7 @@ export function FollowUpGuestModal({
   guest,
   interestOptions,
   appointmentTypes,
+  heading = 'Follow-up',
   onClose,
   onSaved,
 }: FollowUpGuestModalProps) {
@@ -102,11 +105,11 @@ export function FollowUpGuestModal({
         appointment_id: appointmentId ?? undefined,
         notes: notes.trim() || undefined,
       });
-      addToast({ type: 'success', message: 'Follow-up saved.' });
+      addToast({ type: 'success', message: `${heading} saved.` });
       onSaved(updated);
       onClose();
     } catch (error) {
-      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to save follow-up' });
+      addToast({ type: 'error', message: error instanceof Error ? error.message : `Failed to save ${heading}` });
     } finally {
       setSaving(false);
     }
@@ -116,7 +119,7 @@ export function FollowUpGuestModal({
     <>
       <Modal
         open={open && !apptModalOpen}
-        title={`Follow-up — ${guest?.prospect_detail?.name || 'guest'}`}
+        title={`${heading} — ${guest?.prospect_detail?.name || 'guest'}`}
         onClose={onClose}
         contentClassName="max-w-[640px]"
       >
@@ -206,7 +209,7 @@ export function FollowUpGuestModal({
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Saving…' : 'Save follow-up'}
+              {saving ? 'Saving…' : `Save ${heading}`}
             </Button>
           </FormActions>
         </Form>

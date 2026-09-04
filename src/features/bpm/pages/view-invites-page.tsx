@@ -114,6 +114,9 @@ export default function ViewInvitesPage() {
             onGuestUpdated={patchGuest}
             onSetOutcome={handleOutcome}
             onFollowUp={(guest) => setFollowUpTarget(guest)}
+            followUpLabel="Blue card"
+            editFollowUpLabel="Edit Blue card"
+            followUpBadgeLabel="Blue card"
             onTransfer={(guest) => setTransferTarget(guest)}
             onRemove={handleRemove}
           />
@@ -134,6 +137,7 @@ export default function ViewInvitesPage() {
         guest={followUpTarget}
         interestOptions={interestOptions}
         appointmentTypes={appointmentTypes}
+        heading="Blue card"
         onClose={() => setFollowUpTarget(null)}
         onSaved={handleFollowUpSaved}
       />

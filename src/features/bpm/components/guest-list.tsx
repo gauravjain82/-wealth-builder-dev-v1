@@ -15,6 +15,9 @@ interface GuestListProps {
   /** View Invites actions */
   onSetOutcome?: (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => void;
   onFollowUp?: (guest: BPMGuest) => void;
+  followUpLabel?: string;
+  editFollowUpLabel?: string;
+  followUpBadgeLabel?: string;
   onTransfer?: (guest: BPMGuest) => void;
   onRemove?: (guest: BPMGuest) => void;
   /** Guest Check-In action */
@@ -29,6 +32,9 @@ export function GuestList({
   onGuestUpdated,
   onSetOutcome,
   onFollowUp,
+  followUpLabel = 'Follow up',
+  editFollowUpLabel = 'Edit follow-up',
+  followUpBadgeLabel = 'Follow-up',
   onTransfer,
   onRemove,
   onToggleCheckIn,
@@ -78,7 +84,7 @@ export function GuestList({
                   {guest.followup ? (
                     <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
                       <span className="rounded-full bg-emerald-50 px-2 py-0.5 dark:bg-emerald-400/10">
-                        Follow-up · {guest.followup.interests.length} interest
+                        {followUpBadgeLabel} · {guest.followup.interests.length} interest
                         {guest.followup.interests.length === 1 ? '' : 's'}
                       </span>
                       {guest.followup.appointment ? (
@@ -147,7 +153,7 @@ export function GuestList({
                           disabled={rowBusy(guest.id)}
                           onClick={() => onFollowUp(guest)}
                         >
-                          {guest.followup ? 'Edit follow-up' : 'Follow up'}
+                          {guest.followup ? editFollowUpLabel : followUpLabel}
                         </Button>
                       ) : null}
                       {onTransfer ? (
