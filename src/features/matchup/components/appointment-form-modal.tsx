@@ -522,7 +522,7 @@ export function AppointmentFormModal({
           {form.location_type === 'VIRTUAL' ? (
             <>
               <label>
-                <span>URL</span>
+                <span>URL (optional)</span>
                 <Input variant="surface" value={form.url} onChange={(event) => update('url', event.target.value)} placeholder="https://zoom.us/j/..." />
               </label>
               <label>
