@@ -183,6 +183,16 @@ export function Header() {
                 <span>👤</span> Profile
               </button>
 
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate('/privacy-policy');
+                }}
+                className="header__dropdown-item"
+              >
+                <span>🔒</span> Privacy Policy
+              </button>
+
               <div className="header__dropdown-divider" />
 
               {/* Sign Out Item */}

@@ -60,6 +60,8 @@ const BpmViewInvitesPage = lazy(() => import('@/features/bpm/pages/view-invites-
 const BpmGuestCheckinPage = lazy(() => import('@/features/bpm/pages/guest-checkin-page'));
 const BpmAssociateCheckinPage = lazy(() => import('@/features/bpm/pages/associate-checkin-page'));
 const HelpNeededPage = lazy(() => import('@/features/helpdesk/pages/help-needed-page'));
+const PrivacyPolicyPage = lazy(() => import('@/features/legal/pages/privacy-policy-page'));
+const TermsPage = lazy(() => import('@/features/legal/pages/terms-page'));
 const AdminHelpdeskPage = lazy(() => import('@/features/helpdesk/pages/admin-helpdesk-page'));
 const InviteAgentsPage = lazy(() => import('@/features/admin/invite-agents/pages/invite-agents-page'));
 const FunctionsPage = lazy(() => import('@/features/admin/access-control/pages/functions-page'));
@@ -106,6 +108,18 @@ const router = createBrowserRouter([
   {
     path: '/help-needed',
     element: lazyLoad(HelpNeededPage),
+    errorElement: <RouteErrorFallback />,
+  },
+
+  // Public legal pages (must render without login for Google OAuth branding review)
+  {
+    path: '/privacy-policy',
+    element: lazyLoad(PrivacyPolicyPage),
+    errorElement: <RouteErrorFallback />,
+  },
+  {
+    path: '/terms-and-conditions',
+    element: lazyLoad(TermsPage),
     errorElement: <RouteErrorFallback />,
   },
 

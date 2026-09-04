@@ -13,6 +13,25 @@
   padding: 8px 0;
 }
 
+.calendar-sync-privacy {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.calendar-sync-privacy a {
+  color: #d4af37;
+  text-decoration: underline;
+}
+
+html:not(.dark) .calendar-sync-privacy {
+  color: #64748b;
+}
+
+html:not(.dark) .calendar-sync-privacy a {
+  color: #b45309;
+}
+
 html:not(.dark) .calendar-sync-empty {
   color: #64748b;
 }

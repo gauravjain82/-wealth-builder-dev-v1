@@ -1,10 +1,11 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
+import PublicHomePage from '@/features/legal/pages/public-home-page';
 
 /**
  * RootRedirect - Smart root route handler
- * - If authenticated: redirect to home
- * - If not authenticated: redirect to login
+ * - If authenticated: redirect to the in-app home
+ * - If not authenticated: show the public app-purpose page (required for Google OAuth branding)
  * - While loading: show loader
  */
 export function RootRedirect() {
@@ -22,5 +23,5 @@ export function RootRedirect() {
     return <Navigate to="/home" replace />;
   }
 
-  return <Navigate to="/login" replace />;
+  return <PublicHomePage />;
 }

@@ -202,6 +202,16 @@ export function LoginPage() {
               Help Needed?
             </RouterLink>
           </div>
+
+          <p className="mt-3 text-center text-xs text-white/45">
+            <RouterLink to="/privacy-policy" className="hover:text-[#f5d66a] hover:underline">
+              Privacy Policy
+            </RouterLink>
+            {' · '}
+            <RouterLink to="/terms-and-conditions" className="hover:text-[#f5d66a] hover:underline">
+              Terms
+            </RouterLink>
+          </p>
         </div>
       </section>
     </div>

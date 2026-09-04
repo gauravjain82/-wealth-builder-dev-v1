@@ -5,7 +5,7 @@
  * the `?google_connected=1` OAuth return.
  */
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToastStore } from '@/store';
 import {
@@ -81,6 +81,11 @@ export function CalendarSyncSection() {
           onConnect={() => void handleConnect()}
           onDisconnect={() => disconnect.mutate()}
         />
+        <p className="calendar-sync-privacy">
+          Connecting Google lets Wealth Builder list your calendars and sync Match Up, BPM, Events,
+          and personal items you enable. We do not use this data for ads.{' '}
+          <Link to="/privacy-policy">Privacy Policy</Link>
+        </p>
 
         {statusQuery.isLoading ? (
           <div className="calendar-sync-empty">Loading calendar sync…</div>
