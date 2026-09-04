@@ -28,6 +28,7 @@ import {
   type TelegramLinkStatus,
   type TelegramLinkTokenResponse,
 } from '../services/settings-billing-service';
+import { CalendarSyncSection } from '@/features/calendar-sync/components/calendar-sync-section';
 import './settings-page.css';
 
 const US_STATES = [
@@ -1342,6 +1343,8 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+
+        <CalendarSyncSection />
 
         <div className="glass-section" id="settings-billing-upgrade">
           <div className="section-header">

@@ -443,19 +443,6 @@ export default function MatchupPage() {
     });
   };
 
-  const connectGoogle = async () => {
-    await runMutation('Redirecting to Google Calendar setup.', async () => {
-      const response = await matchupService.startGoogleOAuth();
-      window.location.href = response.authorization_url;
-    });
-  };
-
-  const disconnectGoogle = async () => {
-    await runMutation('Google Calendar disconnected.', async () => {
-      await matchupService.disconnectGoogle();
-    });
-  };
-
   const exportAppointments = async () => {
     await runMutation('Export started.', async () => {
       await matchupService.downloadExport(filters);
@@ -676,8 +663,8 @@ export default function MatchupPage() {
               selectedUserId={null}
               onChange={handleScopeChange}
             />
-            <Button variant="outline" onClick={() => void (googleStatus?.connected ? disconnectGoogle() : connectGoogle())} disabled={busy}>
-              <CalendarCheck size={16} /> {googleStatus?.connected ? 'Disconnect Google' : 'Connect Google'}
+            <Button variant="outline" onClick={() => navigate('/settings#settings-calendar-sync')}>
+              <CalendarCheck size={16} /> {googleStatus?.connected ? 'Calendar sync: Connected' : 'Manage calendar sync'}
             </Button>
             <Button onClick={openNewAppointment}>
               <Plus size={16} /> New Appointment

@@ -1,0 +1,226 @@
+/* Layout + styling for the Calendar Sync settings section. Colors follow the
+   settings-page gold/glass language and adapt to the light theme. */
+
+.calendar-sync-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.calendar-sync-empty {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+html:not(.dark) .calendar-sync-empty {
+  color: #64748b;
+}
+
+/* Connection header */
+.calendar-sync-connection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar-sync-connection-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.calendar-sync-connection-icon {
+  color: #d4af37;
+  flex-shrink: 0;
+}
+
+.calendar-sync-connection-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.calendar-sync-connection-title {
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.calendar-sync-connection-status {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+html:not(.dark) .calendar-sync-connection-title {
+  color: #0f172a;
+}
+
+html:not(.dark) .calendar-sync-connection-status {
+  color: #64748b;
+}
+
+.calendar-sync-connection-actions {
+  flex-shrink: 0;
+}
+
+/* Re-consent banner */
+.calendar-sync-reconsent {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  background: rgba(212, 175, 55, 0.1);
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+html:not(.dark) .calendar-sync-reconsent {
+  color: #713f12;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.calendar-sync-reconsent-icon {
+  color: #d4af37;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.calendar-sync-reconsent-action {
+  margin-top: 10px;
+}
+
+/* Source rows */
+.calendar-sync-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.calendar-sync-source-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+html:not(.dark) .calendar-sync-source-row {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.calendar-sync-source-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.calendar-sync-source-label {
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+html:not(.dark) .calendar-sync-source-label {
+  color: #0f172a;
+}
+
+.calendar-sync-source-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.calendar-sync-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 240px;
+  flex: 1;
+}
+
+.calendar-sync-field-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+html:not(.dark) .calendar-sync-field-label {
+  color: #64748b;
+}
+
+.calendar-sync-field-hint {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 6px 0;
+}
+
+html:not(.dark) .calendar-sync-field-hint {
+  color: #64748b;
+}
+
+.calendar-sync-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  padding-top: 22px;
+}
+
+.calendar-sync-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+html:not(.dark) .calendar-sync-toggle {
+  color: #334155;
+}
+
+.calendar-sync-toggle input {
+  accent-color: #d4af37;
+  cursor: pointer;
+}
+
+.calendar-sync-toggle input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.calendar-sync-source-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+html:not(.dark) .calendar-sync-source-meta {
+  color: #94a3b8;
+}
+
+/* Spinner for the in-flight sync icon */
+.calendar-sync-spin {
+  animation: calendar-sync-spin 1s linear infinite;
+}
+
+@keyframes calendar-sync-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
