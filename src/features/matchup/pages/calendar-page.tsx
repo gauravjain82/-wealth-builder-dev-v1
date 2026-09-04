@@ -109,6 +109,7 @@ export default function CalendarPage() {
       <AppointmentFormModal
         open={formOpen}
         appointment={null}
+        initialValues={{ kind: 'PERSONAL' }}
         appointmentTypes={appointmentTypes}
         saving={busy}
         onClose={() => setFormOpen(false)}
