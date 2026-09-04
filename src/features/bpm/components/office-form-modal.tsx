@@ -13,6 +13,8 @@ interface OfficeFormModalProps {
 interface OfficeForm {
   name: string;
   office_type: OfficeType;
+  host_name: string;
+  phone_number: string;
   address: string;
   city: string;
   state: string;
@@ -25,6 +27,8 @@ interface OfficeForm {
 const emptyForm: OfficeForm = {
   name: '',
   office_type: 'PERMANENT',
+  host_name: '',
+  phone_number: '',
   address: '',
   city: '',
   state: '',
@@ -52,6 +56,8 @@ export function OfficeFormModal({ open, onClose, onCreated }: OfficeFormModalPro
       const office = await bpmService.createOffice({
         name: form.name,
         office_type: form.office_type,
+        host_name: form.host_name,
+        phone_number: form.phone_number,
         address: form.address,
         city: form.city,
         state: form.state,
@@ -90,6 +96,16 @@ export function OfficeFormModal({ open, onClose, onCreated }: OfficeFormModalPro
               <option value="PERMANENT">Permanent office</option>
               <option value="TEMPORARY">Temporary</option>
             </Select>
+          </FormRow>
+        </FormRowGroup>
+        <FormRowGroup>
+          <FormRow>
+            <Label>Host name</Label>
+            <Input variant="surface" value={form.host_name} onChange={(e) => update('host_name', e.target.value)} placeholder="Jane Doe" />
+          </FormRow>
+          <FormRow>
+            <Label>Phone number</Label>
+            <Input variant="surface" type="tel" value={form.phone_number} onChange={(e) => update('phone_number', e.target.value)} placeholder="+1 555 123 4567" />
           </FormRow>
         </FormRowGroup>
         <FormRow>

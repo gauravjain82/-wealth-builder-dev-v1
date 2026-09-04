@@ -20,6 +20,10 @@ export interface Office {
   id: number;
   name: string;
   office_type: OfficeType;
+  /** Person hosting the venue (optional; blank for standing offices). */
+  host_name: string;
+  /** Contact number in international format (ISD code + number, e.g. "+15551234567"). */
+  phone_number: string;
   address: string;
   city: string;
   state: string;
@@ -36,6 +40,8 @@ export interface Office {
 export interface OfficePayload {
   name?: string;
   office_type: OfficeType;
+  host_name?: string;
+  phone_number?: string;
   address?: string;
   city?: string;
   state?: string;

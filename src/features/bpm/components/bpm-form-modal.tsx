@@ -71,6 +71,7 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
   const [checkinUsers, setCheckinUsers] = useState<SelectedUser[]>([]);
   const [templates, setTemplates] = useState<BPMEmailTemplate[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loadingSmds, setLoadingSmds] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -108,6 +109,21 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  const selectAllSmds = async () => {
+    setLoadingSmds(true);
+    try {
+      const roster = await bpmService.smdRoster();
+      setSmds(roster.map((ref) => ({ id: ref.id, label: ref.name || `User #${ref.id}` })));
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to load SMDs',
+      });
+    } finally {
+      setLoadingSmds(false);
+    }
+  };
 
   const requiresOffice = form.bpm_format === 'IN_PERSON' || form.bpm_format === 'WEB_AND_IN_PERSON';
   const requiresWebinar = form.bpm_format === 'WEBINAR' || form.bpm_format === 'WEB_AND_IN_PERSON';
@@ -280,7 +296,19 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
         )}
 
         <FormRow>
-          <Label>Participating SMDs</Label>
+          <div className="flex items-center justify-between gap-2">
+            <Label>Participating SMDs</Label>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => void selectAllSmds()} disabled={loadingSmds}>
+                {loadingSmds ? 'Loading…' : 'Select all SMDs'}
+              </Button>
+              {smds.length > 0 ? (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setSmds([])} disabled={loadingSmds}>
+                  Clear
+                </Button>
+              ) : null}
+            </div>
+          </div>
           <MultiUserSelect selected={smds} onChange={setSmds} placeholder="Search SMDs" />
         </FormRow>
         <FormRowGroup>

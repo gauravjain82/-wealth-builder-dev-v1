@@ -19,6 +19,7 @@ import type {
   OfficePayload,
   PaginatedResponse,
   SaveGuestFollowupPayload,
+  UserRef,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -174,6 +175,8 @@ export const bpmService = {
     ),
   // Current user's BPM action permissions, for gating UI controls.
   capabilities: () => request<BPMCapabilities>('/api/bpm/events/capabilities/'),
+  // Every SMD company-wide, for the "Select all SMDs" button in the BPM form.
+  smdRoster: () => request<UserRef[]>('/api/bpm/events/smd-roster/'),
   event: (id: number) => request<BPMEventDetail>(`/api/bpm/events/${id}/`),
   createEvent: (payload: BPMEventPayload) =>
     request<BPMEventDetail>('/api/bpm/events/', { method: 'POST', body: JSON.stringify(payload) }),
