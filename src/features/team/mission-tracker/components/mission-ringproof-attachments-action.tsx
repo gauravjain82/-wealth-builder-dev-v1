@@ -431,7 +431,7 @@ export function MissionRingProofAttachmentsAction({
             </div>
           ) : null}
 
-          <div className="flex justify-end gap-2">
+          <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-2 border-t border-slate-200 bg-white px-6 py-3 dark:border-white/10 dark:bg-[#1e2431]">
             <Button
               type="button"
               variant="outline"
