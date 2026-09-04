@@ -11,6 +11,7 @@ export interface CurrentUserDetails {
   roles?: string[];
   level?: { id?: number | null; code?: string | null; name?: string | null } | string | null;
   agency_code?: string | null;
+  phone?: string | null;
   polo_size?: string | null;
   ring_size?: string | null;
   spouse_name?: string | null;
@@ -34,6 +35,7 @@ export interface CurrentUserDetails {
 
 export interface CurrentUserProfileUpdatePayload {
   email?: string;
+  phone?: string;
   polo_size?: string;
   ring_size?: string;
   spouse_name?: string;

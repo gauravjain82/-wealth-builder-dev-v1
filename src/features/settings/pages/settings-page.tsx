@@ -29,6 +29,8 @@ import {
   type TelegramLinkTokenResponse,
 } from '../services/settings-billing-service';
 import { CalendarSyncSection } from '@/features/calendar-sync/components/calendar-sync-section';
+import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 import './settings-page.css';
 
 const US_STATES = [
@@ -48,6 +50,7 @@ const POLO_SIZES = [
 interface ProfileFormState {
   state: string;
   gender: string;
+  phone: string;
   homeZip: string;
   homeAddress: string;
   homeAddress2: string;
@@ -64,6 +67,7 @@ interface ProfileFormState {
 const DEFAULT_PROFILE_FORM: ProfileFormState = {
   state: '',
   gender: '',
+  phone: '',
   homeZip: '',
   homeAddress: '',
   homeAddress2: '',
@@ -807,6 +811,7 @@ export default function SettingsPage() {
     setProfileForm({
       state: userDetails.profile?.state || '',
       gender: userDetails.profile?.gender || '',
+      phone: userDetails.phone || '',
       homeZip: userDetails.profile?.home_zip || '',
       homeAddress: userDetails.profile?.home_address || '',
       homeAddress2: userDetails.profile?.home_address2 || '',
@@ -943,10 +948,16 @@ export default function SettingsPage() {
       addToast({ type: 'warning', message: 'City is required.' });
       return;
     }
+    const phone = (profileForm.phone || '').trim();
+    if (phone && !isValidPhoneNumber(phone)) {
+      addToast({ type: 'warning', message: 'Enter a valid phone number.' });
+      return;
+    }
     try {
       setSavingProfile(true);
       await updateCurrentUserDetails(userDetails.id, {
         email: normalizedEmail,
+        phone,
         polo_size: profileForm.poloSize.trim(),
         ring_size: profileForm.ringSize.trim(),
         spouse_name: profileForm.spouseName.trim(),
@@ -1188,6 +1199,17 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="field-row field-row-four">
+                  <div className="field-group">
+                    <label>Phone</label>
+                    <PhoneInput
+                      className="input-field"
+                      international
+                      defaultCountry="US"
+                      value={profileForm.phone}
+                      onChange={(value) => updateProfileField('phone', value || '')}
+                      disabled={savingProfile}
+                    />
+                  </div>
                   <div className="field-group">
                     <label>Address 2</label>
                     <input
