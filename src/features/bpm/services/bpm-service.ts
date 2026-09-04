@@ -14,6 +14,8 @@ import type {
   EventFilters,
   GoogleStatus,
   GuestOutcomeField,
+  GuestProspectSearchHit,
+  InviterSearchHit,
   OccurrenceFilters,
   Office,
   OfficePayload,
@@ -215,6 +217,13 @@ export const bpmService = {
 
   guests: (occurrenceId: number) =>
     request<BPMGuest[]>(`/api/bpm/occurrences/${occurrenceId}/guests/`),
+  // Reception pickers: inviter is company-wide; guests are that inviter's BaseShop.
+  searchInviters: (q: string, limit = 25) =>
+    request<InviterSearchHit[]>(`/api/bpm/inviter-search/${buildQuery({ q, limit })}`),
+  searchGuests: (inviterId: number, q: string, limit = 25) =>
+    request<GuestProspectSearchHit[]>(
+      `/api/bpm/guest-search/${buildQuery({ inviter_id: inviterId, q, limit })}`,
+    ),
   addGuest: (occurrenceId: number, payload: AddGuestPayload) =>
     request<BPMGuest>(`/api/bpm/occurrences/${occurrenceId}/add-guest/`, {
       method: 'POST',

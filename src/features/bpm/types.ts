@@ -110,6 +110,24 @@ export interface UserRef {
   name: string | null;
 }
 
+/** Company-wide associate hit from GET /api/bpm/inviter-search/. */
+export interface InviterSearchHit {
+  id: number;
+  name: string;
+  agency_code: string | null;
+  phone: string;
+}
+
+/** Baseshop prospect hit from GET /api/bpm/guest-search/. */
+export interface GuestProspectSearchHit {
+  id: number;
+  name: string | null;
+  phone: string;
+  email: string | null;
+  city: string;
+  state: string;
+}
+
 export interface BPMEventDetail extends BPMEventListItem {
   participating_smds: number[];
   participating_smds_detail: UserRef[];

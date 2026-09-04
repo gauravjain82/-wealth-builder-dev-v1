@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Button,
   Form,
@@ -12,7 +12,7 @@ import {
 } from '@shared/components';
 import { useToastStore } from '@/store';
 import { AddProspectModal } from '@/features/team/prospect/components/add-prospect-modal';
-import { createProspect, fetchProspects } from '@/features/team/prospect/services/prospect-service';
+import { createProspect } from '@/features/team/prospect/services/prospect-service';
 import { defaultAddProspectForm, type AddProspectFormData } from '@/features/team/prospect/types';
 import { bpmService } from '../services/bpm-service';
 import type { BPMOccurrence } from '../types';
@@ -127,22 +127,6 @@ function formToCreatePayload(formData: AddProspectFormData) {
   };
 }
 
-async function searchProspects(search: string): Promise<UserAutocompleteOption[]> {
-  const data = await fetchProspects({ search, pageSize: 10 });
-  return data.results.map((prospect) => {
-    const label =
-      prospect.full_name ||
-      `${prospect.first_name || ''} ${prospect.last_name || ''}`.trim() ||
-      prospect.email ||
-      `Prospect #${prospect.id}`;
-    return {
-      id: prospect.id,
-      label,
-      meta: [prospect.phone, prospect.email].filter(Boolean).join(' | '),
-    };
-  });
-}
-
 export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
   const addToast = useToastStore((state) => state.addToast);
   const [form, setForm] = useState<GuestForm>(defaultForm);
@@ -151,16 +135,60 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
   const [creatingProspect, setCreatingProspect] = useState(false);
   const [prospectInitialForm, setProspectInitialForm] = useState<AddProspectFormData | null>(null);
 
+  const searchInviters = useCallback(async (search: string): Promise<UserAutocompleteOption[]> => {
+    const rows = await bpmService.searchInviters(search);
+    return rows.map((row) => ({
+      id: row.id,
+      label: row.name,
+      agencyCode: row.agency_code || '',
+      meta: [row.agency_code, row.phone].filter(Boolean).join(' | '),
+    }));
+  }, []);
+
+  const searchGuests = useCallback(
+    async (search: string): Promise<UserAutocompleteOption[]> => {
+      if (!form.inviterId) return [];
+      const rows = await bpmService.searchGuests(form.inviterId, search);
+      return rows.map((row) => ({
+        id: row.id,
+        label: row.name || `Prospect #${row.id}`,
+        meta: [row.phone, row.email].filter(Boolean).join(' | '),
+      }));
+    },
+    [form.inviterId],
+  );
+
   const openAddProspect = (typedName: string) => {
+    if (!form.inviterId) {
+      addToast({ type: 'error', message: 'Select an inviter first.' });
+      return;
+    }
     const { firstName, lastName } = splitName(typedName);
-    setProspectInitialForm({ ...defaultAddProspectForm, firstName, lastName });
+    setProspectInitialForm({
+      ...defaultAddProspectForm,
+      firstName,
+      lastName,
+      recruiter: form.inviterLabel,
+      recruiterId: form.inviterId,
+    });
     setAddProspectOpen(true);
   };
 
   const handleCreateProspect = async (formData: AddProspectFormData) => {
+    if (!form.inviterId) {
+      addToast({ type: 'error', message: 'Select an inviter first.' });
+      return;
+    }
     setCreatingProspect(true);
     try {
-      const created = await createProspect(formToCreatePayload(formData));
+      // Recruiter is always the selected inviter, even if the modal field was changed.
+      const created = await createProspect(
+        formToCreatePayload({
+          ...formData,
+          recruiter: form.inviterLabel,
+          recruiterId: form.inviterId,
+        }),
+      );
       const label =
         created.full_name || `${created.first_name} ${created.last_name}`.trim() || created.email || `Prospect #${created.id}`;
       setForm((prev) => ({
@@ -181,6 +209,10 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
   const submit = async () => {
     if (!occurrence) {
       addToast({ type: 'error', message: 'Select a BPM and date first.' });
+      return;
+    }
+    if (!form.inviterId) {
+      addToast({ type: 'error', message: 'Select an inviter first.' });
       return;
     }
     if (!form.prospectId) {
@@ -215,15 +247,38 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
       >
         <FormRowGroup>
           <FormRow>
+            <Label>Inviter *</Label>
+            <UserAutocompleteDropdown
+              selectedId={form.inviterId}
+              selectedLabel={form.inviterLabel}
+              placeholder="Search the organisation"
+              fetchOptions={searchInviters}
+              onSelect={(option) =>
+                setForm((prev) => {
+                  const inviterChanged = prev.inviterId !== option.id;
+                  return {
+                    ...prev,
+                    inviterId: option.id,
+                    inviterLabel: option.label,
+                    prospectId: inviterChanged ? null : prev.prospectId,
+                    prospectLabel: inviterChanged ? '' : prev.prospectLabel,
+                    prospectMeta: inviterChanged ? '' : prev.prospectMeta,
+                  };
+                })
+              }
+            />
+          </FormRow>
+          <FormRow>
             <Label>Guest (Prospect) *</Label>
             <div className="flex items-center gap-2">
               <div className="flex-1">
                 <UserAutocompleteDropdown
                   selectedId={form.prospectId}
                   selectedLabel={form.prospectLabel}
-                  placeholder="Search prospects"
+                  placeholder={form.inviterId ? 'Search prospects in this baseshop' : 'Select an inviter first'}
                   buttonText="SELECT"
-                  fetchOptions={searchProspects}
+                  disabled={!form.inviterId}
+                  fetchOptions={searchGuests}
                   onSelect={(option) =>
                     setForm((prev) => ({
                       ...prev,
@@ -236,25 +291,19 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
                   noResultsActionLabel="+ Add new prospect"
                 />
               </div>
-              <Button type="button" variant="secondary" size="sm" onClick={() => openAddProspect('')}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={!form.inviterId}
+                onClick={() => openAddProspect('')}
+              >
                 + Add
               </Button>
             </div>
             {form.prospectMeta ? (
               <span className="mt-1 text-xs text-slate-500 dark:text-white/60">{form.prospectMeta}</span>
             ) : null}
-          </FormRow>
-          <FormRow>
-            <Label>Inviter</Label>
-            <UserAutocompleteDropdown
-              selectedId={form.inviterId}
-              selectedLabel={form.inviterLabel}
-              placeholder="Select inviter"
-              fetchFromApi
-              onSelect={(option) =>
-                setForm((prev) => ({ ...prev, inviterId: option.id, inviterLabel: option.label }))
-              }
-            />
           </FormRow>
         </FormRowGroup>
         <FormRow>

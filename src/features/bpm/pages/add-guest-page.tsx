@@ -8,7 +8,7 @@ export default function AddGuestPage() {
   const [occurrence, setOccurrence] = useState<BPMOccurrence | null>(null);
 
   return (
-    <BPMPageShell title="Add Guest" description="Invite a guest to a BPM by selecting an existing prospect, or add a new one.">
+    <BPMPageShell title="Add Guest" description="Select who invited them from the organisation, then search that inviter's baseshop — or add a new prospect under them.">
       <BPMCard className="mb-4">
         <BPMOccurrencePicker value={occurrence} onChange={setOccurrence} />
       </BPMCard>
