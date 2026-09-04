@@ -16,6 +16,7 @@ import { GuestList } from '../components/guest-list';
 import { TransferGuestModal } from '../components/transfer-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
+import { mergeGuest } from '../components/guest-notes';
 import type { AssociateCheckIn, BPMCapabilities, BPMEventDetail, BPMGuest, BPMInterestOption, BPMOccurrence, GoogleStatus, GuestOutcomeField, OccurrenceFilters } from '../types';
 // Reuse the Matchup dashboard styling so the BPM overview matches it 1:1.
 import '@/features/matchup/pages/matchup-page.css';
@@ -46,6 +47,7 @@ export default function BpmOverviewPage() {
   const [googleStatus, setGoogleStatus] = useState<GoogleStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [busyGuestId, setBusyGuestId] = useState<number | null>(null);
   const [addGuestOpen, setAddGuestOpen] = useState(false);
   const [addGuestFor, setAddGuestFor] = useState<BPMOccurrence | null>(null);
   const [bpmFormOpen, setBpmFormOpen] = useState(false);
@@ -200,31 +202,34 @@ export default function BpmOverviewPage() {
     if (listView === 'associates') void loadAssociates(detailOccurrence.id);
   }, [listView, detailOccurrence, loadGuests, loadAssociates]);
 
-  const runGuestMutation = async (message: string, action: () => Promise<void>) => {
-    if (!detailOccurrence) return;
-    setBusy(true);
+  const patchGuest = (updated: BPMGuest) => setGuests((prev) => mergeGuest(prev, updated));
+
+  const setGuestOutcome = async (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => {
+    const snapshot = guest;
+    setGuests((prev) => mergeGuest(prev, { ...guest, [field]: value }));
     try {
-      await action();
-      addToast({ type: 'success', message });
-      await loadGuests(detailOccurrence.id);
+      const updated = await bpmService.setGuestFlags(guest.occurrence, { guest_id: guest.id, [field]: value });
+      patchGuest(updated);
     } catch (error) {
-      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Action failed' });
-    } finally {
-      setBusy(false);
+      patchGuest(snapshot);
+      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to update outcome' });
     }
   };
 
-  const setGuestOutcome = (guest: BPMGuest, field: GuestOutcomeField, value: boolean) =>
-    runGuestMutation('Outcome saved.', () =>
-      bpmService.setGuestFlags(guest.occurrence, { guest_id: guest.id, [field]: value }).then(() => undefined),
-    );
+  const removeGuest = async (guest: BPMGuest) => {
+    setBusyGuestId(guest.id);
+    try {
+      await bpmService.removeGuest(guest.occurrence, guest.id);
+      setGuests((prev) => prev.filter((row) => row.id !== guest.id));
+      addToast({ type: 'success', message: 'Guest removed.' });
+    } catch (error) {
+      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Action failed' });
+    } finally {
+      setBusyGuestId(null);
+    }
+  };
 
-  const removeGuest = (guest: BPMGuest) =>
-    runGuestMutation('Guest removed.', () => bpmService.removeGuest(guest.occurrence, guest.id).then(() => undefined));
-
-  // The save endpoint returns the full updated guest, so patch it into the list in place.
-  const handleFollowUpSaved = (updated: BPMGuest) =>
-    setGuests((prev) => prev.map((guest) => (guest.id === updated.id ? updated : guest)));
+  const handleFollowUpSaved = (updated: BPMGuest) => patchGuest(updated);
 
   const checkInAssociate = async (userId: number) => {
     if (!detailOccurrence) return;
@@ -363,7 +368,8 @@ export default function BpmOverviewPage() {
             ) : (
               <GuestList
                 guests={filteredGuests}
-                busy={busy}
+                busyGuestId={busyGuestId}
+                onGuestUpdated={patchGuest}
                 onSetOutcome={setGuestOutcome}
                 onFollowUp={setFollowUpTarget}
                 onTransfer={setTransferTarget}
@@ -502,7 +508,11 @@ export default function BpmOverviewPage() {
         open={Boolean(transferTarget)}
         guest={transferTarget}
         onClose={() => setTransferTarget(null)}
-        onTransferred={() => { if (detailOccurrence) void loadGuests(detailOccurrence.id); }}
+        onTransferred={() => {
+          if (transferTarget) {
+            setGuests((prev) => prev.filter((guest) => guest.id !== transferTarget.id));
+          }
+        }}
       />
       <FollowUpGuestModal
         open={Boolean(followUpTarget)}

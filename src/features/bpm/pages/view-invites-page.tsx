@@ -10,6 +10,7 @@ import { TransferGuestModal } from '../components/transfer-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
 import { InterestOptionsAdminModal } from '../components/interest-options-admin-modal';
 import { bpmService } from '../services/bpm-service';
+import { mergeGuest } from '../components/guest-notes';
 import type { BPMCapabilities, BPMGuest, BPMInterestOption, BPMOccurrence, GuestOutcomeField } from '../types';
 
 export default function ViewInvitesPage() {
@@ -17,7 +18,7 @@ export default function ViewInvitesPage() {
   const [occurrence, setOccurrence] = useState<BPMOccurrence | null>(null);
   const [guests, setGuests] = useState<BPMGuest[]>([]);
   const [loading, setLoading] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busyGuestId, setBusyGuestId] = useState<number | null>(null);
   const [transferTarget, setTransferTarget] = useState<BPMGuest | null>(null);
   const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
   const [manageOptionsOpen, setManageOptionsOpen] = useState(false);
@@ -59,31 +60,34 @@ export default function ViewInvitesPage() {
     else setGuests([]);
   }, [occurrence, load]);
 
-  const runMutation = async (message: string, action: () => Promise<void>) => {
-    if (!occurrence) return;
-    setBusy(true);
+  const patchGuest = (updated: BPMGuest) => setGuests((prev) => mergeGuest(prev, updated));
+
+  const handleOutcome = async (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => {
+    const snapshot = guest;
+    setGuests((prev) => mergeGuest(prev, { ...guest, [field]: value }));
     try {
-      await action();
-      addToast({ type: 'success', message });
-      await load(occurrence.id);
+      const updated = await bpmService.setGuestFlags(guest.occurrence, { guest_id: guest.id, [field]: value });
+      patchGuest(updated);
     } catch (error) {
-      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Action failed' });
-    } finally {
-      setBusy(false);
+      patchGuest(snapshot);
+      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to update outcome' });
     }
   };
 
-  const handleOutcome = (guest: BPMGuest, field: GuestOutcomeField, value: boolean) =>
-    runMutation('Outcome saved.', () =>
-      bpmService.setGuestFlags(guest.occurrence, { guest_id: guest.id, [field]: value }).then(() => undefined),
-    );
+  const handleRemove = async (guest: BPMGuest) => {
+    setBusyGuestId(guest.id);
+    try {
+      await bpmService.removeGuest(guest.occurrence, guest.id);
+      setGuests((prev) => prev.filter((row) => row.id !== guest.id));
+      addToast({ type: 'success', message: 'Guest removed.' });
+    } catch (error) {
+      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Action failed' });
+    } finally {
+      setBusyGuestId(null);
+    }
+  };
 
-  const handleRemove = (guest: BPMGuest) =>
-    runMutation('Guest removed.', () => bpmService.removeGuest(guest.occurrence, guest.id).then(() => undefined));
-
-  // The save endpoint returns the full updated guest, so patch it into the list in place.
-  const handleFollowUpSaved = (updated: BPMGuest) =>
-    setGuests((prev) => prev.map((guest) => (guest.id === updated.id ? updated : guest)));
+  const handleFollowUpSaved = (updated: BPMGuest) => patchGuest(updated);
 
   return (
     <BPMPageShell
@@ -106,7 +110,8 @@ export default function ViewInvitesPage() {
         ) : (
           <GuestList
             guests={guests}
-            busy={busy}
+            busyGuestId={busyGuestId}
+            onGuestUpdated={patchGuest}
             onSetOutcome={handleOutcome}
             onFollowUp={(guest) => setFollowUpTarget(guest)}
             onTransfer={(guest) => setTransferTarget(guest)}
@@ -118,7 +123,11 @@ export default function ViewInvitesPage() {
         open={Boolean(transferTarget)}
         guest={transferTarget}
         onClose={() => setTransferTarget(null)}
-        onTransferred={() => occurrence && load(occurrence.id)}
+        onTransferred={() => {
+          if (transferTarget) {
+            setGuests((prev) => prev.filter((guest) => guest.id !== transferTarget.id));
+          }
+        }}
       />
       <FollowUpGuestModal
         open={Boolean(followUpTarget)}
