@@ -1,16 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button, Input, LoadingState } from '@shared/components';
 import { useToastStore } from '@/store';
 import { matchupService } from '@/features/matchup/services/matchup-service';
 import type { AppointmentType } from '@/features/matchup/types';
-import { fetchProspects, type Prospect } from '@/features/team/prospect/services/prospect-service';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
 import { AddGuestModal } from '../components/add-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
 import { bpmService } from '../services/bpm-service';
-import type { BPMGuest, BPMInterestOption, BPMOccurrence, GuestOutcomeField } from '../types';
+import type {
+  BPMGuest,
+  BPMInterestOption,
+  BPMOccurrence,
+  GuestOutcomeField,
+  ProspectSearchHit,
+} from '../types';
 
 type GuestFilter = 'all' | 'checked_in' | 'called' | 'left_message' | 'not_interested' | 'reschedule';
 
@@ -35,7 +41,8 @@ export default function GuestCheckinPage() {
   const [addGuestOpen, setAddGuestOpen] = useState(false);
   const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
-  const [prospectHits, setProspectHits] = useState<Prospect[]>([]);
+  const [prospectHits, setProspectHits] = useState<ProspectSearchHit[]>([]);
+  const [associateHits, setAssociateHits] = useState<ProspectSearchHit[]>([]);
   const [prospectSearching, setProspectSearching] = useState(false);
 
   useEffect(() => {
@@ -98,23 +105,30 @@ export default function GuestCheckinPage() {
   const handleFollowUpSaved = (updated: BPMGuest) =>
     setGuests((prev) => prev.map((guest) => (guest.id === updated.id ? updated : guest)));
 
-  // Second search tier: look up company-wide prospects who are not yet on the
-  // invite list, so a walk-in already in the system can be added on the spot.
+  // Second search tier: a company-wide (not downline-scoped) prospect lookup so a
+  // walk-in already in the system is found regardless of team. The single result
+  // set is split by agency_code:
+  //   • uncoded, uninvited → true prospects the caller can quick-add;
+  //   • coded → recruited associates, who belong in Associate Check-In, so we
+  //     flag them rather than offering an add.
   useEffect(() => {
     const term = search.trim();
     if (!occurrence || term.length < 2) {
       setProspectHits([]);
+      setAssociateHits([]);
       setProspectSearching(false);
       return;
     }
     setProspectSearching(true);
     const handle = setTimeout(async () => {
       try {
-        const res = await fetchProspects({ search: term, pageSize: 10 });
+        const hits = await bpmService.searchProspects(term, 10);
         const invited = new Set(guests.map((g) => g.prospect).filter(Boolean));
-        setProspectHits(res.results.filter((p) => !invited.has(p.id)));
+        setProspectHits(hits.filter((p) => !p.agency_code && !invited.has(p.id)));
+        setAssociateHits(hits.filter((p) => Boolean(p.agency_code)));
       } catch {
         setProspectHits([]);
+        setAssociateHits([]);
       } finally {
         setProspectSearching(false);
       }
@@ -123,11 +137,11 @@ export default function GuestCheckinPage() {
   }, [search, occurrence, guests]);
 
   // Tier 2 action: add an existing prospect as a guest and check them in at once.
-  const quickAddProspect = async (prospect: Prospect) => {
+  const quickAddProspect = async (prospect: ProspectSearchHit) => {
     if (!occurrence) return;
     setBusy(true);
     try {
-      const name = prospect.full_name || `${prospect.first_name} ${prospect.last_name}`.trim();
+      const name = prospect.name || `${prospect.first_name} ${prospect.last_name}`.trim();
       const guest = await bpmService.addGuest(occurrence.id, {
         guest_name: name,
         prospect: prospect.id,
@@ -253,20 +267,39 @@ export default function GuestCheckinPage() {
 
             {search.trim().length >= 2 ? (
               <div className="mt-4 border-t border-slate-200 pt-4 dark:border-white/10">
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
-                  <span>Prospects not yet invited</span>
-                  {prospectSearching ? <span className="font-normal normal-case text-slate-400">searching…</span> : null}
-                </div>
+                {associateHits.length > 0 ? (
+                  <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm dark:border-amber-400/30 dark:bg-amber-400/10">
+                    <span className="font-medium text-amber-800 dark:text-amber-200">
+                      Already a recruited associate:
+                    </span>{' '}
+                    <span className="text-amber-700 dark:text-amber-200/80">
+                      {associateHits
+                        .map((a) => `${a.name || `${a.first_name} ${a.last_name}`.trim()} (${a.agency_code})`)
+                        .join(', ')}{' '}
+                      — check them in from{' '}
+                      <Link to="/bpm/associate-checkin" className="font-medium underline">
+                        Associate Check-In
+                      </Link>
+                      , not here.
+                    </span>
+                  </div>
+                ) : null}
+                {prospectHits.length > 0 || associateHits.length === 0 ? (
+                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
+                    <span>Prospects not yet invited</span>
+                    {prospectSearching ? <span className="font-normal normal-case text-slate-400">searching…</span> : null}
+                  </div>
+                ) : null}
                 {prospectHits.length > 0 ? (
                   <ul className="divide-y divide-slate-100 dark:divide-white/5">
                     {prospectHits.map((p) => (
                       <li key={p.id} className="flex items-center justify-between gap-3 py-2">
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium text-slate-900 dark:text-white">
-                            {p.full_name || `${p.first_name} ${p.last_name}`.trim() || `Prospect #${p.id}`}
+                            {p.name || `${p.first_name} ${p.last_name}`.trim() || `Prospect #${p.id}`}
                           </div>
                           <div className="truncate text-xs text-slate-500 dark:text-white/60">
-                            {[p.email, p.phone, p.agency_code].filter(Boolean).join(' · ') || '—'}
+                            {[p.email, p.phone].filter(Boolean).join(' · ') || '—'}
                           </div>
                         </div>
                         <Button
@@ -281,7 +314,7 @@ export default function GuestCheckinPage() {
                       </li>
                     ))}
                   </ul>
-                ) : !prospectSearching ? (
+                ) : !prospectSearching && associateHits.length === 0 ? (
                   <div className="flex flex-wrap items-center justify-between gap-3 py-2">
                     <p className="text-sm text-slate-500 dark:text-white/60">
                       No matching prospect for “{search.trim()}”.

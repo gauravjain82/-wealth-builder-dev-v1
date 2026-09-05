@@ -20,6 +20,7 @@ import type {
   Office,
   OfficePayload,
   PaginatedResponse,
+  ProspectSearchHit,
   SaveGuestFollowupPayload,
   UserRef,
 } from '../types';
@@ -224,6 +225,9 @@ export const bpmService = {
     request<GuestProspectSearchHit[]>(
       `/api/bpm/guest-search/${buildQuery({ inviter_id: inviterId, q, limit })}`,
     ),
+  // Company-wide prospect lookup for Guest Check-In (not downline-scoped).
+  searchProspects: (q: string, limit = 10) =>
+    request<ProspectSearchHit[]>(`/api/bpm/prospect-search/${buildQuery({ q, limit })}`),
   addGuest: (occurrenceId: number, payload: AddGuestPayload) =>
     request<BPMGuest>(`/api/bpm/occurrences/${occurrenceId}/add-guest/`, {
       method: 'POST',

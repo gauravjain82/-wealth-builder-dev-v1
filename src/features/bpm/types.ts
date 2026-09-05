@@ -128,6 +128,24 @@ export interface GuestProspectSearchHit {
   state: string;
 }
 
+/**
+ * Company-wide prospect hit from GET /api/bpm/prospect-search/. Not scoped to a
+ * baseshop or the caller's downline — a coded `agency_code` marks a recruited
+ * associate (who belongs in Associate Check-In, not the guest list).
+ */
+export interface ProspectSearchHit {
+  id: number;
+  name: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string;
+  agency_code: string | null;
+  recruited_by: number | null;
+  city: string;
+  state: string;
+}
+
 export interface BPMEventDetail extends BPMEventListItem {
   participating_smds: number[];
   participating_smds_detail: UserRef[];

@@ -413,7 +413,20 @@ function buildProspectUsername(payload: CreateProspectPayload) {
   return `${base}.${suffix}`;
 }
 
-export async function createProspect(payload: CreateProspectPayload): Promise<Prospect> {
+export interface CreateProspectOptions {
+  /**
+   * BPM Guest Check-In / Add Guest context: the recruiter is an org-wide inviter
+   * (company-wide picker), which the generic create endpoint would reject as
+   * "recruited_by is outside your scope". Sends context=bpm_guest so the backend
+   * skips downline scoping for this permissioned path only.
+   */
+  bpmGuest?: boolean;
+}
+
+export async function createProspect(
+  payload: CreateProspectPayload,
+  options: CreateProspectOptions = {},
+): Promise<Prospect> {
   const firstName = payload.first_name.trim();
   const lastName = payload.last_name.trim();
   const email = payload.email?.trim() || null;
@@ -427,7 +440,10 @@ export async function createProspect(payload: CreateProspectPayload): Promise<Pr
     throw new Error('Email or phone is required.');
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/accounts/users/`, {
+  const url = options.bpmGuest
+    ? `${API_BASE_URL}/api/accounts/users/?context=bpm_guest`
+    : `${API_BASE_URL}/api/accounts/users/`;
+  const response = await fetch(url, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({

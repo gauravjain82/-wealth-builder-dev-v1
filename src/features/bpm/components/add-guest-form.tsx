@@ -188,6 +188,10 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
           recruiter: form.inviterLabel,
           recruiterId: form.inviterId,
         }),
+        // The inviter is chosen from the company-wide picker, so it may sit
+        // outside the caller's downline; flag the reception context to bypass
+        // the generic create endpoint's scope check.
+        { bpmGuest: true },
       );
       const label =
         created.full_name || `${created.first_name} ${created.last_name}`.trim() || created.email || `Prospect #${created.id}`;
