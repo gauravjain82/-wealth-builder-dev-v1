@@ -3,6 +3,7 @@ import { Button, Input, LoadingState } from '@shared/components';
 import { useToastStore } from '@/store';
 import { matchupService } from '@/features/matchup/services/matchup-service';
 import type { AppointmentType } from '@/features/matchup/types';
+import { fetchProspects, type Prospect } from '@/features/team/prospect/services/prospect-service';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
@@ -34,6 +35,8 @@ export default function GuestCheckinPage() {
   const [addGuestOpen, setAddGuestOpen] = useState(false);
   const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
+  const [prospectHits, setProspectHits] = useState<Prospect[]>([]);
+  const [prospectSearching, setProspectSearching] = useState(false);
 
   useEffect(() => {
     bpmService.interestOptions({ ordering: 'sort_order' }).then(setInterestOptions).catch(() => setInterestOptions([]));
@@ -94,6 +97,53 @@ export default function GuestCheckinPage() {
   // The save endpoint returns the full updated guest, so patch it into the list in place.
   const handleFollowUpSaved = (updated: BPMGuest) =>
     setGuests((prev) => prev.map((guest) => (guest.id === updated.id ? updated : guest)));
+
+  // Second search tier: look up company-wide prospects who are not yet on the
+  // invite list, so a walk-in already in the system can be added on the spot.
+  useEffect(() => {
+    const term = search.trim();
+    if (!occurrence || term.length < 2) {
+      setProspectHits([]);
+      setProspectSearching(false);
+      return;
+    }
+    setProspectSearching(true);
+    const handle = setTimeout(async () => {
+      try {
+        const res = await fetchProspects({ search: term, pageSize: 10 });
+        const invited = new Set(guests.map((g) => g.prospect).filter(Boolean));
+        setProspectHits(res.results.filter((p) => !invited.has(p.id)));
+      } catch {
+        setProspectHits([]);
+      } finally {
+        setProspectSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [search, occurrence, guests]);
+
+  // Tier 2 action: add an existing prospect as a guest and check them in at once.
+  const quickAddProspect = async (prospect: Prospect) => {
+    if (!occurrence) return;
+    setBusy(true);
+    try {
+      const name = prospect.full_name || `${prospect.first_name} ${prospect.last_name}`.trim();
+      const guest = await bpmService.addGuest(occurrence.id, {
+        guest_name: name,
+        prospect: prospect.id,
+        inviter: prospect.recruited_by,
+        notes: '',
+      });
+      await bpmService.checkInGuest(occurrence.id, guest.id);
+      addToast({ type: 'success', message: `${name || 'Guest'} added and checked in.` });
+      setSearch('');
+      await load(occurrence.id);
+    } catch (error) {
+      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add guest' });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const addGuestNote = async (guest: BPMGuest, text: string) => {
     if (!occurrence) return;
@@ -179,7 +229,7 @@ export default function GuestCheckinPage() {
                     variant="surface"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search name, email, phone…"
+                    placeholder="Search invites & prospects…"
                   />
                 </div>
                 <Button type="button" size="sm" className="whitespace-nowrap" onClick={() => setAddGuestOpen(true)}>
@@ -200,6 +250,55 @@ export default function GuestCheckinPage() {
                 onFollowUp={setFollowUpTarget}
               />
             )}
+
+            {search.trim().length >= 2 ? (
+              <div className="mt-4 border-t border-slate-200 pt-4 dark:border-white/10">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
+                  <span>Prospects not yet invited</span>
+                  {prospectSearching ? <span className="font-normal normal-case text-slate-400">searching…</span> : null}
+                </div>
+                {prospectHits.length > 0 ? (
+                  <ul className="divide-y divide-slate-100 dark:divide-white/5">
+                    {prospectHits.map((p) => (
+                      <li key={p.id} className="flex items-center justify-between gap-3 py-2">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-slate-900 dark:text-white">
+                            {p.full_name || `${p.first_name} ${p.last_name}`.trim() || `Prospect #${p.id}`}
+                          </div>
+                          <div className="truncate text-xs text-slate-500 dark:text-white/60">
+                            {[p.email, p.phone, p.agency_code].filter(Boolean).join(' · ') || '—'}
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={busy}
+                          className="whitespace-nowrap"
+                          onClick={() => quickAddProspect(p)}
+                        >
+                          Add &amp; Check in
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : !prospectSearching ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3 py-2">
+                    <p className="text-sm text-slate-500 dark:text-white/60">
+                      No matching prospect for “{search.trim()}”.
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="whitespace-nowrap"
+                      onClick={() => setAddGuestOpen(true)}
+                    >
+                      + Add new guest
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </BPMCard>
         </>
       ) : (
