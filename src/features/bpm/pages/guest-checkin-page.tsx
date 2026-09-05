@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Input, LoadingState } from '@shared/components';
+import { Button, Input, LoadingState } from '@shared/components';
 import { useToastStore } from '@/store';
 import { matchupService } from '@/features/matchup/services/matchup-service';
 import type { AppointmentType } from '@/features/matchup/types';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
+import { AddGuestModal } from '../components/add-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
 import { bpmService } from '../services/bpm-service';
 import type { BPMGuest, BPMInterestOption, BPMOccurrence, GuestOutcomeField } from '../types';
@@ -30,6 +31,7 @@ export default function GuestCheckinPage() {
   const [filter, setFilter] = useState<GuestFilter>('all');
   const [search, setSearch] = useState('');
   const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
+  const [addGuestOpen, setAddGuestOpen] = useState(false);
   const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
 
@@ -171,13 +173,18 @@ export default function GuestCheckinPage() {
                   </button>
                 ))}
               </div>
-              <div className="w-full sm:w-64">
-                <Input
-                  variant="surface"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search name, email, phone…"
-                />
+              <div className="flex w-full items-center gap-2 sm:w-auto">
+                <div className="w-full sm:w-64">
+                  <Input
+                    variant="surface"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search name, email, phone…"
+                  />
+                </div>
+                <Button type="button" size="sm" className="whitespace-nowrap" onClick={() => setAddGuestOpen(true)}>
+                  + Add Guest
+                </Button>
               </div>
             </div>
 
@@ -202,6 +209,15 @@ export default function GuestCheckinPage() {
           </p>
         </BPMCard>
       )}
+
+      <AddGuestModal
+        open={addGuestOpen}
+        presetOccurrence={occurrence}
+        onClose={() => setAddGuestOpen(false)}
+        onAdded={() => {
+          if (occurrence) void load(occurrence.id);
+        }}
+      />
 
       <FollowUpGuestModal
         open={Boolean(followUpTarget)}
