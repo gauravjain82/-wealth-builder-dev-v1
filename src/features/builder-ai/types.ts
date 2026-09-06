@@ -16,11 +16,25 @@
 // --------------------------------------------------------------------------- //
 
 /**
- * The three viewer-facing dashboard scopes. Sent as the `?scope=` query param;
- * the backend maps them to builder segments (home→INDIVIDUAL, company→COMPANY,
- * baseshop→BASESHOP). This is a builder *segment*, NOT an authz access scope.
+ * The four viewer-facing dashboard segment tiers (Decision 31). Sent as the `?scope=`
+ * query param; the backend maps them 1:1 to builder segments
+ * (individual→INDIVIDUAL, baseshop→BASESHOP, superbase→SUPERBASE, superteam→SUPERTEAM)
+ * and clamps ungranted super tiers to baseshop. This is a builder *segment* (cumulative
+ * BaseShop ⊆ SuperBase ⊆ SuperTeam), NOT an authz access scope.
  */
-export type DashboardScope = 'home' | 'company' | 'baseshop';
+export type DashboardScope = 'individual' | 'baseshop' | 'superbase' | 'superteam';
+
+/**
+ * One entry in the dashboard segment toggle, as resolved by the backend
+ * (`DashboardPayload.segments`). `key` is the `?scope=` value, `label` is the
+ * program-configured display name (e.g. SuperTeam → "Company"), and `locked` is
+ * true when the viewer lacks the grant for that tier (render disabled/hidden).
+ */
+export interface SegmentOption {
+  key: DashboardScope;
+  label: string;
+  locked: boolean;
+}
 
 /** Builder membership status for the selected period (marathon split, Decision 6). */
 export type BuilderStatus = 'ACTIVE' | 'COMPLETED' | 'REMOVED' | 'INVITED' | 'SUSPENDED' | 'TERMINATED';
@@ -77,7 +91,21 @@ export interface BuilderProgramWriteInput {
   status?: BuilderProgram['status'];
   start_date?: string | null;
   timezone?: string;
+  /**
+   * Free-form program config (JSON). Holds `segment_labels` — the display names for
+   * the dashboard toggle tiers (e.g. `{ SUPERTEAM: "Company" }`, Decision 31). PATCH
+   * replaces the whole object, so callers spread the existing config before editing.
+   */
+  config?: Record<string, unknown>;
 }
+
+/** Canonical segment keys whose display labels are program-configurable (Decision 31). */
+export const SEGMENT_LABEL_FIELDS: { key: string; fallback: string }[] = [
+  { key: 'INDIVIDUAL', fallback: 'Individual' },
+  { key: 'BASESHOP', fallback: 'BaseShop' },
+  { key: 'SUPERBASE', fallback: 'SuperBase' },
+  { key: 'SUPERTEAM', fallback: 'SuperTeam' },
+];
 
 /**
  * The caller's Builder capability flags from `GET /api/builder/my-access/`. Drives
@@ -153,6 +181,8 @@ export interface DashboardSection {
 
 export interface DashboardPayload {
   scope: string;
+  /** Role-gated toggle tiers with configurable labels (Decision 31). */
+  segments: SegmentOption[];
   period: PerformancePeriod;
   as_of: string | null;
   sections: DashboardSection[];
@@ -422,10 +452,10 @@ export interface SubmissionSummary {
 // config rows the dashboard builder edits — distinct from the assembled read
 // payloads above (DashboardPayload is KPIs; DashboardConfig is the layout row).
 
-/** A builder *segment* (Decision 15) — the downline slice a widget/goal is about. */
-export type Segment = 'INDIVIDUAL' | 'ROLE' | 'TEAM' | 'BASESHOP' | 'COMPANY';
+/** A builder *segment* (Decisions 15/31) — the downline slice a widget/goal is about. */
+export type Segment = 'INDIVIDUAL' | 'ROLE' | 'TEAM' | 'BASESHOP' | 'SUPERBASE' | 'SUPERTEAM';
 
-/** A dashboard layout row (Home/Company/BaseShop/Reporting, or a custom one). */
+/** A dashboard layout row (per-segment tier, Reporting, or a custom one). */
 export interface DashboardConfig {
   id: number;
   program: number;

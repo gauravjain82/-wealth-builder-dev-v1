@@ -3,7 +3,7 @@
  *
  * The program is the one-tenant container everything else hangs off. Creating one
  * here also bootstraps its standard template server-side (invitation rule, metrics,
- * goals, the Home/Company/BaseShop/Reporting dashboards, leaderboards), so a program
+ * goals, the per-tier dashboards + Reporting, leaderboards), so a program
  * created from the UI is immediately usable — no seed command or Django admin needed.
  *
  * Gated by `builder_program:manage` (the backend enforces it; the menu hides this
@@ -24,6 +24,7 @@ import {
 import { useToastStore } from '@/store';
 import { useMyBuilderAccess, usePrograms } from '../hooks/use-builder-ai';
 import { useProgramMutations } from '../hooks/use-builder-config';
+import { SEGMENT_LABEL_FIELDS } from '../types';
 import type { BuilderProgram, BuilderProgramWriteInput } from '../types';
 
 const STATUSES: BuilderProgram['status'][] = ['ACTIVE', 'DRAFT', 'ARCHIVED'];
@@ -34,7 +35,14 @@ const NEW_DRAFT: BuilderProgramWriteInput = {
   status: 'ACTIVE',
   timezone: 'America/New_York',
   start_date: null,
+  config: {},
 };
+
+/** Read the configured `segment_labels` map out of a program config blob. */
+function segmentLabels(config: Record<string, unknown> | undefined): Record<string, string> {
+  const labels = config?.segment_labels;
+  return labels && typeof labels === 'object' ? (labels as Record<string, string>) : {};
+}
 
 /** Inline create/edit panel for a program's identity + settings. */
 function ProgramEditorPanel({
@@ -62,6 +70,7 @@ function ProgramEditorPanel({
             status: program.status,
             timezone: program.timezone,
             start_date: program.start_date,
+            config: program.config ?? {},
           }
         : NEW_DRAFT,
     );
@@ -70,6 +79,19 @@ function ProgramEditorPanel({
   if (!open) return null;
 
   const canSave = draft.name.trim() !== '' && draft.code.trim() !== '';
+  const labels = segmentLabels(draft.config);
+
+  // Edit one tier's label, preserving other config keys. An empty value clears the
+  // override so the tier falls back to its canonical name (Decision 31/28).
+  const setLabel = (key: string, value: string) =>
+    setDraft((d) => {
+      const config = { ...(d.config ?? {}) };
+      const next = { ...segmentLabels(config) };
+      if (value.trim()) next[key] = value;
+      else delete next[key];
+      config.segment_labels = next;
+      return { ...d, config };
+    });
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
@@ -160,6 +182,31 @@ function ProgramEditorPanel({
             />
           </div>
         </div>
+        <div className="border-t border-slate-200 pt-4 dark:border-white/10">
+          <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-white/60">
+            Dashboard tier names
+          </label>
+          <p className="mb-3 text-xs text-slate-400">
+            What to call each segment on the dashboard toggle. Leave blank to use the
+            default. The tiers themselves (split at each SMD) don&apos;t change — only the
+            labels.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {SEGMENT_LABEL_FIELDS.map(({ key, fallback }) => (
+              <div key={key}>
+                <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                  {fallback}
+                </label>
+                <Input
+                  value={labels[key] ?? ''}
+                  placeholder={fallback}
+                  onChange={(e) => setLabel(key, e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel

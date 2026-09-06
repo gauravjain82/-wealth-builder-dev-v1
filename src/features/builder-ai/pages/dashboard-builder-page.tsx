@@ -26,11 +26,15 @@ import {
 } from '../components/builder/dashboard-editor-modal';
 import type { DashboardConfig, Segment } from '../types';
 
-/** Map a dashboard's default segment to its live read page, when one exists. */
+/**
+ * Map a dashboard's default segment to the live read page + tier. One dashboard now
+ * (Decision 31), so every segment deep-links to the same page with a `?scope=` tier.
+ */
 const LIVE_ROUTE: Partial<Record<Segment, string>> = {
-  INDIVIDUAL: '/builder-ai/home',
-  COMPANY: '/builder-ai/company',
-  BASESHOP: '/builder-ai/baseshop',
+  INDIVIDUAL: '/builder-ai/dashboard?scope=individual',
+  BASESHOP: '/builder-ai/dashboard?scope=baseshop',
+  SUPERBASE: '/builder-ai/dashboard?scope=superbase',
+  SUPERTEAM: '/builder-ai/dashboard?scope=superteam',
 };
 
 /** Render the dashboard builder page. */

@@ -1,9 +1,9 @@
 /**
- * CompareWidget — Baseshop vs Company for a metric (grouped/paired bars).
+ * CompareWidget — BaseShop vs SuperTeam for a metric (grouped/paired bars).
  *
- * Reads the latest value of the metric at both the BaseShop and Company segments
+ * Reads the latest value of the metric at both the BaseShop and SuperTeam segments
  * (from `/timeseries`) and paints them side by side so a viewer can compare their
- * baseshop slice against their whole organisation at a glance.
+ * baseshop slice against their whole organisation at a glance (Decision 31).
  */
 
 import { Card } from '@shared/components';
@@ -18,23 +18,23 @@ function latest(payload: TimeseriesPayload | undefined): number {
   return series.length ? series[series.length - 1].value : 0;
 }
 
-/** Render a BaseShop-vs-Company comparison for a widget's metric. */
+/** Render a BaseShop-vs-SuperTeam comparison for a widget's metric. */
 export function CompareWidget({ widget }: { widget: WidgetPayload }) {
   const code = widget.metric?.code ?? '';
   const baseshop = useTimeseries({ metric: code, scope: 'baseshop', enabled: Boolean(code) });
-  const company = useTimeseries({ metric: code, scope: 'company', enabled: Boolean(code) });
+  const superteam = useTimeseries({ metric: code, scope: 'superteam', enabled: Boolean(code) });
   const color = metricColorHex(code, widget.metric?.display?.color as string | undefined);
-  const loading = baseshop.isLoading || company.isLoading;
+  const loading = baseshop.isLoading || superteam.isLoading;
 
   const rows = [
     { name: 'BaseShop', value: latest(baseshop.data) },
-    { name: 'Company', value: latest(company.data) },
+    { name: 'SuperTeam', value: latest(superteam.data) },
   ];
 
   return (
     <Card className="p-4">
       <div className="mb-2 text-sm font-semibold text-slate-900 dark:text-white">
-        {widget.title || `${widget.metric?.name ?? 'Metric'}: BaseShop vs Company`}
+        {widget.title || `${widget.metric?.name ?? 'Metric'}: BaseShop vs SuperTeam`}
       </div>
       <div className="h-48">
         {loading ? (

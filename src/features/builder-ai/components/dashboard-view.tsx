@@ -15,17 +15,13 @@ import { useDashboard, useInvitationMutations, useRoster } from '../hooks/use-bu
 import { HttpError, isNoBuilderProgramError } from '../services/http';
 import { WidgetFactory } from './widgets/widget-factory';
 import { RosterList } from './roster-list';
-import { SegmentControl } from './segment-control';
+import { SegmentControl, DEFAULT_SEGMENT_OPTIONS } from './segment-control';
 import { RemoveBuilderModal } from './remove-builder-modal';
 import type { DashboardScope, RosterRow } from '../types';
 
 export interface DashboardViewProps {
-  /** Page title (e.g. "Home", "Company", "BaseShop"). */
-  title: string;
-  /** Initial/anchor segment for the page. */
-  initialScope: DashboardScope;
-  /** Segments the in-place control may switch to (defaults to all three). */
-  scopeOptions?: DashboardScope[];
+  /** Page title (defaults to "Dashboard" — one page, Decision 31). */
+  title?: string;
   /** Whether roster rows expose a Remove action (direct-team leaders). */
   allowRemove?: boolean;
 }
@@ -52,14 +48,12 @@ function periodLabel(start: string | undefined, type: string | undefined): strin
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-/** Render the Builder dashboard for a given anchor segment. */
+/** Render the single Builder dashboard; the segment toggle flips the tier in place. */
 export function DashboardView({
-  title,
-  initialScope,
-  scopeOptions,
+  title = 'Dashboard',
   allowRemove = false,
 }: DashboardViewProps) {
-  const [scope, setScope] = useState<DashboardScope>(initialScope);
+  const [scope, setScope] = useState<DashboardScope>('individual');
   const [search, setSearch] = useState('');
   const [removeTarget, setRemoveTarget] = useState<RosterRow | null>(null);
 
@@ -124,7 +118,11 @@ export function DashboardView({
             <Badge variant="secondary">{freshness(dashboard.data?.as_of ?? null)}</Badge>
           </div>
         </div>
-        <SegmentControl value={scope} onChange={setScope} options={scopeOptions} />
+        <SegmentControl
+          value={scope}
+          onChange={setScope}
+          segments={dashboard.data?.segments ?? DEFAULT_SEGMENT_OPTIONS}
+        />
       </div>
 
       {dashboard.isLoading ? (

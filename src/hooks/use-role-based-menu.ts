@@ -4,7 +4,7 @@ import { useBuilderAiAccess, useMyBuilderAccess } from '../features/builder-ai/h
 import { roleToPlan } from '../core/constants/roles';
 import {
   BUILDER_AI_GROUP_LABEL,
-  BUILDER_BASESHOP_PATH,
+  BUILDER_DASHBOARD_PATH,
   BUILDER_PROGRAM_PATH,
   getMenuForUser,
   keepOnlyGroupChild,
@@ -31,13 +31,15 @@ export function useRoleBasedMenu(): MenuItem[] {
 
   // The Builder AI group is backend-gated. Only probe when the plan has the group at
   // all, then prune. Two cheap cached reads: capability flags (who can manage a
-  // program) and a dashboard probe (does a program exist / is BaseShop allowed).
+  // program) and a dashboard probe (does a program exist). BaseShop is always available
+  // on the single Dashboard now (Decision 31) — the segment toggle self-gates tiers —
+  // so there is no per-tier menu pruning.
   const hasBuilderGroup = useMemo(
-    () => menuContainsPath(menuItems, BUILDER_BASESHOP_PATH),
+    () => menuContainsPath(menuItems, BUILDER_DASHBOARD_PATH),
     [menuItems],
   );
   const { data: access } = useMyBuilderAccess(hasBuilderGroup);
-  const { noProgram, baseshopDenied } = useBuilderAiAccess(hasBuilderGroup);
+  const { noProgram } = useBuilderAiAccess(hasBuilderGroup);
   const canManageProgram = Boolean(access?.program.manage);
 
   return useMemo(() => {
@@ -52,11 +54,8 @@ export function useRoleBasedMenu(): MenuItem[] {
       result = canManageProgram
         ? keepOnlyGroupChild(result, BUILDER_AI_GROUP_LABEL, BUILDER_PROGRAM_PATH)
         : removeMenuGroupByLabel(result, BUILDER_AI_GROUP_LABEL);
-    } else if (baseshopDenied) {
-      // Program exists, but this viewer's segment doesn't include BaseShop.
-      result = removeMenuItemByPath(result, BUILDER_BASESHOP_PATH);
     }
 
     return result;
-  }, [menuItems, canManageProgram, noProgram, baseshopDenied]);
+  }, [menuItems, canManageProgram, noProgram]);
 }

@@ -11,8 +11,8 @@
 
 import { useMemo, useState } from 'react';
 import { Card, LoadingState, Select } from '@shared/components';
-import { useLeaderboards, useRoster } from '../hooks/use-builder-ai';
-import { SegmentControl } from '../components/segment-control';
+import { useDashboard, useLeaderboards, useRoster } from '../hooks/use-builder-ai';
+import { SegmentControl, DEFAULT_SEGMENT_OPTIONS } from '../components/segment-control';
 import { TrendWidget } from '../components/widgets/trend-widget';
 import { CompareWidget } from '../components/widgets/compare-widget';
 import { CompositionWidget } from '../components/widgets/composition-widget';
@@ -21,7 +21,7 @@ import type { DashboardScope, MetricRef, WidgetPayload } from '../types';
 
 /** Build a widget payload that drives a leaderboard-mode RankingWidget by code. */
 function leaderboardWidget(code: string, title: string): WidgetPayload {
-  return { type: 'ranking', title, scope: 'company', config: { leaderboard: code }, color_rule: {}, order: 0 };
+  return { type: 'ranking', title, scope: 'superteam', config: { leaderboard: code }, color_rule: {}, order: 0 };
 }
 
 /** Build a minimal widget payload wrapping a metric for the chart widgets. */
@@ -39,7 +39,7 @@ function widgetFor(metric: MetricRef, type: string, scope: DashboardScope, title
 
 /** Render the Reporting analytics page. */
 export default function BuilderReportingPage() {
-  const [scope, setScope] = useState<DashboardScope>('company');
+  const [scope, setScope] = useState<DashboardScope>('superteam');
   const [metricCode, setMetricCode] = useState<string>('');
 
   // The roster payload advertises the program's configured metrics — reuse it as
@@ -47,6 +47,11 @@ export default function BuilderReportingPage() {
   const roster = useRoster(scope, '');
   const metrics = useMemo<MetricRef[]>(() => roster.data?.metrics ?? [], [roster.data]);
   const selected = metrics.find((m) => m.code === metricCode) ?? metrics[0];
+
+  // Reuse the dashboard's role-gated, program-labelled segment tiers for the toggle
+  // (Decision 31) rather than hardcoding them here.
+  const dashboard = useDashboard(scope);
+  const segments = dashboard.data?.segments ?? DEFAULT_SEGMENT_OPTIONS;
 
   // Phase 5 leaderboards (named ranked top-N). Each RankingWidget self-fetches its
   // rows by code — the definition already encodes metric/scope/order/limit.
@@ -78,7 +83,7 @@ export default function BuilderReportingPage() {
               </option>
             ))}
           </Select>
-          <SegmentControl value={scope} onChange={setScope} />
+          <SegmentControl value={scope} onChange={setScope} segments={segments} />
         </div>
       </div>
 

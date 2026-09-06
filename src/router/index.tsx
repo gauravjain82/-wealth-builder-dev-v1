@@ -72,9 +72,7 @@ const PromotionDashboardPage = lazy(() => import('@/features/promotion/pages/pro
 const TeamPromotionPage = lazy(() => import('@/features/promotion/pages/team-promotion-page'));
 // Builder AI (Phase 2 dashboards + Phase 1 invitations)
 const BuilderProgramPage = lazy(() => import('@/features/builder-ai/pages/program-page'));
-const BuilderHomePage = lazy(() => import('@/features/builder-ai/pages/home-page'));
-const BuilderCompanyPage = lazy(() => import('@/features/builder-ai/pages/company-page'));
-const BuilderBaseShopPage = lazy(() => import('@/features/builder-ai/pages/baseshop-page'));
+const BuilderDashboardPage = lazy(() => import('@/features/builder-ai/pages/dashboard-page'));
 const BuilderInvitationsPage = lazy(() => import('@/features/builder-ai/pages/builder-invitations-page'));
 const BuilderReportingPage = lazy(() => import('@/features/builder-ai/pages/reporting-page'));
 const BuilderDashboardBuilderPage = lazy(
@@ -296,16 +294,21 @@ const router = createBrowserRouter([
         element: lazyLoad(BuilderProgramPage),
       },
       {
+        path: 'builder-ai/dashboard',
+        element: lazyLoad(BuilderDashboardPage),
+      },
+      // One dashboard now (Decision 31): redirect the old per-scope routes.
+      {
         path: 'builder-ai/home',
-        element: lazyLoad(BuilderHomePage),
+        element: <Navigate to="/builder-ai/dashboard" replace />,
       },
       {
         path: 'builder-ai/company',
-        element: lazyLoad(BuilderCompanyPage),
+        element: <Navigate to="/builder-ai/dashboard" replace />,
       },
       {
         path: 'builder-ai/baseshop',
-        element: lazyLoad(BuilderBaseShopPage),
+        element: <Navigate to="/builder-ai/dashboard" replace />,
       },
       {
         path: 'builder-ai/builder-invitations',

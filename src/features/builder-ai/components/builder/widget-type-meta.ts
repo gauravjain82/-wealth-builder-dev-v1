@@ -55,11 +55,12 @@ export function widgetTypeMeta(type: WidgetType | string): WidgetTypeMeta {
   );
 }
 
-/** The builder segments a widget/section may target (Decision 15). */
+/** The builder segments a widget/section may target (Decisions 15/31). */
 export const SEGMENTS: { value: Segment; label: string }[] = [
   { value: 'INDIVIDUAL', label: 'Individual' },
   { value: 'TEAM', label: 'Team' },
   { value: 'BASESHOP', label: 'BaseShop' },
-  { value: 'COMPANY', label: 'Company' },
+  { value: 'SUPERBASE', label: 'SuperBase' },
+  { value: 'SUPERTEAM', label: 'SuperTeam' },
   { value: 'ROLE', label: 'Role (rank band)' },
 ];

@@ -65,24 +65,19 @@ export function useDashboard(scope: DashboardScope, options?: { enabled?: boolea
 }
 
 /**
- * Sidebar-gating signals for the Builder AI group, derived from one probe of the
- * `baseshop` dashboard (shared query key → a single request that also pre-warms the
- * page). The backend distinguishes the cases for us:
+ * Sidebar-gating signal for the Builder AI group, derived from one probe of the
+ * `individual` dashboard (shared query key → a single request that also pre-warms the
+ * page). Only one case matters now (Decision 31 — one dashboard, self-gating toggle):
  *   - 404 "No matching builder program" → the viewer has no builder program at all
  *     (`noProgram`); the entire Builder AI group should be hidden.
- *   - 403 → the viewer has a program but lacks BaseShop access (`baseshopDenied`);
- *     only the BaseShop entry should be hidden.
- * Transient/network errors leave both `false`, so nothing is hidden by a flaky
- * request. Pass `enabled: false` when the plan has no Builder AI group, so the
- * probe never fires.
+ * Transient/network errors leave it `false`, so nothing is hidden by a flaky request.
+ * Pass `enabled: false` when the plan has no Builder AI group, so the probe never fires.
  */
 export function useBuilderAiAccess(enabled: boolean): {
   noProgram: boolean;
-  baseshopDenied: boolean;
 } {
-  const query = useDashboard('baseshop', { enabled });
-  const status = query.error instanceof HttpError ? query.error.status : undefined;
-  return { noProgram: isNoBuilderProgramError(query.error), baseshopDenied: status === 403 };
+  const query = useDashboard('individual', { enabled });
+  return { noProgram: isNoBuilderProgramError(query.error) };
 }
 
 /** Builder roster (one row per visible builder), filterable by name/agency code. */
