@@ -45,9 +45,12 @@ const TYPE_OPTIONS = [
   { value: 'COMP', label: 'Comp' },
 ];
 
-export default function EventOrdersPage() {
+export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: number } = {}) {
   const { eventId } = useParams<{ eventId: string }>();
-  const id = Number(eventId);
+  const id = eventIdProp ?? Number(eventId);
+  // Embedded inside a Big Event surface (which supplies its own header + event
+  // picker), so skip this page's standalone header and in-event subnav.
+  const embedded = eventIdProp !== undefined;
   const addToast = useToastStore((state) => state.addToast);
   const {
     orders,
@@ -169,13 +172,17 @@ export default function EventOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Heading as="h1" variant="h1">
-          {event?.name || 'Purchases'}
-        </Heading>
-        <Text variant="muted">Orders, tickets, and reports</Text>
-      </div>
-      <EventSubnav eventId={id} />
+      {!embedded && (
+        <>
+          <div>
+            <Heading as="h1" variant="h1">
+              {event?.name || 'Purchases'}
+            </Heading>
+            <Text variant="muted">Orders, tickets, and reports</Text>
+          </div>
+          <EventSubnav eventId={id} />
+        </>
+      )}
 
       {summary ? <StatsCards summary={summary} /> : null}
 

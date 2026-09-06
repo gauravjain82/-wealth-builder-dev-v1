@@ -17,9 +17,11 @@ import type { BigEvent } from '../types/event';
 import type { RecognitionAward, RecognitionCategory } from '../types/post-sale';
 
 /** Recognition categories and their awards for an event. */
-export default function EventRecognitionPage() {
+export default function EventRecognitionPage({ eventId: eventIdProp }: { eventId?: number } = {}) {
   const { eventId } = useParams<{ eventId: string }>();
-  const id = Number(eventId);
+  const id = eventIdProp ?? Number(eventId);
+  // Embedded inside a Big Event surface (its own header + event picker).
+  const embedded = eventIdProp !== undefined;
   const addToast = useToastStore((state) => state.addToast);
 
   const [event, setEvent] = useState<BigEvent | null>(null);
@@ -95,13 +97,17 @@ export default function EventRecognitionPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Heading as="h1" variant="h1">
-          {event?.name || 'Recognition'}
-        </Heading>
-        <Text variant="muted">Categories and the people recognised in each</Text>
-      </div>
-      <EventSubnav eventId={id} />
+      {!embedded && (
+        <>
+          <div>
+            <Heading as="h1" variant="h1">
+              {event?.name || 'Recognition'}
+            </Heading>
+            <Text variant="muted">Categories and the people recognised in each</Text>
+          </div>
+          <EventSubnav eventId={id} />
+        </>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <Input

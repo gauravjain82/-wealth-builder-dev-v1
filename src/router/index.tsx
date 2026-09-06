@@ -11,6 +11,10 @@ import { LoginPage, SignupPage } from '@/features/auth';
 // Lazy load pages for code splitting
 const HomePage = lazy(() => import('@/features/home/pages/home-page'));
 const EventsListPage = lazy(() => import('@/features/events/pages/events-list-page'));
+const PurchasesPage = lazy(() => import('@/features/events/pages/purchases-page'));
+const CheckinPage = lazy(() => import('@/features/events/pages/checkin-page'));
+const RecognitionPage = lazy(() => import('@/features/events/pages/recognition-page'));
+const PermissionsPage = lazy(() => import('@/features/events/pages/permissions-page'));
 const EventBuilderPage = lazy(() => import('@/features/events/pages/event-builder-page'));
 const EventOrdersPage = lazy(() => import('@/features/events/pages/event-orders-page'));
 const EventMyTicketsPage = lazy(() => import('@/features/events/pages/event-my-tickets-page'));
@@ -211,6 +215,22 @@ const router = createBrowserRouter([
       {
         path: 'events',
         element: lazyLoad(EventsListPage),
+      },
+      {
+        path: 'events/purchases',
+        element: lazyLoad(PurchasesPage),
+      },
+      {
+        path: 'events/check-in',
+        element: lazyLoad(CheckinPage),
+      },
+      {
+        path: 'events/recognition',
+        element: lazyLoad(RecognitionPage),
+      },
+      {
+        path: 'events/permissions',
+        element: lazyLoad(PermissionsPage),
       },
       {
         path: 'events/:eventId/builder',

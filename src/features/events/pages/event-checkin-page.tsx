@@ -26,9 +26,11 @@ const ARRIVED_OPTIONS = [
   { value: 'false', label: 'Not yet arrived' },
 ];
 
-export default function EventCheckinPage() {
+export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: number } = {}) {
   const { eventId } = useParams<{ eventId: string }>();
-  const id = Number(eventId);
+  const id = eventIdProp ?? Number(eventId);
+  // Embedded inside a Big Event surface (its own header + event picker).
+  const embedded = eventIdProp !== undefined;
   const addToast = useToastStore((state) => state.addToast);
   const {
     attendees,
@@ -100,13 +102,17 @@ export default function EventCheckinPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Heading as="h1" variant="h1">
-          {event?.name || 'Check-in'}
-        </Heading>
-        <Text variant="muted">Scan tickets at the door and track who has arrived</Text>
-      </div>
-      <EventSubnav eventId={id} />
+      {!embedded && (
+        <>
+          <div>
+            <Heading as="h1" variant="h1">
+              {event?.name || 'Check-in'}
+            </Heading>
+            <Text variant="muted">Scan tickets at the door and track who has arrived</Text>
+          </div>
+          <EventSubnav eventId={id} />
+        </>
+      )}
 
       <CheckinStatsCards stats={stats} />
       <CheckinScanBox onScan={checkIn} />

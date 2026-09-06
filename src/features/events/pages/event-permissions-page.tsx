@@ -34,9 +34,11 @@ const SCOPE_LABEL: Record<PermissionScope, string> = {
 };
 
 /** Per-event delegated access: grant users a scope without global permissions. */
-export default function EventPermissionsPage() {
+export default function EventPermissionsPage({ eventId: eventIdProp }: { eventId?: number } = {}) {
   const { eventId } = useParams<{ eventId: string }>();
-  const id = Number(eventId);
+  const id = eventIdProp ?? Number(eventId);
+  // Embedded inside a Big Event surface (its own header + event picker).
+  const embedded = eventIdProp !== undefined;
   const addToast = useToastStore((state) => state.addToast);
 
   const [event, setEvent] = useState<BigEvent | null>(null);
@@ -93,15 +95,19 @@ export default function EventPermissionsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Heading as="h1" variant="h1">
-          {event?.name || 'Access'}
-        </Heading>
-        <Text variant="muted">
-          Grant a user access to just this event — no platform-wide permission needed
-        </Text>
-      </div>
-      <EventSubnav eventId={id} />
+      {!embedded && (
+        <>
+          <div>
+            <Heading as="h1" variant="h1">
+              {event?.name || 'Access'}
+            </Heading>
+            <Text variant="muted">
+              Grant a user access to just this event — no platform-wide permission needed
+            </Text>
+          </div>
+          <EventSubnav eventId={id} />
+        </>
+      )}
 
       <Card>
         <CardContent className="p-4">
