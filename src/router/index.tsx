@@ -70,6 +70,16 @@ import { AdminMissionRingProofPage } from '@/features/admin/mission-ring-proof';
 const TerminatedUsersPage = lazy(() => import('@/features/terminated-users/pages/terminated-users-page'));
 const PromotionDashboardPage = lazy(() => import('@/features/promotion/pages/promotion-dashboard-page'));
 const TeamPromotionPage = lazy(() => import('@/features/promotion/pages/team-promotion-page'));
+// Builder AI (Phase 2 dashboards + Phase 1 invitations)
+const BuilderProgramPage = lazy(() => import('@/features/builder-ai/pages/program-page'));
+const BuilderHomePage = lazy(() => import('@/features/builder-ai/pages/home-page'));
+const BuilderCompanyPage = lazy(() => import('@/features/builder-ai/pages/company-page'));
+const BuilderBaseShopPage = lazy(() => import('@/features/builder-ai/pages/baseshop-page'));
+const BuilderInvitationsPage = lazy(() => import('@/features/builder-ai/pages/builder-invitations-page'));
+const BuilderReportingPage = lazy(() => import('@/features/builder-ai/pages/reporting-page'));
+const BuilderDashboardBuilderPage = lazy(
+  () => import('@/features/builder-ai/pages/dashboard-builder-page'),
+);
 
 // Loading component
 function PageLoader() {
@@ -279,6 +289,35 @@ const router = createBrowserRouter([
       {
         path: 'promotion/team',
         element: lazyLoad(TeamPromotionPage),
+      },
+      // Builder AI — dashboards & enrollment
+      {
+        path: 'builder-ai/program',
+        element: lazyLoad(BuilderProgramPage),
+      },
+      {
+        path: 'builder-ai/home',
+        element: lazyLoad(BuilderHomePage),
+      },
+      {
+        path: 'builder-ai/company',
+        element: lazyLoad(BuilderCompanyPage),
+      },
+      {
+        path: 'builder-ai/baseshop',
+        element: lazyLoad(BuilderBaseShopPage),
+      },
+      {
+        path: 'builder-ai/builder-invitations',
+        element: lazyLoad(BuilderInvitationsPage),
+      },
+      {
+        path: 'builder-ai/reporting',
+        element: lazyLoad(BuilderReportingPage),
+      },
+      {
+        path: 'builder-ai/dashboard-builder',
+        element: lazyLoad(BuilderDashboardBuilderPage),
       },
       {
         path: 'training-center',

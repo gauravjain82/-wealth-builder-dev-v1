@@ -89,6 +89,33 @@ const MENU_ITEMS = {
   USER_PERMISSIONS: { label: 'User Permissions', icon: '🔐', path: '/admin/user-permissions' } as MenuItem,
   FILE_VAULT_ADMIN: { label: 'File Vault', icon: '📁', path: '/admin/file-vault' } as MenuItem,
   TRAINING_CENTER_ADMIN: { label: 'Training Center', icon: '🎓', path: '/admin/training-center' } as MenuItem,
+
+  // Builder AI items (see BUILDER_AI_GROUP below for the sidebar grouping)
+  BUILDER_PROGRAM: { label: 'Program', icon: '🏛️', path: '/builder-ai/program' } as MenuItem,
+  BUILDER_HOME: { label: 'Dashboard', icon: '🏠', path: '/builder-ai/home' } as MenuItem,
+  BUILDER_COMPANY: { label: 'Company', icon: '🏢', path: '/builder-ai/company' } as MenuItem,
+  BUILDER_BASESHOP: { label: 'BaseShop', icon: '🏬', path: '/builder-ai/baseshop' } as MenuItem,
+  BUILDER_INVITATIONS: { label: 'Builder invitations', icon: '📨', path: '/builder-ai/builder-invitations' } as MenuItem,
+  BUILDER_REPORTING: { label: 'Reporting', icon: '📊', path: '/builder-ai/reporting' } as MenuItem,
+  BUILDER_DASHBOARD_BUILDER: { label: 'Dashboard Builder', icon: '🧩', path: '/builder-ai/dashboard-builder' } as MenuItem,
+};
+
+/**
+ * The "Builder AI" sidebar group. Insert into each plan menu that should see it.
+ * The sidebar renders `children` recursively, so no component change is needed.
+ */
+const BUILDER_AI_GROUP: MenuItem = {
+  label: 'Builder AI',
+  icon: '🤖',
+  children: [
+    MENU_ITEMS.BUILDER_PROGRAM,
+    MENU_ITEMS.BUILDER_HOME,
+    MENU_ITEMS.BUILDER_COMPANY,
+    MENU_ITEMS.BUILDER_BASESHOP,
+    MENU_ITEMS.BUILDER_INVITATIONS,
+    MENU_ITEMS.BUILDER_REPORTING,
+    MENU_ITEMS.BUILDER_DASHBOARD_BUILDER,
+  ],
 };
 
 /**
@@ -209,6 +236,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
+    BUILDER_AI_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -259,6 +287,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
+    BUILDER_AI_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -322,6 +351,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
+    BUILDER_AI_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -384,6 +414,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
+    BUILDER_AI_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -469,6 +500,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
+    BUILDER_AI_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -540,6 +572,53 @@ function normalizePlan(plan: unknown): AccountType {
 export function getMenuForPlan(plan: unknown): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   return PLAN_MENUS[normalizedPlan];
+}
+
+/** Route of the Builder AI → BaseShop entry, gated on `builder_dashboard:read`. */
+export const BUILDER_BASESHOP_PATH = MENU_ITEMS.BUILDER_BASESHOP.path as string;
+
+/** Label of the Builder AI group; hidden wholesale when the viewer has no program. */
+export const BUILDER_AI_GROUP_LABEL = BUILDER_AI_GROUP.label;
+
+/** Route of the Builder AI → Program page, gated on `builder_program:manage`. */
+export const BUILDER_PROGRAM_PATH = MENU_ITEMS.BUILDER_PROGRAM.path as string;
+
+/** True if `path` appears anywhere in the (possibly nested) menu. */
+export function menuContainsPath(items: MenuItem[], path: string): boolean {
+  return items.some(
+    (item) => item.path === path || (item.children ? menuContainsPath(item.children, path) : false),
+  );
+}
+
+/** Return a copy of the menu with every item matching `path` removed (recurses into children). */
+export function removeMenuItemByPath(items: MenuItem[], path: string): MenuItem[] {
+  return items
+    .filter((item) => item.path !== path)
+    .map((item) =>
+      item.children ? { ...item, children: removeMenuItemByPath(item.children, path) } : item,
+    );
+}
+
+/** Return a copy of the menu with every top-level item matching `label` removed. */
+export function removeMenuGroupByLabel(items: MenuItem[], label: string): MenuItem[] {
+  return items.filter((item) => item.label !== label);
+}
+
+/**
+ * Within the top-level group `label`, drop every child except the one at `keepPath`.
+ * Used to show only the Program entry when no program exists yet, so a manager's
+ * clear next action is to create one instead of a list of empty dashboards.
+ */
+export function keepOnlyGroupChild(
+  items: MenuItem[],
+  label: string,
+  keepPath: string,
+): MenuItem[] {
+  return items.map((item) =>
+    item.label === label && item.children
+      ? { ...item, children: item.children.filter((child) => child.path === keepPath) }
+      : item,
+  );
 }
 
 function cloneMenuItems(items: MenuItem[]): MenuItem[] {

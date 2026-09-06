@@ -1,7 +1,18 @@
 import { useMemo } from 'react';
 import { useAuth } from '../features/auth/hooks/use-auth';
+import { useBuilderAiAccess, useMyBuilderAccess } from '../features/builder-ai/hooks/use-builder-ai';
 import { roleToPlan } from '../core/constants/roles';
-import { getMenuForUser, type MenuItem } from '../config/menu';
+import {
+  BUILDER_AI_GROUP_LABEL,
+  BUILDER_BASESHOP_PATH,
+  BUILDER_PROGRAM_PATH,
+  getMenuForUser,
+  keepOnlyGroupChild,
+  menuContainsPath,
+  removeMenuGroupByLabel,
+  removeMenuItemByPath,
+  type MenuItem,
+} from '../config/menu';
 
 /**
  * Hook to get plan-based menu structure
@@ -9,7 +20,7 @@ import { getMenuForUser, type MenuItem } from '../config/menu';
  */
 export function useRoleBasedMenu(): MenuItem[] {
   const { user } = useAuth();
-  
+
   const menuItems = useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
     const hasPromotionAccess = Boolean(user?.hasPromotionAccess);
@@ -17,6 +28,35 @@ export function useRoleBasedMenu(): MenuItem[] {
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(roleToPlan(normalizedRole), hasPromotionAccess);
   }, [user?.hasPromotionAccess, user?.roles]);
-  
-  return menuItems;
+
+  // The Builder AI group is backend-gated. Only probe when the plan has the group at
+  // all, then prune. Two cheap cached reads: capability flags (who can manage a
+  // program) and a dashboard probe (does a program exist / is BaseShop allowed).
+  const hasBuilderGroup = useMemo(
+    () => menuContainsPath(menuItems, BUILDER_BASESHOP_PATH),
+    [menuItems],
+  );
+  const { data: access } = useMyBuilderAccess(hasBuilderGroup);
+  const { noProgram, baseshopDenied } = useBuilderAiAccess(hasBuilderGroup);
+  const canManageProgram = Boolean(access?.program.manage);
+
+  return useMemo(() => {
+    let result = menuItems;
+
+    // The Program page needs `builder_program:manage` (create/edit the program).
+    if (!canManageProgram) result = removeMenuItemByPath(result, BUILDER_PROGRAM_PATH);
+
+    if (noProgram) {
+      // No program seeded yet. Managers keep the group but only the Program entry —
+      // their next action is to create one; everyone else loses the group entirely.
+      result = canManageProgram
+        ? keepOnlyGroupChild(result, BUILDER_AI_GROUP_LABEL, BUILDER_PROGRAM_PATH)
+        : removeMenuGroupByLabel(result, BUILDER_AI_GROUP_LABEL);
+    } else if (baseshopDenied) {
+      // Program exists, but this viewer's segment doesn't include BaseShop.
+      result = removeMenuItemByPath(result, BUILDER_BASESHOP_PATH);
+    }
+
+    return result;
+  }, [menuItems, canManageProgram, noProgram, baseshopDenied]);
 }
