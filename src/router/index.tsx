@@ -79,6 +79,7 @@ const BuilderProgramPage = lazy(() => import('@/features/builder-ai/pages/progra
 const BuilderDashboardPage = lazy(() => import('@/features/builder-ai/pages/dashboard-page'));
 const BuilderInvitationsPage = lazy(() => import('@/features/builder-ai/pages/builder-invitations-page'));
 const BuilderReportingPage = lazy(() => import('@/features/builder-ai/pages/reporting-page'));
+const BuilderGoalsPage = lazy(() => import('@/features/builder-ai/pages/goals-page'));
 const BuilderDashboardBuilderPage = lazy(
   () => import('@/features/builder-ai/pages/dashboard-builder-page'),
 );
@@ -337,6 +338,10 @@ const router = createBrowserRouter([
       {
         path: 'builder-ai/reporting',
         element: lazyLoad(BuilderReportingPage),
+      },
+      {
+        path: 'builder-ai/goals',
+        element: lazyLoad(BuilderGoalsPage),
       },
       {
         path: 'builder-ai/dashboard-builder',

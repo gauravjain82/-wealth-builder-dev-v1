@@ -96,6 +96,7 @@ const MENU_ITEMS = {
   BUILDER_DASHBOARD: { label: 'Dashboard', icon: '🏠', path: '/builder-ai/dashboard' } as MenuItem,
   BUILDER_INVITATIONS: { label: 'Builder invitations', icon: '📨', path: '/builder-ai/builder-invitations' } as MenuItem,
   BUILDER_REPORTING: { label: 'Reporting', icon: '📊', path: '/builder-ai/reporting' } as MenuItem,
+  BUILDER_GOALS: { label: 'Goals', icon: '🎯', path: '/builder-ai/goals' } as MenuItem,
   BUILDER_DASHBOARD_BUILDER: { label: 'Dashboard Builder', icon: '🧩', path: '/builder-ai/dashboard-builder' } as MenuItem,
 };
 
@@ -111,6 +112,7 @@ const BUILDER_AI_GROUP: MenuItem = {
     MENU_ITEMS.BUILDER_DASHBOARD,
     MENU_ITEMS.BUILDER_INVITATIONS,
     MENU_ITEMS.BUILDER_REPORTING,
+    MENU_ITEMS.BUILDER_GOALS,
     MENU_ITEMS.BUILDER_DASHBOARD_BUILDER,
   ],
 };

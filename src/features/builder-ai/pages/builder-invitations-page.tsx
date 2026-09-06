@@ -14,10 +14,14 @@ import { useToastStore } from '@/store';
 import {
   useInvitationMutations,
   useInvitations,
+  useMyBuilderAccess,
   usePrograms,
 } from '../hooks/use-builder-ai';
+import { useInvitationRule, useInvitationRuleMutation } from '../hooks/use-builder-config';
 import { InvitationCreateModal } from '../components/invitation-create-modal';
+import { InvitationLimitsPanel } from '../components/invitation-limits-panel';
 import { InvitationList } from '../components/invitation-list';
+import type { InvitationRuleWriteInput } from '../types';
 
 /** Render the Builder Invitations page. */
 export default function BuilderInvitationsPage() {
@@ -30,6 +34,25 @@ export default function BuilderInvitationsPage() {
   const { create, cancel, resend } = useInvitationMutations();
 
   const programId = programs.data?.[0]?.id;
+
+  const access = useMyBuilderAccess();
+  const canManage = Boolean(access.data?.program.manage);
+  const ruleQuery = useInvitationRule(programId);
+  const ruleMutation = useInvitationRuleMutation(programId);
+
+  /** Persist the program's invitation limits (caps/depth/expiry). */
+  const handleSaveLimits = async (payload: InvitationRuleWriteInput) => {
+    if (!ruleQuery.data) return;
+    try {
+      await ruleMutation.mutateAsync({ id: ruleQuery.data.id, payload });
+      addToast({ type: 'success', message: 'Invitation limits updated.' });
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to update limits.',
+      });
+    }
+  };
 
   /** Send a new invitation for the sole active program. */
   const handleCreate = async (inviteeId: number) => {
@@ -95,6 +118,15 @@ export default function BuilderInvitationsPage() {
           Invite builder
         </Button>
       </div>
+
+      {ruleQuery.data && (
+        <InvitationLimitsPanel
+          rule={ruleQuery.data}
+          canManage={canManage}
+          isSaving={ruleMutation.isPending}
+          onSave={handleSaveLimits}
+        />
+      )}
 
       <InvitationList
         invitations={invitations.data ?? []}

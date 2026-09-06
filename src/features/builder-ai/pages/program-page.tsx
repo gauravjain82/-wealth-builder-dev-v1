@@ -23,7 +23,7 @@ import {
 } from '@shared/components';
 import { useToastStore } from '@/store';
 import { useMyBuilderAccess, usePrograms } from '../hooks/use-builder-ai';
-import { useProgramMutations } from '../hooks/use-builder-config';
+import { useMetricDefinitions, useProgramMutations } from '../hooks/use-builder-config';
 import { METRIC_PERIOD_TYPES, SEGMENT_LABEL_FIELDS } from '../types';
 import type { BuilderProgram, BuilderProgramWriteInput } from '../types';
 
@@ -50,10 +50,10 @@ function configString(config: Record<string, unknown> | undefined, key: string):
   return typeof value === 'string' ? value : '';
 }
 
-/** Read `roster_metrics` as a comma-joined string for editing. */
-function rosterMetricsText(config: Record<string, unknown> | undefined): string {
+/** Read `roster_metrics` as an ordered list of metric codes. */
+function rosterCodes(config: Record<string, unknown> | undefined): string[] {
   const codes = config?.roster_metrics;
-  return Array.isArray(codes) ? codes.filter((c) => typeof c === 'string').join(', ') : '';
+  return Array.isArray(codes) ? codes.filter((c): c is string => typeof c === 'string') : [];
 }
 
 /** Inline create/edit panel for a program's identity + settings. */
@@ -71,9 +71,11 @@ function ProgramEditorPanel({
   onSubmit: (draft: BuilderProgramWriteInput) => void | Promise<void>;
 }) {
   const [draft, setDraft] = useState<BuilderProgramWriteInput>(NEW_DRAFT);
-  // `roster_metrics` is stored in config as an array, but edited as raw comma text so
-  // typing a separator isn't stripped mid-keystroke. Kept in local state, parsed on change.
-  const [rosterText, setRosterText] = useState('');
+  // Roster columns are picked from the program's own metrics (only real codes are
+  // selectable, so a typo can't silently break the roster). Metrics are program-scoped,
+  // so they only exist once the program does — the picker is create-time-empty by design.
+  const metricsQuery = useMetricDefinitions(program?.id);
+  const availableMetrics = metricsQuery.data ?? [];
 
   useEffect(() => {
     if (!open) return;
@@ -89,13 +91,20 @@ function ProgramEditorPanel({
           }
         : NEW_DRAFT,
     );
-    setRosterText(rosterMetricsText(program?.config));
   }, [open, program]);
 
   if (!open) return null;
 
   const canSave = draft.name.trim() !== '' && draft.code.trim() !== '';
   const labels = segmentLabels(draft.config);
+
+  // Roster picker: currently-selected codes (order = column order), the metrics still
+  // available to add, and a code→name lookup for chip labels.
+  const selectedRoster = rosterCodes(draft.config);
+  const metricName = new Map(availableMetrics.map((m) => [m.code, m.name] as const));
+  const addableMetrics = availableMetrics.filter(
+    (m) => m.is_active && !selectedRoster.includes(m.code),
+  );
 
   // Edit one tier's label, preserving other config keys. An empty value clears the
   // override so the tier falls back to its canonical name (Decision 31/28).
@@ -119,20 +128,22 @@ function ProgramEditorPanel({
       return { ...d, config };
     });
 
-  // Parse the raw roster text into an ordered code list; blank clears the override.
-  const setRosterMetrics = (value: string) => {
-    setRosterText(value);
+  // Write the roster code list, clearing the key when empty so it falls back to the
+  // program's default roster (Decision 28). Order is column order.
+  const writeRoster = (codes: string[]) =>
     setDraft((d) => {
       const config = { ...(d.config ?? {}) };
-      const codes = value
-        .split(',')
-        .map((c) => c.trim())
-        .filter(Boolean);
       if (codes.length) config.roster_metrics = codes;
       else delete config.roster_metrics;
       return { ...d, config };
     });
+  const addRosterMetric = (code: string) => {
+    if (!code) return;
+    const codes = rosterCodes(draft.config);
+    if (!codes.includes(code)) writeRoster([...codes, code]);
   };
+  const removeRosterMetric = (code: string) =>
+    writeRoster(rosterCodes(draft.config).filter((c) => c !== code));
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
@@ -262,15 +273,57 @@ function ProgramEditorPanel({
             <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-400">
               Roster metrics
             </label>
-            <Input
-              value={rosterText}
-              placeholder="recruits, points, licenses, registrations"
-              onChange={(e) => setRosterMetrics(e.target.value)}
-            />
-            <p className="mt-1 text-xs text-slate-400">
-              Comma-separated metric codes shown as roster columns, in order. Blank uses the
-              program default.
-            </p>
+            {!program ? (
+              <p className="text-xs text-slate-400">
+                Available after the program is created — its metrics are set up first, then
+                you can choose which appear as roster columns.
+              </p>
+            ) : (
+              <>
+                {selectedRoster.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {selectedRoster.map((code) => (
+                      <span
+                        key={code}
+                        className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-700 dark:bg-white/10 dark:text-white/80"
+                      >
+                        {metricName.get(code) ?? code}
+                        <button
+                          type="button"
+                          onClick={() => removeRosterMetric(code)}
+                          aria-label={`Remove ${code}`}
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <Select
+                  value=""
+                  disabled={metricsQuery.isLoading || addableMetrics.length === 0}
+                  onChange={(e) => addRosterMetric(e.target.value)}
+                >
+                  <option value="" disabled>
+                    {metricsQuery.isLoading
+                      ? 'Loading metrics…'
+                      : addableMetrics.length === 0
+                        ? 'All metrics added'
+                        : 'Add a metric…'}
+                  </option>
+                  {addableMetrics.map((m) => (
+                    <option key={m.code} value={m.code}>
+                      {m.name} ({m.code})
+                    </option>
+                  ))}
+                </Select>
+                <p className="mt-1 text-xs text-slate-400">
+                  Metrics shown as roster columns, in the order added. Leave empty to use the
+                  program default.
+                </p>
+              </>
+            )}
           </div>
         </div>
         <div className="border-t border-slate-200 pt-4 dark:border-white/10">

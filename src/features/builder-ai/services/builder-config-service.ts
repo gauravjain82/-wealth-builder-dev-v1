@@ -17,6 +17,10 @@ import type {
   DashboardConfig,
   DashboardWriteInput,
   GoalConfig,
+  GoalWriteInput,
+  InvitationRuleConfig,
+  InvitationRuleWriteInput,
+  Level,
   MetricDefinitionConfig,
   Paginated,
   SectionConfig,
@@ -131,4 +135,35 @@ export const builderConfigService = {
     list<MetricDefinitionConfig>('metrics', { program }),
 
   listGoals: (program?: number) => list<GoalConfig>('goals', { program }),
+
+  // -- goals (create/edit/delete require builder_goal:manage) ----------------
+  createGoal: (payload: GoalWriteInput) =>
+    request<GoalConfig>(`${CONFIG}/goals/`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updateGoal: (id: number, payload: Partial<GoalWriteInput>) =>
+    request<GoalConfig>(`${CONFIG}/goals/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  deleteGoal: (id: number) =>
+    request<void>(`${CONFIG}/goals/${id}/`, { method: 'DELETE' }),
+
+  // -- invitation rule (per-program invite caps; builder_invitation:manage) --
+  listInvitationRules: (program?: number) =>
+    list<InvitationRuleConfig>('invitation-rules', { program }),
+
+  updateInvitationRule: (id: number, payload: InvitationRuleWriteInput) =>
+    request<InvitationRuleConfig>(`${CONFIG}/invitation-rules/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  // -- levels (read — accounts app; powers the goal band picker) -------------
+  // Lives at /api/accounts/levels/, not under the builder config base.
+  listLevels: () =>
+    request<Paginated<Level> | Level[]>('/api/accounts/levels/').then(unwrapList),
 };

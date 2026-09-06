@@ -535,6 +535,54 @@ export interface GoalConfig {
   is_active: boolean;
 }
 
+/**
+ * The per-program invitation policy (`BuilderInvitationRule`) — controls how many
+ * people can be invited. One row per program, at
+ * `/api/builder/config/invitation-rules/`. `cap`/`cap_if_company_owner` are `null` for
+ * "unlimited"; `max_depth` is the downline depth an inviter may reach (1 = direct team).
+ */
+export interface InvitationRuleConfig {
+  id: number;
+  program: number;
+  max_depth: number;
+  cap: number | null;
+  cap_if_company_owner: number | null;
+  expires_in_hours: number;
+  allow_resend: boolean;
+  is_active: boolean;
+}
+
+/** Editable subset of `InvitationRuleConfig` (PATCH; `id`/`program` are fixed). */
+export type InvitationRuleWriteInput = Partial<Omit<InvitationRuleConfig, 'id' | 'program'>>;
+
+/**
+ * A rank level from the accounts app (`GET /api/accounts/levels/`). Powers the goal
+ * "applies to" band picker: `rank` orders the bands, `code` is shown (e.g. SMD, MD).
+ */
+export interface Level {
+  id: number;
+  code: string;
+  rank: number;
+  name: string;
+}
+
+/** Fields accepted by `POST/PATCH /api/builder/config/goals/` (GoalDefinitionSerializer). */
+export interface GoalWriteInput {
+  program?: number;
+  metric: number;
+  name: string;
+  code: string;
+  target: string;
+  period_type: PerformancePeriod['type'];
+  scope: Segment;
+  /** FK to a `Level`; `null` = program default (applies to everyone with no band match). */
+  level: number | null;
+  /** When true with a `level`, applies to that rank and everyone above it. */
+  applies_at_or_above: boolean;
+  display_cap_100: boolean;
+  is_active: boolean;
+}
+
 /** One entry in a section-reorder request. */
 export interface SectionReorderItem {
   id: number;

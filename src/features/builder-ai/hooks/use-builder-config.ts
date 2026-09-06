@@ -12,6 +12,8 @@ import { builderConfigService } from '../services/builder-config-service';
 import type {
   BuilderProgramWriteInput,
   DashboardWriteInput,
+  GoalWriteInput,
+  InvitationRuleWriteInput,
   SectionReorderItem,
   SectionWriteInput,
   WidgetReorderItem,
@@ -59,6 +61,75 @@ export function useMetricDefinitions(program?: number) {
     queryFn: () => builderConfigService.listMetrics(program),
     staleTime: 1000 * 60 * 5,
   });
+}
+
+/** The program's configured goals (per-metric, per-level-band targets). */
+export function useGoals(program?: number) {
+  return useQuery({
+    queryKey: [KEY, 'goals', program ?? null],
+    queryFn: () => builderConfigService.listGoals(program),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/** The program's single invitation rule (invite caps / depth / expiry). `null` if none. */
+export function useInvitationRule(program?: number) {
+  return useQuery({
+    queryKey: [KEY, 'invitation-rule', program ?? null],
+    queryFn: async () =>
+      (await builderConfigService.listInvitationRules(program))[0] ?? null,
+    enabled: Boolean(program),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/** Update the per-program invitation rule (requires `builder_invitation:manage`). */
+export function useInvitationRuleMutation(program?: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: number; payload: InvitationRuleWriteInput }) =>
+      builderConfigService.updateInvitationRule(vars.id, vars.payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [KEY, 'invitation-rule', program ?? null] });
+    },
+  });
+}
+
+/** Rank levels (accounts) for the goal "applies to" band picker; rarely change. */
+export function useLevels() {
+  return useQuery({
+    queryKey: [KEY, 'levels'],
+    queryFn: () => builderConfigService.listLevels(),
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+/**
+ * Goal create/edit/delete (require `builder_goal:manage`). Each invalidates the goals
+ * list and the read dashboard, whose rings/bars resolve their target from these goals.
+ */
+export function useGoalMutations(program?: number) {
+  const qc = useQueryClient();
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: [KEY, 'goals', program ?? null] });
+    void qc.invalidateQueries({ queryKey: [READ_KEY, 'dashboard'] });
+  };
+
+  return {
+    createGoal: useMutation({
+      mutationFn: (payload: GoalWriteInput) => builderConfigService.createGoal(payload),
+      onSuccess: invalidate,
+    }),
+    updateGoal: useMutation({
+      mutationFn: (vars: { id: number; payload: Partial<GoalWriteInput> }) =>
+        builderConfigService.updateGoal(vars.id, vars.payload),
+      onSuccess: invalidate,
+    }),
+    deleteGoal: useMutation({
+      mutationFn: (id: number) => builderConfigService.deleteGoal(id),
+      onSuccess: invalidate,
+    }),
+  };
 }
 
 /**
