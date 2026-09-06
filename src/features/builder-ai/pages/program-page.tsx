@@ -24,7 +24,7 @@ import {
 import { useToastStore } from '@/store';
 import { useMyBuilderAccess, usePrograms } from '../hooks/use-builder-ai';
 import { useProgramMutations } from '../hooks/use-builder-config';
-import { SEGMENT_LABEL_FIELDS } from '../types';
+import { METRIC_PERIOD_TYPES, SEGMENT_LABEL_FIELDS } from '../types';
 import type { BuilderProgram, BuilderProgramWriteInput } from '../types';
 
 const STATUSES: BuilderProgram['status'][] = ['ACTIVE', 'DRAFT', 'ARCHIVED'];
@@ -44,6 +44,18 @@ function segmentLabels(config: Record<string, unknown> | undefined): Record<stri
   return labels && typeof labels === 'object' ? (labels as Record<string, string>) : {};
 }
 
+/** Read a string config key (e.g. `metric_period_type`, `qualifying_metric`). */
+function configString(config: Record<string, unknown> | undefined, key: string): string {
+  const value = config?.[key];
+  return typeof value === 'string' ? value : '';
+}
+
+/** Read `roster_metrics` as a comma-joined string for editing. */
+function rosterMetricsText(config: Record<string, unknown> | undefined): string {
+  const codes = config?.roster_metrics;
+  return Array.isArray(codes) ? codes.filter((c) => typeof c === 'string').join(', ') : '';
+}
+
 /** Inline create/edit panel for a program's identity + settings. */
 function ProgramEditorPanel({
   open,
@@ -59,6 +71,9 @@ function ProgramEditorPanel({
   onSubmit: (draft: BuilderProgramWriteInput) => void | Promise<void>;
 }) {
   const [draft, setDraft] = useState<BuilderProgramWriteInput>(NEW_DRAFT);
+  // `roster_metrics` is stored in config as an array, but edited as raw comma text so
+  // typing a separator isn't stripped mid-keystroke. Kept in local state, parsed on change.
+  const [rosterText, setRosterText] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -74,6 +89,7 @@ function ProgramEditorPanel({
           }
         : NEW_DRAFT,
     );
+    setRosterText(rosterMetricsText(program?.config));
   }, [open, program]);
 
   if (!open) return null;
@@ -92,6 +108,31 @@ function ProgramEditorPanel({
       config.segment_labels = next;
       return { ...d, config };
     });
+
+  // Set a scalar config key, clearing it when blank so the tier falls back to the
+  // backend default (metric_period_type→MONTHLY, qualifying_metric→points, Decision 28).
+  const setConfigKey = (key: string, value: string) =>
+    setDraft((d) => {
+      const config = { ...(d.config ?? {}) };
+      if (value.trim()) config[key] = value.trim();
+      else delete config[key];
+      return { ...d, config };
+    });
+
+  // Parse the raw roster text into an ordered code list; blank clears the override.
+  const setRosterMetrics = (value: string) => {
+    setRosterText(value);
+    setDraft((d) => {
+      const config = { ...(d.config ?? {}) };
+      const codes = value
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+      if (codes.length) config.roster_metrics = codes;
+      else delete config.roster_metrics;
+      return { ...d, config };
+    });
+  };
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
@@ -180,6 +221,56 @@ function ProgramEditorPanel({
                 setDraft((d) => ({ ...d, start_date: e.target.value || null }))
               }
             />
+          </div>
+        </div>
+        <div className="border-t border-slate-200 pt-4 dark:border-white/10">
+          <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-white/60">
+            Metrics &amp; qualification
+          </label>
+          <p className="mb-3 text-xs text-slate-400">
+            How metrics are aggregated and which one drives qualification. Leave blank to
+            use the defaults (monthly cadence, qualifying on points).
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                Metric period
+              </label>
+              <Select
+                value={configString(draft.config, 'metric_period_type') || 'MONTHLY'}
+                onChange={(e) => setConfigKey('metric_period_type', e.target.value)}
+              >
+                {METRIC_PERIOD_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t.charAt(0) + t.slice(1).toLowerCase()}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                Qualifying metric
+              </label>
+              <Input
+                value={configString(draft.config, 'qualifying_metric')}
+                placeholder="points"
+                onChange={(e) => setConfigKey('qualifying_metric', e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="mt-3">
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-400">
+              Roster metrics
+            </label>
+            <Input
+              value={rosterText}
+              placeholder="recruits, points, licenses, registrations"
+              onChange={(e) => setRosterMetrics(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              Comma-separated metric codes shown as roster columns, in order. Blank uses the
+              program default.
+            </p>
           </div>
         </div>
         <div className="border-t border-slate-200 pt-4 dark:border-white/10">

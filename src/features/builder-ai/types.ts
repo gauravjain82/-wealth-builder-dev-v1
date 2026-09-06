@@ -92,9 +92,12 @@ export interface BuilderProgramWriteInput {
   start_date?: string | null;
   timezone?: string;
   /**
-   * Free-form program config (JSON). Holds `segment_labels` — the display names for
-   * the dashboard toggle tiers (e.g. `{ SUPERTEAM: "Company" }`, Decision 31). PATCH
-   * replaces the whole object, so callers spread the existing config before editing.
+   * Free-form program config (JSON). Known keys the backend reads:
+   * - `segment_labels` — display names for the dashboard toggle tiers (Decision 31).
+   * - `metric_period_type` — cadence metrics aggregate at (defaults MONTHLY).
+   * - `qualifying_metric` — metric code snapshotted on qualification (defaults `points`).
+   * - `roster_metrics` — ordered metric codes shown as roster columns.
+   * PATCH replaces the whole object, so callers spread the existing config before editing.
    */
   config?: Record<string, unknown>;
 }
@@ -106,6 +109,19 @@ export const SEGMENT_LABEL_FIELDS: { key: string; fallback: string }[] = [
   { key: 'SUPERBASE', fallback: 'SuperBase' },
   { key: 'SUPERTEAM', fallback: 'SuperTeam' },
 ];
+
+/**
+ * Period granularities a program can aggregate metrics at (config `metric_period_type`).
+ * Mirrors the backend `PerformancePeriod.Type` choices; the backend defaults to MONTHLY.
+ */
+export const METRIC_PERIOD_TYPES = [
+  'DAILY',
+  'WEEKLY',
+  'MONTHLY',
+  'QUARTERLY',
+  'YEARLY',
+  'CUSTOM',
+] as const;
 
 /**
  * The caller's Builder capability flags from `GET /api/builder/my-access/`. Drives
