@@ -33,7 +33,6 @@ const NEW_DRAFT: BuilderProgramWriteInput = {
   code: '',
   status: 'ACTIVE',
   timezone: 'America/New_York',
-  currency: 'USD',
   start_date: null,
 };
 
@@ -62,7 +61,6 @@ function ProgramEditorPanel({
             code: program.code,
             status: program.status,
             timezone: program.timezone,
-            currency: program.currency,
             start_date: program.start_date,
           }
         : NEW_DRAFT,
@@ -136,18 +134,6 @@ function ProgramEditorPanel({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-white/60">
-              Currency
-            </label>
-            <Input
-              value={draft.currency}
-              placeholder="USD"
-              onChange={(e) => setDraft((d) => ({ ...d, currency: e.target.value }))}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-white/60">
               Timezone
             </label>
             <Input
@@ -159,6 +145,8 @@ function ProgramEditorPanel({
               IANA name; period boundaries are calendar dates in this zone.
             </p>
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-white/60">
               Start date <span className="text-slate-400">(optional)</span>
@@ -303,7 +291,7 @@ export default function BuilderProgramPage() {
                     </Badge>
                   </div>
                   <p className="mt-1 text-xs text-slate-500 dark:text-white/60">
-                    Code {program.code} · {program.timezone} · {program.currency}
+                    Code {program.code} · {program.timezone}
                   </p>
                 </div>
                 {canManage && (

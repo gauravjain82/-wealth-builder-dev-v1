@@ -57,7 +57,6 @@ export interface BuilderProgram {
   status: 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
   start_date: string | null;
   timezone: string;
-  currency: string;
   config: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -78,7 +77,6 @@ export interface BuilderProgramWriteInput {
   status?: BuilderProgram['status'];
   start_date?: string | null;
   timezone?: string;
-  currency?: string;
 }
 
 /**
