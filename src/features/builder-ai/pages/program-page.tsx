@@ -11,14 +11,13 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Building2, Pencil, Plus } from 'lucide-react';
+import { Building2, Pencil, Plus, X } from 'lucide-react';
 import {
   Badge,
   Button,
   ErrorState,
   Input,
   LoadingState,
-  Modal,
   NonIdealState,
   Select,
 } from '@shared/components';
@@ -38,8 +37,8 @@ const NEW_DRAFT: BuilderProgramWriteInput = {
   start_date: null,
 };
 
-/** Create/edit modal for a program's identity + settings. */
-function ProgramEditorModal({
+/** Inline create/edit panel for a program's identity + settings. */
+function ProgramEditorPanel({
   open,
   program,
   isSaving,
@@ -70,15 +69,25 @@ function ProgramEditorModal({
     );
   }, [open, program]);
 
+  if (!open) return null;
+
   const canSave = draft.name.trim() !== '' && draft.code.trim() !== '';
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={program ? 'Edit program' : 'New program'}
-      className="max-w-[520px]"
-    >
+    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+          {program ? 'Edit program' : 'New program'}
+        </h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-white/10 dark:hover:text-white"
+        >
+          <X size={18} />
+        </button>
+      </div>
       <div className="space-y-4">
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-white/60">
@@ -172,7 +181,7 @@ function ProgramEditorModal({
           </Button>
         </div>
       </div>
-    </Modal>
+    </div>
   );
 }
 
@@ -227,7 +236,7 @@ export default function BuilderProgramPage() {
           dashboards, metrics, goals, and invitation rule automatically.
         </p>
       </div>
-      {canManage && (
+      {canManage && !(editorOpen && !editing) && (
         <Button onClick={openCreate}>
           <Plus size={16} /> New program
         </Button>
@@ -255,7 +264,18 @@ export default function BuilderProgramPage() {
     <div className="space-y-5">
       {header}
 
-      {programs.length === 0 ? (
+      <ProgramEditorPanel
+        open={editorOpen}
+        program={editing}
+        isSaving={saving}
+        onClose={() => {
+          setEditorOpen(false);
+          setEditing(null);
+        }}
+        onSubmit={submit}
+      />
+
+      {editorOpen && !editing ? null : programs.length === 0 ? (
         <NonIdealState
           icon={<Building2 size={28} strokeWidth={1.5} />}
           title="No program yet"
@@ -296,17 +316,6 @@ export default function BuilderProgramPage() {
           ))}
         </div>
       )}
-
-      <ProgramEditorModal
-        open={editorOpen}
-        program={editing}
-        isSaving={saving}
-        onClose={() => {
-          setEditorOpen(false);
-          setEditing(null);
-        }}
-        onSubmit={submit}
-      />
     </div>
   );
 }
