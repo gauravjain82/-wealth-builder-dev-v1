@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface UserAutocompleteOption {
   id: number;
@@ -104,7 +105,15 @@ export function UserAutocompleteDropdown({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [nextUrl, setNextUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number; placeAbove: boolean }>({
+    top: 0,
+    left: 0,
+    width: 0,
+    placeAbove: false,
+  });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Tracks which query string the current loaded results belong to
   const loadedQueryRef = useRef<string>('');
@@ -208,12 +217,44 @@ export function UserAutocompleteDropdown({
     return () => el.removeEventListener('scroll', onScroll);
   }, [fetchFromApi, fetchOptions, loadMore]);
 
+  // Position the portaled menu below (or above, when short on space) the trigger.
+  // Rendering in a portal escapes any `overflow` ancestor (e.g. a scrollable modal
+  // body) so the dropdown floats over the UI instead of being clipped.
+  useEffect(() => {
+    if (!open) return;
+
+    const reposition = () => {
+      const btn = buttonRef.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const gap = 8; // matches the previous mt-2 spacing
+      const estimatedMenuHeight = 300; // input + max-h-52 list + padding
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const placeAbove = spaceBelow < estimatedMenuHeight && rect.top > spaceBelow;
+      setMenuPos({
+        top: placeAbove ? rect.top - gap : rect.bottom + gap,
+        left: rect.left,
+        width: rect.width,
+        placeAbove,
+      });
+    };
+
+    reposition();
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
+    return () => {
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
+    };
+  }, [open]);
+
   // Close on outside click
   useEffect(() => {
     if (!open) return;
     const onClickOutside = (event: MouseEvent) => {
-      if (!containerRef.current) return;
-      if (containerRef.current.contains(event.target as Node)) return;
+      const target = event.target as Node;
+      if (containerRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
       setOpen(false);
     };
     document.addEventListener('mousedown', onClickOutside);
@@ -235,6 +276,7 @@ export function UserAutocompleteDropdown({
   return (
     <div className="relative" ref={containerRef}>
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
@@ -244,8 +286,18 @@ export function UserAutocompleteDropdown({
         <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-700 dark:border-white/25 dark:bg-white/5 dark:text-white">{buttonText}</span>
       </button>
 
-      {open && (
-        <div className="absolute left-0 top-full z-[1200] mt-2 w-full rounded-lg border border-slate-300 bg-white p-2 shadow-xl dark:border-white/20 dark:bg-[#1f2430]">
+      {open && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: menuPos.placeAbove ? undefined : menuPos.top,
+            bottom: menuPos.placeAbove ? window.innerHeight - menuPos.top : undefined,
+            left: menuPos.left,
+            width: menuPos.width,
+          }}
+          className="z-[1200] rounded-lg border border-slate-300 bg-white p-2 shadow-xl dark:border-white/20 dark:bg-[#1f2430]"
+        >
           <input
             autoFocus
             value={query}
@@ -297,7 +349,8 @@ export function UserAutocompleteDropdown({
               <div className="px-3 py-2 text-sm text-slate-500 dark:text-white/60">Loading more...</div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
