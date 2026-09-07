@@ -81,6 +81,8 @@ export interface BuilderRange {
 export interface BuilderReportingPoint {
   year: number;
   month: number;
+  /** ISO date (YYYY-MM-DD) for daily series; absent on legacy monthly rows. */
+  date?: string;
   label: string;
   recruits: number;
   points: number | string;

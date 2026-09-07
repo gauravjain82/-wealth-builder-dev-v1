@@ -52,7 +52,7 @@ function addMonths(base: Date, months: number): Date {
   return new Date(base.getFullYear(), base.getMonth() + months, base.getDate());
 }
 
-function resolvePresetRange(preset: DatePresetKey): DateRangeValue {
+export function resolvePresetRange(preset: DatePresetKey): DateRangeValue {
   const today = new Date();
 
   if (preset === 'all') {
