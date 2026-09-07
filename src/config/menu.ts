@@ -88,33 +88,6 @@ const MENU_ITEMS = {
   USER_PERMISSIONS: { label: 'User Permissions', icon: '🔐', path: '/admin/user-permissions' } as MenuItem,
   FILE_VAULT_ADMIN: { label: 'File Vault', icon: '📁', path: '/admin/file-vault' } as MenuItem,
   TRAINING_CENTER_ADMIN: { label: 'Training Center', icon: '🎓', path: '/admin/training-center' } as MenuItem,
-
-  // Builder AI items (see BUILDER_AI_GROUP below for the sidebar grouping)
-  BUILDER_PROGRAM: { label: 'Program', icon: '🏛️', path: '/builder-ai/program' } as MenuItem,
-  // One dashboard with an in-page segment toggle (Decision 31); the former separate
-  // Company / BaseShop items are gone — those are now tiers on the toggle.
-  BUILDER_DASHBOARD: { label: 'Dashboard', icon: '🏠', path: '/builder-ai/dashboard' } as MenuItem,
-  BUILDER_INVITATIONS: { label: 'Builder invitations', icon: '📨', path: '/builder-ai/builder-invitations' } as MenuItem,
-  BUILDER_REPORTING: { label: 'Reporting', icon: '📊', path: '/builder-ai/reporting' } as MenuItem,
-  BUILDER_GOALS: { label: 'Goals', icon: '🎯', path: '/builder-ai/goals' } as MenuItem,
-  BUILDER_DASHBOARD_BUILDER: { label: 'Dashboard Builder', icon: '🧩', path: '/builder-ai/dashboard-builder' } as MenuItem,
-};
-
-/**
- * The "Builder AI" sidebar group. Insert into each plan menu that should see it.
- * The sidebar renders `children` recursively, so no component change is needed.
- */
-const BUILDER_AI_GROUP: MenuItem = {
-  label: 'Builder AI',
-  icon: '🤖',
-  children: [
-    MENU_ITEMS.BUILDER_PROGRAM,
-    MENU_ITEMS.BUILDER_DASHBOARD,
-    MENU_ITEMS.BUILDER_INVITATIONS,
-    MENU_ITEMS.BUILDER_REPORTING,
-    MENU_ITEMS.BUILDER_GOALS,
-    MENU_ITEMS.BUILDER_DASHBOARD_BUILDER,
-  ],
 };
 
 /**
@@ -235,7 +208,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
-    BUILDER_AI_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -286,7 +258,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
-    BUILDER_AI_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -349,7 +320,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
-    BUILDER_AI_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -411,7 +381,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
-    BUILDER_AI_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -496,7 +465,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.TEAM_PROMOTION,
       ],
     },
-    BUILDER_AI_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -568,15 +536,6 @@ export function getMenuForPlan(plan: unknown): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   return PLAN_MENUS[normalizedPlan];
 }
-
-/** Route of the Builder AI → Dashboard entry, gated on `builder_dashboard:read`. */
-export const BUILDER_DASHBOARD_PATH = MENU_ITEMS.BUILDER_DASHBOARD.path as string;
-
-/** Label of the Builder AI group; hidden wholesale when the viewer has no program. */
-export const BUILDER_AI_GROUP_LABEL = BUILDER_AI_GROUP.label;
-
-/** Route of the Builder AI → Program page, gated on `builder_program:manage`. */
-export const BUILDER_PROGRAM_PATH = MENU_ITEMS.BUILDER_PROGRAM.path as string;
 
 /** True if `path` appears anywhere in the (possibly nested) menu. */
 export function menuContainsPath(items: MenuItem[], path: string): boolean {
