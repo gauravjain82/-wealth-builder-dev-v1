@@ -286,7 +286,7 @@ export function SubmitDailySix({
             <UserAutocompleteDropdown
               selectedId={selectedBuilder?.id ?? null}
               selectedLabel={activeUserName}
-              placeholder="Select key player"
+              placeholder="Select builder"
               fetchOptions={loadBuilderOptions}
               onSelect={(option) => {
                 handleBuilderSelect(option);

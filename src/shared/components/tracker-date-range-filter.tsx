@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DateRangePicker, type DateRangeValue } from './ui/date-picker';
 
-export type DatePresetKey = 'all' | 'thisMonth' | 'lastMonth' | 'last3Months' | 'last6Months' | 'ytd' | 'custom';
+export type DatePresetKey = 'all' | 'thisMonth' | 'lastMonth' | 'last3Months' | 'last6Months' | 'ytd' | 'last12Months' | 'custom';
 
 interface DatePresetOption {
   key: DatePresetKey;
@@ -28,6 +28,7 @@ const PRESETS: DatePresetOption[] = [
   { key: 'last3Months', label: 'Last 3 Months' },
   { key: 'last6Months', label: 'Last 6 Months' },
   { key: 'ytd', label: 'YTD' },
+  { key: 'last12Months', label: 'Last 12 Months' },
   { key: 'custom', label: 'Custom' },
 ];
 
@@ -90,6 +91,13 @@ function resolvePresetRange(preset: DatePresetKey): DateRangeValue {
   if (preset === 'ytd') {
     return {
       startDate: toDateString(new Date(today.getFullYear(), 0, 1)),
+      endDate: toDateString(today),
+    };
+  }
+
+  if (preset === 'last12Months') {
+    return {
+      startDate: toDateString(startOfMonth(addMonths(today, -11))),
       endDate: toDateString(today),
     };
   }

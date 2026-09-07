@@ -602,7 +602,7 @@ export function TrackerUserProfileModal({
                 <div className="text-xs font-semibold uppercase text-slate-600 dark:text-white/70">Associate</div>
                 {snapshots?.associate ? (
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>Key Player: {yesNo(snapshots.associate.is_key_player)}</div>
+                    <div>Builder: {yesNo(snapshots.associate.is_key_player)}</div>
                     <div>Training: {yesNo(snapshots.associate.is_training)}</div>
                     <div>Big Event 2nd: {yesNo(snapshots.associate.big_event_2nd)}</div>
                     <div>Net Licensed: {snapshots.associate.net_license_amount}</div>

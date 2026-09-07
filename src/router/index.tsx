@@ -33,6 +33,11 @@ const OrgChartPage = lazy(() => import('@/features/team/org-chart/pages/org-char
 const MissionTrackerPage = lazy(() => import('@/features/team/mission-tracker/pages/mission-tracker-page'));
 const AssociateTrackerPage = lazy(() => import('@/features/team/associate-tracker/pages/associate-tracker-page'));
 const BuildersPage = lazy(() => import('@/features/team/builders/pages/builders-page'));
+const BuilderAiHomePage = lazy(() => import('@/features/builder-ai/pages/home-page'));
+const BuilderAiCompanyPage = lazy(() => import('@/features/builder-ai/pages/company-page'));
+const BuilderAiBaseshopPage = lazy(() => import('@/features/builder-ai/pages/baseshop-page'));
+const BuilderAiReportingPage = lazy(() => import('@/features/builder-ai/pages/reporting-page'));
+const BuilderAiBulletinPage = lazy(() => import('@/features/builder-ai/pages/bulletin-page'));
 const PublicDailySixPage = lazy(() => import('@/features/team/builders/pages/public-daily-six-page'));
 const AddGoalsPage = lazy(() => import('@/features/team/associate-tracker/pages/add-goals-page'));
 const LicensingTrackerPage = lazy(() => import('@/features/team/licensing-tracker/pages/licensing-tracker-page'));
@@ -195,6 +200,26 @@ const router = createBrowserRouter([
       {
         path: 'home',
         element: lazyLoad(HomePage),
+      },
+      {
+        path: 'builder-ai/home',
+        element: lazyLoad(BuilderAiHomePage),
+      },
+      {
+        path: 'builder-ai/company',
+        element: lazyLoad(BuilderAiCompanyPage),
+      },
+      {
+        path: 'builder-ai/baseshop',
+        element: lazyLoad(BuilderAiBaseshopPage),
+      },
+      {
+        path: 'builder-ai/reporting',
+        element: lazyLoad(BuilderAiReportingPage),
+      },
+      {
+        path: 'builder-ai/bulletin',
+        element: lazyLoad(BuilderAiBulletinPage),
       },
       {
         path: 'insight-center',

@@ -58,6 +58,13 @@ const MENU_ITEMS = {
   MISSION_TRACKER: { label: 'Mission Tracker', icon: '📈', path: '/team/mission-tracker' } as MenuItem,
   ASSOCIATE_TRACKER: { label: 'Associate Tracker', icon: '👔', path: '/team/associate-tracker' } as MenuItem,
   BUILDERS: { label: 'Builders', icon: '🏗️', path: '/team/builders' } as MenuItem,
+
+  // Builder AI
+  BUILDER_AI_HOME: { label: 'Home', icon: '🏠', path: '/builder-ai/home' } as MenuItem,
+  BUILDER_AI_COMPANY: { label: 'Company', icon: '🏢', path: '/builder-ai/company' } as MenuItem,
+  BUILDER_AI_BASESHOP: { label: 'Baseshop', icon: '🏬', path: '/builder-ai/baseshop' } as MenuItem,
+  BUILDER_AI_REPORTING: { label: 'Reporting', icon: '📈', path: '/builder-ai/reporting' } as MenuItem,
+  BUILDER_AI_BULLETIN: { label: 'Bulletin', icon: '🏆', path: '/builder-ai/bulletin' } as MenuItem,
   LICENSING_TRACKER: { label: 'Licensing Tracker', icon: '📝', path: '/team/licensing-tracker' } as MenuItem,
   PRODUCTION_TRACKER: { label: 'Production Tracker', icon: '💰', path: '/team/production-tracker' } as MenuItem,
   TEAM_PROMOTION: { label: 'Team Promotion Tracker', icon: '📈', path: '/promotion/team' } as MenuItem,
@@ -88,6 +95,22 @@ const MENU_ITEMS = {
   USER_PERMISSIONS: { label: 'User Permissions', icon: '🔐', path: '/admin/user-permissions' } as MenuItem,
   FILE_VAULT_ADMIN: { label: 'File Vault', icon: '📁', path: '/admin/file-vault' } as MenuItem,
   TRAINING_CENTER_ADMIN: { label: 'Training Center', icon: '🎓', path: '/admin/training-center' } as MenuItem,
+};
+
+/**
+ * Builder AI group — shown to owner/admin plans (SMD & up). Backend `/my-access`
+ * can further gate this; plan membership is the primary gate.
+ */
+const BUILDER_AI_GROUP: MenuItem = {
+  label: 'Builder AI',
+  icon: '🌱',
+  children: [
+    MENU_ITEMS.BUILDER_AI_HOME,
+    MENU_ITEMS.BUILDER_AI_COMPANY,
+    MENU_ITEMS.BUILDER_AI_BASESHOP,
+    MENU_ITEMS.BUILDER_AI_REPORTING,
+    MENU_ITEMS.BUILDER_AI_BULLETIN,
+  ],
 };
 
 /**
@@ -231,6 +254,7 @@ export const PLAN_MENUS = {
   
   [Plan.Broker]: [
     MENU_ITEMS.HOME,
+    BUILDER_AI_GROUP,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,
@@ -293,6 +317,7 @@ export const PLAN_MENUS = {
   // Senior Broker uses same menu as Broker
   [Plan.SeniorBroker]: [
     MENU_ITEMS.HOME,
+    BUILDER_AI_GROUP,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,
@@ -354,6 +379,7 @@ export const PLAN_MENUS = {
   
   [Plan.Admin]: [
     MENU_ITEMS.HOME,
+    BUILDER_AI_GROUP,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,
@@ -438,6 +464,7 @@ export const PLAN_MENUS = {
 
   [Plan.SuperAdmin]: [
     MENU_ITEMS.HOME,
+    BUILDER_AI_GROUP,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,

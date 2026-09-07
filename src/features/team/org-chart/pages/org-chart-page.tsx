@@ -1013,7 +1013,7 @@ function OrgChart() {
               {[
                 { key: FILTER_KEYS.BPM, label: 'BPM Attendance', color: FILTER_COLORS[FILTER_KEYS.BPM] },
                 { key: FILTER_KEYS.BIG_EVENT, label: 'Big Event', color: FILTER_COLORS[FILTER_KEYS.BIG_EVENT] },
-                { key: FILTER_KEYS.KEY_PLAYER, label: 'Key Player', color: FILTER_COLORS[FILTER_KEYS.KEY_PLAYER] },
+                { key: FILTER_KEYS.KEY_PLAYER, label: 'Builder', color: FILTER_COLORS[FILTER_KEYS.KEY_PLAYER] },
                 { key: FILTER_KEYS.LICENSED, label: 'Licensed', color: FILTER_COLORS[FILTER_KEYS.LICENSED] },
                 { key: FILTER_KEYS.NET_LICENSED, label: 'Net Licensed', color: FILTER_COLORS[FILTER_KEYS.NET_LICENSED] },
                 { key: FILTER_KEYS.CLIENT, label: 'Client', color: FILTER_COLORS[FILTER_KEYS.CLIENT] },

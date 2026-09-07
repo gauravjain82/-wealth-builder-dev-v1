@@ -677,7 +677,7 @@ export function buildAssociateColumns(
     },
     {
       key: 'is_key_player',
-      label: 'Key Player',
+      label: 'Builder',
       width: 120,
       align: 'center',
       sortable: true,
