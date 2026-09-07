@@ -16,9 +16,15 @@ import { RosterList } from './roster-list';
 interface SegmentDashboardProps {
   title: string;
   useData: (range: BuilderRange) => UseQueryResult<BuilderScopePayload>;
+  /** Plural noun for the roster rows (e.g. "builders", "company owners"). */
+  scopeNoun?: string;
 }
 
-export function SegmentDashboard({ title, useData }: SegmentDashboardProps) {
+export function SegmentDashboard({
+  title,
+  useData,
+  scopeNoun = 'builders',
+}: SegmentDashboardProps) {
   const [preset, setPreset] = useState<DatePresetKey>('thisMonth');
   const [range, setRange] = useState<BuilderRange>({});
   const { data, isLoading, error } = useData(range);
@@ -34,7 +40,9 @@ export function SegmentDashboard({ title, useData }: SegmentDashboardProps) {
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h1>
           {data ? (
-            <p className="text-sm text-gray-500">{data.builder_count} builders in scope</p>
+            <p className="text-sm text-gray-500">
+              {data.builder_count} {scopeNoun} in scope
+            </p>
           ) : null}
         </div>
         <TrackerDateRangeFilter value={preset} onChange={handleRangeChange} />
@@ -51,7 +59,7 @@ export function SegmentDashboard({ title, useData }: SegmentDashboardProps) {
       ) : (
         <>
           <MetricGoalCardGrid cards={data.cards} />
-          <RosterList members={data.members ?? []} />
+          <RosterList members={data.members ?? []} scopeNoun={scopeNoun} />
         </>
       )}
     </div>
