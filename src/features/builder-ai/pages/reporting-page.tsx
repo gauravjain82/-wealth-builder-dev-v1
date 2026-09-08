@@ -13,13 +13,13 @@ import {
 } from 'recharts';
 
 import {
-  TrackerDateRangeFilter,
   resolvePresetRange,
   type DatePresetKey,
   type TrackerDateRangeChange,
 } from '@/shared/components/tracker-date-range-filter';
 
 import { SegmentToggle } from '../components/segment-toggle';
+import { BuilderPageHeader } from '../components/builder-page-header';
 import { useBuilderReporting } from '../hooks/use-builder-ai';
 import type {
   BuilderMetricKey,
@@ -153,14 +153,8 @@ export default function BuilderReportingPage() {
   };
 
   return (
-    <div className="space-y-5 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Reporting</h1>
-        <div className="flex items-center gap-3">
-          <SegmentToggle value={segment} onChange={setSegment} />
-          <TrackerDateRangeFilter value={preset} onChange={handleRangeChange} />
-        </div>
-      </div>
+    <div className="space-y-5 p-0">
+      <BuilderPageHeader title="Reporting" description="Track performance trends across your organization" icon="reporting" preset={preset} onRangeChange={handleRangeChange} controls={<SegmentToggle value={segment} onChange={setSegment} />} />
 
       {isLoading || !data ? (
         <div className="p-8 text-center text-sm text-gray-400">Loading…</div>
