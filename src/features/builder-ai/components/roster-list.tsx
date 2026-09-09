@@ -73,7 +73,11 @@ export function RosterList({ members, scopeNoun = 'builders' }: { members: Build
         {filtered.map((member) => (
         <article key={member.user_id} className="grid gap-5 rounded-2xl border border-[#e8dfd6] bg-white p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_rgba(28,25,23,0.055)] transition duration-200 hover:-translate-y-0.5 hover:border-[#e3d5c8] hover:shadow-[0_2px_4px_rgba(28,25,23,0.05),0_14px_32px_rgba(28,25,23,0.09)] dark:border-white/10 dark:bg-[#222833] sm:grid-cols-[minmax(180px,1fr)_60px] sm:items-center lg:grid-cols-[minmax(190px,0.8fr)_60px_minmax(0,1.8fr)] lg:gap-5">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-[#fff1e3] bg-gradient-to-br from-[#ff9a29] to-[#e94313] text-lg font-bold text-white shadow-[0_6px_16px_rgba(233,67,19,0.22)] dark:border-[#443224]">{(member.name || '?').split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</div>
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-[#fff1e3] bg-gradient-to-br from-[#ff9a29] to-[#e94313] text-lg font-bold text-white shadow-[0_6px_16px_rgba(233,67,19,0.22)] dark:border-[#443224]">
+              {member.photo_thumb_url || member.avatar_url
+                ? <img src={member.photo_thumb_url || member.avatar_url || ''} alt={member.name || 'Owner'} className="h-full w-full object-cover" loading="lazy" />
+                : (member.name || '?').split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}
+            </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2"><h3 className="truncate font-semibold">{member.name || 'Unnamed owner'}</h3>{member.is_built ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Built</span> : null}</div>
               <p className="mt-1 text-xs text-gray-400">{member.agency_code || 'No agent code'}</p>

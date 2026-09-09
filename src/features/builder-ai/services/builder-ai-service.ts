@@ -29,6 +29,9 @@ export interface BuilderMemberRow {
   agency_code: string | null;
   level: string | null;
   is_built: boolean;
+  /** Owner's profile photo (thumbnail); falls back to initials when absent. */
+  photo_thumb_url?: string | null;
+  avatar_url?: string | null;
   metrics: Record<BuilderMetricKey, BuilderMemberMetric>;
 }
 
