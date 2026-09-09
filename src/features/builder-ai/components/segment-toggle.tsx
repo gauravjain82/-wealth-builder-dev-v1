@@ -2,7 +2,12 @@
 
 import type { BuilderSegment } from '../services/builder-ai-service';
 
-const OPTIONS: { key: BuilderSegment; label: string }[] = [
+export interface SegmentOption {
+  key: BuilderSegment;
+  label: string;
+}
+
+const OPTIONS: SegmentOption[] = [
   { key: 'company', label: 'Company' },
   { key: 'baseshop', label: 'Baseshop' },
 ];
@@ -10,12 +15,13 @@ const OPTIONS: { key: BuilderSegment; label: string }[] = [
 interface SegmentToggleProps {
   value: BuilderSegment;
   onChange: (value: BuilderSegment) => void;
+  options?: SegmentOption[];
 }
 
-export function SegmentToggle({ value, onChange }: SegmentToggleProps) {
+export function SegmentToggle({ value, onChange, options = OPTIONS }: SegmentToggleProps) {
   return (
     <div className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/80 bg-white/80 p-1 text-xs shadow-[0_4px_14px_rgba(28,25,23,0.06)] backdrop-blur dark:border-white/10 dark:bg-white/5">
-      {OPTIONS.map((option) => (
+      {options.map((option) => (
         <button
           key={option.key}
           onClick={() => onChange(option.key)}
