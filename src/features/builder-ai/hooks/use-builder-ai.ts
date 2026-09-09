@@ -32,10 +32,10 @@ export function useBuilderHome(segment: BuilderSegment, range?: BuilderRange) {
   });
 }
 
-export function useBuilderCompany(range?: BuilderRange) {
+export function useBuilderCompany(range?: BuilderRange, ownerId?: string | number) {
   return useQuery({
-    queryKey: ['builder-ai', 'company', ...rangeKey(range)],
-    queryFn: () => fetchBuilderCompany(range),
+    queryKey: ['builder-ai', 'company', ownerId ?? '', ...rangeKey(range)],
+    queryFn: () => fetchBuilderCompany(range, ownerId),
   });
 }
 

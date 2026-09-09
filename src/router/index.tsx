@@ -211,6 +211,10 @@ const router = createBrowserRouter([
         element: lazyLoad(BuilderAiCompanyPage),
       },
       {
+        path: 'builder-ai/company/:ownerId',
+        element: lazyLoad(BuilderAiCompanyPage),
+      },
+      {
         path: 'builder-ai/baseshop',
         element: lazyLoad(BuilderAiBaseshopPage),
       },

@@ -1,6 +1,6 @@
 /** Searchable Builder AI roster rendered as individual member cards. */
 
-import { useMemo, useState } from 'react';
+import { type KeyboardEvent as ReactKeyboardEvent, useMemo, useState } from 'react';
 import { Search, Users } from 'lucide-react';
 
 import type { BuilderMemberRow, BuilderMetricKey } from '../services/builder-ai-service';
@@ -49,7 +49,16 @@ function overallPct(member: BuilderMemberRow): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-export function RosterList({ members, scopeNoun = 'builders' }: { members: BuilderMemberRow[]; scopeNoun?: string }) {
+export function RosterList({
+  members,
+  scopeNoun = 'builders',
+  onOwnerClick,
+}: {
+  members: BuilderMemberRow[];
+  scopeNoun?: string;
+  /** When provided, each member card becomes clickable and drills into that owner. */
+  onOwnerClick?: (userId: number) => void;
+}) {
   const [search, setSearch] = useState('');
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -71,7 +80,23 @@ export function RosterList({ members, scopeNoun = 'builders' }: { members: Build
       ) : (
         <div className="grid gap-4 2xl:grid-cols-2">
         {filtered.map((member) => (
-        <article key={member.user_id} className="grid gap-5 rounded-2xl border border-[#e8dfd6] bg-white p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_rgba(28,25,23,0.055)] transition duration-200 hover:-translate-y-0.5 hover:border-[#e3d5c8] hover:shadow-[0_2px_4px_rgba(28,25,23,0.05),0_14px_32px_rgba(28,25,23,0.09)] dark:border-white/10 dark:bg-[#222833] sm:grid-cols-[minmax(180px,1fr)_60px] sm:items-center lg:grid-cols-[minmax(190px,0.8fr)_60px_minmax(0,1.8fr)] lg:gap-5">
+        <article
+          key={member.user_id}
+          {...(onOwnerClick
+            ? {
+                role: 'button' as const,
+                tabIndex: 0,
+                onClick: () => onOwnerClick(member.user_id),
+                onKeyDown: (event: ReactKeyboardEvent) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onOwnerClick(member.user_id);
+                  }
+                },
+              }
+            : {})}
+          className={`grid gap-5 rounded-2xl border border-[#e8dfd6] bg-white p-5 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_rgba(28,25,23,0.055)] transition duration-200 hover:-translate-y-0.5 hover:border-[#e3d5c8] hover:shadow-[0_2px_4px_rgba(28,25,23,0.05),0_14px_32px_rgba(28,25,23,0.09)] dark:border-white/10 dark:bg-[#222833] sm:grid-cols-[minmax(180px,1fr)_60px] sm:items-center lg:grid-cols-[minmax(190px,0.8fr)_60px_minmax(0,1.8fr)] lg:gap-5${onOwnerClick ? ' cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#f4a259]/50' : ''}`}
+        >
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-[#fff1e3] bg-gradient-to-br from-[#ff9a29] to-[#e94313] text-lg font-bold text-white shadow-[0_6px_16px_rgba(233,67,19,0.22)] dark:border-[#443224]">
               {member.photo_thumb_url || member.avatar_url

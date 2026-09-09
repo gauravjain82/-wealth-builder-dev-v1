@@ -35,10 +35,21 @@ export interface BuilderMemberRow {
   metrics: Record<BuilderMetricKey, BuilderMemberMetric>;
 }
 
+/** Identity of the owner a drilled-in company view is scoped to. */
+export interface BuilderOwnerIdentity {
+  user_id: number;
+  name: string | null;
+  agency_code: string | null;
+  level: string | null;
+  photo_thumb_url?: string | null;
+}
+
 export interface BuilderScopePayload {
   segment: BuilderSegment;
   /** Builders the cards measure (goal = builder_count × target). */
   builder_count: number;
+  /** Present only when the company view is scoped to a specific owner leg. */
+  owner?: BuilderOwnerIdentity;
   /** Company segment only: enrolled company owners in the whole downline (invited
    *  & accepted as owner; 0 until owners join). The `members` rows list only the
    *  viewer's direct owner legs (a subset). */
@@ -168,8 +179,12 @@ export function fetchBuilderHome(
   return getJson(`/api/builderai/home/${buildQuery(range, { segment })}`);
 }
 
-export function fetchBuilderCompany(range?: BuilderRange): Promise<BuilderScopePayload> {
-  return getJson(`/api/builderai/company/${buildQuery(range)}`);
+export function fetchBuilderCompany(
+  range?: BuilderRange,
+  ownerId?: string | number
+): Promise<BuilderScopePayload> {
+  const extra = ownerId ? { owner_id: String(ownerId) } : undefined;
+  return getJson(`/api/builderai/company/${buildQuery(range, extra)}`);
 }
 
 export function fetchBuilderBaseshop(range?: BuilderRange): Promise<BuilderScopePayload> {
