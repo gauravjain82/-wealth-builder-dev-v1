@@ -36,7 +36,9 @@ export interface BuilderScopePayload {
   segment: BuilderSegment;
   /** Builders the cards measure (goal = builder_count × target). */
   builder_count: number;
-  /** Company segment only: directly-enrolled owner legs listed in members. */
+  /** Company segment only: enrolled company owners in the whole downline (invited
+   *  & accepted as owner; 0 until owners join). The `members` rows list only the
+   *  viewer's direct owner legs (a subset). */
   owner_count?: number;
   cards: BuilderMetricCard[];
   members?: BuilderMemberRow[];

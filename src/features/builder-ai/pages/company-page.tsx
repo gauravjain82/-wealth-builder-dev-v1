@@ -65,7 +65,7 @@ export default function BuilderCompanyPage() {
 
       {!isLoading && data ? (
         <div>
-          <RosterList members={data.members ?? []} scopeNoun="company owners" />
+          <RosterList members={data.members ?? []} scopeNoun="direct owner legs" />
         </div>
       ) : null}
     </div>
