@@ -36,6 +36,7 @@ const BuildersPage = lazy(() => import('@/features/team/builders/pages/builders-
 const BuilderAiHomePage = lazy(() => import('@/features/builder-ai/pages/home-page'));
 const BuilderAiCompanyPage = lazy(() => import('@/features/builder-ai/pages/company-page'));
 const BuilderAiBaseshopPage = lazy(() => import('@/features/builder-ai/pages/baseshop-page'));
+const BuilderAiInvitationsPage = lazy(() => import('@/features/builder-ai/pages/invitations-page'));
 const BuilderAiReportingPage = lazy(() => import('@/features/builder-ai/pages/reporting-page'));
 const BuilderAiBulletinPage = lazy(() => import('@/features/builder-ai/pages/bulletin-page'));
 const PublicDailySixPage = lazy(() => import('@/features/team/builders/pages/public-daily-six-page'));
@@ -212,6 +213,10 @@ const router = createBrowserRouter([
       {
         path: 'builder-ai/baseshop',
         element: lazyLoad(BuilderAiBaseshopPage),
+      },
+      {
+        path: 'builder-ai/invitations',
+        element: lazyLoad(BuilderAiInvitationsPage),
       },
       {
         path: 'builder-ai/reporting',
