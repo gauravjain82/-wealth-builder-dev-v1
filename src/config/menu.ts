@@ -607,7 +607,10 @@ function cloneMenuItems(items: MenuItem[]): MenuItem[] {
 export function getMenuForUser(
   plan: unknown,
   hasPromotionAccess: boolean,
-  canAccessBuilderAI: boolean = false
+  canAccessBuilderAI: boolean = false,
+  // Company Owner & Builder are separate things. Defaults to `true` so any
+  // caller that doesn't distinguish the two keeps the full owner menu.
+  isBuilderAiOwner: boolean = true
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -615,8 +618,22 @@ export function getMenuForUser(
   // Builder AI is gated by backend access (owner / active builder / pending
   // invitee), not by plan — inject it just under Home for anyone allowed.
   if (canAccessBuilderAI && !menuItems.some((item) => item.label === BUILDER_AI_GROUP.label)) {
+    const builderAiGroup = cloneMenuItems([BUILDER_AI_GROUP])[0];
+
+    // Company Owner & Builder are separate things: a Company Owner sees the
+    // full Builder AI group (unchanged from today), but a Builder is only part
+    // of a baseshop and just needs to accept their invitation — so trim their
+    // group down to Baseshop + Invitations only.
+    if (!isBuilderAiOwner) {
+      builderAiGroup.children = builderAiGroup.children?.filter(
+        (child) =>
+          child.path === MENU_ITEMS.BUILDER_AI_BASESHOP.path ||
+          child.path === MENU_ITEMS.BUILDER_AI_INVITATIONS.path
+      );
+    }
+
     const homeIdx = menuItems.findIndex((item) => item.label === MENU_ITEMS.HOME.label);
-    menuItems.splice(homeIdx >= 0 ? homeIdx + 1 : 0, 0, cloneMenuItems([BUILDER_AI_GROUP])[0]);
+    menuItems.splice(homeIdx >= 0 ? homeIdx + 1 : 0, 0, builderAiGroup);
   }
 
   if (normalizedPlan === Plan.NewAgent && !hasPromotionAccess) {

@@ -56,8 +56,25 @@ export default function BuilderCompanyPage() {
         ) : null}
         <div className="relative mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className={iconTileClass}>
-              <Building2 size={23} />
+            <div className={`${iconTileClass} overflow-hidden`}>
+              {isOwnerView && data?.owner?.photo_thumb_url ? (
+                <img
+                  src={data.owner.photo_thumb_url}
+                  alt={data.owner.name || 'Owner'}
+                  className="h-full w-full object-cover"
+                />
+              ) : isOwnerView && data?.owner?.name ? (
+                <span className="text-lg font-bold">
+                  {data.owner.name
+                    .split(' ')
+                    .map((part) => part[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase()}
+                </span>
+              ) : (
+                <Building2 size={23} />
+              )}
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-[-0.03em]">
@@ -94,15 +111,23 @@ export default function BuilderCompanyPage() {
       </section>
 
       {!isLoading && data ? (
-        <div>
+        <div className="grid gap-5 xl:grid-cols-2">
           <RosterList
+            title="Company owners"
             members={data.members ?? []}
             scopeNoun="direct owner legs"
+            dense
             onOwnerClick={
               isOwnerView
                 ? undefined
                 : (userId) => navigate(`/builder-ai/company/${userId}`)
             }
+          />
+          <RosterList
+            title="Builders"
+            members={data.builders ?? []}
+            scopeNoun="builders"
+            dense
           />
         </div>
       ) : null}

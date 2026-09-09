@@ -1,6 +1,7 @@
 /** BuilderAI Home: dashboard view styled to match the provided mockup. */
 
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart3, Building2, CalendarDays, Store, Users } from 'lucide-react';
 
 import {
@@ -101,6 +102,7 @@ export default function BuilderHomePage() {
   const [range, setRange] = useState<BuilderRange>({});
   const [segment, setSegment] = useState<BuilderSegment>('company');
   const [reportingDate, setReportingDate] = useState<string>(todayString);
+  const navigate = useNavigate();
   const { data } = useBuilderHome(segment, range);
   const reportingRange = useMemo<BuilderRange>(
     () => (reportingDate ? { startDate: reportingDate, endDate: reportingDate } : {}),
@@ -141,6 +143,7 @@ export default function BuilderHomePage() {
 
               <button
                 type="button"
+                onClick={() => navigate('/builder-ai/company')}
                 className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#ff8a1f] to-[#e94313] px-7 py-3 text-base font-semibold text-white shadow-[0_10px_26px_rgba(233,67,19,0.28)] transition duration-200 hover:brightness-105"
               >
                 Analyze Your Company

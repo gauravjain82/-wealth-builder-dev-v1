@@ -53,11 +53,17 @@ export function RosterList({
   members,
   scopeNoun = 'builders',
   onOwnerClick,
+  title,
+  dense = false,
 }: {
   members: BuilderMemberRow[];
   scopeNoun?: string;
   /** When provided, each member card becomes clickable and drills into that owner. */
   onOwnerClick?: (userId: number) => void;
+  /** Optional heading rendered above the search box. */
+  title?: string;
+  /** Force a single column of cards (used when the list sits in a narrow column). */
+  dense?: boolean;
 }) {
   const [search, setSearch] = useState('');
   const filtered = useMemo(() => {
@@ -67,6 +73,13 @@ export function RosterList({
 
   return (
     <div className="space-y-3">
+      {title ? (
+        <div className="flex items-center gap-2 px-1">
+          <Users size={15} className="text-[#e94313]" />
+          <h2 className="text-sm font-semibold text-[#4a443f] dark:text-slate-300">{title}</h2>
+          <span className="text-xs text-gray-400">{members.length}</span>
+        </div>
+      ) : null}
       <div className="relative">
         <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#e94313]" size={17} />
         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or agent code…" className="w-full rounded-xl border border-[#e8dfd6] bg-white py-3 pl-11 pr-4 text-sm shadow-[0_1px_2px_rgba(28,25,23,0.04),0_6px_18px_rgba(28,25,23,0.045)] outline-none transition focus:border-[#eea35f] focus:ring-4 focus:ring-[#f4a259]/10 dark:border-white/10 dark:bg-[#222833] dark:text-white" />
@@ -78,7 +91,7 @@ export function RosterList({
           No {scopeNoun} to show yet.
         </div>
       ) : (
-        <div className="grid gap-4 2xl:grid-cols-2">
+        <div className={`grid gap-4${dense ? '' : ' 2xl:grid-cols-2'}`}>
         {filtered.map((member) => (
         <article
           key={member.user_id}

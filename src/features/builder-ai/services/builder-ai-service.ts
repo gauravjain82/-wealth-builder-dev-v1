@@ -56,6 +56,8 @@ export interface BuilderScopePayload {
   owner_count?: number;
   cards: BuilderMetricCard[];
   members?: BuilderMemberRow[];
+  /** Company segment only: the builders the cards measure (the whole company). */
+  builders?: BuilderMemberRow[];
 }
 
 /** Points progress for a segment: actual points vs the target (points × builders). */

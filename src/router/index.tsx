@@ -204,32 +204,40 @@ const router = createBrowserRouter([
         element: lazyLoad(HomePage),
       },
       {
+        // Owner-only: Company Owner & Builder are separate things — a Builder only
+        // gets Baseshop + Invitations, so keep them off the owner Home page.
         path: 'builder-ai/home',
-        element: <BuilderAiRoute>{lazyLoad(BuilderAiHomePage)}</BuilderAiRoute>,
+        element: <BuilderAiRoute ownerOnly>{lazyLoad(BuilderAiHomePage)}</BuilderAiRoute>,
       },
       {
+        // Owner-only company overview.
         path: 'builder-ai/company',
-        element: <BuilderAiRoute>{lazyLoad(BuilderAiCompanyPage)}</BuilderAiRoute>,
+        element: <BuilderAiRoute ownerOnly>{lazyLoad(BuilderAiCompanyPage)}</BuilderAiRoute>,
       },
       {
+        // Owner-only drill-in into another owner's company.
         path: 'builder-ai/company/:ownerId',
-        element: <BuilderAiRoute>{lazyLoad(BuilderAiCompanyPage)}</BuilderAiRoute>,
+        element: <BuilderAiRoute ownerOnly>{lazyLoad(BuilderAiCompanyPage)}</BuilderAiRoute>,
       },
       {
+        // Shared: both Company Owners and Builders can see their baseshop.
         path: 'builder-ai/baseshop',
         element: <BuilderAiRoute>{lazyLoad(BuilderAiBaseshopPage)}</BuilderAiRoute>,
       },
       {
+        // Shared: Builders come here to accept their invitation.
         path: 'builder-ai/invitations',
         element: <BuilderAiRoute>{lazyLoad(BuilderAiInvitationsPage)}</BuilderAiRoute>,
       },
       {
+        // Owner-only reporting.
         path: 'builder-ai/reporting',
-        element: <BuilderAiRoute>{lazyLoad(BuilderAiReportingPage)}</BuilderAiRoute>,
+        element: <BuilderAiRoute ownerOnly>{lazyLoad(BuilderAiReportingPage)}</BuilderAiRoute>,
       },
       {
+        // Owner-only bulletin.
         path: 'builder-ai/bulletin',
-        element: <BuilderAiRoute>{lazyLoad(BuilderAiBulletinPage)}</BuilderAiRoute>,
+        element: <BuilderAiRoute ownerOnly>{lazyLoad(BuilderAiBulletinPage)}</BuilderAiRoute>,
       },
       {
         path: 'insight-center',
