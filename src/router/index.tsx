@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './protected-route';
 import { AdminRoute } from './admin-route';
+import { BuilderAiRoute } from './builder-ai-route';
 import { PublicRoute } from './public-route';
 import { RouteErrorFallback } from './route-error-boundary';
 import { RootRedirect } from './root-redirect.tsx';
@@ -204,31 +205,31 @@ const router = createBrowserRouter([
       },
       {
         path: 'builder-ai/home',
-        element: lazyLoad(BuilderAiHomePage),
+        element: <BuilderAiRoute>{lazyLoad(BuilderAiHomePage)}</BuilderAiRoute>,
       },
       {
         path: 'builder-ai/company',
-        element: lazyLoad(BuilderAiCompanyPage),
+        element: <BuilderAiRoute>{lazyLoad(BuilderAiCompanyPage)}</BuilderAiRoute>,
       },
       {
         path: 'builder-ai/company/:ownerId',
-        element: lazyLoad(BuilderAiCompanyPage),
+        element: <BuilderAiRoute>{lazyLoad(BuilderAiCompanyPage)}</BuilderAiRoute>,
       },
       {
         path: 'builder-ai/baseshop',
-        element: lazyLoad(BuilderAiBaseshopPage),
+        element: <BuilderAiRoute>{lazyLoad(BuilderAiBaseshopPage)}</BuilderAiRoute>,
       },
       {
         path: 'builder-ai/invitations',
-        element: lazyLoad(BuilderAiInvitationsPage),
+        element: <BuilderAiRoute>{lazyLoad(BuilderAiInvitationsPage)}</BuilderAiRoute>,
       },
       {
         path: 'builder-ai/reporting',
-        element: lazyLoad(BuilderAiReportingPage),
+        element: <BuilderAiRoute>{lazyLoad(BuilderAiReportingPage)}</BuilderAiRoute>,
       },
       {
         path: 'builder-ai/bulletin',
-        element: lazyLoad(BuilderAiBulletinPage),
+        element: <BuilderAiRoute>{lazyLoad(BuilderAiBulletinPage)}</BuilderAiRoute>,
       },
       {
         path: 'insight-center',

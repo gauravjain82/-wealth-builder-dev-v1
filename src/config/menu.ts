@@ -99,8 +99,9 @@ const MENU_ITEMS = {
 };
 
 /**
- * Builder AI group — shown to owner/admin plans (SMD & up). Backend `/my-access`
- * can further gate this; plan membership is the primary gate.
+ * Builder AI group — visibility is not plan-based. It is injected by
+ * `getMenuForUser` for any user the backend `/api/builderai/my-access/` endpoint
+ * reports `can_view: true` for (owners, active builders, and pending invitees).
  */
 const BUILDER_AI_GROUP: MenuItem = {
   label: 'Builder AI',
@@ -255,9 +256,7 @@ export const PLAN_MENUS = {
   ] as MenuItem[],
   
   [Plan.Broker]: [
-    MENU_ITEMS.HOME,
-    BUILDER_AI_GROUP,
-    MENU_ITEMS.INSIGHT_CENTER,
+    MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,
     {
@@ -318,9 +317,7 @@ export const PLAN_MENUS = {
   
   // Senior Broker uses same menu as Broker
   [Plan.SeniorBroker]: [
-    MENU_ITEMS.HOME,
-    BUILDER_AI_GROUP,
-    MENU_ITEMS.INSIGHT_CENTER,
+    MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,
     {
@@ -380,9 +377,7 @@ export const PLAN_MENUS = {
   ] as MenuItem[],
   
   [Plan.Admin]: [
-    MENU_ITEMS.HOME,
-    BUILDER_AI_GROUP,
-    MENU_ITEMS.INSIGHT_CENTER,
+    MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,
     {
@@ -465,9 +460,7 @@ export const PLAN_MENUS = {
   ] as MenuItem[],
 
   [Plan.SuperAdmin]: [
-    MENU_ITEMS.HOME,
-    BUILDER_AI_GROUP,
-    MENU_ITEMS.INSIGHT_CENTER,
+    MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,
     {
@@ -611,13 +604,24 @@ function cloneMenuItems(items: MenuItem[]): MenuItem[] {
   }));
 }
 
-export function getMenuForUser(plan: unknown, hasPromotionAccess: boolean): MenuItem[] {
+export function getMenuForUser(
+  plan: unknown,
+  hasPromotionAccess: boolean,
+  canAccessBuilderAI: boolean = false
+): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
-  const menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
+  let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
 
-  if (normalizedPlan !== Plan.NewAgent || hasPromotionAccess) {
-    return menuItems;
+  // Builder AI is gated by backend access (owner / active builder / pending
+  // invitee), not by plan — inject it just under Home for anyone allowed.
+  if (canAccessBuilderAI && !menuItems.some((item) => item.label === BUILDER_AI_GROUP.label)) {
+    const homeIdx = menuItems.findIndex((item) => item.label === MENU_ITEMS.HOME.label);
+    menuItems.splice(homeIdx >= 0 ? homeIdx + 1 : 0, 0, cloneMenuItems([BUILDER_AI_GROUP])[0]);
   }
 
-  return menuItems.filter((item) => item.label !== MENU_ITEMS.PROMOTION.label);
+  if (normalizedPlan === Plan.NewAgent && !hasPromotionAccess) {
+    menuItems = menuItems.filter((item) => item.label !== MENU_ITEMS.PROMOTION.label);
+  }
+
+  return menuItems;
 }
