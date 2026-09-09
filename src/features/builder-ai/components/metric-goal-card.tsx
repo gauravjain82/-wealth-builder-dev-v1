@@ -1,12 +1,13 @@
-/** A single "current / goal" KPI card with a progress bar (Recruits, Points, ...). */
+/** A compact KPI card matching the Builder AI mockup style. */
 
 import type { BuilderMetricCard } from '../services/builder-ai-service';
+import { Award, ClipboardCheck, Target, UserPlus } from 'lucide-react';
 
-const ACCENTS: Record<string, string> = {
-  recruits: 'text-blue-600 bg-blue-500',
-  points: 'text-emerald-600 bg-emerald-500',
-  licenses: 'text-rose-600 bg-rose-500',
-  registrations: 'text-amber-600 bg-amber-500',
+const ACCENTS = {
+  recruits: { bar: 'from-blue-400 to-blue-600', edge: 'border-r-blue-500', icon: 'bg-blue-50 text-blue-600 dark:bg-blue-500/10', glow: 'hover:shadow-blue-500/10', Icon: UserPlus },
+  points: { bar: 'from-emerald-400 to-emerald-600', edge: 'border-r-emerald-500', icon: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10', glow: 'hover:shadow-emerald-500/10', Icon: Target },
+  licenses: { bar: 'from-rose-400 to-rose-600', edge: 'border-r-rose-500', icon: 'bg-rose-50 text-rose-600 dark:bg-rose-500/10', glow: 'hover:shadow-rose-500/10', Icon: Award },
+  registrations: { bar: 'from-amber-400 to-orange-500', edge: 'border-r-amber-500', icon: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10', glow: 'hover:shadow-amber-500/10', Icon: ClipboardCheck },
 };
 
 function formatValue(value: number | string): string {
@@ -18,32 +19,38 @@ function formatValue(value: number | string): string {
 }
 
 export function MetricGoalCard({ card }: { card: BuilderMetricCard }) {
-  const accent = ACCENTS[card.key] ?? 'text-gray-600 bg-gray-500';
-  const [textAccent, barAccent] = accent.split(' ');
-  const pct = Math.min(card.pct, 100);
+  const accent = ACCENTS[card.key as keyof typeof ACCENTS] ?? ACCENTS.recruits;
+  const progress = Number(card.goal) > 0 ? Math.min((Number(card.current) / Number(card.goal)) * 100, 100) : 0;
+  const { Icon } = accent;
+
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
-      <div className="flex items-center gap-2">
-        <span className={`h-2.5 w-2.5 rounded-full ${barAccent}`} />
-        <span className="text-sm font-medium text-gray-600 dark:text-white/70">{card.label}</span>
-      </div>
-      <div className="mt-2 flex items-baseline gap-1">
-        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+    <div className={`group rounded-2xl border border-r-[3px] border-[#e6ded6] bg-gradient-to-br from-white to-[#fdfbf9] p-4 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_rgba(28,25,23,0.055)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgba(28,25,23,0.05),0_14px_32px_rgba(28,25,23,0.09)] ${accent.edge} ${accent.glow} dark:from-[#232934] dark:to-[#1b202a]`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 ${accent.icon}`}>
+            <Icon size={19} strokeWidth={2.1} />
+          </span>
+          <span className="text-sm font-semibold text-[#3d3a38] dark:text-slate-200">{card.label}</span>
+        </div>
+        <span className="text-2xl font-black tracking-[-0.04em] text-[#1d1b1a] dark:text-white">
           {formatValue(card.current)}
         </span>
-        <span className="text-lg text-gray-400">/ {formatValue(card.goal)}</span>
       </div>
-      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
-        <div className={`h-full rounded-full ${barAccent}`} style={{ width: `${pct}%` }} />
+
+      <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#eeeae6] dark:bg-black/20">
+        <div className={`h-full rounded-full bg-gradient-to-r ${accent.bar} transition-[width] duration-500`} style={{ width: `${progress}%` }} />
       </div>
-      <div className={`mt-1 text-xs font-medium ${textAccent}`}>{card.pct}% of goal</div>
+      <div className="mt-2 flex items-center justify-between text-xs text-[#7a7572] dark:text-slate-400">
+        <span>{Number(card.current) === 0 && Number(card.goal) === 0 ? 'No activity yet' : 'Progress'}</span>
+        <span className="font-semibold">{formatValue(card.current)} of {formatValue(card.goal)}</span>
+      </div>
     </div>
   );
 }
 
 export function MetricGoalCardGrid({ cards }: { cards: BuilderMetricCard[] }) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (
         <MetricGoalCard key={card.key} card={card} />
       ))}
