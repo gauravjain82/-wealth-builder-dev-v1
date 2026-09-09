@@ -205,20 +205,18 @@ export default function BuilderHomePage() {
 
       <section className="relative mt-6 overflow-hidden rounded-[22px] border border-[#e8ddd3] bg-gradient-to-br from-[#f8f6f3] via-[#f7f4f1] to-[#fff8f0] p-4 shadow-[0_1px_3px_rgba(28,25,23,0.04),0_12px_36px_rgba(28,25,23,0.065)] dark:border-white/10 dark:from-[#1b1f29] dark:via-[#1b1f29] dark:to-[#28231e] md:p-5">
         <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-[#f6a654]/10 blur-3xl" />
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff8a1f] to-[#e94313] text-white shadow-[0_8px_18px_rgba(233,67,19,0.22)]">
-                <BarChart3 size={21} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-semibold text-[#2d2a29] dark:text-slate-100">Daily Reporting</h2>
-                <p className="text-xs text-[#8b837c] dark:text-slate-400">Track progress toward your organization goals</p>
-              </div>
+        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff8a1f] to-[#e94313] text-white shadow-[0_8px_18px_rgba(233,67,19,0.22)]">
+              <BarChart3 size={21} />
             </div>
-
-            <SegmentToggle value={segment} onChange={setSegment} options={REPORTING_SEGMENTS} />
+            <div>
+              <h2 className="text-2xl font-semibold text-[#2d2a29] dark:text-slate-100">Daily Reporting</h2>
+              <p className="text-xs text-[#8b837c] dark:text-slate-400">Track progress toward your organization goals</p>
+            </div>
           </div>
+
+          <SegmentToggle value={segment} onChange={setSegment} options={REPORTING_SEGMENTS} />
 
           <div className="relative z-20 flex shrink-0 items-center gap-2 rounded-xl border border-[#e8dfd5] bg-white/80 p-1.5 shadow-[0_4px_14px_rgba(28,25,23,0.06)] backdrop-blur dark:border-white/10 dark:bg-white/5">
             <CalendarDays className="ml-2 text-[#e94313]" size={17} />
