@@ -35,7 +35,7 @@ export default function BuilderCompanyPage() {
               <h1 className="text-2xl font-bold tracking-[-0.03em]">Company</h1>
               <div className="mt-1 flex items-center gap-1.5 text-xs text-[#817a74] dark:text-slate-400">
                 <Users size={13} />
-                {data?.builder_count ?? 0} company owners in scope
+                {data?.owner_count ?? 0} company owners · {data?.builder_count ?? 0} total builders in scope
               </div>
             </div>
           </div>

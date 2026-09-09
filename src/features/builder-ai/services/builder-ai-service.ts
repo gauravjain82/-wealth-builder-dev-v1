@@ -34,7 +34,10 @@ export interface BuilderMemberRow {
 
 export interface BuilderScopePayload {
   segment: BuilderSegment;
+  /** Builders the cards measure (goal = builder_count × target). */
   builder_count: number;
+  /** Company segment only: directly-enrolled owner legs listed in members. */
+  owner_count?: number;
   cards: BuilderMetricCard[];
   members?: BuilderMemberRow[];
 }
