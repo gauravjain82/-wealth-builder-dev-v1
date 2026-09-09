@@ -30,9 +30,21 @@ function StatCard({ label, value, tone = 'neutral' }: { label: string; value: nu
   );
 }
 
-function SizeProgress({ label, value, type }: { label: string; value: number; type: 'company' | 'baseshop' }) {
-  const total = value;
-  const progress = total > 0 ? Math.min((value / total) * 100, 100) : 0;
+function SizeProgress({
+  label,
+  current,
+  goal,
+  pct,
+  type,
+}: {
+  label: string;
+  current: number;
+  goal: number;
+  pct: number;
+  type: 'company' | 'baseshop';
+}) {
+  const progress = Math.max(0, Math.min(pct, 100));
+  const fmt = (n: number) => Math.round(n).toLocaleString();
   const Icon = type === 'company' ? Building2 : Store;
 
   return (
@@ -50,7 +62,7 @@ function SizeProgress({ label, value, type }: { label: string; value: number; ty
           </div>
         </div>
         <div className="shrink-0 rounded-full border border-[#f4c4b4] bg-[#fff7f2] px-3 py-1 text-sm font-bold text-[#e94313] shadow-sm dark:border-[#f0522b]/25 dark:bg-[#39231f] dark:text-[#ff8a5c]">
-          {value} <span className="font-medium text-[#bd9a7b] dark:text-[#c89c70]">/ {total}</span>
+          {fmt(current)} <span className="font-medium text-[#bd9a7b] dark:text-[#c89c70]">/ {fmt(goal)}</span>
         </div>
       </div>
 
@@ -60,8 +72,8 @@ function SizeProgress({ label, value, type }: { label: string; value: number; ty
           role="progressbar"
           aria-label={label}
           aria-valuemin={0}
-          aria-valuemax={total}
-          aria-valuenow={value}
+          aria-valuemax={Math.round(goal)}
+          aria-valuenow={Math.round(current)}
         >
           <div
             className="h-full rounded-full bg-gradient-to-r from-[#ff9a29] via-[#f76a1f] to-[#e94313] shadow-[0_0_10px_rgba(233,67,19,0.28)] transition-[width] duration-500"
@@ -135,8 +147,20 @@ export default function BuilderHomePage() {
               </button>
 
               <div className="mt-7 grid gap-3">
-                <SizeProgress label="Your Company Size" value={data?.sizes.company_size ?? 0} type="company" />
-                <SizeProgress label="Your Baseshop Size" value={data?.sizes.baseshop_size ?? 0} type="baseshop" />
+                <SizeProgress
+                  label="Your Company Size"
+                  current={Number(data?.sizes.company.current ?? 0)}
+                  goal={Number(data?.sizes.company.goal ?? 0)}
+                  pct={data?.sizes.company.pct ?? 0}
+                  type="company"
+                />
+                <SizeProgress
+                  label="Your Baseshop Size"
+                  current={Number(data?.sizes.baseshop.current ?? 0)}
+                  goal={Number(data?.sizes.baseshop.goal ?? 0)}
+                  pct={data?.sizes.baseshop.pct ?? 0}
+                  type="baseshop"
+                />
               </div>
             </div>
 

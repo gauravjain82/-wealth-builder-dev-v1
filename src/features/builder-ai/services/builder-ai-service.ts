@@ -39,6 +39,13 @@ export interface BuilderScopePayload {
   members?: BuilderMemberRow[];
 }
 
+/** Points progress for a segment: actual points vs the target (points × builders). */
+export interface BuilderSizeBar {
+  current: number | string;
+  goal: number | string;
+  pct: number;
+}
+
 export interface BuilderHomePayload {
   organization: {
     company_owners: number;
@@ -46,7 +53,7 @@ export interface BuilderHomePayload {
     baseshop_builders: number;
   };
   builders_built: { company: number; baseshop: number };
-  sizes: { company_size: number; baseshop_size: number };
+  sizes: { company: BuilderSizeBar; baseshop: BuilderSizeBar };
   reporting: BuilderScopePayload;
 }
 
