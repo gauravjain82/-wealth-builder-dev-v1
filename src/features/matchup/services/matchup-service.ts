@@ -212,7 +212,9 @@ export const matchupService = {
     request<TrainerCandidate[]>(
       `/api/matchup/trainer-search/${buildQuery({
         q: params.q,
-        segment: params.segment || undefined,
+        // 'ALL' means unscoped/company-wide, so omit segment= entirely rather
+        // than sending an out-of-enum value the backend has to silently reject.
+        segment: params.segment && params.segment !== 'ALL' ? params.segment : undefined,
         trainers_only: params.trainersOnly ? '1' : undefined,
         city: params.city?.trim() || undefined,
         start: params.start,

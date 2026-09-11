@@ -4,12 +4,15 @@ import { Button, Input, Modal, Select } from '@shared/components/ui';
 import { formatAppointmentTime, matchupService } from '../services/matchup-service';
 import type { AppointmentListItem, TrainerCandidate } from '../types';
 
-type SegmentScope = 'BASESHOP' | 'SUPERBASE' | 'SUPERTEAM';
+type SegmentScope = 'ALL' | 'BASESHOP' | 'SUPERBASE' | 'SUPERTEAM';
 
+// 'ALL' searches across every user company-wide (unscoped), so trainers outside
+// the current baseshop/superbase/superteam can still be found and assigned.
 const SEGMENT_OPTIONS: Array<{ value: SegmentScope; label: string }> = [
   { value: 'BASESHOP', label: 'BaseShop' },
   { value: 'SUPERBASE', label: 'SuperBase' },
   { value: 'SUPERTEAM', label: 'SuperTeam' },
+  { value: 'ALL', label: 'All' },
 ];
 
 interface AssignTrainerModalProps {
