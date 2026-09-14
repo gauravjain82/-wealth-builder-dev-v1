@@ -94,6 +94,7 @@ const MENU_ITEMS = {
   HELPDESK_ADMIN: { label: 'Helpdesk', icon: '🆘', path: '/admin/helpdesk' } as MenuItem,
   FUNCTIONS: { label: 'Functions', icon: '🧩', path: '/admin/functions' } as MenuItem,
   USER_PERMISSIONS: { label: 'User Permissions', icon: '🔐', path: '/admin/user-permissions' } as MenuItem,
+  LEVEL_PERMISSIONS: { label: 'Level Permissions', icon: '📊', path: '/admin/level-permissions' } as MenuItem,
   FILE_VAULT_ADMIN: { label: 'File Vault', icon: '📁', path: '/admin/file-vault' } as MenuItem,
   TRAINING_CENTER_ADMIN: { label: 'Training Center', icon: '🎓', path: '/admin/training-center' } as MenuItem,
 };
@@ -455,6 +456,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.FILE_VAULT_ADMIN,
         MENU_ITEMS.TRAINING_CENTER_ADMIN,
         MENU_ITEMS.USER_PERMISSIONS,
+        MENU_ITEMS.LEVEL_PERMISSIONS,
       ],
     },
   ] as MenuItem[],
@@ -538,6 +540,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.FILE_VAULT_ADMIN,
         MENU_ITEMS.TRAINING_CENTER_ADMIN,
         MENU_ITEMS.USER_PERMISSIONS,
+        MENU_ITEMS.LEVEL_PERMISSIONS,
       ],
     },
   ] as MenuItem[],

@@ -76,6 +76,25 @@ export interface CreateUserPermissionPayload {
 
 export type UpdateUserPermissionPayload = Partial<Omit<CreateUserPermissionPayload, 'user'>>;
 
+/**
+ * A permission granted to an entire level/rank. Grant-only, union semantics:
+ * every user at the level gains it, layered on top of role-based permissions.
+ * `GET /api/authz/level-permissions/`
+ */
+export interface LevelPermissionItem {
+  id: number;
+  level: number;
+  level_code: string;
+  level_name: string;
+  permission: number;
+  permission_label: string;
+}
+
+export interface CreateLevelPermissionPayload {
+  level: number;
+  permission: number;
+}
+
 /** Lightweight user shape returned by the user search endpoint. */
 export interface UserSearchResult {
   id: number;

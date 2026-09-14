@@ -77,6 +77,7 @@ const AdminHelpdeskPage = lazy(() => import('@/features/helpdesk/pages/admin-hel
 const InviteAgentsPage = lazy(() => import('@/features/admin/invite-agents/pages/invite-agents-page'));
 const FunctionsPage = lazy(() => import('@/features/admin/access-control/pages/functions-page'));
 const UserPermissionsPage = lazy(() => import('@/features/admin/access-control/pages/user-permissions-page'));
+const LevelPermissionsPage = lazy(() => import('@/features/admin/access-control/pages/level-permissions-page'));
 import { AdminMissionRingProofPage } from '@/features/admin/mission-ring-proof';
 const TerminatedUsersPage = lazy(() => import('@/features/terminated-users/pages/terminated-users-page'));
 const PromotionDashboardPage = lazy(() => import('@/features/promotion/pages/promotion-dashboard-page'));
@@ -438,6 +439,10 @@ const router = createBrowserRouter([
       {
         path: 'admin/user-permissions',
         element: <AdminRoute>{lazyLoad(UserPermissionsPage)}</AdminRoute>,
+      },
+      {
+        path: 'admin/level-permissions',
+        element: <AdminRoute>{lazyLoad(LevelPermissionsPage)}</AdminRoute>,
       },
       {
         path: 'admin/file-vault',
