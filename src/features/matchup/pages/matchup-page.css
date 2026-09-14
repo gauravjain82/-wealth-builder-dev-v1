@@ -1334,6 +1334,46 @@
   color: #fee2e2;
 }
 
+/* Imported (external Google) events — badge + triage modal. */
+.matchup-import-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin-right: 4px;
+  background: #7c3aed;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.matchup-imported-modal { display: flex; flex-direction: column; gap: 14px; }
+.matchup-imported-meta { display: flex; flex-direction: column; gap: 10px; margin: 0; }
+.matchup-imported-meta > div { display: flex; flex-direction: column; gap: 2px; }
+.matchup-imported-meta dt { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.6; }
+.matchup-imported-meta dd { margin: 0; font-size: 0.85rem; }
+.matchup-imported-description { white-space: pre-wrap; }
+.matchup-imported-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.matchup-imported-actions-secondary { margin-top: 2px; }
+.matchup-imported-note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(245, 158, 11, 0.1);
+  color: inherit;
+}
+.matchup-imported-note svg { flex: 0 0 auto; margin-top: 2px; color: #f59e0b; }
+.matchup-imported-note p { margin: 0; font-size: 0.8rem; line-height: 1.35; }
+.matchup-imported-note p + p { margin-top: 6px; }
+
 .matchup-contact-link { border:0; padding:0; background:transparent; color:#38bdf8; font:inherit; font-weight:600; text-align:left; cursor:pointer; }
 .matchup-contact-link:hover { color:#7dd3fc; text-decoration:underline; }
 

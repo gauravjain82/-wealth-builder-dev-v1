@@ -191,6 +191,18 @@ export interface CalendarAppointment {
   assigned_to?: number | null;
   assigned_to_name?: string | null;
   assigned_to_detail?: PersonCard | null;
+  // Imported external Google events (personal calendar only). When `source` is
+  // 'IMPORTED' this row is a `calendarsync` busy block, not an appointment, and
+  // carries the fields below for the badge and the convert prefill.
+  source?: 'IMPORTED';
+  block_id?: number;
+  title?: string;
+  calendar_summary?: string | null;
+  description?: string | null;
+  location?: string | null;
+  all_day?: boolean;
+  google_event_id?: string;
+  google_calendar_id?: string;
 }
 
 export interface MatchupMetrics {
@@ -256,6 +268,12 @@ export interface CreateAppointmentPayload {
   contact_spouse_name?: string;
   trainee?: number | null;
   trainee_phone?: string;
+  /**
+   * When set, convert an imported external Google event (its
+   * `ExternalBusyBlock` id) into this appointment: the backend adopts the
+   * existing Google event (no duplicate) and removes the block.
+   */
+  imported_block_id?: number;
 }
 
 export type UpdateAppointmentPayload = Partial<CreateAppointmentPayload>;

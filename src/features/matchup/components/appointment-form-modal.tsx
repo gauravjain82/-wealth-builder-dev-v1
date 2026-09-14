@@ -183,6 +183,10 @@ export function AppointmentFormModal({
   // (assignments, reschedules) and recorded outcome alongside the editable form.
   const detail = appointment && isAppointmentDetail(appointment) ? appointment : null;
 
+  // Switching the type of an EXISTING appointment resets its lifecycle on save
+  // (status, trainer assignment, calendar, notifications). Warn before submit.
+  const kindChanged = Boolean(appointment) && !!appointment && form.kind !== appointment.kind;
+
   useEffect(() => {
     if (open) {
       const nextForm = formFromAppointment(appointment, initialValues);
@@ -397,6 +401,27 @@ export function AppointmentFormModal({
             <Input type="number" min={1} variant="surface" value={form.duration_minutes} onChange={(event) => update('duration_minutes', Number(event.target.value))} />
           </label>
         </div>
+
+        {kindChanged ? (
+          <div className="matchup-imported-note" role="note">
+            <Info size={15} aria-hidden="true" />
+            <div>
+              {form.kind === 'REQUEST_TRAINER' ? (
+                <p>
+                  <strong>Changing to Request Trainer</strong> removes this event from your
+                  calendar and requests a trainer for it. Select a trainee below — it stays
+                  unassigned until a trainer accepts.
+                </p>
+              ) : (
+                <p>
+                  <strong>Changing to Personal</strong> makes this a personal appointment on your
+                  own calendar. Any trainer already assigned will be unassigned and notified that
+                  the request was withdrawn.
+                </p>
+              )}
+            </div>
+          </div>
+        ) : null}
 
         <fieldset className="matchup-fieldset" ref={typesFieldsetRef}>
           <legend>Types</legend>

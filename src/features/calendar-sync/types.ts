@@ -97,3 +97,37 @@ export interface SyncResult {
 export interface SyncAllResult {
   results: SyncResult[];
 }
+
+/**
+ * One imported (external) Google event returned by `GET /imported/`.
+ *
+ * These are events on the user's Google calendars that the platform did not
+ * create (mirrored as `ExternalBusyBlock` rows). The personal calendar shows
+ * them tagged `Imported` so the user can convert them into an appointment or
+ * dismiss them.
+ */
+export interface ImportedEvent {
+  /** Namespaced id (`imp-<block_id>`) — distinct from appointment ids. */
+  id: string;
+  /** Raw `ExternalBusyBlock` primary key (used for dismiss / convert). */
+  block_id: number;
+  /** Always `"IMPORTED"`. */
+  source: 'IMPORTED';
+  /** Event summary, or "Busy" when Google gave none. */
+  title: string;
+  start_at: string;
+  end_at: string;
+  all_day: boolean;
+  /** Name of the Google calendar the event came from (for the tag). */
+  calendar_summary: string;
+  description: string;
+  location: string;
+  html_link: string;
+  google_event_id: string;
+  google_calendar_id: string;
+}
+
+/** Result of `POST /imported/clear/`. */
+export interface ClearImportedResult {
+  removed: number;
+}

@@ -21,6 +21,8 @@ interface DayAppointmentsModalProps {
   personal?: boolean;
   onClose: () => void;
   onItemClick?: (id: number) => void;
+  /** Called when an imported (external Google) event is clicked. */
+  onImportedClick?: (item: CalendarAppointment) => void;
 }
 
 interface StatusOption {
@@ -71,11 +73,24 @@ export function DayAppointmentsModal({
   personal,
   onClose,
   onItemClick,
+  onImportedClick,
 }: DayAppointmentsModalProps) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [groups, setGroups] = useState<DayAppointmentGroup[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Imported (external Google) events are busy blocks, not appointments — keep
+  // them out of the appointment grouping/filter logic and render them in their
+  // own section so the user can triage them.
+  const importedItems = useMemo(
+    () => items.filter((item) => item.source === 'IMPORTED'),
+    [items],
+  );
+  const appointmentItems = useMemo(
+    () => items.filter((item) => item.source !== 'IMPORTED'),
+    [items],
+  );
 
   useEffect(() => {
     if (!date) return;
@@ -101,8 +116,8 @@ export function DayAppointmentsModal({
   // Status chips are derived from the loaded rich groups when available, else
   // from the lean calendar items so the modal still works during load/on error.
   const allItems = useMemo<{ status: string; status_label?: string; status_color?: string }[]>(
-    () => (groups ? groups.flatMap((group) => group.appointments) : items),
-    [groups, items],
+    () => (groups ? groups.flatMap((group) => group.appointments) : appointmentItems),
+    [groups, appointmentItems],
   );
 
   const statusOptions = useMemo<StatusOption[]>(() => {
@@ -146,7 +161,7 @@ export function DayAppointmentsModal({
   // day endpoint failed but we still have the month calendar payload.
   const fallbackGroups = useMemo(() => {
     const map = new Map<string, { key: string; title: string; items: CalendarAppointment[] }>();
-    items
+    appointmentItems
       .filter((item) => statusFilter === 'all' || item.status === statusFilter)
       .forEach((item) => {
         const trainerName = assignedName(item, appointmentsById[item.id]);
@@ -163,7 +178,7 @@ export function DayAppointmentsModal({
       .filter((group) => group.key !== UNASSIGNED_KEY)
       .sort((a, b) => a.title.localeCompare(b.title));
     return unassigned ? [unassigned, ...assigned] : assigned;
-  }, [items, statusFilter, appointmentsById]);
+  }, [appointmentItems, statusFilter, appointmentsById]);
 
   if (!date) return null;
 
@@ -179,6 +194,33 @@ export function DayAppointmentsModal({
       <p className="matchup-muted matchup-day-modal-count">
         {visibleCount} of {totalCount} appointment{totalCount === 1 ? '' : 's'}
       </p>
+
+      {importedItems.length ? (
+        <section className="matchup-day-modal-group">
+          <header className="matchup-day-modal-group-header">
+            <span className="matchup-day-modal-group-title">Imported from Google</span>
+            <span className="matchup-day-modal-group-count">{importedItems.length}</span>
+          </header>
+          {importedItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="matchup-day-modal-item"
+              onClick={() => onImportedClick?.(item)}
+            >
+              <div>
+                <strong>{item.title || 'Busy'}</strong>
+                <span>{formatAppointmentTime(item.start_at, { month: undefined, day: undefined })}</span>
+              </div>
+              <span className="matchup-day-modal-item-actions">
+                <span className="matchup-import-badge">
+                  Imported{item.calendar_summary ? ` · ${item.calendar_summary}` : ''}
+                </span>
+              </span>
+            </button>
+          ))}
+        </section>
+      ) : null}
 
       {statusOptions.length > 1 ? (
         <div className="matchup-day-filter" role="group" aria-label="Filter by status">

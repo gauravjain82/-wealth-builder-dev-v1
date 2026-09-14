@@ -10,7 +10,9 @@
 import type {
   CalendarSource,
   CalendarSyncStatus,
+  ClearImportedResult,
   GoogleCalendarDTO,
+  ImportedEvent,
   SetSourceTargetBody,
   SourceMappingDTO,
   SourceToggleUpdate,
@@ -107,6 +109,25 @@ export const calendarSyncService = {
   /** On-demand push + pull for a single source. */
   syncSource: (source: CalendarSource) =>
     request<SyncResult>(`/api/calendarsync/sync/${sourcePath(source)}/`, { method: 'POST' }),
+
+  /** Imported (external) Google events overlapping the given ISO range. */
+  importedEvents: (start: string, end: string) =>
+    request<{ imported: ImportedEvent[] }>(
+      `/api/calendarsync/imported/?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`,
+    ),
+
+  /** Dismiss a single imported event (deletes its busy block). */
+  dismissImported: (blockId: number) =>
+    request<void>(`/api/calendarsync/imported/${blockId}/`, { method: 'DELETE' }),
+
+  /** Bulk-clear imported events (optionally scoped to one calendar). */
+  clearImported: (googleCalendarId?: string) =>
+    request<ClearImportedResult>('/api/calendarsync/imported/clear/', {
+      method: 'POST',
+      body: JSON.stringify(
+        googleCalendarId ? { google_calendar_id: googleCalendarId } : {},
+      ),
+    }),
 
   /**
    * Begin the Google OAuth connect flow. Reuses the shared `matchup` alias

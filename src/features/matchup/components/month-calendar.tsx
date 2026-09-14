@@ -15,6 +15,8 @@ interface MonthCalendarProps {
   onMonthChange: (date: Date) => void;
   onDateSelect: (date: Date) => void;
   onItemClick?: (id: number) => void;
+  /** Called when an imported (external Google) event is clicked. */
+  onImportedClick?: (item: CalendarAppointment) => void;
 }
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -62,6 +64,7 @@ export function MonthCalendar({
   onMonthChange,
   onDateSelect,
   onItemClick,
+  onImportedClick,
 }: MonthCalendarProps) {
   const [modalDate, setModalDate] = useState<Date | null>(null);
   const days = buildDays(month);
@@ -124,7 +127,14 @@ export function MonthCalendar({
                 <span className="matchup-day-events">
                   {dayItems.slice(0, 3).map((item) => (
                     <span key={item.id} style={{ ['--status-color' as string]: item.status_color || '#64748b' }}>
-                      {assignedName(item, appointmentsById[item.id]) || appointmentTitle(item)}
+                      {item.source === 'IMPORTED' ? (
+                        <>
+                          <span className="matchup-import-badge">Imported</span>
+                          {item.title || 'Busy'}
+                        </>
+                      ) : (
+                        assignedName(item, appointmentsById[item.id]) || appointmentTitle(item)
+                      )}
                     </span>
                   ))}
                   {dayItems.length > 3 ? <span>+{dayItems.length - 3} more</span> : null}
@@ -147,6 +157,10 @@ export function MonthCalendar({
         onItemClick={(id: number) => {
           setModalDate(null);
           onItemClick?.(id);
+        }}
+        onImportedClick={(item: CalendarAppointment) => {
+          setModalDate(null);
+          onImportedClick?.(item);
         }}
       />
     </section>
