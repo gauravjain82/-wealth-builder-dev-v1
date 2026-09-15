@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { CalendarClock, Check, Copy, History, MapPin, Pencil, UserRound } from 'lucide-react';
 import { Button, Modal } from '@shared/components/ui';
 import { formatAppointmentTime } from '../services/matchup-service';
+import { canReschedule } from './reschedule-appointment-modal';
 import type { AppointmentDetail } from '../types';
 
 interface AppointmentDetailsModalProps {
   appointment: AppointmentDetail | null;
   onClose: () => void;
   onEdit?: (appointment: AppointmentDetail) => void;
+  onReschedule?: (appointment: AppointmentDetail) => void;
 }
 
 function value(value: unknown) {
@@ -16,7 +18,7 @@ function value(value: unknown) {
   return String(value).replace(/_/g, ' ');
 }
 
-export function AppointmentDetailsModal({ appointment, onClose, onEdit }: AppointmentDetailsModalProps) {
+export function AppointmentDetailsModal({ appointment, onClose, onEdit, onReschedule }: AppointmentDetailsModalProps) {
   const [copied, setCopied] = useState(false);
   if (!appointment) return null;
   const types = appointment.types_detail || [];
@@ -56,6 +58,11 @@ export function AppointmentDetailsModal({ appointment, onClose, onEdit }: Appoin
             {appointment.kind === 'REQUEST_TRAINER' ? 'Request Trainer' : 'Personal'}
           </span>
           <strong>{value(appointment.status_label || appointment.status)}</strong>
+          {onReschedule && canReschedule(appointment.status) ? (
+            <Button type="button" variant="outline" onClick={() => onReschedule(appointment)}>
+              <CalendarClock size={16} /> Reschedule
+            </Button>
+          ) : null}
           {onEdit ? (
             <Button type="button" onClick={() => onEdit(appointment)}>
               <Pencil size={16} /> Edit Appointment

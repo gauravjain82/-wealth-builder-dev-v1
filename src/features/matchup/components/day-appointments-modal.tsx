@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { Eye, FileText } from 'lucide-react';
+import { CalendarClock, Eye, FileText } from 'lucide-react';
 import { Modal } from '@shared/components/ui';
 import { formatAppointmentTime, matchupService } from '../services/matchup-service';
+import { canReschedule } from './reschedule-appointment-modal';
 import type {
   AppointmentListItem,
   CalendarAppointment,
@@ -23,6 +24,8 @@ interface DayAppointmentsModalProps {
   onItemClick?: (id: number) => void;
   /** Called when an imported (external Google) event is clicked. */
   onImportedClick?: (item: CalendarAppointment) => void;
+  /** Called when the reschedule action is invoked on a day appointment. */
+  onReschedule?: (item: DayAppointmentItem) => void;
 }
 
 interface StatusOption {
@@ -74,6 +77,7 @@ export function DayAppointmentsModal({
   onClose,
   onItemClick,
   onImportedClick,
+  onReschedule,
 }: DayAppointmentsModalProps) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [groups, setGroups] = useState<DayAppointmentGroup[] | null>(null);
@@ -331,6 +335,20 @@ export function DayAppointmentsModal({
                               />
                               {item.created_by_name ? (
                                 <span className="matchup-day-created-by">Created by {item.created_by_name}</span>
+                              ) : null}
+                              {onReschedule && canReschedule(item.status) ? (
+                                <button
+                                  type="button"
+                                  className="matchup-day-reschedule-action"
+                                  title="Reschedule appointment"
+                                  aria-label="Reschedule appointment"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    onReschedule(item);
+                                  }}
+                                >
+                                  <CalendarClock size={15} aria-hidden="true" />
+                                </button>
                               ) : null}
                               <Eye size={15} aria-hidden="true" />
                             </span>

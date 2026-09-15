@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarClock, CheckCircle2, ChevronDown, ChevronRight, Download, MoreHorizontal, NotebookPen, Pencil, UserPlus, XCircle } from 'lucide-react';
 import { Button } from '@shared/components/ui';
 import { formatAppointmentTime } from '../services/matchup-service';
+import { canReschedule } from './reschedule-appointment-modal';
 import type { AppointmentListItem, MatchupStatusMeta } from '../types';
 
 function assignedName(item: AppointmentListItem) {
@@ -46,6 +47,7 @@ interface AppointmentListProps {
   onOpenContact?: (contactId: number, contactName: string) => void;
   onAssign: (item: AppointmentListItem) => void;
   onComplete: (item: AppointmentListItem) => void;
+  onReschedule: (item: AppointmentListItem) => void;
   onCancel: (item: AppointmentListItem) => void;
   onExport: () => void;
   hasMore?: boolean;
@@ -70,6 +72,7 @@ export function AppointmentList({
   onOpenContact,
   onAssign,
   onComplete,
+  onReschedule,
   onCancel,
   onExport,
   hasMore = false,
@@ -281,6 +284,18 @@ export function AppointmentList({
               >
                 <CheckCircle2 size={15} />
                 <span>Result Required</span>
+              </Button>
+            ) : null}
+            {canReschedule(item.status) ? (
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Reschedule appointment"
+                title="Reschedule appointment"
+                className="matchup-action-button is-reschedule"
+                onClick={() => onReschedule(item)}
+              >
+                <CalendarClock size={15} />
               </Button>
             ) : null}
             {!['DONE', 'CANCELLED', 'NOT_INTERESTED'].includes(item.status) ? (

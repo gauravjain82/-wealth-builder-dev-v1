@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@shared/components/ui';
-import type { AppointmentListItem, CalendarAppointment, MatchupStatusMeta } from '../types';
+import type { AppointmentListItem, CalendarAppointment, DayAppointmentItem, MatchupStatusMeta } from '../types';
 import { DayAppointmentsModal } from './day-appointments-modal';
 
 interface MonthCalendarProps {
@@ -17,6 +17,8 @@ interface MonthCalendarProps {
   onItemClick?: (id: number) => void;
   /** Called when an imported (external Google) event is clicked. */
   onImportedClick?: (item: CalendarAppointment) => void;
+  /** Called when the reschedule action is invoked on a day appointment. */
+  onReschedule?: (item: DayAppointmentItem) => void;
 }
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -65,6 +67,7 @@ export function MonthCalendar({
   onDateSelect,
   onItemClick,
   onImportedClick,
+  onReschedule,
 }: MonthCalendarProps) {
   const [modalDate, setModalDate] = useState<Date | null>(null);
   const days = buildDays(month);
@@ -162,6 +165,10 @@ export function MonthCalendar({
           setModalDate(null);
           onImportedClick?.(item);
         }}
+        onReschedule={onReschedule ? (item: DayAppointmentItem) => {
+          setModalDate(null);
+          onReschedule(item);
+        } : undefined}
       />
     </section>
   );

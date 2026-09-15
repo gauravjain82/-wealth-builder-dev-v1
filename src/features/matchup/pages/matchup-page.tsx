@@ -28,6 +28,11 @@ import { AssignTrainerModal } from '../components/assign-trainer-modal';
 import { CompleteAppointmentModal } from '../components/complete-appointment-modal';
 import { MetricsCards } from '../components/metrics-cards';
 import { MonthCalendar } from '../components/month-calendar';
+import {
+  RescheduleAppointmentModal,
+  type ReschedulableAppointment,
+  type ReschedulePayload,
+} from '../components/reschedule-appointment-modal';
 import { useMatchupDashboard } from '../hooks/use-matchup-dashboard';
 import { matchupService } from '../services/matchup-service';
 import type {
@@ -163,6 +168,7 @@ export default function MatchupPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [assignTarget, setAssignTarget] = useState<AppointmentListItem | null>(null);
   const [completeTarget, setCompleteTarget] = useState<AppointmentListItem | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<ReschedulableAppointment | null>(null);
   const [editingTarget, setEditingTarget] = useState<AppointmentDetail | null>(null);
   const [detailsTarget, setDetailsTarget] = useState<AppointmentDetail | null>(null);
   const [followUpDefaults, setFollowUpDefaults] = useState<Partial<FollowUpAppointmentDefaults> | null>(null);
@@ -487,9 +493,21 @@ export default function MatchupPage() {
     setFormOpen(true);
   };
 
-  const openRescheduleAppointment = (appointment: AppointmentListItem) => {
+  // Reschedule is a distinct workflow from a generic edit: it posts to the
+  // dedicated reschedule endpoint so the appointment moves in place (audit
+  // record, RESCHEDULED status, notification, in-place calendar update) instead
+  // of the full-object PATCH, which can tear down and recreate the appointment.
+  const openRescheduleAppointment = (appointment: ReschedulableAppointment) => {
     setCompleteTarget(null);
-    void openAppointmentForEditById(appointment.id);
+    setDetailsTarget(null);
+    setRescheduleTarget(appointment);
+  };
+
+  const saveReschedule = async (payload: ReschedulePayload, id: number) => {
+    await runMutation('Appointment rescheduled.', async () => {
+      await matchupService.reschedule(id, payload);
+      setRescheduleTarget(null);
+    });
   };
 
   const openProductionModal = (appointment: AppointmentListItem) => {
@@ -687,6 +705,7 @@ export default function MatchupPage() {
         onMonthChange={setCalendarMonth}
         onDateSelect={setSelectedDate}
         onItemClick={(id) => void openAppointmentForEditById(id)}
+        onReschedule={openRescheduleAppointment}
       />
 
       <div className="matchup-lower-layout">
@@ -768,6 +787,7 @@ export default function MatchupPage() {
             onOpenContact={(userId, name) => setContactProfileOpenFor({ userId, name })}
             onAssign={setAssignTarget}
             onComplete={setCompleteTarget}
+            onReschedule={openRescheduleAppointment}
             onCancel={(item) => void cancelAppointment(item)}
             onExport={() => void exportAppointments()}
             hasMore={Boolean(appointments.next)}
@@ -820,6 +840,14 @@ export default function MatchupPage() {
           setEditingTarget(appointment);
           setFormOpen(true);
         }}
+        onReschedule={openRescheduleAppointment}
+      />
+      <RescheduleAppointmentModal
+        open={Boolean(rescheduleTarget)}
+        appointment={rescheduleTarget}
+        saving={busy}
+        onClose={() => setRescheduleTarget(null)}
+        onSubmit={saveReschedule}
       />
       <ProspectDetailsModal
         open={Boolean(contactProfileOpenFor)}
