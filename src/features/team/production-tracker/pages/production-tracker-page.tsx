@@ -233,6 +233,11 @@ export default function ProductionTrackerPage() {
   const addToast = useToastStore((state) => state.addToast);
   const currentUserId = useMemo(() => getCurrentUserId(), []);
   const hasDateFilter = Boolean(filters.from_date || filters.to_date);
+  // The "Last 3 Months" preset mirrors the associate ("45K") tracker's rolling
+  // window: advance/chargeback follow the 3-month range but projected stays
+  // all-time. Ask points_summary to keep projected unscoped so both screens
+  // report the same numbers. Any other preset scopes every bucket uniformly.
+  const projectedScope: 'all' | 'range' = dateRangePreset === 'last3Months' ? 'all' : 'range';
 
   const companyProductIdByKey = useMemo(
     () =>
@@ -502,6 +507,7 @@ export default function ProductionTrackerPage() {
             fromDate: filters.from_date,
             toDate: filters.to_date,
             filterKey: filters.filterkey,
+            projectedScope,
           }),
           shouldRefreshTopPerformers ? fetchProductionTopPerformers() : Promise.resolve(null),
         ]);
@@ -767,6 +773,7 @@ export default function ProductionTrackerPage() {
             fromDate: filters.from_date,
             toDate: filters.to_date,
             filterKey: filters.filterkey,
+            projectedScope,
           }
         );
         if (isMounted) {
@@ -784,7 +791,7 @@ export default function ProductionTrackerPage() {
     return () => {
       isMounted = false;
     };
-  }, [currentUserId, teamScope, teamScopeUserId, filters.from_date, filters.to_date, filters.filterkey]);
+  }, [currentUserId, teamScope, teamScopeUserId, filters.from_date, filters.to_date, filters.filterkey, projectedScope]);
 
   useEffect(() => {
     let isMounted = true;
@@ -885,6 +892,7 @@ export default function ProductionTrackerPage() {
           fromDate: filters.from_date,
           toDate: filters.to_date,
           filterKey: filters.filterkey,
+          projectedScope,
         }
       );
       setPointsSummary(summary);
@@ -903,7 +911,7 @@ export default function ProductionTrackerPage() {
     } catch {
       setTopPerformers([]);
     }
-  }, [currentUserId, filters, hasDateFilter, loadRows, sortState, teamScope, teamScopeUserId]);
+  }, [currentUserId, filters, hasDateFilter, loadRows, sortState, teamScope, teamScopeUserId, projectedScope]);
 
   const handleCreateProduction = useCallback(async (form: AddProductionFormData) => {
     try {

@@ -769,7 +769,17 @@ export async function deleteProductionRecord(recordId: number): Promise<void> {
 
 export async function fetchProductionPointsSummary(
   userId?: number | null,
-  options?: { fromDate?: string | null; toDate?: string | null; segment?: string | null; filterKey?: string | null }
+  options?: {
+    fromDate?: string | null;
+    toDate?: string | null;
+    segment?: string | null;
+    filterKey?: string | null;
+    // 'all' keeps the projected (pending) totals at their all-time value even
+    // while a date range scopes advance/chargeback. Matches the associate
+    // ("45K") tracker, which shows rolling 3-month advance points but all-time
+    // pending points, so the two screens report identical numbers.
+    projectedScope?: 'all' | 'range' | null;
+  }
 ): Promise<ProductionPointsSummary> {
   const params = new URLSearchParams();
   if (userId) {
@@ -786,6 +796,9 @@ export async function fetchProductionPointsSummary(
   }
   if (options?.filterKey) {
     params.set('filterkey', options.filterKey);
+  }
+  if (options?.projectedScope) {
+    params.set('projected_scope', options.projectedScope);
   }
   const suffix = params.toString() ? `?${params.toString()}` : '';
   return fetchJson<ProductionPointsSummary>(`${API_BASE_URL}/api/tracker/policies/points_summary/${suffix}`);
