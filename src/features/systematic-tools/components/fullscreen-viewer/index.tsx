@@ -3,7 +3,41 @@ import SecureSlidePlayer from '@/features/systematic-tools/components/secure-sli
 import PdfAnnotator from '@/features/systematic-tools/components/pdf-annotator';
 
 export const isSlidesUrl = (src: string) =>
-  typeof src === 'string' && (src.includes('/pubembed?') || src.includes('/embed?'));
+  typeof src === 'string' &&
+  (src.includes('/pubembed') ||
+    src.includes('/embed') ||
+    src.includes('docs.google.com/presentation'));
+
+// Convert any pasted Google Slides URL into a frame-safe embed URL.
+// Users may paste the deck in several forms; only the embed forms render
+// inside an <iframe>:
+//   - /d/e/{PUB_ID}/pubembed  — "Publish to web" embed (already frame-safe)
+//   - /d/{FILE_ID}/embed      — standard embed form
+//   - /d/{FILE_ID}/edit|present|view — editor/viewer links that Google
+//     REFUSES to frame; these must be rewritten to /embed. Note the deck's
+//     sharing must be "anyone with the link" for the embed to render.
+export const toEmbeddableSlidesUrl = (src: string) => {
+  if (typeof src !== 'string') return src;
+  if (!src.includes('docs.google.com/presentation')) return src;
+  // Already an embed form — leave it (and its query params) untouched.
+  if (src.includes('/pubembed') || src.includes('/embed')) return src;
+
+  const params = 'start=false&loop=false&delayms=3000';
+
+  // Published-to-web link: /d/e/{PUB_ID}/pub -> /d/e/{PUB_ID}/pubembed
+  const pubMatch = src.match(/\/presentation\/d\/e\/([^/]+)/);
+  if (pubMatch) {
+    return `https://docs.google.com/presentation/d/e/${pubMatch[1]}/pubembed?${params}`;
+  }
+
+  // Standard file link: /d/{FILE_ID}/edit|present|view -> /d/{FILE_ID}/embed
+  const fileMatch = src.match(/\/presentation\/d\/([^/]+)/);
+  if (fileMatch) {
+    return `https://docs.google.com/presentation/d/${fileMatch[1]}/embed?${params}`;
+  }
+
+  return src;
+};
 
 export const isPdfUrl = (src: string) =>
   typeof src === 'string' &&
@@ -59,6 +93,7 @@ const FullscreenViewer: React.FC<FullscreenViewerProps> = ({
   if (!isOpen) return null;
 
   const slides = isSlidesUrl(src);
+  const slidesSrc = slides ? toEmbeddableSlidesUrl(src) : src;
   const pdf = forcePdf || isPdfUrl(src);
   const directPdf = pdf && (src.includes('drive.google.com') ? false : forcePdf || isDirectPdfUrl(src));
 
@@ -178,7 +213,7 @@ const FullscreenViewer: React.FC<FullscreenViewerProps> = ({
         ) : null}
 
         {slides ? (
-          <SecureSlidePlayer embedSrc={src} fillContainer />
+          <SecureSlidePlayer embedSrc={slidesSrc} fillContainer />
         ) : directPdf ? (
           <PdfAnnotator src={src} httpHeaders={httpHeaders} />
         ) : pdf ? (

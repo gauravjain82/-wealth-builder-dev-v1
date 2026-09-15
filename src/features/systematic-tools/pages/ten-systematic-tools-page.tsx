@@ -7,6 +7,7 @@ import CustomFlyerModal from '@/features/systematic-tools/components/custom-flye
 import BusinessShowerFlyerModal from '@/features/systematic-tools/components/business-shower-flyer-modal';
 import FullscreenViewer, {
   isSlidesUrl,
+  toEmbeddableSlidesUrl,
 } from '@/features/systematic-tools/components/fullscreen-viewer';
 import '@/features/systematic-tools/components/ten-tools.css';
 
@@ -495,7 +496,7 @@ export default function TenSystematicToolsPage() {
     if (opt.embedSrc) {
       if (isSlidesUrl(opt.embedSrc)) {
         setPlayerTitle(`${labelPrefix}${opt.title}`);
-        setPlayerSrc(opt.embedSrc);
+        setPlayerSrc(toEmbeddableSlidesUrl(opt.embedSrc));
         setIsPlayerOpen(true);
       } else {
         openEmbed(opt.embedSrc, `${labelPrefix}${opt.title}`);
