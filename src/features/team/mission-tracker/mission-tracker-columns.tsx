@@ -99,7 +99,12 @@ function isMissionRingEligible(row: MissionTrackerRecord): boolean {
     return false;
   }
   const countdown = getCountdownFromAma(row);
-  return Boolean(countdown.hasAma && countdown.daysLeft !== null && countdown.daysLeft < 0);
+  return Boolean(
+    countdown.hasAma &&
+    countdown.daysLeft !== null &&
+    countdown.daysLeft >= 0 &&
+    countdown.daysLeft <= 10
+  );
 }
 
 function renderCheckbox(
