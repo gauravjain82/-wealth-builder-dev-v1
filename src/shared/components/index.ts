@@ -5,6 +5,8 @@ export { Block } from './ui/block';
 export { Form, FormRowGroup, FormRow, FormActions } from './ui/form';
 export { Select, type SelectProps } from './ui/select';
 export { Textarea, type TextareaProps } from './ui/textarea';
+export { PhoneField, type PhoneFieldProps } from './ui/phone-input';
+export { isValidPhoneNumber } from 'react-phone-number-input';
 export { Checkbox, type CheckboxProps } from './ui/checkbox';
 export { Modal } from './ui/modal';
 export { ConfirmationDialog } from './ui/confirmation-dialog';

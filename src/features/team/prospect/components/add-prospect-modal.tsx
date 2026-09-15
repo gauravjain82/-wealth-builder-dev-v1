@@ -10,9 +10,11 @@ import {
   Input,
   Label,
   Modal,
+  PhoneField,
   Select,
   Textarea,
   UserAutocompleteDropdown,
+  isValidPhoneNumber,
 } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { defaultAddProspectForm, type AddProspectFormData } from '../types';
@@ -167,6 +169,11 @@ export function AddProspectModal({
       return;
     }
 
+    if (form.phone.trim() && !isValidPhoneNumber(form.phone)) {
+      addToast({ type: 'warning', message: 'Enter a valid phone number with country code.' });
+      return;
+    }
+
     await onSubmit(form);
   };
 
@@ -220,11 +227,10 @@ export function AddProspectModal({
             </FormRow>
             <FormRow>
               <Label variant="form">Phone</Label>
-              <Input
-                variant="surface"
+              <PhoneField
                 value={form.phone}
-                onChange={(e) => updateField('phone', e.target.value)}
-                placeholder="(555) 555-5555"
+                onChange={(value) => updateField('phone', value)}
+                placeholder="Phone number"
               />
             </FormRow>
             <FormRow>

@@ -1,0 +1,70 @@
+/* Styles react-phone-number-input to match the `surface` Input variant. */
+.wb-phone-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.wb-phone-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wb-phone-input .PhoneInputInput {
+  height: 2rem; /* h-8 */
+  width: 100%;
+  border-radius: 0.5rem; /* rounded-lg */
+  border: 1px solid #cbd5e1; /* slate-300 */
+  background-color: #fff;
+  padding: 0 0.5rem; /* px-2 */
+  font-size: 0.875rem;
+  color: #0f172a; /* slate-900 */
+  outline: none;
+}
+
+.wb-phone-input .PhoneInputInput::placeholder {
+  color: #64748b; /* slate-500 */
+}
+
+.wb-phone-input .PhoneInputInput:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.wb-phone-input .PhoneInputCountrySelect:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.wb-phone-field__hint {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #64748b; /* slate-500 */
+}
+
+/* Dark mode */
+.dark .wb-phone-input .PhoneInputInput {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.dark .wb-phone-input .PhoneInputInput::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.dark .wb-phone-field__hint {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Country dropdown arrow + flag colors inherit the surrounding text color. */
+.dark .wb-phone-input .PhoneInputCountrySelectArrow {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* The native <select> renders its option list with the OS palette; force
+   readable text so options are not white-on-white in dark mode. */
+.wb-phone-input .PhoneInputCountrySelect option {
+  color: #0f172a;
+}

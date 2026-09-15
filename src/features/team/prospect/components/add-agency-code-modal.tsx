@@ -10,8 +10,10 @@ import {
   Input,
   Label,
   Modal,
+  PhoneField,
   Select,
   UserAutocompleteDropdown,
+  isValidPhoneNumber,
 } from '@/shared/components';
 import { useToastStore } from '@/store';
 import type { Level, Prospect } from '../services/prospect-service';
@@ -101,6 +103,14 @@ export function AddAgencyCodeModal({
     }
     if (!form.homeZip.trim()) {
       addToast({ type: 'warning', message: 'Zip is required.' });
+      return;
+    }
+    if (!form.phone.trim() || !isValidPhoneNumber(form.phone)) {
+      addToast({ type: 'warning', message: 'Enter a valid phone number with country code.' });
+      return;
+    }
+    if (form.spousePhone.trim() && !isValidPhoneNumber(form.spousePhone)) {
+      addToast({ type: 'warning', message: 'Enter a valid spouse phone number with country code.' });
       return;
     }
     await onSubmit(form);
@@ -217,7 +227,12 @@ export function AddAgencyCodeModal({
           <FormRowGroup>
             <FormRow>
               <Label variant="form">Phone*</Label>
-              <Input variant="surface" value={form.phone} onChange={(e) => updateField('phone', e.target.value)} />
+              <PhoneField
+                value={form.phone}
+                onChange={(value) => updateField('phone', value)}
+                disabled={saving}
+                placeholder="Phone number"
+              />
             </FormRow>
             <FormRow>
               <Label variant="form">E-mail*</Label>
@@ -241,7 +256,12 @@ export function AddAgencyCodeModal({
             </FormRow>
             <FormRow>
               <Label variant="form">Spouse Phone</Label>
-              <Input variant="surface" value={form.spousePhone} onChange={(e) => updateField('spousePhone', e.target.value)} placeholder="(555) 555-5555" />
+              <PhoneField
+                value={form.spousePhone}
+                onChange={(value) => updateField('spousePhone', value)}
+                disabled={saving}
+                placeholder="Spouse phone number"
+              />
             </FormRow>
           </FormRowGroup>
 
