@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ErrorState, LoadingState, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
+import { ErrorState, LoadingState, resolvePresetRange, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { TrackerNotesModal } from '@/features/team/components/tracker-notes-modal';
 import type { TrackerNote } from '@/features/team/services/tracker-notes-service';
 import { createTrackerNote, fetchTrackerNotesForUser } from '@/features/team/services/tracker-notes-service';
@@ -211,10 +211,21 @@ export default function ProductionTrackerPage() {
   const [notesOpenFor, setNotesOpenFor] = useState<ProductionTrackerRecord | null>(null);
   const [modalNoteDraft, setModalNoteDraft] = useState('');
   const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
-  const [filters, setFilters] = useState<Record<string, string>>(() => ({
-    filterkey: 'all',
-  }));
-  const [dateRangePreset, setDateRangePreset] = useState<DatePresetKey>('all');
+  // Arriving from the associate ("45K") tracker's Pending Points card
+  // (/team/production-tracker?broker_id=X): open on the same rolling window the
+  // 45K screen uses so the KPIs line up. Last 3 Months scopes advance/chargeback
+  // to the rolling window while projectedScope keeps projected (pending) all-time
+  // — mirroring the 45K tracker's "rolling 3-month advance, all-time pending".
+  const [filters, setFilters] = useState<Record<string, string>>(() => {
+    const base: Record<string, string> = { filterkey: 'all' };
+    if (initialBrokerId) {
+      const { startDate, endDate } = resolvePresetRange('last3Months');
+      if (startDate) base.from_date = startDate;
+      if (endDate) base.to_date = endDate;
+    }
+    return base;
+  });
+  const [dateRangePreset, setDateRangePreset] = useState<DatePresetKey>(initialBrokerId ? 'last3Months' : 'all');
   const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
   const [teamScopeUserId, setTeamScopeUserId] = useState<string | null>(initialBrokerId || null);
   const [pointsSummary, setPointsSummary] = useState<ProductionPointsSummary | null>(null);

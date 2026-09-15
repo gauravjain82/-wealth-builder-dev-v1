@@ -57,6 +57,7 @@ export {
 } from './user-autocomplete-dropdown';
 export {
 	TrackerDateRangeFilter,
+	resolvePresetRange,
 	type TrackerDateRangeChange,
 	type DatePresetKey,
 } from './tracker-date-range-filter';
