@@ -22,14 +22,14 @@ import {
   createProductionRecord,
   deleteProductionRecord,
   fetchProductionCompanyProducts,
-  fetchProductionPointsSummary,
+  fetchProductionSummary,
   fetchProductionSplitPresets,
   fetchProductionTopPerformers,
   fetchProductionTracker,
   recordPolicyAdvance,
   recordPolicyChargeback,
   type ProductionCompanyProduct,
-  type ProductionPointsSummary,
+  type ProductionSummary,
   type ProductionTrackerQuery,
   type ProductionTrackerRecord,
   type ProductionTopPerformer,
@@ -97,12 +97,19 @@ function deriveAdvancePercentage(row: ProductionTrackerRecord, type: 'FIRST' | '
   return type === 'FIRST' ? '40.00' : '60.00';
 }
 
-function summaryToKpis(summary: ProductionPointsSummary | null, topPerformerName: string | null) {
+// Map the production_summary payload to card display values. The two realised
+// cards (Baseshop/Personal Points) carry a Gross and a Net (Net = Gross −
+// chargeback); the Projected cards are a single value; chargebacks/npr/families
+// are single values too.
+function summaryToKpis(summary: ProductionSummary | null, topPerformerName: string | null) {
   if (!summary) {
     return {
-      baseshop: formatMetricNumber(0),
+      familiesHelped: '0',
+      baseshopGross: formatMetricNumber(0),
+      baseshopNet: formatMetricNumber(0),
       baseshopProj: formatMetricNumber(0),
-      personal: formatMetricNumber(0),
+      personalGross: formatMetricNumber(0),
+      personalNet: formatMetricNumber(0),
       personalProj: formatMetricNumber(0),
       chargebacks: formatMetricNumber(0),
       npr: '0.0%',
@@ -111,12 +118,15 @@ function summaryToKpis(summary: ProductionPointsSummary | null, topPerformerName
   }
 
   return {
-    baseshop: formatMetricNumber(parseMetricNumber(summary.baseshop.advance)),
-    baseshopProj: formatMetricNumber(parseMetricNumber(summary.baseshop.projected)),
-    personal: formatMetricNumber(parseMetricNumber(summary.personal.advance)),
-    personalProj: formatMetricNumber(parseMetricNumber(summary.personal.projected)),
-    chargebacks: formatMetricNumber(Math.abs(parseMetricNumber(summary.baseshop.chargeback))),
-    npr: `${parseMetricNumber(summary.npr).toFixed(1)}%`,
+    familiesHelped: String(summary.families_helped ?? 0),
+    baseshopGross: formatMetricNumber(summary.baseshop.points.gross),
+    baseshopNet: formatMetricNumber(summary.baseshop.points.net),
+    baseshopProj: formatMetricNumber(summary.baseshop.projected),
+    personalGross: formatMetricNumber(summary.personal.points.gross),
+    personalNet: formatMetricNumber(summary.personal.points.net),
+    personalProj: formatMetricNumber(summary.personal.projected),
+    chargebacks: formatMetricNumber(Math.abs(summary.baseshop.chargeback)),
+    npr: `${Number(summary.npr).toFixed(1)}%`,
     topProducer: topPerformerName || '—',
   };
 }
@@ -197,7 +207,6 @@ export default function ProductionTrackerPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [nextPageNum, setNextPageNum] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [editingRow, setEditingRow] = useState<ProductionTrackerRecord | null>(null);
   const [addProductionOpen, setAddProductionOpen] = useState(false);
@@ -212,10 +221,8 @@ export default function ProductionTrackerPage() {
   const [modalNoteDraft, setModalNoteDraft] = useState('');
   const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
   // Arriving from the associate ("45K") tracker's Pending Points card
-  // (/team/production-tracker?broker_id=X): open on the same rolling window the
-  // 45K screen uses so the KPIs line up. Last 3 Months scopes advance/chargeback
-  // to the rolling window while projectedScope keeps projected (pending) all-time
-  // — mirroring the 45K tracker's "rolling 3-month advance, all-time pending".
+  // (/team/production-tracker?broker_id=X): open on the "Last 3 Months" window so
+  // the table lands on the same rolling range the 45K screen used.
   const [filters, setFilters] = useState<Record<string, string>>(() => {
     const base: Record<string, string> = { filterkey: 'all' };
     if (initialBrokerId) {
@@ -228,7 +235,7 @@ export default function ProductionTrackerPage() {
   const [dateRangePreset, setDateRangePreset] = useState<DatePresetKey>(initialBrokerId ? 'last3Months' : 'all');
   const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
   const [teamScopeUserId, setTeamScopeUserId] = useState<string | null>(initialBrokerId || null);
-  const [pointsSummary, setPointsSummary] = useState<ProductionPointsSummary | null>(null);
+  const [pointsSummary, setPointsSummary] = useState<ProductionSummary | null>(null);
   const [topPerformers, setTopPerformers] = useState<ProductionTopPerformer[]>([]);
   const [companyProducts, setCompanyProducts] = useState<ProductionCompanyProduct[]>([]);
   const [splitOptions, setSplitOptions] = useState<string[]>([]);
@@ -244,11 +251,6 @@ export default function ProductionTrackerPage() {
   const addToast = useToastStore((state) => state.addToast);
   const currentUserId = useMemo(() => getCurrentUserId(), []);
   const hasDateFilter = Boolean(filters.from_date || filters.to_date);
-  // The "Last 3 Months" preset mirrors the associate ("45K") tracker's rolling
-  // window: advance/chargeback follow the 3-month range but projected stays
-  // all-time. Ask points_summary to keep projected unscoped so both screens
-  // report the same numbers. Any other preset scopes every bucket uniformly.
-  const projectedScope: 'all' | 'range' = dateRangePreset === 'last3Months' ? 'all' : 'range';
 
   const companyProductIdByKey = useMemo(
     () =>
@@ -513,18 +515,16 @@ export default function ProductionTrackerPage() {
 
         const [refreshed, refreshedSummary, refreshedTopPerformers] = await Promise.all([
           fetchProductionTracker(query),
-          fetchProductionPointsSummary(summaryUserId, {
+          // Cards depend only on date range + team scope (no filterkey).
+          fetchProductionSummary(summaryUserId, {
             segment: toSegmentParam(teamScope),
             fromDate: filters.from_date,
             toDate: filters.to_date,
-            filterKey: filters.filterkey,
-            projectedScope,
           }),
           shouldRefreshTopPerformers ? fetchProductionTopPerformers() : Promise.resolve(null),
         ]);
 
         setRows(refreshed.results);
-        setTotalCount(refreshed.count || 0);
         setHasMore(Boolean(refreshed.next));
         setNextPageNum(2);
         setPointsSummary(refreshedSummary);
@@ -777,14 +777,12 @@ export default function ProductionTrackerPage() {
 
     const loadSummary = async () => {
       try {
-        const summary = await fetchProductionPointsSummary(
+        const summary = await fetchProductionSummary(
           teamScopeUserId ? Number(teamScopeUserId) : currentUserId,
           {
             segment: toSegmentParam(teamScope),
             fromDate: filters.from_date,
             toDate: filters.to_date,
-            filterKey: filters.filterkey,
-            projectedScope,
           }
         );
         if (isMounted) {
@@ -802,7 +800,9 @@ export default function ProductionTrackerPage() {
     return () => {
       isMounted = false;
     };
-  }, [currentUserId, teamScope, teamScopeUserId, filters.from_date, filters.to_date, filters.filterkey, projectedScope]);
+    // Cards react to date range + team scope only — intentionally NOT to
+    // filters.filterkey (the "Submitted Date" dropdown), which drives the table.
+  }, [currentUserId, teamScope, teamScopeUserId, filters.from_date, filters.to_date]);
 
   useEffect(() => {
     let isMounted = true;
@@ -860,7 +860,6 @@ export default function ProductionTrackerPage() {
         const data = await fetchProductionTracker(query);
         if (requestId !== latestRowsRequestRef.current) return;
 
-        setTotalCount(data.count || 0);
         setHasMore(Boolean(data.next));
         setNextPageNum(pageNum + 1);
 
@@ -896,14 +895,12 @@ export default function ProductionTrackerPage() {
     await loadRows(1, true, sortState, filters);
 
     try {
-      const summary = await fetchProductionPointsSummary(
+      const summary = await fetchProductionSummary(
         teamScopeUserId ? Number(teamScopeUserId) : currentUserId,
         {
           segment: toSegmentParam(teamScope),
           fromDate: filters.from_date,
           toDate: filters.to_date,
-          filterKey: filters.filterkey,
-          projectedScope,
         }
       );
       setPointsSummary(summary);
@@ -922,7 +919,7 @@ export default function ProductionTrackerPage() {
     } catch {
       setTopPerformers([]);
     }
-  }, [currentUserId, filters, hasDateFilter, loadRows, sortState, teamScope, teamScopeUserId, projectedScope]);
+  }, [currentUserId, filters, hasDateFilter, loadRows, sortState, teamScope, teamScopeUserId]);
 
   const handleCreateProduction = useCallback(async (form: AddProductionFormData) => {
     try {
@@ -1179,11 +1176,21 @@ export default function ProductionTrackerPage() {
 
       {summaryVisible && (
         <div className="grid flex-shrink-0 grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-8">
-          <ProductionKpiCard label="Families Helped" value={totalCount.toString()} info="" />
-          <ProductionKpiCard label="Baseshop Points" value={displayedKpis.baseshop} info="Direct points written and issued." />
-          <ProductionKpiCard label="Baseshop Projected Points" value={displayedKpis.baseshopProj} info="Baseshop points submitted but not fully issued yet." />
-          <ProductionKpiCard label="Personal Points" value={displayedKpis.personal} info="Your direct written and issued points." />
-          <ProductionKpiCard label="Personal Projected Points" value={displayedKpis.personalProj} info="Your submitted points that are not fully issued yet." />
+          <ProductionKpiCard label="Families Helped" value={displayedKpis.familiesHelped} info="Policies written in the selected date range." />
+          <ProductionKpiCard
+            label="Baseshop Points"
+            grossValue={displayedKpis.baseshopGross}
+            netValue={displayedKpis.baseshopNet}
+            info="Baseshop advances received in range. Gross = total received; Net = Gross minus chargebacks."
+          />
+          <ProductionKpiCard label="Baseshop Projected Points" value={displayedKpis.baseshopProj} info="Baseshop points submitted and still waiting for an advance (remaining un-received portion)." />
+          <ProductionKpiCard
+            label="Personal Points"
+            grossValue={displayedKpis.personalGross}
+            netValue={displayedKpis.personalNet}
+            info="Your advances received in range. Gross = total received; Net = Gross minus chargebacks."
+          />
+          <ProductionKpiCard label="Personal Projected Points" value={displayedKpis.personalProj} info="Your points submitted and still waiting for an advance (remaining un-received portion)." />
           <ProductionKpiCard label="Chargebacks" value={displayedKpis.chargebacks} info="Business that was declined, cancelled, or lapsed." />
           <ProductionKpiCard label="NPR" value={displayedKpis.npr} info="Net point ratio equals net issued points divided by gross submitted points." />
           <ProductionKpiCard label="Top Producer" value={displayedKpis.topProducer} info="Highest net point producer in the current baseshop view." onClick={() => setTopProducersOpen(true)} />

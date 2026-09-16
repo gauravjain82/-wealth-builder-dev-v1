@@ -238,6 +238,27 @@ export interface ProductionPointsSummary {
   npr: string;
 }
 
+// --- Production Tracker summary cards (production_summary endpoint) ---
+//
+// Distinct from ProductionPointsSummary above: these cards react ONLY to the
+// date range and the team-scope toggle, never the "Submitted Date" (filterkey)
+// dropdown. "Points" (realised advances, by paid date) carry a GROSS and NET
+// (Net = Gross − chargeback); "projected" is the single remaining-un-received
+// figure for business submitted (date_written) in range.
+export interface ProductionSummaryBucket {
+  points: { gross: number; net: number };
+  projected: number;
+  chargeback: number;
+}
+
+export interface ProductionSummary {
+  user_id: number;
+  families_helped: number;
+  personal: ProductionSummaryBucket;
+  baseshop: ProductionSummaryBucket;
+  npr: number;
+}
+
 export interface ProductionTopPerformer {
   rank: number;
   user_id: number;
@@ -802,6 +823,35 @@ export async function fetchProductionPointsSummary(
   }
   const suffix = params.toString() ? `?${params.toString()}` : '';
   return fetchJson<ProductionPointsSummary>(`${API_BASE_URL}/api/tracker/policies/points_summary/${suffix}`);
+}
+
+// Fetch the Production Tracker summary cards. Deliberately passes ONLY the date
+// range and the team scope (segment/user_id) — NOT filterkey or projected_scope
+// — so the cards stay independent of the "Submitted Date" dropdown per the
+// stakeholder requirement.
+export async function fetchProductionSummary(
+  userId?: number | null,
+  options?: {
+    fromDate?: string | null;
+    toDate?: string | null;
+    segment?: string | null;
+  }
+): Promise<ProductionSummary> {
+  const params = new URLSearchParams();
+  if (userId) {
+    params.set('user_id', String(userId));
+  }
+  if (options?.segment) {
+    params.set('segment', options.segment);
+  }
+  if (options?.fromDate) {
+    params.set('from_date', options.fromDate);
+  }
+  if (options?.toDate) {
+    params.set('to_date', options.toDate);
+  }
+  const suffix = params.toString() ? `?${params.toString()}` : '';
+  return fetchJson<ProductionSummary>(`${API_BASE_URL}/api/tracker/policies/production_summary/${suffix}`);
 }
 
 export async function fetchProductionCompanyProducts(): Promise<ProductionCompanyProduct[]> {
