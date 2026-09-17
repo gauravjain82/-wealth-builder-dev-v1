@@ -95,16 +95,13 @@ function getCountdownFromAma(row: MissionTrackerRecord): {
 }
 
 function isMissionRingEligible(row: MissionTrackerRecord): boolean {
-  if (!row.finish_1st_recruit || !row.finish_1st_savings || !row.big_event_1st) {
-    return false;
-  }
-  const countdown = getCountdownFromAma(row);
-  return Boolean(
-    countdown.hasAma &&
-    countdown.daysLeft !== null &&
-    countdown.daysLeft >= 0 &&
-    countdown.daysLeft <= 10
-  );
+  // The Mission Ring is earned once the person completes the three qualifying
+  // activities (1st recruit, personal savings, convention). We intentionally do
+  // NOT gate this on the 10-day AMA countdown: the countdown is computed from
+  // today's date, so gating on it made the ring + Upload button vanish for
+  // everyone past their window — blocking proof uploads that legitimately happen
+  // after the window closes. Once achieved, the ring shows and stays.
+  return Boolean(row.finish_1st_recruit && row.finish_1st_savings && row.big_event_1st);
 }
 
 function renderCheckbox(
