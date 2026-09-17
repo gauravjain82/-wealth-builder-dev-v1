@@ -54,7 +54,11 @@ export function PerformanceTable() {
     enabled: Boolean(userId),
   });
   const values = [
-    `${formatValue(data?.current_month_personal_recruits)} / ${formatValue((data?.current_month_team_recruits ?? 0) - (data?.current_month_personal_recruits ?? 0))}`,
+    // `current_month_team_recruits` is already the whole-BaseShop count and
+    // includes the user's own personal recruits — the same figure the home
+    // leaderboard ranks on. Do NOT subtract personal recruits here or TR
+    // under-reports by PR against every other screen.
+    `${formatValue(data?.current_month_personal_recruits)} / ${formatValue(data?.current_month_team_recruits)}`,
     `${formatValue(data?.current_month_personal_points)} / ${formatValue(data?.current_month_team_points)}`,
     formatValue(data?.current_month_licenses),
     formatValue(data?.current_month_net_licensed_count),

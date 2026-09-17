@@ -319,29 +319,29 @@ function PointsCell({
       {/* Single agent: Total/40/60 inputs; Split agents: hidden */}
       {!isSplit && (
         <div className="grid w-full grid-cols-3 gap-1 text-[10px]">
-          <div>
+          <div className="min-w-0">
             <div className="mb-1 text-gray-500 dark:text-white/60">Total</div>
             <input
-              className="h-8 w-full rounded border border-gray-300 bg-gray-50 px-2 text-xs dark:border-white/20 dark:bg-white/5"
+              className="h-8 w-full min-w-0 rounded border border-gray-300 bg-gray-50 px-2 text-xs dark:border-white/20 dark:bg-white/5"
               type="number"
               value={targetValue}
               onChange={(e) => setTargetValue(e.target.value)}
               onBlur={() => void onPatch(row, { points_target: normalizedTarget })}
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="mb-1 text-gray-500 dark:text-white/60">40%</div>
             <input
-              className="h-8 w-full rounded border border-gray-300 bg-gray-50 px-2 text-xs dark:border-white/20 dark:bg-white/5"
+              className="h-8 w-full min-w-0 rounded border border-gray-300 bg-gray-50 px-2 text-xs dark:border-white/20 dark:bg-white/5"
               type="number"
               value={forty !== null && forty !== undefined ? String(forty) : ''}
               readOnly
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="mb-1 text-gray-500 dark:text-white/60">60%</div>
             <input
-              className="h-8 w-full rounded border border-gray-300 bg-gray-50 px-2 text-xs dark:border-white/20 dark:bg-white/5"
+              className="h-8 w-full min-w-0 rounded border border-gray-300 bg-gray-50 px-2 text-xs dark:border-white/20 dark:bg-white/5"
               type="number"
               value={sixty !== null && sixty !== undefined ? String(sixty) : ''}
               readOnly
