@@ -1,6 +1,6 @@
 import { Button, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange } from '@/shared/components';
 import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
-import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronUp, IconPackage } from '@tabler/icons-react';
 
 const PRODUCTION_FILTER_KEY_OPTIONS = [
   { value: 'all', label: 'Submitted Date' },
@@ -38,7 +38,7 @@ export function ProductionTrackerToolbar({
   teamScope,
   teamScopeUserId,
   summaryVisible,
-  // onAddProduction,
+  onNewProduct,
   onExport,
   // onImport,
   onFilterKeyChange,
@@ -55,7 +55,7 @@ export function ProductionTrackerToolbar({
   teamScope: TrackerTeamScope;
   teamScopeUserId: string | null;
   summaryVisible: boolean;
-  // onAddProduction: () => void;
+  onNewProduct: () => void;
   onExport: () => void;
   // onImport: () => void;
   onFilterKeyChange: (value: string) => void;
@@ -97,6 +97,16 @@ export function ProductionTrackerToolbar({
           <Button type="button" size="sm" variant="secondary" onClick={onToggleSummary}>
             {summaryVisible ? <IconChevronUp size={15} /> : <IconChevronDown size={15} />}
             {summaryVisible ? 'Hide Summary' : 'Show Summary'}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={onNewProduct}
+            className="gap-1.5 border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300"
+            variant="outline"
+          >
+            <IconPackage size={15} />
+            New Product
           </Button>
           {/* <Button type="button" size="sm" onClick={onAddProduction}>
             Add Production

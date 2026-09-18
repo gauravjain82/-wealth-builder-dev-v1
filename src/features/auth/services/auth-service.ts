@@ -15,7 +15,19 @@ export class AuthService {
       return user;
     } catch (error) {
       console.error('Sign in error:', error);
-      throw new Error('Invalid email or password');
+
+      const message = error instanceof Error ? error.message : '';
+      const cannotReachApi =
+        error instanceof TypeError ||
+        /failed to fetch|networkerror|load failed/i.test(message);
+
+      if (cannotReachApi) {
+        throw new Error(
+          'Cannot reach the API. Add VITE_API_BASE_URL to .env (the backend URL, not the Vite localhost URL), then restart npm run dev.'
+        );
+      }
+
+      throw new Error(message || 'Invalid email or password');
     }
   }
 

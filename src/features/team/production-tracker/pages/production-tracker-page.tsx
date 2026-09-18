@@ -6,6 +6,7 @@ import { createTrackerNote, fetchTrackerNotesForUser } from '@/features/team/ser
 import { useToastStore } from '@/store';
 import { buildProductionColumns } from '../production-columns';
 import { ProductionImportModal } from '../components/production-import-modal';
+import { NewProductModal } from '../components/new-product-modal';
 import { ProductionKpiCard } from '../components/production-kpi-card';
 import { ProductionTrackerToolbar } from '../components/production-tracker-toolbar';
 import { TopProducersModal } from '../components/top-producers-modal';
@@ -22,6 +23,7 @@ import {
   createProductionRecord,
   deleteProductionRecord,
   fetchProductionCompanyProducts,
+  createProductionCompanyProduct,
   fetchProductionSummary,
   fetchProductionSplitPresets,
   fetchProductionTopPerformers,
@@ -239,6 +241,8 @@ export default function ProductionTrackerPage() {
   const [topPerformers, setTopPerformers] = useState<ProductionTopPerformer[]>([]);
   const [companyProducts, setCompanyProducts] = useState<ProductionCompanyProduct[]>([]);
   const [splitOptions, setSplitOptions] = useState<string[]>([]);
+  const [newProductOpen, setNewProductOpen] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
   const [topProducersOpen, setTopProducersOpen] = useState(false);
   const [summaryVisible, setSummaryVisible] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -938,6 +942,34 @@ export default function ProductionTrackerPage() {
     }
   }, [addToast, buildCreatePayload, refreshCurrentView]);
 
+  const handleCreateProduct = useCallback(
+    async (payload: { company_name: string; product_name: string; multiplier: number }) => {
+      try {
+        setSavingProduct(true);
+        const created = await createProductionCompanyProduct(payload);
+        try {
+          const refreshed = await fetchProductionCompanyProducts();
+          setCompanyProducts(refreshed);
+        } catch {
+          setCompanyProducts((prev) => {
+            if (prev.some((item) => item.id === created.id)) return prev;
+            return [...prev, created];
+          });
+        }
+        setNewProductOpen(false);
+        addToast({ type: 'success', message: 'Product added.' });
+      } catch (err) {
+        addToast({
+          type: 'error',
+          message: err instanceof Error ? err.message : 'Failed to add product.',
+        });
+      } finally {
+        setSavingProduct(false);
+      }
+    },
+    [addToast]
+  );
+
   const handleExportCsv = useCallback(async () => {
     try {
       setExporting(true);
@@ -1159,7 +1191,7 @@ export default function ProductionTrackerPage() {
         teamScope={teamScope}
         teamScopeUserId={teamScopeUserId}
         summaryVisible={summaryVisible}
-        // onAddProduction={() => setAddProductionOpen(true)}
+        onNewProduct={() => setNewProductOpen(true)}
         onExport={() => void handleExportCsv()}
         // onImport={() => {
         //   setImportOpen(true);
@@ -1224,6 +1256,16 @@ export default function ProductionTrackerPage() {
           </div>
         )}
       </div>
+
+      <NewProductModal
+        open={newProductOpen}
+        saving={savingProduct}
+        products={companyProducts}
+        onClose={() => {
+          if (!savingProduct) setNewProductOpen(false);
+        }}
+        onSubmit={handleCreateProduct}
+      />
 
       <AddProductionModal
         open={addProductionOpen}
