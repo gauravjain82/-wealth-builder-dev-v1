@@ -39,18 +39,18 @@ export function ProductionKpiCard({
         </Tooltip>
       </div>
       {showGrossNet ? (
-        <div className="mt-2 flex items-stretch justify-center divide-x divide-amber-200 dark:divide-[#6d5930]">
-          <div className="min-w-0 flex-1 px-1.5">
-            <div className="text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:text-[#ddc67a]">Gross</div>
-            <div className="truncate text-sm font-extrabold tabular-nums text-amber-900 dark:text-white" title={grossValue}>{grossValue}</div>
+        <div className="mt-2 space-y-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:text-[#ddc67a]">Gross</span>
+            <span className="text-sm font-extrabold tabular-nums text-amber-900 dark:text-white">{grossValue}</span>
           </div>
-          <div className="min-w-0 flex-1 px-1.5">
-            <div className="text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:text-[#ddc67a]">Net</div>
-            <div className="truncate text-sm font-extrabold tabular-nums text-amber-900 dark:text-white" title={netValue}>{netValue}</div>
+          <div className="flex items-baseline justify-between gap-2 border-t border-amber-200 pt-1 dark:border-[#6d5930]">
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:text-[#ddc67a]">Net</span>
+            <span className="text-sm font-extrabold tabular-nums text-amber-900 dark:text-white">{netValue}</span>
           </div>
         </div>
       ) : (
-        <div className="mt-2 truncate text-lg font-extrabold tabular-nums text-amber-900 dark:text-white" title={value}>{value}</div>
+        <div className="mt-2 text-lg font-extrabold tabular-nums text-amber-900 dark:text-white">{value}</div>
       )}
     </div>
   );
