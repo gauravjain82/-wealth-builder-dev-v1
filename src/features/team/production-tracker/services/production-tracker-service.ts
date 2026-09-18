@@ -2,7 +2,7 @@ import {
   PRODUCTION_MODAL_DELIVERY_OPTIONS,
   PRODUCTION_TABLE_DELIVERY_OPTIONS,
 } from '../production-constants';
-import { fetchCachedReferenceData } from '@/infrastructure/query/reference-data';
+import { fetchCachedReferenceData, invalidateReferenceData } from '@/infrastructure/query/reference-data';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -685,10 +685,26 @@ export type UpdateProductionPayload = Partial<CreateProductionPayload>;
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { headers: getAuthHeaders() });
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `Request failed: ${response.statusText}`);
+    throw new Error(await readErrorMessage(response, `Request failed: ${response.statusText}`));
   }
   return (await response.json()) as T;
+}
+
+async function readErrorMessage(response: Response, fallback: string): Promise<string> {
+  const text = await response.text();
+  if (!text) return fallback;
+  try {
+    const data = JSON.parse(text) as Record<string, unknown>;
+    if (typeof data.detail === 'string') return data.detail;
+    if (Array.isArray(data.detail)) return data.detail.join(', ');
+    for (const value of Object.values(data)) {
+      if (Array.isArray(value) && typeof value[0] === 'string') return value[0];
+      if (typeof value === 'string') return value;
+    }
+  } catch {
+    // Use the raw body when it is not JSON.
+  }
+  return text;
 }
 
 export async function createProductionRecord(payload: CreateProductionPayload): Promise<ProductionTrackerRecord> {
@@ -861,6 +877,37 @@ export async function fetchProductionCompanyProducts(): Promise<ProductionCompan
     >(`${API_BASE_URL}/api/tracker/company-products/`);
     return Array.isArray(data) ? data : ((data as { results: ProductionCompanyProduct[] }).results ?? []);
   });
+}
+
+export interface CreateCompanyProductPayload {
+  company_name: string;
+  product_name: string;
+  multiplier: number;
+  is_active?: boolean;
+  effective_from?: string | null;
+  effective_to?: string | null;
+}
+
+export async function createProductionCompanyProduct(
+  payload: CreateCompanyProductPayload
+): Promise<ProductionCompanyProduct> {
+  const response = await fetch(`${API_BASE_URL}/api/tracker/company-products/`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      company_name: payload.company_name.trim(),
+      product_name: payload.product_name.trim(),
+      multiplier: payload.multiplier,
+      is_active: payload.is_active ?? true,
+      effective_from: payload.effective_from ?? null,
+      effective_to: payload.effective_to ?? null,
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response, 'Failed to create product.'));
+  }
+  await invalidateReferenceData('production-company-products');
+  return (await response.json()) as ProductionCompanyProduct;
 }
 
 export async function fetchProductionSplitPresets(): Promise<ProductionSplitPreset[]> {

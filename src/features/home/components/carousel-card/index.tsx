@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Play, Pause, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { isDirectVideoUrl } from '@/features/home/utils/media';
 import './carousel-card.css';
 
 interface CarouselCardProps {
@@ -96,13 +97,23 @@ export function CanvaVideoCard({ title, videoUrl }: CanvaVideoCardProps) {
       </CardHeader>
       <CardContent>
         <div className="carousel-card__image-container">
-          <iframe
-            src={videoUrl}
-            title={`${title} video`}
-            className="carousel-card__video"
-            allow="autoplay; fullscreen"
-            allowFullScreen
-          />
+          {isDirectVideoUrl(videoUrl) ? (
+            <video
+              src={videoUrl}
+              className="carousel-card__video"
+              controls
+              playsInline
+              title={`${title} video`}
+            />
+          ) : (
+            <iframe
+              src={videoUrl}
+              title={`${title} video`}
+              className="carousel-card__video"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+            />
+          )}
         </div>
       </CardContent>
     </Card>
