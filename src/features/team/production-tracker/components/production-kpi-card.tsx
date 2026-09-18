@@ -40,17 +40,17 @@ export function ProductionKpiCard({
       </div>
       {showGrossNet ? (
         <div className="mt-2 flex items-stretch justify-center divide-x divide-amber-200 dark:divide-[#6d5930]">
-          <div className="px-3">
+          <div className="min-w-0 flex-1 px-1.5">
             <div className="text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:text-[#ddc67a]">Gross</div>
-            <div className="text-base font-extrabold text-amber-900 dark:text-white">{grossValue}</div>
+            <div className="truncate text-sm font-extrabold tabular-nums text-amber-900 dark:text-white" title={grossValue}>{grossValue}</div>
           </div>
-          <div className="px-3">
+          <div className="min-w-0 flex-1 px-1.5">
             <div className="text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:text-[#ddc67a]">Net</div>
-            <div className="text-base font-extrabold text-amber-900 dark:text-white">{netValue}</div>
+            <div className="truncate text-sm font-extrabold tabular-nums text-amber-900 dark:text-white" title={netValue}>{netValue}</div>
           </div>
         </div>
       ) : (
-        <div className="mt-2 text-lg font-extrabold text-amber-900 dark:text-white">{value}</div>
+        <div className="mt-2 truncate text-lg font-extrabold tabular-nums text-amber-900 dark:text-white" title={value}>{value}</div>
       )}
     </div>
   );
