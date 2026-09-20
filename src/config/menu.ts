@@ -97,6 +97,7 @@ const MENU_ITEMS = {
   LEVEL_PERMISSIONS: { label: 'Level Permissions', icon: '📊', path: '/admin/level-permissions' } as MenuItem,
   FILE_VAULT_ADMIN: { label: 'File Vault', icon: '📁', path: '/admin/file-vault' } as MenuItem,
   TRAINING_CENTER_ADMIN: { label: 'Training Center', icon: '🎓', path: '/admin/training-center' } as MenuItem,
+  HOMEPAGE_ADMIN: { label: 'Homepage', icon: '🏠', path: '/admin/homepage' } as MenuItem,
 };
 
 /**
@@ -455,6 +456,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.FUNCTIONS,
         MENU_ITEMS.FILE_VAULT_ADMIN,
         MENU_ITEMS.TRAINING_CENTER_ADMIN,
+        MENU_ITEMS.HOMEPAGE_ADMIN,
         MENU_ITEMS.USER_PERMISSIONS,
         MENU_ITEMS.LEVEL_PERMISSIONS,
       ],
@@ -539,6 +541,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.FUNCTIONS,
         MENU_ITEMS.FILE_VAULT_ADMIN,
         MENU_ITEMS.TRAINING_CENTER_ADMIN,
+        MENU_ITEMS.HOMEPAGE_ADMIN,
         MENU_ITEMS.USER_PERMISSIONS,
         MENU_ITEMS.LEVEL_PERMISSIONS,
       ],
