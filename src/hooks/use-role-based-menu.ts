@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useAuth } from '../features/auth/hooks/use-auth';
 import { useBuilderMyAccess } from '../features/builder-ai/hooks/use-builder-ai';
+import { useMisalignmentsAccess } from '../features/admin/misalignments/hooks/use-misalignments';
 import { roleToPlan } from '../core/constants/roles';
 import { getMenuForUser, type MenuItem } from '../config/menu';
 
@@ -18,18 +19,34 @@ export function useRoleBasedMenu(): MenuItem[] {
   // group, Builders get a trimmed one (Baseshop + Invitations). `is_owner`
   // distinguishes the two.
   const isBuilderAiOwner = Boolean(builderAccess?.is_owner);
+  // Data Integrity reports are gated per-user by the backend, independent of plan.
+  const { data: misalignmentsAccess } = useMisalignmentsAccess();
+  const canAccessMisalignments = Boolean(misalignmentsAccess?.can_view);
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
     const hasPromotionAccess = Boolean(user?.hasPromotionAccess);
     if (!primaryRole)
-      return getMenuForUser(null, hasPromotionAccess, canAccessBuilderAI, isBuilderAiOwner);
+      return getMenuForUser(
+        null,
+        hasPromotionAccess,
+        canAccessBuilderAI,
+        isBuilderAiOwner,
+        canAccessMisalignments
+      );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
       roleToPlan(normalizedRole),
       hasPromotionAccess,
       canAccessBuilderAI,
-      isBuilderAiOwner
+      isBuilderAiOwner,
+      canAccessMisalignments
     );
-  }, [user?.hasPromotionAccess, user?.roles, canAccessBuilderAI, isBuilderAiOwner]);
+  }, [
+    user?.hasPromotionAccess,
+    user?.roles,
+    canAccessBuilderAI,
+    isBuilderAiOwner,
+    canAccessMisalignments,
+  ]);
 }

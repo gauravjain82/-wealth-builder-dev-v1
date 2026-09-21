@@ -66,6 +66,17 @@ const MENU_ITEMS = {
   BUILDER_AI_INVITATIONS: { label: 'Invitations', icon: '✉️', path: '/builder-ai/invitations' } as MenuItem,
   BUILDER_AI_REPORTING: { label: 'Reporting', icon: '📈', path: '/builder-ai/reporting' } as MenuItem,
   BUILDER_AI_BULLETIN: { label: 'Bulletin', icon: '🏆', path: '/builder-ai/bulletin' } as MenuItem,
+  // Data Integrity (admin-only diagnostic reports; gated per-user by misalignments:read)
+  LEADER_MISALIGNMENTS: {
+    label: 'Leader Misalignments',
+    icon: '⚠️',
+    path: '/admin/data-integrity/leader-misalignments',
+  } as MenuItem,
+  POLICY_MISALIGNMENTS: {
+    label: 'Policy Misalignments',
+    icon: '📋',
+    path: '/admin/data-integrity/policy-misalignments',
+  } as MenuItem,
   LICENSING_TRACKER: { label: 'Licensing Tracker', icon: '📝', path: '/team/licensing-tracker' } as MenuItem,
   PRODUCTION_TRACKER: { label: 'Production Tracker', icon: '💰', path: '/team/production-tracker' } as MenuItem,
   TEAM_PROMOTION: { label: 'Team Promotion Tracker', icon: '📈', path: '/promotion/team' } as MenuItem,
@@ -115,6 +126,18 @@ const BUILDER_AI_GROUP: MenuItem = {
     MENU_ITEMS.BUILDER_AI_REPORTING,
     MENU_ITEMS.BUILDER_AI_BULLETIN,
   ],
+};
+
+/**
+ * Data Integrity group — admin-only diagnostic reports. Like Builder AI, this
+ * is NOT plan-based: it is injected by `getMenuForUser` only when the backend
+ * `/api/misalignments/my-access/` endpoint reports `can_view: true` (i.e. the
+ * user was granted `misalignments:read` in the access console).
+ */
+const DATA_INTEGRITY_GROUP: MenuItem = {
+  label: 'Data Integrity',
+  icon: '🩺',
+  children: [MENU_ITEMS.LEADER_MISALIGNMENTS, MENU_ITEMS.POLICY_MISALIGNMENTS],
 };
 
 /**
@@ -613,7 +636,8 @@ export function getMenuForUser(
   canAccessBuilderAI: boolean = false,
   // Company Owner & Builder are separate things. Defaults to `true` so any
   // caller that doesn't distinguish the two keeps the full owner menu.
-  isBuilderAiOwner: boolean = true
+  isBuilderAiOwner: boolean = true,
+  canAccessMisalignments: boolean = false
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -637,6 +661,15 @@ export function getMenuForUser(
 
     const homeIdx = menuItems.findIndex((item) => item.label === MENU_ITEMS.HOME.label);
     menuItems.splice(homeIdx >= 0 ? homeIdx + 1 : 0, 0, builderAiGroup);
+  }
+
+  // Data Integrity is gated by backend access (misalignments:read), not by
+  // plan — inject it only for users the backend authorizes.
+  if (
+    canAccessMisalignments &&
+    !menuItems.some((item) => item.label === DATA_INTEGRITY_GROUP.label)
+  ) {
+    menuItems.push(cloneMenuItems([DATA_INTEGRITY_GROUP])[0]);
   }
 
   if (normalizedPlan === Plan.NewAgent && !hasPromotionAccess) {

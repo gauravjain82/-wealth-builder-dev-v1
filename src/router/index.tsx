@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './protected-route';
 import { AdminRoute } from './admin-route';
 import { BuilderAiRoute } from './builder-ai-route';
+import { MisalignmentsRoute } from './misalignments-route';
 import { PublicRoute } from './public-route';
 import { RouteErrorFallback } from './route-error-boundary';
 import { RootRedirect } from './root-redirect.tsx';
@@ -40,6 +41,12 @@ const BuilderAiBaseshopPage = lazy(() => import('@/features/builder-ai/pages/bas
 const BuilderAiInvitationsPage = lazy(() => import('@/features/builder-ai/pages/invitations-page'));
 const BuilderAiReportingPage = lazy(() => import('@/features/builder-ai/pages/reporting-page'));
 const BuilderAiBulletinPage = lazy(() => import('@/features/builder-ai/pages/bulletin-page'));
+const LeaderMisalignmentsPage = lazy(
+  () => import('@/features/admin/misalignments/pages/leader-misalignments-page')
+);
+const PolicyMisalignmentsPage = lazy(
+  () => import('@/features/admin/misalignments/pages/policy-misalignments-page')
+);
 const PublicDailySixPage = lazy(() => import('@/features/team/builders/pages/public-daily-six-page'));
 const AddGoalsPage = lazy(() => import('@/features/team/associate-tracker/pages/add-goals-page'));
 const LicensingTrackerPage = lazy(() => import('@/features/team/licensing-tracker/pages/licensing-tracker-page'));
@@ -239,6 +246,16 @@ const router = createBrowserRouter([
         // Owner-only bulletin.
         path: 'builder-ai/bulletin',
         element: <BuilderAiRoute ownerOnly>{lazyLoad(BuilderAiBulletinPage)}</BuilderAiRoute>,
+      },
+      {
+        // Admin-only Data Integrity report; gated per-user by misalignments:read.
+        path: 'admin/data-integrity/leader-misalignments',
+        element: <MisalignmentsRoute>{lazyLoad(LeaderMisalignmentsPage)}</MisalignmentsRoute>,
+      },
+      {
+        // Admin-only Data Integrity report; gated per-user by misalignments:read.
+        path: 'admin/data-integrity/policy-misalignments',
+        element: <MisalignmentsRoute>{lazyLoad(PolicyMisalignmentsPage)}</MisalignmentsRoute>,
       },
       {
         path: 'insight-center',
