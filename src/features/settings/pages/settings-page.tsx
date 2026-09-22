@@ -21,12 +21,15 @@ import {
   fetchTelegramLinkStatus,
   createTelegramLinkToken,
   unlinkTelegramAccount,
+  createBillingPortalSession,
+  fetchMyPaymentHistory,
   type CurrentUserDetails,
   type PaymentProduct,
   type RoleOption,
   type SubscriptionApprovalRequestResponse,
   type TelegramLinkStatus,
   type TelegramLinkTokenResponse,
+  type PaymentHistoryResponse,
 } from '../services/settings-billing-service';
 import { CalendarSyncSection } from '@/features/calendar-sync/components/calendar-sync-section';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
@@ -296,6 +299,18 @@ function formatDate(value?: string | null): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString();
+}
+
+function formatMoney(amountInCents?: number | null, currency?: string | null): string {
+  if (amountInCents == null) return '-';
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: (currency || 'usd').toUpperCase(),
+    }).format(amountInCents / 100);
+  } catch {
+    return `${(amountInCents / 100).toFixed(2)} ${(currency || 'USD').toUpperCase()}`;
+  }
 }
 
 function ApprovalStatusBadge({ status }: { status: string }) {
@@ -721,6 +736,8 @@ export default function SettingsPage() {
   const [connectingTelegram, setConnectingTelegram] = useState(false);
   const [disconnectingTelegram, setDisconnectingTelegram] = useState(false);
   const [telegramLink, setTelegramLink] = useState<TelegramLinkTokenResponse | null>(null);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryResponse | null>(null);
+  const [openingPortal, setOpeningPortal] = useState(false);
   const [profileEmail, setProfileEmail] = useState('');
   const [profileForm, setProfileForm] = useState<ProfileFormState>(DEFAULT_PROFILE_FORM);
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
@@ -775,6 +792,14 @@ export default function SettingsPage() {
       } catch {
         // User may not be an approver
         setApprovalRequests([]);
+      }
+
+      try {
+        const history = await fetchMyPaymentHistory();
+        setPaymentHistory(history);
+      } catch {
+        // History may be permission-restricted or unavailable; portal button stays hidden.
+        setPaymentHistory(null);
       }
 
       try {
@@ -1057,6 +1082,32 @@ export default function SettingsPage() {
   // Use only photo_url_thumb for the profile picture
   const avatarUrl = userDetails?.profile?.photo_url_thumb || null;
   const avatarSrc = avatarUrl;//avatarUrl ? `${avatarUrl}${avatarUrl.includes('?') ? '&' : '?'}v=${avatarVersion}` : null;
+
+  const hasBillingAccount = Boolean(
+    paymentHistory && (paymentHistory.summary.subscription_count > 0 || paymentHistory.invoices.length > 0)
+  );
+  const latestInvoice = paymentHistory?.invoices?.[0] ?? null;
+  const activeSubscription =
+    paymentHistory?.subscriptions?.find((s) => ['active', 'trialing'].includes((s.status || '').toLowerCase()))
+    ?? paymentHistory?.subscriptions?.[0]
+    ?? null;
+
+  const handleOpenBillingPortal = async () => {
+    try {
+      setOpeningPortal(true);
+      const { url } = await createBillingPortalSession(window.location.href);
+      if (!url) {
+        throw new Error('The billing portal is unavailable right now.');
+      }
+      window.location.href = url;
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to open the billing portal.',
+      });
+      setOpeningPortal(false);
+    }
+  };
 
   const handleUploadPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -1440,6 +1491,57 @@ export default function SettingsPage() {
             </Elements>
           )}
         </div>
+
+        {hasBillingAccount ? (
+        <div className="glass-section" id="settings-manage-subscription">
+          <div className="section-header">
+            <h3 className="section-title">
+              <span className="title-icon">🔧</span>
+              Manage Subscription
+            </h3>
+          </div>
+
+          <div className="ticket-info">
+            <div className="ticket-detail">
+              <span className="detail-label">Current plan</span>
+              <span className="detail-value">
+                {activeSubscription?.drives_role_name || userDetails?.roles?.[0] || '—'}
+              </span>
+            </div>
+            <div className="ticket-detail">
+              <span className="detail-label">Status</span>
+              <span className="detail-value">
+                {(paymentHistory?.summary.latest_subscription_status || '—').replace(/_/g, ' ')}
+                {activeSubscription?.cancel_at_period_end ? ' (cancels at period end)' : ''}
+              </span>
+            </div>
+            <div className="ticket-detail">
+              <span className="detail-label">Last payment</span>
+              <span className="detail-value">
+                {latestInvoice
+                  ? `${formatMoney(latestInvoice.amount_paid, latestInvoice.currency)} · ${formatDate(latestInvoice.created_at)}`
+                  : '—'}
+              </span>
+            </div>
+          </div>
+
+          <p className="settings-hint">
+            Update your card, cancel your subscription, or view your full payment history in our
+            secure billing portal.
+          </p>
+
+          <div className="connected-account-actions">
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={handleOpenBillingPortal}
+              disabled={openingPortal}
+            >
+              {openingPortal ? 'Opening…' : 'Manage Billing'}
+            </button>
+          </div>
+        </div>
+        ) : null}
 
         {currentPlan !== Plan.Admin ? (
         <div className="glass-section">

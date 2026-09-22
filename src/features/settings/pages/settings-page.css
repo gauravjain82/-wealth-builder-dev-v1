@@ -341,6 +341,17 @@
   line-height: 1.6;
 }
 
+.settings-profile-page .settings-hint {
+  color: rgba(255, 255, 255, 0.7);
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+html:not(.dark) .settings-profile-page .settings-hint {
+  color: rgba(0, 0, 0, 0.6);
+}
+
 .settings-profile-page .upgrade-info {
   margin-bottom: 16px;
 }

@@ -101,6 +101,54 @@ export interface SubscriptionApprovalRequestResponse {
   updated_at: string;
 }
 
+export interface BillingPortalSessionResponse {
+  url: string;
+}
+
+export interface PaymentHistorySummary {
+  subscription_count: number;
+  active_subscription_count: number;
+  invoice_count: number;
+  paid_invoice_count: number;
+  total_amount_paid: number;
+  total_amount_due: number;
+  latest_subscription_status: string;
+  latest_invoice_status: string;
+}
+
+export interface PaymentHistoryInvoice {
+  id: number;
+  status: string;
+  paid: boolean;
+  currency: string | null;
+  amount_due: number | null;
+  amount_paid: number | null;
+  amount_remaining: number | null;
+  hosted_invoice_url: string | null;
+  invoice_pdf: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  created_at: string;
+}
+
+export interface PaymentHistorySubscription {
+  id: number;
+  status: string;
+  stripe_product_id: string;
+  stripe_price_id: string;
+  drives_role_name?: string | null;
+  cancel_at_period_end?: boolean;
+  current_period_end?: string | null;
+  created_at: string;
+}
+
+export interface PaymentHistoryResponse {
+  user: { id: number; username: string; full_name: string; old_id: string; email: string | null };
+  summary: PaymentHistorySummary;
+  subscriptions: PaymentHistorySubscription[];
+  invoices: PaymentHistoryInvoice[];
+}
+
 export interface TelegramLinkStatus {
   linked: boolean;
   telegram_username?: string | null;
@@ -226,6 +274,36 @@ export async function createSetupIntent(oldId: string): Promise<SetupIntentRespo
   }
 
   return (await response.json()) as SetupIntentResponse;
+}
+
+export async function fetchMyPaymentHistory(): Promise<PaymentHistoryResponse> {
+  const response = await fetch(`${getApiBaseUrl()}/api/payments/history/`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const message = await parseError(response, 'Failed to load billing history.');
+    throw new Error(message);
+  }
+
+  return (await response.json()) as PaymentHistoryResponse;
+}
+
+export async function createBillingPortalSession(
+  returnUrl: string
+): Promise<BillingPortalSessionResponse> {
+  const response = await fetch(`${getApiBaseUrl()}/api/payments/billing-portal-sessions/`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ return_url: returnUrl }),
+  });
+
+  if (!response.ok) {
+    const message = await parseError(response, 'Failed to open the billing portal.');
+    throw new Error(message);
+  }
+
+  return (await response.json()) as BillingPortalSessionResponse;
 }
 
 export async function createSubscriptionApprovalRequest(
