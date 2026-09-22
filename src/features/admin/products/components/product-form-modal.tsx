@@ -155,7 +155,10 @@ export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFor
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-white/80">
-              Effective from
+              Effective from{' '}
+              <span className="font-normal text-slate-400 dark:text-white/40">
+                (optional)
+              </span>
             </label>
             <Input
               type="date"
@@ -165,7 +168,10 @@ export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFor
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-white/80">
-              Effective to
+              Effective to{' '}
+              <span className="font-normal text-slate-400 dark:text-white/40">
+                (optional)
+              </span>
             </label>
             <Input
               type="date"
