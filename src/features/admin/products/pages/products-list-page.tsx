@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Button, ConfirmationDialog } from '@/shared/components';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, ConfirmationDialog, Input, Select } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { ProductFormModal } from '../components/product-form-modal';
 import { ProductHistoryModal } from '../components/product-history-modal';
@@ -9,7 +9,11 @@ import {
   deactivateProduct,
   listProducts,
 } from '../services/products-service';
-import type { Product } from '../types';
+import { COMPANY_CHOICES, PRODUCT_TYPE_CHOICES, productTypeLabel, type Product } from '../types';
+
+type StatusFilter = 'all' | 'active' | 'inactive';
+/** Sentinel type-filter value matching legacy products with no type set. */
+const UNTYPED = '__untyped__';
 
 export default function ProductsListPage() {
   const { addToast } = useToastStore();
@@ -19,6 +23,12 @@ export default function ProductsListPage() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Client-side search + filters (the catalog is small and loaded whole).
+  const [search, setSearch] = useState('');
+  const [companyFilter, setCompanyFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -43,6 +53,32 @@ export default function ProductsListPage() {
   useEffect(() => {
     void loadProducts();
   }, [loadProducts]);
+
+  const filteredProducts = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return products.filter((product) => {
+      if (companyFilter && product.company_name !== companyFilter) return false;
+      if (typeFilter === UNTYPED) {
+        if (product.product_type) return false;
+      } else if (typeFilter && product.product_type !== typeFilter) {
+        return false;
+      }
+      if (statusFilter === 'active' && !product.is_active) return false;
+      if (statusFilter === 'inactive' && product.is_active) return false;
+      if (
+        term &&
+        !`${product.product_name} ${product.product_description} ${product.company_name}`
+          .toLowerCase()
+          .includes(term)
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [products, search, companyFilter, typeFilter, statusFilter]);
+
+  const hasActiveFilters =
+    !!search || !!companyFilter || !!typeFilter || statusFilter !== 'all';
 
   async function handleToggleActive() {
     if (!toggleTarget) return;
@@ -90,12 +126,84 @@ export default function ProductsListPage() {
         )}
       </div>
 
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="min-w-[220px] flex-1">
+          <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-white/50">
+            Search
+          </label>
+          <Input
+            placeholder="Name, description or company…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-white/50">
+            Company
+          </label>
+          <Select value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)}>
+            <option value="">All companies</option>
+            {COMPANY_CHOICES.map((company) => (
+              <option key={company} value={company}>
+                {company}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-white/50">
+            Type
+          </label>
+          <Select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+            <option value="">All types</option>
+            {PRODUCT_TYPE_CHOICES.map((choice) => (
+              <option key={choice.value} value={choice.value}>
+                {choice.label}
+              </option>
+            ))}
+            <option value={UNTYPED}>Untyped</option>
+          </Select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-white/50">
+            Status
+          </label>
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          >
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </Select>
+        </div>
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSearch('');
+              setCompanyFilter('');
+              setTypeFilter('');
+              setStatusFilter('all');
+            }}
+          >
+            Clear
+          </Button>
+        )}
+      </div>
+
+      <div className="mb-2 text-xs text-slate-500 dark:text-white/50">
+        Showing {filteredProducts.length} of {products.length}
+      </div>
+
       <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-white/5 dark:text-white/50">
             <tr>
               <th className="px-4 py-3">Company</th>
               <th className="px-4 py-3">Product</th>
+              <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3 text-right">Multiplier</th>
               <th className="px-4 py-3 text-right">Policies</th>
               <th className="px-4 py-3">Status</th>
@@ -105,19 +213,26 @@ export default function ProductsListPage() {
           <tbody className="divide-y divide-slate-100 dark:divide-white/5">
             {loading && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-500 dark:text-white/50">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-500 dark:text-white/50">
                   Loading…
                 </td>
               </tr>
             )}
             {!loading && products.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-500 dark:text-white/50">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-500 dark:text-white/50">
                   No products yet.
                 </td>
               </tr>
             )}
-            {products.map((product) => (
+            {!loading && products.length > 0 && filteredProducts.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-500 dark:text-white/50">
+                  No products match your filters.
+                </td>
+              </tr>
+            )}
+            {filteredProducts.map((product) => (
               <tr key={product.id} className="text-slate-800 dark:text-white/80">
                 <td className="px-4 py-3">{product.company_name}</td>
                 <td className="px-4 py-3 font-medium">
@@ -128,6 +243,7 @@ export default function ProductsListPage() {
                     </span>
                   )}
                 </td>
+                <td className="px-4 py-3">{productTypeLabel(product.product_type)}</td>
                 <td className="px-4 py-3 text-right tabular-nums">
                   ×{Number(product.multiplier)}
                 </td>

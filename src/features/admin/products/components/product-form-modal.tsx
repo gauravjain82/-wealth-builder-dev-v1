@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button, Checkbox, Input, Modal, Select, Textarea } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { createProduct, updateProduct } from '../services/products-service';
-import { COMPANY_CHOICES, type Product } from '../types';
+import { COMPANY_CHOICES, PRODUCT_TYPE_CHOICES, type Product } from '../types';
 
 interface ProductFormModalProps {
   open: boolean;
@@ -18,6 +18,7 @@ export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFor
   const { addToast } = useToastStore();
   const [companyName, setCompanyName] = useState(DEFAULT_COMPANY);
   const [productName, setProductName] = useState('');
+  const [productType, setProductType] = useState('');
   const [description, setDescription] = useState('');
   const [multiplier, setMultiplier] = useState('1');
   const [isActive, setIsActive] = useState(true);
@@ -29,6 +30,7 @@ export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFor
     if (!open) return;
     setCompanyName(editing?.company_name ?? DEFAULT_COMPANY);
     setProductName(editing?.product_name ?? '');
+    setProductType(editing?.product_type ?? '');
     setDescription(editing?.product_description ?? '');
     setMultiplier(editing?.multiplier ?? '1');
     setIsActive(editing?.is_active ?? true);
@@ -55,10 +57,16 @@ export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFor
       addToast({ message: 'Effective-to must be on or after effective-from', type: 'error' });
       return;
     }
+    // Type is required for new products; existing (legacy) products may stay untyped.
+    if (!editing && !productType) {
+      addToast({ message: 'Product type is required', type: 'error' });
+      return;
+    }
 
     const payload = {
       company_name: companyName,
       product_name: trimmedName,
+      product_type: productType,
       product_description: description.trim(),
       multiplier,
       is_active: isActive,
@@ -117,6 +125,21 @@ export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFor
             value={productName}
             onChange={(e) => setProductName(e.target.value)}
           />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-white/80">
+            Type{' '}
+            {!editing && <span className="font-normal text-red-500">*</span>}
+          </label>
+          <Select value={productType} onChange={(e) => setProductType(e.target.value)}>
+            <option value="">— Select type —</option>
+            {PRODUCT_TYPE_CHOICES.map((choice) => (
+              <option key={choice.value} value={choice.value}>
+                {choice.label}
+              </option>
+            ))}
+          </Select>
         </div>
 
         <div>

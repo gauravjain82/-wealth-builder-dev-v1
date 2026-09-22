@@ -32,6 +32,17 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+/** Product type options (match CompanyProduct.ProductType on the backend). */
+export const PRODUCT_TYPE_CHOICES: readonly { value: string; label: string }[] = [
+  { value: 'LIFE_INSURANCE', label: 'Life Insurance' },
+  { value: 'ANNUITY', label: 'Annuity' },
+];
+
+/** Human label for a stored product_type code ('' → em dash). */
+export function productTypeLabel(value: string): string {
+  return PRODUCT_TYPE_CHOICES.find((choice) => choice.value === value)?.label ?? '—';
+}
+
 /** Capability flags from GET /api/tracker/products/my-access/. */
 export interface ProductsAccess {
   can_view: boolean;
@@ -46,6 +57,9 @@ export interface Product {
   id: number;
   company_name: string;
   product_name: string;
+  /** '' when untyped (legacy products). */
+  product_type: string;
+  product_type_display: string;
   product_description: string;
   multiplier: string;
   is_active: boolean;
@@ -61,6 +75,7 @@ export interface Product {
 export interface CreateProductPayload {
   company_name: string;
   product_name: string;
+  product_type: string;
   product_description: string;
   multiplier: string;
   is_active: boolean;
