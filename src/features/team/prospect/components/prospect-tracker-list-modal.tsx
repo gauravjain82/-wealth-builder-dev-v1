@@ -833,7 +833,11 @@ export function ProspectTrackerListModal({
         },
       });
 
-      const activated = await activateProspectWithAgencyCode(addAgencyCodeFor.id, formData.agencyCode.trim());
+      const activated = await activateProspectWithAgencyCode(
+        addAgencyCodeFor.id,
+        formData.agencyCode.trim(),
+        formData.level,
+      );
       const updated: Prospect = {
         ...updatedDetails,
         ...activated,

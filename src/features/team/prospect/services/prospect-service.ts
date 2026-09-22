@@ -253,13 +253,16 @@ export async function saveProspectCallLog(
 
 export async function activateProspectWithAgencyCode(
   prospectId: number,
-  agencyCode: string
+  agencyCode: string,
+  levelId?: number | null
 ): Promise<Prospect> {
   const response = await fetch(`${API_BASE_URL}/api/accounts/users/${prospectId}/activate/`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify({
       agency_code: agencyCode,
+      // The backend requires a level whenever an agency code is assigned.
+      level_id: levelId ?? undefined,
       status: 'ACTIVE',
     }),
   });
@@ -268,7 +271,12 @@ export async function activateProspectWithAgencyCode(
     let message = `Failed to add agency code: ${response.statusText}`;
     try {
       const data = await response.json();
-      message = data?.detail || data?.agency_code?.[0] || data?.message || message;
+      message =
+        data?.detail ||
+        data?.agency_code?.[0] ||
+        data?.level_id?.[0] ||
+        data?.message ||
+        message;
     } catch {
       // Keep fallback message.
     }

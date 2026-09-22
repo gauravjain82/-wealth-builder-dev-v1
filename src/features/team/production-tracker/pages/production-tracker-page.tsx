@@ -80,7 +80,7 @@ function parseMetricNumber(value: number | string | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function formatMetricNumber(value: number, digits = 2): string {
+function formatMetricNumber(value: number, digits = 0): string {
   return value.toLocaleString(undefined, {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
@@ -112,7 +112,7 @@ function summaryToKpis(summary: ProductionSummary | null, topPerformerName: stri
       personalNet: formatMetricNumber(0),
       personalProj: formatMetricNumber(0),
       chargebacks: formatMetricNumber(0),
-      npr: '0.0%',
+      npr: '0%',
       topProducer: topPerformerName || '—',
     };
   }
@@ -126,7 +126,7 @@ function summaryToKpis(summary: ProductionSummary | null, topPerformerName: stri
     personalNet: formatMetricNumber(summary.personal.points.net),
     personalProj: formatMetricNumber(summary.personal.projected),
     chargebacks: formatMetricNumber(Math.abs(summary.baseshop.chargeback)),
-    npr: `${Number(summary.npr).toFixed(1)}%`,
+    npr: `${Math.round(Number(summary.npr))}%`,
     topProducer: topPerformerName || '—',
   };
 }

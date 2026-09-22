@@ -89,6 +89,10 @@ export function AddAgencyCodeModal({
       addToast({ type: 'warning', message: 'Agency Code is required.' });
       return;
     }
+    if (form.level == null) {
+      addToast({ type: 'warning', message: 'Level is required when assigning an agency code.' });
+      return;
+    }
     if (!form.state.trim()) {
       addToast({ type: 'warning', message: 'State Located is required.' });
       return;

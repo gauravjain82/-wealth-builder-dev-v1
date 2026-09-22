@@ -271,6 +271,11 @@ export function TrackerUserProfileModal({
       return;
     }
 
+    if (form.agencyCode.trim() && form.levelId == null) {
+      addToast({ type: 'warning', message: 'Level is required when an agency code is assigned.' });
+      return;
+    }
+
     try {
       setSaving(true);
       const relationshipNumber = Number.parseInt(form.relationship, 10);
