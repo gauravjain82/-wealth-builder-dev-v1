@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { VideoHero, CanvaVideoCard, LeaderboardCard, PerformanceTable } from '@/features/home/components';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { useHomePageContent } from '@/features/home/hooks/use-home-content';
+import type { HomePageSlot } from '@/features/home/services/home-content-service';
 import { roleToPlan } from '@core/constants/roles';
 import { Plan } from '@core/types';
 
@@ -16,15 +18,18 @@ function normalizePlanFromRole(role?: string | null): Plan {
 }
 
 /** ============================
- *  ASSET URLS
+ *  DEFAULT ASSET URLS
+ *  Fallbacks used while home content loads or if the request fails. Admins
+ *  edit the live values from the Home Content admin screen.
  *  ============================ */
-const BACKGROUND_URL =
+const DEFAULT_BACKGROUND_URL =
   'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/ChatGPT%20Image%20Sep%2015%2C%202025%2C%2012_54_37%20AM.png?alt=media&token=2322a57d-447c-4319-888c-8353a34fbfb9';
-const TRAILER_URL =
+const DEFAULT_TRAILER_URL =
   'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/IMG_7934.MP4?alt=media&token=597143ab-4dfc-42bb-87f3-428e54c345df';
-const REGISTER_URL = 'https://bscpro.com/event/wb2026';
-const EVENTS_VIDEO_URL = 'https://www.canva.com/design/DAG6eJasb0c/QMcDazQ53A-DPwBIfKIn-Q/view?embed';
-const RECOGNITION_VIDEO_URL = 'https://www.canva.com/design/DAG-W6V-Uxc/qjp27ftg9x_dXxF9O9WBvA/view?embed';
+const DEFAULT_REGISTER_URL = 'https://bscpro.com/event/wb2026';
+const DEFAULT_TITLE = 'Wealth Bowl 2026 - Oct 9 - 11 | St. Louis Union Station Hotel, MO';
+const DEFAULT_EVENTS_VIDEO_URL = 'https://www.canva.com/design/DAG6eJasb0c/QMcDazQ53A-DPwBIfKIn-Q/view?embed';
+const DEFAULT_RECOGNITION_VIDEO_URL = 'https://www.canva.com/design/DAG-W6V-Uxc/qjp27ftg9x_dXxF9O9WBvA/view?embed';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -32,6 +37,19 @@ export default function HomePage() {
 
   /* ===== Video Controls ===== */
   const [muted, setMuted] = useState(true);
+
+  /* ===== CMS-managed home content (falls back to defaults) ===== */
+  const { data: homeContent } = useHomePageContent();
+  const slotHref = (slot: HomePageSlot, fallback: string): string => {
+    const media = homeContent?.media?.[slot];
+    return media && media.is_active && media.href ? media.href : fallback;
+  };
+  const backgroundUrl = slotHref('background', DEFAULT_BACKGROUND_URL);
+  const trailerUrl = slotHref('hero_trailer', DEFAULT_TRAILER_URL);
+  const eventsVideoUrl = slotHref('events', DEFAULT_EVENTS_VIDEO_URL);
+  const recognitionVideoUrl = slotHref('recognition', DEFAULT_RECOGNITION_VIDEO_URL);
+  const heroTitle = homeContent?.config?.hero_title || DEFAULT_TITLE;
+  const registerUrl = homeContent?.config?.register_url || DEFAULT_REGISTER_URL;
 
   /* ===== User Type ===== */
   const currentPlan = normalizePlanFromRole(user?.roles?.[0]);
@@ -43,7 +61,7 @@ export default function HomePage() {
       <div
         className="absolute inset-0 z-0"
         style={{
-          backgroundImage: `url(${BACKGROUND_URL})`,
+          backgroundImage: `url(${backgroundUrl})`,
           backgroundPosition: 'center',
           backgroundSize: 'cover',
           backgroundRepeat: 'no-repeat',
@@ -62,9 +80,9 @@ export default function HomePage() {
       <main className="text-white transition-all duration-300 relative z-20 pb-8">{/* Hero Section */}
         {/* Hero Section */}
         <VideoHero
-          videoUrl={TRAILER_URL}
-          title="Wealth Bowl 2026 - Oct 9 - 11 | St. Louis Union Station Hotel, MO"
-          registerUrl={REGISTER_URL}
+          videoUrl={trailerUrl}
+          title={heroTitle}
+          registerUrl={registerUrl}
           muted={muted}
           onMuteToggle={() => setMuted((m) => !m)}
           videoRef={videoRef}
@@ -133,13 +151,13 @@ export default function HomePage() {
               {/* Event & Contests Card */}
               <CanvaVideoCard
                 title="Event & Contests"
-                videoUrl={EVENTS_VIDEO_URL}
+                videoUrl={eventsVideoUrl}
               />
 
               {/* Recognition Card */}
               <CanvaVideoCard
                 title="Recognition"
-                videoUrl={RECOGNITION_VIDEO_URL}
+                videoUrl={recognitionVideoUrl}
               />
             </div>
           </div>

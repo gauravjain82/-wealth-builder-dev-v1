@@ -17,19 +17,15 @@ import {
   IconId,
   IconLock,
   IconMovie,
-  IconPhoto,
   IconRocket,
-  IconSettings,
   IconSitemap,
   IconTarget,
   IconTicket,
   IconTool,
   IconTrophy,
-  IconUpload,
   IconUserCog,
   IconUserSearch,
   IconUsers,
-  IconVideo,
 } from '@tabler/icons-react';
 
 interface IconSpec {
@@ -79,16 +75,7 @@ const ICON_MAP: Record<string, IconSpec> = {
   'Recognition Orders': { icon: IconTrophy, color: '#FFD700' },
   Reports: { icon: IconChartBar, color: '#1E90FF' },
   Admin: { icon: IconUserCog, color: '#FFD700' },
-  'User Management': { icon: IconUsers, color: '#FFD700' },
-  'Unified Video Manager': { icon: IconVideo, color: '#1E90FF' },
-  'Video Management': { icon: IconMovie, color: '#C0C0C0' },
-  'Carousel Manager': { icon: IconPhoto, color: '#FFA500' },
-  'Page Builder (Beta)': { icon: IconTool, color: '#FFD700' },
-  'Site Settings': { icon: IconSettings, color: '#C0C0C0' },
-  'Analytics Dashboard': { icon: IconChartDots, color: '#1E90FF' },
-  'Event Signup': { icon: IconFileText, color: '#32CD32' },
-  'Onboarding Video Manager': { icon: IconVideo, color: '#FF4500' },
-  'Upgrade Requests': { icon: IconUpload, color: '#1E90FF' },
+  'Home Content': { icon: IconMovie, color: '#FFD700' },
 };
 
 export function getSidebarMenuIcon(
