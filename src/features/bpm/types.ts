@@ -2,6 +2,7 @@ import type { AppointmentListItem } from '@/features/matchup/types';
 
 export type EventType = 'ONE_TIME' | 'RECURRING';
 export type BPMFormat = 'IN_PERSON' | 'WEBINAR' | 'WEB_AND_IN_PERSON';
+export type LocationKind = 'IN_PERSON' | 'ONLINE';
 export type OfficeType = 'PERMANENT' | 'TEMPORARY';
 export type OccurrenceStatus = 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';
 /** Independent follow-up outcome flags on a guest; multiple may be set at once. */
@@ -62,14 +63,42 @@ export interface BPMEmailTemplate {
   is_active: boolean;
 }
 
+/** One place a BPM event runs — a physical office or an online room. */
+export interface BPMEventLocation {
+  id?: number;
+  kind: LocationKind;
+  office: number | null;
+  office_detail?: Office | null;
+  webinar_url: string;
+  webinar_url_nickname: string;
+  /** Optional IANA zone override; blank falls back to the event timezone. */
+  timezone: string;
+  /** Per-location check-in allow-list (organisational; not enforced yet). */
+  checkin_permitted_users: number[];
+  checkin_permitted_users_detail?: UserRef[];
+  is_active: boolean;
+}
+
+/** Compact location summary attached to an occurrence for display. */
+export interface OccurrenceLocationDetail {
+  id: number;
+  kind: LocationKind;
+  label: string;
+  office_name: string | null;
+  city: string | null;
+  state: string | null;
+}
+
 export interface BPMEventListItem {
   id: number;
   uuid: string;
   name: string;
   event_type: EventType;
   bpm_format: BPMFormat;
+  /** @deprecated superseded by `locations`; kept for back-compat. */
   office: number | null;
   office_detail: Office | null;
+  locations: BPMEventLocation[];
   webinar_url: string;
   webinar_url_nickname: string;
   timezone: string;
@@ -94,6 +123,10 @@ export interface BPMOccurrence {
   event_name: string;
   event_type: EventType;
   bpm_format: BPMFormat;
+  location: number | null;
+  location_detail: OccurrenceLocationDetail | null;
+  /** Per-location check-in allow-list ids (UI auto-scoping; not enforced). */
+  checkin_permitted_users: number[];
   start_at: string;
   end_at: string;
   timezone: string;
@@ -155,6 +188,18 @@ export interface BPMEventDetail extends BPMEventListItem {
   checkin_permitted_users_detail: UserRef[];
   email_template: number | null;
   occurrences: BPMOccurrence[];
+}
+
+/** A location as sent in an event create/update payload (id targets an existing row). */
+export interface BPMEventLocationPayload {
+  id?: number;
+  kind: LocationKind;
+  office?: number | null;
+  webinar_url?: string;
+  webinar_url_nickname?: string;
+  timezone?: string;
+  checkin_permitted_users?: number[];
+  is_active?: boolean;
 }
 
 export interface BPMGuestProspectCard {
@@ -250,7 +295,10 @@ export interface AssociateCheckIn {
 export interface BPMEventPayload {
   name: string;
   event_type: EventType;
-  bpm_format: BPMFormat;
+  /** Derived server-side from `locations`; optional to send. */
+  bpm_format?: BPMFormat;
+  /** Source of truth for where the BPM runs. */
+  locations: BPMEventLocationPayload[];
   office?: number | null;
   webinar_url?: string;
   webinar_url_nickname?: string;

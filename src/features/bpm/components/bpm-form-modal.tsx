@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Button,
+  ConfirmationDialog,
   DatePicker,
   Form,
   FormActions,
@@ -12,10 +13,29 @@ import {
   Select,
 } from '@shared/components';
 import { useToastStore } from '@/store';
-import { bpmService, browserTimezone, DAY_OF_WEEK_OPTIONS, supportedTimezones } from '../services/bpm-service';
-import type { BPMEmailTemplate, BPMEventDetail, BPMFormat, BPMEventPayload, EventType, UserRef } from '../types';
-import { OfficePicker } from './office-picker';
+import {
+  bpmService,
+  browserTimezone,
+  DAY_OF_WEEK_OPTIONS,
+  formatOccurrenceTime,
+  supportedTimezones,
+} from '../services/bpm-service';
+import type {
+  BPMEmailTemplate,
+  BPMEventDetail,
+  BPMEventPayload,
+  BPMOccurrence,
+  EventType,
+  OccurrenceStatus,
+  UserRef,
+} from '../types';
 import { MultiUserSelect, type SelectedUser } from './multi-user-select';
+import {
+  LocationsEditor,
+  locationsToDrafts,
+  newLocationDraft,
+  type LocationDraft,
+} from './locations-editor';
 
 interface BPMFormModalProps {
   open: boolean;
@@ -31,10 +51,6 @@ const toSelectedUsers = (refs: UserRef[]): SelectedUser[] =>
 interface FormState {
   name: string;
   event_type: EventType;
-  bpm_format: BPMFormat;
-  office: number | null;
-  webinar_url: string;
-  webinar_url_nickname: string;
   timezone: string;
   start_time: string;
   duration_minutes: number;
@@ -48,10 +64,6 @@ interface FormState {
 const defaultForm = (): FormState => ({
   name: '',
   event_type: 'RECURRING',
-  bpm_format: 'WEB_AND_IN_PERSON',
-  office: null,
-  webinar_url: '',
-  webinar_url_nickname: 'Zoom',
   timezone: browserTimezone(),
   start_time: '19:00',
   duration_minutes: 90,
@@ -66,10 +78,13 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
   const addToast = useToastStore((state) => state.addToast);
   const isEditing = Boolean(event);
   const [form, setForm] = useState<FormState>(defaultForm);
+  const [locations, setLocations] = useState<LocationDraft[]>([newLocationDraft()]);
   const [smds, setSmds] = useState<SelectedUser[]>([]);
   const [trainers, setTrainers] = useState<SelectedUser[]>([]);
-  const [checkinUsers, setCheckinUsers] = useState<SelectedUser[]>([]);
   const [templates, setTemplates] = useState<BPMEmailTemplate[]>([]);
+  const [occurrences, setOccurrences] = useState<BPMOccurrence[]>([]);
+  const [statusBusyId, setStatusBusyId] = useState<number | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<BPMOccurrence | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingSmds, setLoadingSmds] = useState(false);
 
@@ -79,10 +94,6 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
       setForm({
         name: event.name,
         event_type: event.event_type,
-        bpm_format: event.bpm_format,
-        office: event.office,
-        webinar_url: event.webinar_url,
-        webinar_url_nickname: event.webinar_url_nickname || 'Zoom',
         timezone: event.timezone,
         start_time: (event.start_time || '19:00').slice(0, 5),
         duration_minutes: event.duration_minutes,
@@ -92,14 +103,21 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
         recurrence_end: event.recurrence_end || '',
         email_template: event.email_template,
       });
+      const drafts = locationsToDrafts(event.locations || []);
+      setLocations(drafts.length ? drafts : [newLocationDraft()]);
       setSmds(toSelectedUsers(event.participating_smds_detail));
       setTrainers(toSelectedUsers(event.trainers_detail));
-      setCheckinUsers(toSelectedUsers(event.checkin_permitted_users_detail));
+      setOccurrences(
+        [...(event.occurrences || [])].sort(
+          (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
+        ),
+      );
     } else {
       setForm(defaultForm());
+      setLocations([newLocationDraft()]);
       setSmds([]);
       setTrainers([]);
-      setCheckinUsers([]);
+      setOccurrences([]);
     }
     bpmService
       .emailTemplates()
@@ -125,9 +143,6 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
     }
   };
 
-  const requiresOffice = form.bpm_format === 'IN_PERSON' || form.bpm_format === 'WEB_AND_IN_PERSON';
-  const requiresWebinar = form.bpm_format === 'WEBINAR' || form.bpm_format === 'WEB_AND_IN_PERSON';
-
   const timezoneOptions = useMemo(
     () => Array.from(new Set([browserTimezone(), form.timezone, ...supportedTimezones()])).filter(Boolean),
     [form.timezone],
@@ -138,13 +153,19 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
       addToast({ type: 'error', message: 'BPM name is required.' });
       return;
     }
-    if (requiresOffice && !form.office) {
-      addToast({ type: 'error', message: 'Select an office for in-person BPMs.' });
+    if (locations.length === 0) {
+      addToast({ type: 'error', message: 'Add at least one location.' });
       return;
     }
-    if (requiresWebinar && !form.webinar_url.trim()) {
-      addToast({ type: 'error', message: 'A webinar URL is required for webinar BPMs.' });
-      return;
+    for (const location of locations) {
+      if (location.kind === 'IN_PERSON' && !location.office) {
+        addToast({ type: 'error', message: 'Select an office for every in-person location.' });
+        return;
+      }
+      if (location.kind === 'ONLINE' && !location.webinar_url.trim()) {
+        addToast({ type: 'error', message: 'A join URL is required for every online location.' });
+        return;
+      }
     }
     if (form.event_type === 'ONE_TIME' && !form.event_date) {
       addToast({ type: 'error', message: 'Pick a date for a one-time BPM.' });
@@ -154,16 +175,21 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
     const payload: BPMEventPayload = {
       name: form.name,
       event_type: form.event_type,
-      bpm_format: form.bpm_format,
-      office: requiresOffice ? form.office : null,
-      webinar_url: requiresWebinar ? form.webinar_url : '',
-      webinar_url_nickname: requiresWebinar ? form.webinar_url_nickname : '',
+      locations: locations.map((location) => ({
+        id: location.id,
+        kind: location.kind,
+        office: location.kind === 'IN_PERSON' ? location.office : null,
+        webinar_url: location.kind === 'ONLINE' ? location.webinar_url : '',
+        webinar_url_nickname: location.kind === 'ONLINE' ? location.webinar_url_nickname : '',
+        timezone: location.timezone.trim(),
+        checkin_permitted_users: location.checkinUsers.map((user) => user.id),
+        is_active: true,
+      })),
       timezone: form.timezone,
       start_time: form.start_time,
       duration_minutes: form.duration_minutes,
       participating_smds: smds.map((user) => user.id),
       trainers: trainers.map((user) => user.id),
-      checkin_permitted_users: checkinUsers.map((user) => user.id),
       email_template: form.email_template,
     };
     if (form.event_type === 'ONE_TIME') {
@@ -195,7 +221,45 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
     }
   };
 
+  const applyStatus = async (occurrence: BPMOccurrence, status: OccurrenceStatus) => {
+    setStatusBusyId(occurrence.id);
+    try {
+      const updated =
+        status === 'SCHEDULED'
+          ? await bpmService.rescheduleOccurrence(occurrence.id)
+          : status === 'COMPLETED'
+            ? await bpmService.completeOccurrence(occurrence.id)
+            : await bpmService.cancelOccurrence(occurrence.id);
+      setOccurrences((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      onSaved();
+      addToast({ type: 'success', message: 'Status updated.' });
+    } catch (error) {
+      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to update status' });
+    } finally {
+      setStatusBusyId(null);
+    }
+  };
+
+  // Cancelling removes the occurrence from everyone's calendar, so confirm it;
+  // restoring (→ SCHEDULED) and completing apply immediately.
+  const onStatusSelect = (occurrence: BPMOccurrence, status: OccurrenceStatus) => {
+    if (status === occurrence.status) return;
+    if (status === 'CANCELLED') {
+      setCancelTarget(occurrence);
+      return;
+    }
+    void applyStatus(occurrence, status);
+  };
+
+  const confirmCancel = async () => {
+    if (!cancelTarget) return;
+    const target = cancelTarget;
+    setCancelTarget(null);
+    await applyStatus(target, 'CANCELLED');
+  };
+
   return (
+    <>
     <Modal open={open} title={isEditing ? 'Edit BPM' : 'Create BPM'} onClose={onClose} contentClassName="max-h-[90vh] overflow-y-auto">
       <Form
         onSubmit={(event) => {
@@ -208,43 +272,15 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
           <Input variant="surface" value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Tuesday Night BPM" />
         </FormRow>
 
-        <FormRowGroup>
-          <FormRow>
-            <Label>Event type</Label>
-            <Select variant="surface" value={form.event_type} onChange={(e) => update('event_type', e.target.value as EventType)}>
-              <option value="ONE_TIME">One-time</option>
-              <option value="RECURRING">Recurring</option>
-            </Select>
-          </FormRow>
-          <FormRow>
-            <Label>BPM type</Label>
-            <Select variant="surface" value={form.bpm_format} onChange={(e) => update('bpm_format', e.target.value as BPMFormat)}>
-              <option value="IN_PERSON">In person only</option>
-              <option value="WEBINAR">Webinar only</option>
-              <option value="WEB_AND_IN_PERSON">Web &amp; in person</option>
-            </Select>
-          </FormRow>
-        </FormRowGroup>
+        <FormRow>
+          <Label>Event type</Label>
+          <Select variant="surface" value={form.event_type} onChange={(e) => update('event_type', e.target.value as EventType)}>
+            <option value="ONE_TIME">One-time</option>
+            <option value="RECURRING">Recurring</option>
+          </Select>
+        </FormRow>
 
-        {requiresOffice ? (
-          <FormRow>
-            <Label>Office *</Label>
-            <OfficePicker value={form.office} onChange={(officeId) => update('office', officeId)} />
-          </FormRow>
-        ) : null}
-
-        {requiresWebinar ? (
-          <FormRowGroup>
-            <FormRow>
-              <Label>Webinar URL *</Label>
-              <Input variant="surface" value={form.webinar_url} onChange={(e) => update('webinar_url', e.target.value)} placeholder="https://zoom.us/j/…" />
-            </FormRow>
-            <FormRow>
-              <Label>URL label</Label>
-              <Input variant="surface" value={form.webinar_url_nickname} onChange={(e) => update('webinar_url_nickname', e.target.value)} />
-            </FormRow>
-          </FormRowGroup>
-        ) : null}
+        <LocationsEditor locations={locations} onChange={setLocations} />
 
         <FormRowGroup columns={3}>
           <FormRow>
@@ -311,16 +347,10 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
           </div>
           <MultiUserSelect selected={smds} onChange={setSmds} placeholder="Search SMDs" />
         </FormRow>
-        <FormRowGroup>
-          <FormRow>
-            <Label>Trainers (optional)</Label>
-            <MultiUserSelect selected={trainers} onChange={setTrainers} placeholder="Search trainers" />
-          </FormRow>
-          <FormRow>
-            <Label>Check-in permissions</Label>
-            <MultiUserSelect selected={checkinUsers} onChange={setCheckinUsers} placeholder="Who can check people in" />
-          </FormRow>
-        </FormRowGroup>
+        <FormRow>
+          <Label>Trainers (optional)</Label>
+          <MultiUserSelect selected={trainers} onChange={setTrainers} placeholder="Search trainers" />
+        </FormRow>
 
         <FormRowGroup>
           <FormRow>
@@ -340,6 +370,38 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
           </FormRow>
         </FormRowGroup>
 
+        {isEditing && occurrences.length > 0 ? (
+          <FormRow>
+            <Label>Occurrences — change status / restore cancelled</Label>
+            <div className="grid max-h-64 gap-1.5 overflow-y-auto rounded-lg border border-slate-200 p-2 dark:border-white/10">
+              {occurrences.map((occurrence) => (
+                <div key={occurrence.id} className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm text-slate-800 dark:text-white/90">
+                      {formatOccurrenceTime(occurrence.start_at)} ({occurrence.timezone})
+                    </div>
+                    {occurrence.location_detail ? (
+                      <div className="text-xs text-slate-500 dark:text-white/60">
+                        {occurrence.location_detail.label}
+                      </div>
+                    ) : null}
+                  </div>
+                  <Select
+                    variant="surface"
+                    value={occurrence.status}
+                    disabled={statusBusyId === occurrence.id}
+                    onChange={(e) => onStatusSelect(occurrence, e.target.value as OccurrenceStatus)}
+                  >
+                    <option value="SCHEDULED">Scheduled</option>
+                    <option value="CANCELLED">Cancelled</option>
+                    <option value="COMPLETED">Completed</option>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </FormRow>
+        ) : null}
+
         <FormActions>
           <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
             Cancel
@@ -350,5 +412,19 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
         </FormActions>
       </Form>
     </Modal>
+
+    <ConfirmationDialog
+      open={Boolean(cancelTarget)}
+      title="Cancel this BPM occurrence?"
+      message={`This cancels "${cancelTarget?.event_name ?? 'this occurrence'}" on ${
+        cancelTarget ? formatOccurrenceTime(cancelTarget.start_at) : ''
+      } for everyone and removes it from all participants' calendars. You can restore it later.`}
+      confirmText="Cancel occurrence"
+      cancelText="Keep it"
+      loading={statusBusyId === cancelTarget?.id}
+      onConfirm={confirmCancel}
+      onClose={() => setCancelTarget(null)}
+    />
+    </>
   );
 }

@@ -91,7 +91,7 @@ export function BPMOccurrencePicker({ value, onChange, excludeOccurrenceId }: BP
         </Select>
       </label>
       <label className="grid gap-1.5">
-        <span className="text-xs font-semibold text-slate-700 dark:text-white/80">BPM Date</span>
+        <span className="text-xs font-semibold text-slate-700 dark:text-white/80">BPM Date / Location</span>
         <Select
           variant="surface"
           value={value?.id ?? ''}
@@ -107,11 +107,15 @@ export function BPMOccurrencePicker({ value, onChange, excludeOccurrenceId }: BP
                   ? 'No upcoming dates'
                   : 'Select a date'}
           </option>
-          {occurrences.map((occurrence) => (
-            <option key={occurrence.id} value={occurrence.id}>
-              {formatOccurrenceTime(occurrence.start_at)} ({occurrence.timezone})
-            </option>
-          ))}
+          {occurrences.map((occurrence) => {
+            const place = occurrence.location_detail?.label;
+            return (
+              <option key={occurrence.id} value={occurrence.id}>
+                {formatOccurrenceTime(occurrence.start_at)} ({occurrence.timezone})
+                {place ? ` · ${place}` : ''}
+              </option>
+            );
+          })}
         </Select>
       </label>
     </div>

@@ -288,6 +288,11 @@ export const bpmService = {
     request<AssociateCheckIn[]>(`/api/bpm/occurrences/${occurrenceId}/associate-checkins/`),
   cancelOccurrence: (occurrenceId: number) =>
     request<BPMOccurrence>(`/api/bpm/occurrences/${occurrenceId}/cancel/`, { method: 'POST' }),
+  completeOccurrence: (occurrenceId: number) =>
+    request<BPMOccurrence>(`/api/bpm/occurrences/${occurrenceId}/complete/`, { method: 'POST' }),
+  /** Restore a cancelled/completed occurrence to SCHEDULED. */
+  rescheduleOccurrence: (occurrenceId: number) =>
+    request<BPMOccurrence>(`/api/bpm/occurrences/${occurrenceId}/reschedule/`, { method: 'POST' }),
 
   // -- google calendar -----------------------------------------------------
   // BPM reuses the Match Up OAuth credential store: one Google connection per

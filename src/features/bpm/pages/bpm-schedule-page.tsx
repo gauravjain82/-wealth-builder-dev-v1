@@ -1,15 +1,59 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, DateRangePicker, Input, LoadingState, Select, type DateRangeValue } from '@shared/components';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Button, ConfirmationDialog, DateRangePicker, Input, LoadingState, Select, type DateRangeValue } from '@shared/components';
 import { useToastStore } from '@/store';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMFormModal } from '../components/bpm-form-modal';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
-import type { BPMEventDetail, BPMOccurrence, OccurrenceFilters } from '../types';
+import type { BPMOccurrence, BPMEventDetail, OccurrenceFilters } from '../types';
 
-const FORMAT_LABELS: Record<string, string> = {
-  IN_PERSON: 'In person',
-  WEBINAR: 'Webinar',
-  WEB_AND_IN_PERSON: 'Web & in person',
+/** The calendar date an occurrence runs on, in its own timezone (YYYY-MM-DD). */
+const occurrenceLocalDate = (occurrence: BPMOccurrence): string =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: occurrence.timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(occurrence.start_at));
+
+const locationLabel = (occurrence: BPMOccurrence): string =>
+  occurrence.location_detail?.label ||
+  (occurrence.location_detail?.kind === 'ONLINE' ? 'Online' : 'In person');
+
+interface OccurrenceGroup {
+  key: string;
+  eventId: number;
+  eventName: string;
+  date: string;
+  occurrences: BPMOccurrence[];
+  guestCount: number;
+  checkedInCount: number;
+}
+
+/** Group the flat occurrence list by (event, local date) for the expandable rows. */
+const groupOccurrences = (occurrences: BPMOccurrence[]): OccurrenceGroup[] => {
+  const groups = new Map<string, OccurrenceGroup>();
+  for (const occurrence of occurrences) {
+    const date = occurrenceLocalDate(occurrence);
+    const key = `${occurrence.event}::${date}`;
+    let group = groups.get(key);
+    if (!group) {
+      group = {
+        key,
+        eventId: occurrence.event,
+        eventName: occurrence.event_name,
+        date,
+        occurrences: [],
+        guestCount: 0,
+        checkedInCount: 0,
+      };
+      groups.set(key, group);
+    }
+    group.occurrences.push(occurrence);
+    group.guestCount += occurrence.guest_count;
+    group.checkedInCount += occurrence.checked_in_count;
+  }
+  return Array.from(groups.values());
 };
 
 export default function BpmSchedulePage() {
@@ -23,6 +67,16 @@ export default function BpmSchedulePage() {
   const [busy, setBusy] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<BPMEventDetail | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<BPMOccurrence | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (key: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   const filters = useMemo<OccurrenceFilters>(
     () => ({
@@ -52,6 +106,8 @@ export default function BpmSchedulePage() {
     void load();
   }, [load]);
 
+  const groups = useMemo(() => groupOccurrences(occurrences), [occurrences]);
+
   const openCreate = () => {
     setEditingEvent(null);
     setFormOpen(true);
@@ -75,11 +131,13 @@ export default function BpmSchedulePage() {
     setEditingEvent(null);
   };
 
-  const cancelOccurrence = async (occurrence: BPMOccurrence) => {
+  const confirmCancel = async () => {
+    if (!cancelTarget) return;
     setBusy(true);
     try {
-      await bpmService.cancelOccurrence(occurrence.id);
+      await bpmService.cancelOccurrence(cancelTarget.id);
       addToast({ type: 'success', message: 'Occurrence cancelled.' });
+      setCancelTarget(null);
       await load();
     } catch (error) {
       addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to cancel' });
@@ -125,50 +183,95 @@ export default function BpmSchedulePage() {
           </p>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-white/10">
-            <table className="w-full min-w-[720px] border-collapse text-sm">
+            <table className="w-full min-w-[760px] border-collapse text-sm">
               <thead>
                 <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-white/5 dark:text-white/60">
                   <th className="px-3 py-2">BPM</th>
                   <th className="px-3 py-2">Date</th>
-                  <th className="px-3 py-2">Type</th>
+                  <th className="px-3 py-2">Location</th>
                   <th className="px-3 py-2">Guests</th>
                   <th className="px-3 py-2">Status</th>
                   <th className="px-3 py-2 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {occurrences.map((occurrence) => (
-                  <tr key={occurrence.id} className="border-t border-slate-100 dark:border-white/10">
-                    <td className="px-3 py-2 font-medium text-slate-900 dark:text-white">{occurrence.event_name}</td>
-                    <td className="px-3 py-2 text-slate-700 dark:text-white/80">
-                      {formatOccurrenceTime(occurrence.start_at)} ({occurrence.timezone})
-                    </td>
-                    <td className="px-3 py-2 text-slate-700 dark:text-white/80">
-                      {FORMAT_LABELS[occurrence.bpm_format] || occurrence.bpm_format}
-                    </td>
-                    <td className="px-3 py-2 text-slate-700 dark:text-white/80">
-                      {occurrence.checked_in_count}/{occurrence.guest_count}
-                    </td>
-                    <td className="px-3 py-2 text-slate-700 dark:text-white/80">{occurrence.status}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="secondary" disabled={busy} onClick={() => void openEdit(occurrence)}>
-                          Edit BPM
-                        </Button>
-                        {occurrence.status === 'SCHEDULED' ? (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            disabled={busy}
-                            onClick={() => void cancelOccurrence(occurrence)}
-                          >
-                            Cancel
-                          </Button>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {groups.map((group) => {
+                  const isOpen = expanded.has(group.key);
+                  return (
+                    <Fragment key={group.key}>
+                      <tr
+                        className="cursor-pointer border-t border-slate-100 bg-slate-50/50 dark:border-white/10 dark:bg-white/5"
+                        onClick={() => toggleGroup(group.key)}
+                      >
+                        <td className="px-3 py-2 font-medium text-slate-900 dark:text-white">
+                          <span className="inline-flex items-center gap-1.5">
+                            {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            {group.eventName}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-slate-700 dark:text-white/80">
+                          {formatOccurrenceTime(group.occurrences[0].start_at, {
+                            hour: undefined,
+                            minute: undefined,
+                          })}
+                        </td>
+                        <td className="px-3 py-2 text-slate-500 dark:text-white/60">
+                          {group.occurrences.length}{' '}
+                          {group.occurrences.length === 1 ? 'location' : 'locations'}
+                        </td>
+                        <td className="px-3 py-2 text-slate-700 dark:text-white/80">
+                          {group.checkedInCount}/{group.guestCount}
+                        </td>
+                        <td className="px-3 py-2" />
+                        <td className="px-3 py-2" />
+                      </tr>
+                      {isOpen
+                        ? group.occurrences.map((occurrence) => (
+                            <tr
+                              key={occurrence.id}
+                              className="border-t border-slate-100 dark:border-white/10"
+                            >
+                              <td className="px-3 py-2" />
+                              <td className="px-3 py-2 text-slate-700 dark:text-white/80">
+                                {formatOccurrenceTime(occurrence.start_at)} ({occurrence.timezone})
+                              </td>
+                              <td className="px-3 py-2 text-slate-700 dark:text-white/80">
+                                {locationLabel(occurrence)}
+                              </td>
+                              <td className="px-3 py-2 text-slate-700 dark:text-white/80">
+                                {occurrence.checked_in_count}/{occurrence.guest_count}
+                              </td>
+                              <td className="px-3 py-2 text-slate-700 dark:text-white/80">
+                                {occurrence.status}
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    disabled={busy}
+                                    onClick={() => void openEdit(occurrence)}
+                                  >
+                                    Edit BPM
+                                  </Button>
+                                  {occurrence.status === 'SCHEDULED' ? (
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      disabled={busy}
+                                      onClick={() => setCancelTarget(occurrence)}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  ) : null}
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        : null}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -176,6 +279,19 @@ export default function BpmSchedulePage() {
       </BPMCard>
 
       <BPMFormModal open={formOpen} onClose={closeForm} onSaved={load} event={editingEvent} />
+
+      <ConfirmationDialog
+        open={Boolean(cancelTarget)}
+        title="Cancel this BPM occurrence?"
+        message={`This cancels "${cancelTarget?.event_name ?? 'this occurrence'}" on ${
+          cancelTarget ? formatOccurrenceTime(cancelTarget.start_at) : ''
+        } for everyone and removes it from all participants' calendars. This cannot be undone.`}
+        confirmText="Cancel occurrence"
+        cancelText="Keep it"
+        loading={busy}
+        onConfirm={confirmCancel}
+        onClose={() => setCancelTarget(null)}
+      />
     </BPMPageShell>
   );
 }

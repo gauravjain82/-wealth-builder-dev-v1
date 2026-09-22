@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CalendarCheck, Plus, Unplug, UserPlus } from 'lucide-react';
-import { Button, Input, LoadingState, Select, UserAutocompleteDropdown } from '@shared/components';
+import { Button, ConfirmationDialog, Input, LoadingState, Select, UserAutocompleteDropdown } from '@shared/components';
 import { useToastStore } from '@/store';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { hasRoleAtLeast } from '@core/constants/roles';
@@ -52,6 +52,7 @@ export default function BpmOverviewPage() {
   const [addGuestFor, setAddGuestFor] = useState<BPMOccurrence | null>(null);
   const [bpmFormOpen, setBpmFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<BPMEventDetail | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<BPMOccurrence | null>(null);
   // Detail views: pick any BPM event/occurrence and inspect its guests or associates.
   const [listView, setListView] = useState<'occurrences' | 'guests' | 'associates'>('occurrences');
   const [detailOccurrence, setDetailOccurrence] = useState<BPMOccurrence | null>(null);
@@ -151,11 +152,13 @@ export default function BpmOverviewPage() {
     }
   };
 
-  const cancelOccurrence = async (occurrence: BPMOccurrence) => {
+  const confirmCancel = async () => {
+    if (!cancelTarget) return;
     setBusy(true);
     try {
-      await bpmService.cancelOccurrence(occurrence.id);
+      await bpmService.cancelOccurrence(cancelTarget.id);
       addToast({ type: 'success', message: 'Occurrence cancelled.' });
+      setCancelTarget(null);
       await load();
     } catch (error) {
       addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to cancel' });
@@ -459,6 +462,9 @@ export default function BpmOverviewPage() {
                   >
                     <td>
                       <div className="matchup-cell-main">{occurrence.event_name}</div>
+                      {occurrence.location_detail ? (
+                        <small>{occurrence.location_detail.label}</small>
+                      ) : null}
                     </td>
                     <td className="matchup-when-cell">
                       {formatOccurrenceTime(occurrence.start_at)}
@@ -478,7 +484,7 @@ export default function BpmOverviewPage() {
                           Edit BPM
                         </Button>
                         {occurrence.status === 'SCHEDULED' ? (
-                          <Button size="sm" variant="destructive" disabled={busy} onClick={() => void cancelOccurrence(occurrence)}>
+                          <Button size="sm" variant="destructive" disabled={busy} onClick={() => setCancelTarget(occurrence)}>
                             Cancel
                           </Button>
                         ) : null}
@@ -521,6 +527,19 @@ export default function BpmOverviewPage() {
         appointmentTypes={appointmentTypes}
         onClose={() => setFollowUpTarget(null)}
         onSaved={handleFollowUpSaved}
+      />
+
+      <ConfirmationDialog
+        open={Boolean(cancelTarget)}
+        title="Cancel this BPM occurrence?"
+        message={`This cancels "${cancelTarget?.event_name ?? 'this occurrence'}" on ${
+          cancelTarget ? formatOccurrenceTime(cancelTarget.start_at) : ''
+        } for everyone and removes it from all participants' calendars. This cannot be undone.`}
+        confirmText="Cancel occurrence"
+        cancelText="Keep it"
+        loading={busy}
+        onConfirm={confirmCancel}
+        onClose={() => setCancelTarget(null)}
       />
     </main>
   );
