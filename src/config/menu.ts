@@ -77,6 +77,8 @@ const MENU_ITEMS = {
     icon: '📋',
     path: '/admin/data-integrity/policy-misalignments',
   } as MenuItem,
+  // Product catalog management (gated per-user by products:read)
+  PRODUCTS: { label: 'Products', icon: '📦', path: '/admin/products' } as MenuItem,
   LICENSING_TRACKER: { label: 'Licensing Tracker', icon: '📝', path: '/team/licensing-tracker' } as MenuItem,
   PRODUCTION_TRACKER: { label: 'Production Tracker', icon: '💰', path: '/team/production-tracker' } as MenuItem,
   TEAM_PROMOTION: { label: 'Team Promotion Tracker', icon: '📈', path: '/promotion/team' } as MenuItem,
@@ -637,7 +639,8 @@ export function getMenuForUser(
   // Company Owner & Builder are separate things. Defaults to `true` so any
   // caller that doesn't distinguish the two keeps the full owner menu.
   isBuilderAiOwner: boolean = true,
-  canAccessMisalignments: boolean = false
+  canAccessMisalignments: boolean = false,
+  canAccessProducts: boolean = false
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -670,6 +673,15 @@ export function getMenuForUser(
     !menuItems.some((item) => item.label === DATA_INTEGRITY_GROUP.label)
   ) {
     menuItems.push(cloneMenuItems([DATA_INTEGRITY_GROUP])[0]);
+  }
+
+  // Product Management is gated by backend access (products:read), not by plan —
+  // inject it only for users the backend authorizes.
+  if (
+    canAccessProducts &&
+    !menuItems.some((item) => item.label === MENU_ITEMS.PRODUCTS.label)
+  ) {
+    menuItems.push(cloneMenuItems([MENU_ITEMS.PRODUCTS])[0]);
   }
 
   if (normalizedPlan === Plan.NewAgent && !hasPromotionAccess) {

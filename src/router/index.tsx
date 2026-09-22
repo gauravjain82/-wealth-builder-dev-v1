@@ -4,6 +4,7 @@ import { ProtectedRoute } from './protected-route';
 import { AdminRoute } from './admin-route';
 import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
+import { ProductsRoute } from './products-route';
 import { PublicRoute } from './public-route';
 import { RouteErrorFallback } from './route-error-boundary';
 import { RootRedirect } from './root-redirect.tsx';
@@ -46,6 +47,9 @@ const LeaderMisalignmentsPage = lazy(
 );
 const PolicyMisalignmentsPage = lazy(
   () => import('@/features/admin/misalignments/pages/policy-misalignments-page')
+);
+const ProductsListPage = lazy(
+  () => import('@/features/admin/products/pages/products-list-page')
 );
 const PublicDailySixPage = lazy(() => import('@/features/team/builders/pages/public-daily-six-page'));
 const AddGoalsPage = lazy(() => import('@/features/team/associate-tracker/pages/add-goals-page'));
@@ -256,6 +260,11 @@ const router = createBrowserRouter([
         // Admin-only Data Integrity report; gated per-user by misalignments:read.
         path: 'admin/data-integrity/policy-misalignments',
         element: <MisalignmentsRoute>{lazyLoad(PolicyMisalignmentsPage)}</MisalignmentsRoute>,
+      },
+      {
+        // Product catalog management; gated per-user by products:read.
+        path: 'admin/products',
+        element: <ProductsRoute>{lazyLoad(ProductsListPage)}</ProductsRoute>,
       },
       {
         path: 'insight-center',

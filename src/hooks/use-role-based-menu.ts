@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useAuth } from '../features/auth/hooks/use-auth';
 import { useBuilderMyAccess } from '../features/builder-ai/hooks/use-builder-ai';
 import { useMisalignmentsAccess } from '../features/admin/misalignments/hooks/use-misalignments';
+import { useProductsAccess } from '../features/admin/products/hooks/use-products';
 import { roleToPlan } from '../core/constants/roles';
 import { getMenuForUser, type MenuItem } from '../config/menu';
 
@@ -22,6 +23,9 @@ export function useRoleBasedMenu(): MenuItem[] {
   // Data Integrity reports are gated per-user by the backend, independent of plan.
   const { data: misalignmentsAccess } = useMisalignmentsAccess();
   const canAccessMisalignments = Boolean(misalignmentsAccess?.can_view);
+  // Product Management is gated per-user by the backend, independent of plan.
+  const { data: productsAccess } = useProductsAccess();
+  const canAccessProducts = Boolean(productsAccess?.can_view);
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
@@ -32,7 +36,8 @@ export function useRoleBasedMenu(): MenuItem[] {
         hasPromotionAccess,
         canAccessBuilderAI,
         isBuilderAiOwner,
-        canAccessMisalignments
+        canAccessMisalignments,
+        canAccessProducts
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -40,7 +45,8 @@ export function useRoleBasedMenu(): MenuItem[] {
       hasPromotionAccess,
       canAccessBuilderAI,
       isBuilderAiOwner,
-      canAccessMisalignments
+      canAccessMisalignments,
+      canAccessProducts
     );
   }, [
     user?.hasPromotionAccess,
@@ -48,5 +54,6 @@ export function useRoleBasedMenu(): MenuItem[] {
     canAccessBuilderAI,
     isBuilderAiOwner,
     canAccessMisalignments,
+    canAccessProducts,
   ]);
 }
