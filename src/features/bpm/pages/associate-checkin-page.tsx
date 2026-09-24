@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button, LoadingState, UserAutocompleteDropdown } from '@shared/components';
+import { UserDetailsLink } from '@/features/team/components/user-details-link';
 import { useToastStore } from '@/store';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
+import { useBpmSelection } from '../context/bpm-selection-context';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
-import type { AssociateCheckIn, BPMOccurrence } from '../types';
+import type { AssociateCheckIn } from '../types';
 
 export default function AssociateCheckinPage() {
   const addToast = useToastStore((state) => state.addToast);
-  const [occurrence, setOccurrence] = useState<BPMOccurrence | null>(null);
+  // Sticky: the BPM/date chosen here follows the user to the other sub-tools.
+  const { occurrence } = useBpmSelection();
   const [records, setRecords] = useState<AssociateCheckIn[]>([]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -63,7 +66,7 @@ export default function AssociateCheckinPage() {
   return (
     <BPMPageShell title="Associate Check-In" description="Record associate/member attendance at a BPM.">
       <BPMCard className="mb-4">
-        <BPMOccurrencePicker value={occurrence} onChange={setOccurrence} />
+        <BPMOccurrencePicker allowPast />
       </BPMCard>
       <BPMCard className="mb-4">
         <label className="mb-2 block text-xs font-semibold text-slate-700 dark:text-white/80">
@@ -91,7 +94,11 @@ export default function AssociateCheckinPage() {
             {records.map((record) => (
               <li key={record.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-900 dark:text-white">{record.user_name || `User #${record.user}`}</span>
+                  <UserDetailsLink
+                    userId={record.user}
+                    name={record.user_name || `User #${record.user}`}
+                    className="text-slate-900 dark:text-white"
+                  />
                   <MissionTrackerDots record={record} />
                 </div>
                 <div className="flex items-center gap-3">

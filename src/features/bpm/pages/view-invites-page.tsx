@@ -1,27 +1,45 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button, LoadingState } from '@shared/components';
 import { useToastStore } from '@/store';
 import { matchupService } from '@/features/matchup/services/matchup-service';
 import type { AppointmentType } from '@/features/matchup/types';
+import { AddGuestModal } from '../components/add-guest-modal';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
+import { useBpmSelection } from '../context/bpm-selection-context';
 import { GuestList } from '../components/guest-list';
 import { TransferGuestModal } from '../components/transfer-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
 import { InterestOptionsAdminModal } from '../components/interest-options-admin-modal';
 import { bpmService } from '../services/bpm-service';
 import { mergeGuest } from '../components/guest-notes';
-import type { BPMCapabilities, BPMGuest, BPMInterestOption, BPMOccurrence, GuestOutcomeField } from '../types';
+import type { BPMCapabilities, BPMGuest, BPMInterestOption, GuestOutcomeField } from '../types';
 
 export default function ViewInvitesPage() {
   const addToast = useToastStore((state) => state.addToast);
-  const [occurrence, setOccurrence] = useState<BPMOccurrence | null>(null);
+  // Sticky: the BPM/date chosen here follows the user to the other sub-tools.
+  const { occurrence } = useBpmSelection();
   const [guests, setGuests] = useState<BPMGuest[]>([]);
   const [loading, setLoading] = useState(false);
   const [busyGuestId, setBusyGuestId] = useState<number | null>(null);
   const [transferTarget, setTransferTarget] = useState<BPMGuest | null>(null);
   const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
   const [manageOptionsOpen, setManageOptionsOpen] = useState(false);
+  const [addGuestOpen, setAddGuestOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // The Overview / Schedule "Add Guest" action routes here with `&add=1` rather
+  // than to a page of its own, so the guest is added in the context of the list
+  // being worked from, with the BPM/date already chosen. Consume the flag so a
+  // refresh does not reopen the modal.
+  useEffect(() => {
+    if (searchParams.get('add') !== '1') return;
+    setAddGuestOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('add');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
@@ -91,18 +109,23 @@ export default function ViewInvitesPage() {
 
   return (
     <BPMPageShell
-      title="View Invites"
+      title="Guest Invites"
       description="Guests invited to a BPM. Track follow-up outcomes, transfer, or remove."
       actions={
-        capabilities?.can_manage_templates ? (
-          <Button variant="outline" onClick={() => setManageOptionsOpen(true)}>
-            Manage interest options
+        <>
+          <Button disabled={!occurrence} onClick={() => setAddGuestOpen(true)}>
+            + Add Guest
           </Button>
-        ) : null
+          {capabilities?.can_manage_templates ? (
+            <Button variant="outline" onClick={() => setManageOptionsOpen(true)}>
+              Manage interest options
+            </Button>
+          ) : null}
+        </>
       }
     >
       <BPMCard className="mb-4">
-        <BPMOccurrencePicker value={occurrence} onChange={setOccurrence} />
+        <BPMOccurrencePicker allowPast />
       </BPMCard>
       <BPMCard>
         {loading ? (
@@ -122,6 +145,14 @@ export default function ViewInvitesPage() {
           />
         )}
       </BPMCard>
+      <AddGuestModal
+        open={addGuestOpen}
+        presetOccurrence={occurrence}
+        onClose={() => setAddGuestOpen(false)}
+        onAdded={() => {
+          if (occurrence) void load(occurrence.id);
+        }}
+      />
       <TransferGuestModal
         open={Boolean(transferTarget)}
         guest={transferTarget}

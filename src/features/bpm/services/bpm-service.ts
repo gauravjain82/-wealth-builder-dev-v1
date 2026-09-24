@@ -2,6 +2,9 @@ import type {
   AddGuestPayload,
   AssociateCheckIn,
   BPMEmailTemplate,
+  BPMEventAttachment,
+  BPMStatusOverride,
+  DistinctLocations,
   BPMEventDetail,
   BPMEventListItem,
   BPMEventPayload,
@@ -176,6 +179,7 @@ export const bpmService = {
         state: filters.state,
         segment: filters.segment,
         ordering: filters.ordering,
+        include_concealed: filters.include_concealed ? 1 : undefined,
         page: filters.page,
         page_size: filters.page_size,
       })}`,
@@ -194,6 +198,45 @@ export const bpmService = {
     }),
   deleteEvent: (id: number) =>
     request<void>(`/api/bpm/events/${id}/`, { method: 'DELETE' }),
+
+  // -- status (BPM Schedule) -----------------------------------------------
+  /** Hard-set a BPM's status, or pass null to let it derive from the clock. */
+  setEventStatus: (id: number, statusOverride: BPMStatusOverride | null) =>
+    request<BPMEventDetail>(`/api/bpm/events/${id}/set-status/`, {
+      method: 'POST',
+      body: JSON.stringify({ status_override: statusOverride }),
+    }),
+  /** Hard-set one date's status; it wins over the BPM-level status. */
+  setOccurrenceStatus: (id: number, statusOverride: BPMStatusOverride | null) =>
+    request<BPMOccurrence>(`/api/bpm/occurrences/${id}/set-status/`, {
+      method: 'POST',
+      body: JSON.stringify({ status_override: statusOverride }),
+    }),
+
+  // -- BPM Settings: deleted-item recovery ---------------------------------
+  deletedEvents: () => request<BPMEventListItem[]>('/api/bpm/events/deleted/'),
+  undeleteEvent: (id: number) =>
+    request<BPMEventDetail>(`/api/bpm/events/${id}/undelete/`, { method: 'POST' }),
+
+  // -- attachments (event flyer) -------------------------------------------
+  // Uploaded straight to the CDN; the returned `href` is a permanent URL the
+  // client fetches directly, so there is no download endpoint here.
+  uploadAttachment: async (eventId: number, file: File) => {
+    const body = new FormData();
+    body.append('file', file);
+    // Content-Type is omitted so the browser sets the multipart boundary.
+    const response = await fetch(
+      `${API_BASE_URL}/api/bpm/events/${eventId}/upload-attachment/`,
+      { method: 'POST', headers: authHeaders(false), body },
+    );
+    if (!response.ok) throw new Error(await parseError(response));
+    return (await response.json()) as BPMEventAttachment;
+  },
+  deleteAttachment: (eventId: number, attachmentId: number) =>
+    request<{ removed: boolean }>(
+      `/api/bpm/events/${eventId}/attachments/${attachmentId}/`,
+      { method: 'DELETE' },
+    ),
   eventOccurrences: (id: number) =>
     request<BPMOccurrence[]>(`/api/bpm/events/${id}/occurrences/`),
 
@@ -210,11 +253,27 @@ export const bpmService = {
         state: filters.state,
         bpm_format: filters.bpm_format,
         segment: filters.segment,
+        search: filters.search,
+        include_concealed: filters.include_concealed ? 1 : undefined,
         page: filters.page,
         page_size: filters.page_size,
       })}`,
     ),
   occurrence: (id: number) => request<BPMOccurrence>(`/api/bpm/occurrences/${id}/`),
+  /**
+   * City / state options for the Overview filters — only places that actually
+   * have BPMs in the window on screen. Takes the same filters as `occurrences`
+   * so the options always describe the list being viewed.
+   */
+  distinctLocations: (filters: OccurrenceFilters = {}) =>
+    request<DistinctLocations>(
+      `/api/bpm/occurrences/distinct-locations/${buildQuery({
+        start_after: filters.start_after,
+        start_before: filters.start_before,
+        segment: filters.segment,
+        search: filters.search,
+      })}`,
+    ),
 
   guests: (occurrenceId: number) =>
     request<BPMGuest[]>(`/api/bpm/occurrences/${occurrenceId}/guests/`),

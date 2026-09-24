@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useUIStore } from '@/store';
 import { cn } from '@core/utils';
@@ -15,8 +15,60 @@ interface MenuItemProps {
 
 function MenuItemComponent({ item, isCollapsed, level = 0 }: MenuItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  // Collapsed rail only: children pop out beside the icon instead of being
+  // unreachable. Anchored to the button's viewport rect and rendered `fixed`,
+  // so the narrow sidebar does not clip it.
+  const [flyoutAt, setFlyoutAt] = useState<{ top: number; left: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const flyoutRef = useRef<HTMLDivElement>(null);
   const hasChildren = item.children && item.children.length > 0;
   const safeLabel = typeof item.label === 'string' ? item.label : 'Menu Item';
+
+  // Expanding the sidebar makes the flyout redundant — the accordion takes over.
+  useEffect(() => {
+    if (!isCollapsed) setFlyoutAt(null);
+  }, [isCollapsed]);
+
+  // Dismiss on outside click, Escape, or scroll (the anchor point would drift).
+  useEffect(() => {
+    if (!flyoutAt) return;
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (flyoutRef.current?.contains(target)) return;
+      if (buttonRef.current?.contains(target)) return;
+      setFlyoutAt(null);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setFlyoutAt(null);
+    };
+    // Named, so add and remove share one reference — an inline arrow here would
+    // register a new listener on every open and never detach the old one.
+    const onScroll = () => setFlyoutAt(null);
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('touchstart', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('scroll', onScroll, true);
+    };
+  }, [flyoutAt]);
+
+  /** Collapsed: pop the submenu out. Expanded: toggle the inline accordion. */
+  const handleParentClick = () => {
+    if (!isCollapsed) {
+      setIsExpanded((previous) => !previous);
+      return;
+    }
+    if (flyoutAt) {
+      setFlyoutAt(null);
+      return;
+    }
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (rect) setFlyoutAt({ top: rect.top, left: rect.right + 8 });
+  };
 
   // External URL (opens in new tab)
   if (item.externalUrl) {
@@ -43,11 +95,14 @@ function MenuItemComponent({ item, isCollapsed, level = 0 }: MenuItemProps) {
     return (
       <div>
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          title={!isCollapsed ? safeLabel : undefined}
+          ref={buttonRef}
+          onClick={handleParentClick}
+          title={safeLabel}
+          aria-expanded={isCollapsed ? Boolean(flyoutAt) : isExpanded}
+          aria-haspopup={isCollapsed ? 'menu' : undefined}
           className={cn(
             'sidebar__menu-item sidebar__menu-item--parent',
-            isExpanded && 'sidebar__menu-item--active'
+            (isExpanded || flyoutAt) && 'sidebar__menu-item--active'
           )}
           style={{
             minHeight: '40px',
@@ -85,7 +140,7 @@ function MenuItemComponent({ item, isCollapsed, level = 0 }: MenuItemProps) {
           )}
         </button>
 
-        {/* Child items - only show when expanded and sidebar not collapsed */}
+        {/* Inline accordion — expanded sidebar only. */}
         {isExpanded && !isCollapsed && (
           <div style={{ marginTop: '2px' }}>
             {item.children?.map((child, index) => (
@@ -96,6 +151,29 @@ function MenuItemComponent({ item, isCollapsed, level = 0 }: MenuItemProps) {
                 level={level + 1}
               />
             ))}
+          </div>
+        )}
+
+        {/* Pop-out submenu — collapsed rail only. Children render un-collapsed
+            so their labels are readable, and the group name heads the panel. */}
+        {isCollapsed && flyoutAt && (
+          <div
+            ref={flyoutRef}
+            role="menu"
+            aria-label={safeLabel}
+            className="sidebar__flyout"
+            style={{ top: flyoutAt.top, left: flyoutAt.left }}
+          >
+            <div className="sidebar__flyout-title">{safeLabel}</div>
+            <div onClick={() => setFlyoutAt(null)}>
+              {item.children?.map((child, index) => (
+                <MenuItemComponent
+                  key={`${typeof child.label === 'string' ? child.label : 'item'}-${index}`}
+                  item={child}
+                  isCollapsed={false}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>

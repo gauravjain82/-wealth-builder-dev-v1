@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle2, Mail, Phone, UserRound } from 'lucide-react';
 import { Button, Checkbox, Input } from '@shared/components';
+import { UserDetailsLink } from '@/features/team/components/user-details-link';
 import { formatOccurrenceTime, GUEST_OUTCOME_FIELDS } from '../services/bpm-service';
 import type { BPMGuest, BPMGuestNote, GuestOutcomeField } from '../types';
 
@@ -155,9 +156,11 @@ function GuestCheckinCard({
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-slate-400 dark:text-white/40">#{index + 1}</span>
-          <span className="truncate font-semibold text-slate-900 dark:text-white">
-            {guest.prospect_detail?.name || '—'}
-          </span>
+          <UserDetailsLink
+            userId={guest.prospect}
+            name={guest.prospect_detail?.name}
+            className="truncate font-semibold text-slate-900 dark:text-white"
+          />
         </div>
         {location ? <div className="mt-0.5 text-xs text-slate-500 dark:text-white/50">{location}</div> : null}
       </div>
@@ -193,7 +196,9 @@ function GuestCheckinCard({
         ) : null}
         <div className="flex items-center gap-2">
           <UserRound size={14} className="shrink-0 text-slate-400" />
-          <span className="truncate">Invited by {guest.inviter_name || '—'}</span>
+          <span className="truncate">
+            Invited by <UserDetailsLink userId={guest.inviter} name={guest.inviter_name} />
+          </span>
         </div>
       </div>
 
@@ -307,7 +312,11 @@ export function GuestCheckinTable({
                   </div>
                 </td>
                 <td className="px-3 py-2">
-                  <div className="font-medium text-slate-900 dark:text-white">{guest.prospect_detail?.name || '—'}</div>
+                  <UserDetailsLink
+                    userId={guest.prospect}
+                    name={guest.prospect_detail?.name}
+                    className="font-medium text-slate-900 dark:text-white"
+                  />
                   {(guest.prospect_detail?.city || guest.prospect_detail?.state) && (
                     <div className="text-xs text-slate-500 dark:text-white/50">
                       {[guest.prospect_detail?.city, guest.prospect_detail?.state].filter(Boolean).join(', ')}
@@ -316,7 +325,9 @@ export function GuestCheckinTable({
                 </td>
                 <td className="px-3 py-2 text-slate-700 dark:text-white/80">{guest.prospect_detail?.email || '—'}</td>
                 <td className="px-3 py-2 text-slate-700 dark:text-white/80">{guest.prospect_detail?.phone || '—'}</td>
-                <td className="px-3 py-2 text-slate-700 dark:text-white/80">{guest.inviter_name || '—'}</td>
+                <td className="px-3 py-2 text-slate-700 dark:text-white/80">
+                  <UserDetailsLink userId={guest.inviter} name={guest.inviter_name} />
+                </td>
                 {showOutcome ? (
                   <td className="px-3 py-2">
                     <OutcomeChecklist guest={guest} busy={busy} onSetOutcome={onSetOutcome} />

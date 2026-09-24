@@ -3,7 +3,7 @@ import { Modal } from '@shared/components';
 import { formatOccurrenceTime } from '../services/bpm-service';
 import type { BPMOccurrence } from '../types';
 import { AddGuestForm } from './add-guest-form';
-import { BPMOccurrencePicker } from './bpm-occurrence-picker';
+import { BPMOccurrenceSelect } from './bpm-occurrence-picker';
 
 interface AddGuestModalProps {
   open: boolean;
@@ -33,7 +33,10 @@ export function AddGuestModal({ open, presetOccurrence, onClose, onAdded }: AddG
         </div>
       ) : (
         <div className="mb-4">
-          <BPMOccurrencePicker value={picked} onChange={setPicked} />
+          {/* Standalone, not the sticky page selection: adding a guest to a
+              different BPM from inside this modal must not navigate the page
+              the user is working on. */}
+          <BPMOccurrenceSelect value={picked} onChange={setPicked} />
         </div>
       )}
       <AddGuestForm

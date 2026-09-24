@@ -4,7 +4,54 @@ export type EventType = 'ONE_TIME' | 'RECURRING';
 export type BPMFormat = 'IN_PERSON' | 'WEBINAR' | 'WEB_AND_IN_PERSON';
 export type LocationKind = 'IN_PERSON' | 'ONLINE';
 export type OfficeType = 'PERMANENT' | 'TEMPORARY';
+/** @deprecated legacy stored status; read `effective_status` instead. */
 export type OccurrenceStatus = 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';
+
+/**
+ * Every status a BPM or one of its dates can report.
+ *
+ * SCHEDULED / LIVE / COMPLETED are derived from the clock and never stored;
+ * the rest are hard-set by a leader in BPM Schedule.
+ */
+export type BPMStatus =
+  | 'SCHEDULED'
+  | 'LIVE'
+  | 'COMPLETED'
+  | 'ARCHIVED'
+  | 'HIDDEN'
+  | 'CANCELLED'
+  | 'DELETED';
+
+/** The subset of BPMStatus that can be stored. `null` clears the override. */
+export type BPMStatusOverride = 'ARCHIVED' | 'HIDDEN' | 'CANCELLED' | 'DELETED';
+
+/** Statuses shown only in BPM Schedule, never in the other sub-tools. */
+export const CONCEALED_STATUSES: BPMStatus[] = ['HIDDEN', 'CANCELLED', 'DELETED'];
+
+/** Human labels for the status control. */
+export const BPM_STATUS_LABELS: Record<BPMStatus, string> = {
+  SCHEDULED: 'Scheduled',
+  LIVE: 'Live',
+  COMPLETED: 'Completed',
+  ARCHIVED: 'Archived',
+  HIDDEN: 'Hidden',
+  CANCELLED: 'Cancelled',
+  DELETED: 'Deleted',
+};
+
+/** A file attached to a BPM — in practice the event flyer. */
+export interface BPMEventAttachment {
+  id: number;
+  /** Permanent CDN URL. Empty when the viewer may not view attachments. */
+  href: string;
+  file_name: string;
+  content_type: string;
+  /** Image or PDF, so the UI can render it inline rather than just link it. */
+  is_previewable: boolean;
+  uploaded_by: number | null;
+  uploaded_by_name: string | null;
+  created_at: string;
+}
 /** Independent follow-up outcome flags on a guest; multiple may be set at once. */
 export type GuestOutcomeField = 'called' | 'left_message' | 'not_interested' | 'reschedule';
 /** Section a follow-up interest option belongs to (drives the checkbox groups). */
@@ -109,6 +156,10 @@ export interface BPMEventListItem {
   recurrence_start: string | null;
   recurrence_end: string | null;
   hide_from_baseshop: boolean;
+  /** Hard-set status, or null when the status is derived from the clock. */
+  status_override: BPMStatusOverride | null;
+  effective_status: BPMStatus;
+  attachments: BPMEventAttachment[];
   is_active: boolean;
   created_by: number | null;
   created_by_name: string | null;
@@ -131,9 +182,19 @@ export interface BPMOccurrence {
   end_at: string;
   timezone: string;
   duration_minutes: number;
+  /** @deprecated legacy column; read `effective_status`. */
   status: OccurrenceStatus;
+  /** Hard-set status for this date, or null when derived from the clock. */
+  status_override: BPMStatusOverride | null;
+  effective_status: BPMStatus;
+  /** Archived or deleted — the UI must not offer edits. */
+  is_read_only: boolean;
   guest_count: number;
   checked_in_count: number;
+  /** Associates checked in here, counted the same way guests are. */
+  associate_count: number;
+  /** Whether the parent BPM has a flyer, so the UI can offer the button. */
+  has_attachments: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -337,8 +398,19 @@ export interface EventFilters {
   state?: string;
   segment?: string;
   ordering?: string;
+  /**
+   * Include HIDDEN / CANCELLED / DELETED rows. BPM Schedule and BPM Settings
+   * only; the backend ignores it without bpm_schedule/bpm_settings:manage.
+   */
+  include_concealed?: boolean;
   page?: number;
   page_size?: number;
+}
+
+/** City / state options that actually have BPMs in the window on screen. */
+export interface DistinctLocations {
+  cities: string[];
+  states: string[];
 }
 
 export interface GoogleStatus {
@@ -355,6 +427,10 @@ export interface BPMCapabilities {
   can_manage_guests: boolean;
   /** bpm_templates:manage — gates the interest-options catalog admin UI. */
   can_manage_templates?: boolean;
+  /** bpm_schedule:manage — gates CRUD and the status control in BPM Schedule. */
+  can_manage_schedule?: boolean;
+  /** bpm_settings:manage — gates BPM Settings, including deleted-item recovery. */
+  can_manage_settings?: boolean;
 }
 
 export interface SaveGuestFollowupPayload {
@@ -377,6 +453,12 @@ export interface OccurrenceFilters {
   state?: string;
   bpm_format?: BPMFormat | '';
   segment?: string;
+  search?: string;
+  /**
+   * Include HIDDEN / CANCELLED / DELETED rows. BPM Schedule and BPM Settings
+   * only; the backend ignores it without bpm_schedule/bpm_settings:manage.
+   */
+  include_concealed?: boolean;
   page?: number;
   page_size?: number;
 }

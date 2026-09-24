@@ -63,3 +63,18 @@ export {
 	type TrackerDateRangeChange,
 	type DatePresetKey,
 } from './tracker-date-range-filter';
+export {
+	BPM_GUEST_ROW_COLORS,
+	BPM_GUEST_STATE,
+	RESERVED_ROW_COLOR_HEXES,
+	isHexAvailable,
+	normalizeHex,
+	resolveRowColors,
+	rowColorLabel,
+	rowColorStyle,
+	rowColorStyleFor,
+	type ResolvedRowColors,
+	type RowColorChannel,
+	type RowColorRule,
+	type RowColorStyle,
+} from './row-colors';

@@ -9,7 +9,11 @@ interface BPMPageShellProps {
 
 export function BPMPageShell({ title, description, actions, children }: BPMPageShellProps) {
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-6">
+    // Full-bleed rather than a centred max-w-6xl column: these are dense
+    // working lists (guest check-in, invites) and the brief asks for the cards
+    // to fill the available area instead of leaving wide empty side margins.
+    // Side padding is kept so the content never touches the viewport edge.
+    <main className="w-full px-4 py-6">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-slate-900 dark:text-white">{title}</h1>

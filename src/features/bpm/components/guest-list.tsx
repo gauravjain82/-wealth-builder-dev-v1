@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button, Checkbox } from '@shared/components';
+import { UserDetailsLink } from '@/features/team/components/user-details-link';
 import { formatOccurrenceTime, GUEST_OUTCOME_FIELDS } from '../services/bpm-service';
 import type { BPMGuest, GuestOutcomeField } from '../types';
 import { GuestNotesCell } from './guest-notes-cell';
@@ -78,9 +79,11 @@ export function GuestList({
             {guests.map((guest) => (
               <tr key={guest.id} className="border-t border-slate-100 dark:border-white/10">
                 <td className="px-3 py-2">
-                  <div className="font-medium text-slate-900 dark:text-white">
-                    {guest.prospect_detail?.name || '—'}
-                  </div>
+                  <UserDetailsLink
+                    userId={guest.prospect}
+                    name={guest.prospect_detail?.name}
+                    className="font-medium text-slate-900 dark:text-white"
+                  />
                   {guest.followup ? (
                     <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
                       <span className="rounded-full bg-emerald-50 px-2 py-0.5 dark:bg-emerald-400/10">
@@ -99,7 +102,9 @@ export function GuestList({
                 <td className="px-3 py-2 text-slate-700 dark:text-white/80">
                   {guest.prospect_detail?.email || '—'}
                 </td>
-                <td className="px-3 py-2 text-slate-700 dark:text-white/80">{guest.inviter_name || '—'}</td>
+                <td className="px-3 py-2 text-slate-700 dark:text-white/80">
+                  <UserDetailsLink userId={guest.inviter} name={guest.inviter_name} />
+                </td>
                 {showInteraction ? (
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-x-4 gap-y-1">

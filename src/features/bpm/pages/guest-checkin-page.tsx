@@ -6,6 +6,7 @@ import { matchupService } from '@/features/matchup/services/matchup-service';
 import type { AppointmentType } from '@/features/matchup/types';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
+import { useBpmSelection } from '../context/bpm-selection-context';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
 import { AddGuestModal } from '../components/add-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
@@ -13,7 +14,6 @@ import { bpmService } from '../services/bpm-service';
 import type {
   BPMGuest,
   BPMInterestOption,
-  BPMOccurrence,
   GuestOutcomeField,
   ProspectSearchHit,
 } from '../types';
@@ -31,7 +31,8 @@ const FILTERS: { key: GuestFilter; label: string; match: (g: BPMGuest) => boolea
 
 export default function GuestCheckinPage() {
   const addToast = useToastStore((state) => state.addToast);
-  const [occurrence, setOccurrence] = useState<BPMOccurrence | null>(null);
+  // Sticky: the BPM/date chosen here follows the user to the other sub-tools.
+  const { occurrence } = useBpmSelection();
   const [guests, setGuests] = useState<BPMGuest[]>([]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -205,7 +206,7 @@ export default function GuestCheckinPage() {
   return (
     <BPMPageShell title="Guest Check-In" description="Check guests in as they arrive at the BPM.">
       <BPMCard className="mb-4">
-        <BPMOccurrencePicker value={occurrence} onChange={setOccurrence} />
+        <BPMOccurrencePicker allowPast />
       </BPMCard>
 
       {occurrence ? (

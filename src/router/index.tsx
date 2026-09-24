@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { ProtectedRoute } from './protected-route';
 import { AdminRoute } from './admin-route';
 import { BuilderAiRoute } from './builder-ai-route';
@@ -9,6 +9,7 @@ import { PublicRoute } from './public-route';
 import { RouteErrorFallback } from './route-error-boundary';
 import { RootRedirect } from './root-redirect.tsx';
 import { MainLayout } from '@shared/layouts';
+import { BpmSelectionProvider } from '@/features/bpm/context/bpm-selection-context';
 import { LoginPage, SignupPage } from '@/features/auth';
 
 // Lazy load pages for code splitting
@@ -82,6 +83,7 @@ const BpmAddGuestPage = lazy(() => import('@/features/bpm/pages/add-guest-page')
 const BpmViewInvitesPage = lazy(() => import('@/features/bpm/pages/view-invites-page'));
 const BpmGuestCheckinPage = lazy(() => import('@/features/bpm/pages/guest-checkin-page'));
 const BpmAssociateCheckinPage = lazy(() => import('@/features/bpm/pages/associate-checkin-page'));
+const BpmSettingsPage = lazy(() => import('@/features/bpm/pages/bpm-settings-page'));
 const HelpNeededPage = lazy(() => import('@/features/helpdesk/pages/help-needed-page'));
 const PrivacyPolicyPage = lazy(() => import('@/features/legal/pages/privacy-policy-page'));
 const TermsPage = lazy(() => import('@/features/legal/pages/terms-page'));
@@ -388,32 +390,49 @@ const router = createBrowserRouter([
         element: lazyLoad(CalendarPage),
       },
       {
+        // Nested so every BPM sub-tool shares one BpmSelectionProvider: the
+        // chosen BPM / date / location survives navigation between them instead
+        // of each page resetting its own picker. Paths are unchanged.
         path: 'bpm',
-        element: <Navigate to="/bpm/overview" replace />,
-      },
-      {
-        path: 'bpm/overview',
-        element: lazyLoad(BpmOverviewPage),
-      },
-      {
-        path: 'bpm/schedule',
-        element: lazyLoad(BpmSchedulePage),
-      },
-      {
-        path: 'bpm/add-guest',
-        element: lazyLoad(BpmAddGuestPage),
-      },
-      {
-        path: 'bpm/view-invites',
-        element: lazyLoad(BpmViewInvitesPage),
-      },
-      {
-        path: 'bpm/guest-checkin',
-        element: lazyLoad(BpmGuestCheckinPage),
-      },
-      {
-        path: 'bpm/associate-checkin',
-        element: lazyLoad(BpmAssociateCheckinPage),
+        element: (
+          <BpmSelectionProvider>
+            <Outlet />
+          </BpmSelectionProvider>
+        ),
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/bpm/overview" replace />,
+          },
+          {
+            path: 'overview',
+            element: lazyLoad(BpmOverviewPage),
+          },
+          {
+            path: 'schedule',
+            element: lazyLoad(BpmSchedulePage),
+          },
+          {
+            path: 'add-guest',
+            element: lazyLoad(BpmAddGuestPage),
+          },
+          {
+            path: 'view-invites',
+            element: lazyLoad(BpmViewInvitesPage),
+          },
+          {
+            path: 'guest-checkin',
+            element: lazyLoad(BpmGuestCheckinPage),
+          },
+          {
+            path: 'associate-checkin',
+            element: lazyLoad(BpmAssociateCheckinPage),
+          },
+          {
+            path: 'settings',
+            element: lazyLoad(BpmSettingsPage),
+          },
+        ],
       },
       {
         path: 'file-vault',

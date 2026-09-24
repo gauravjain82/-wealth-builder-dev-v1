@@ -145,3 +145,40 @@ html.dark .sidebar__menu-item-arrow,
 body.dark .sidebar__menu-item-arrow {
   color: rgba(255, 255, 255, 0.8);
 }
+
+/* ---------------------------------------------------------------------------
+   Collapsed-rail pop-out submenu.
+
+   When the sidebar is minimised, a parent group's children are otherwise
+   unreachable without expanding the whole menu — painful on a phone. Clicking
+   the group icon pops its links out beside the rail instead.
+
+   Rendered `position: fixed` from the button's viewport rect so the narrow
+   sidebar cannot clip it.
+   --------------------------------------------------------------------------- */
+.sidebar__flyout {
+  position: fixed;
+  z-index: 60;
+  min-width: 220px;
+  max-width: min(280px, calc(100vw - 88px));
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 10px;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+}
+
+.sidebar__flyout-title {
+  padding: 4px 12px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+}
+
+.dark .sidebar__flyout {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}

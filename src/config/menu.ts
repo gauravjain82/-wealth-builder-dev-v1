@@ -41,10 +41,12 @@ const MENU_ITEMS = {
   // BPM (Business Presentation Meetings)
   BPM_OVERVIEW: { label: 'BPM Overview', icon: '📊', path: '/bpm/overview' } as MenuItem,
   BPM_ADD_GUEST: { label: 'Add Guest', icon: '👤', path: '/bpm/add-guest' } as MenuItem,
-  BPM_VIEW_INVITES: { label: 'View Invites', icon: '📬', path: '/bpm/view-invites' } as MenuItem,
+  BPM_VIEW_INVITES: { label: 'Guest Invites', icon: '📬', path: '/bpm/view-invites' } as MenuItem,
   BPM_ASSOCIATE_CHECKIN: { label: 'Associate Check-In', icon: '✅', path: '/bpm/associate-checkin' } as MenuItem,
   BPM_GUEST_CHECKIN: { label: 'Guest Check-In', icon: '✔️', path: '/bpm/guest-checkin' } as MenuItem,
   BPM_SCHEDULE: { label: 'BPM Schedule', icon: '📅', path: '/bpm/schedule' } as MenuItem,
+  // Last sub-link. Gated per-user by bpm_settings:manage, checked in the page.
+  BPM_SETTINGS: { label: 'BPM Settings', icon: '⚙️', path: '/bpm/settings' } as MenuItem,
 
 
   // Licensing items
@@ -170,6 +172,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
+        MENU_ITEMS.BPM_SETTINGS,
       ],
     },
     MENU_ITEMS.TRAINING_CENTER,
@@ -213,6 +216,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
+        MENU_ITEMS.BPM_SETTINGS,
       ],
     },
     MENU_ITEMS.TRAINING_CENTER,
@@ -262,6 +266,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
+        MENU_ITEMS.BPM_SETTINGS,
       ],
     },
     MENU_ITEMS.TRAINING_CENTER,
@@ -311,6 +316,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
+        MENU_ITEMS.BPM_SETTINGS,
       ],
     },
     {
@@ -372,6 +378,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
+        MENU_ITEMS.BPM_SETTINGS,
       ],
     },
     {
@@ -432,6 +439,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
+        MENU_ITEMS.BPM_SETTINGS,
       ],
     },
     {
@@ -507,6 +515,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
+        MENU_ITEMS.BPM_SETTINGS,
       ],
     },
     {

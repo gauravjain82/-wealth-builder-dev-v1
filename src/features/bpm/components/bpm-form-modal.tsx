@@ -21,15 +21,17 @@ import {
   supportedTimezones,
 } from '../services/bpm-service';
 import type {
-  BPMEmailTemplate,
+  BPMEventAttachment,
+  BPMStatusOverride,
   BPMEventDetail,
   BPMEventPayload,
   BPMOccurrence,
   EventType,
-  OccurrenceStatus,
   UserRef,
 } from '../types';
 import { MultiUserSelect, type SelectedUser } from './multi-user-select';
+import { AttachmentUploader } from './event-attachments';
+import { StatusControl } from './status-control';
 import {
   LocationsEditor,
   locationsToDrafts,
@@ -81,8 +83,10 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
   const [locations, setLocations] = useState<LocationDraft[]>([newLocationDraft()]);
   const [smds, setSmds] = useState<SelectedUser[]>([]);
   const [trainers, setTrainers] = useState<SelectedUser[]>([]);
-  const [templates, setTemplates] = useState<BPMEmailTemplate[]>([]);
   const [occurrences, setOccurrences] = useState<BPMOccurrence[]>([]);
+  // Attachments are uploaded straight away against an existing BPM, so they are
+  // only offered once the event exists (i.e. when editing).
+  const [attachments, setAttachments] = useState<BPMEventAttachment[]>([]);
   const [statusBusyId, setStatusBusyId] = useState<number | null>(null);
   const [cancelTarget, setCancelTarget] = useState<BPMOccurrence | null>(null);
   const [saving, setSaving] = useState(false);
@@ -112,17 +116,17 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
           (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
         ),
       );
+      setAttachments(event.attachments || []);
     } else {
       setForm(defaultForm());
       setLocations([newLocationDraft()]);
       setSmds([]);
       setTrainers([]);
       setOccurrences([]);
+      setAttachments([]);
     }
-    bpmService
-      .emailTemplates()
-      .then((data) => setTemplates(data.results))
-      .catch(() => setTemplates([]));
+    // Email templates are not fetched: the field is hidden for now (BPM v2
+    // brief), so the request would be pure waste.
   }, [open, event]);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -221,15 +225,19 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
     }
   };
 
-  const applyStatus = async (occurrence: BPMOccurrence, status: OccurrenceStatus) => {
+  /**
+   * Hard-set (or clear) one date's status.
+   *
+   * Deleting is the only state that needs confirming now: hiding, cancelling
+   * and archiving are all reversible and leave participants' calendars alone.
+   */
+  const applyStatus = async (
+    occurrence: BPMOccurrence,
+    next: BPMStatusOverride | null,
+  ) => {
     setStatusBusyId(occurrence.id);
     try {
-      const updated =
-        status === 'SCHEDULED'
-          ? await bpmService.rescheduleOccurrence(occurrence.id)
-          : status === 'COMPLETED'
-            ? await bpmService.completeOccurrence(occurrence.id)
-            : await bpmService.cancelOccurrence(occurrence.id);
+      const updated = await bpmService.setOccurrenceStatus(occurrence.id, next);
       setOccurrences((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
       onSaved();
       addToast({ type: 'success', message: 'Status updated.' });
@@ -240,22 +248,23 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
     }
   };
 
-  // Cancelling removes the occurrence from everyone's calendar, so confirm it;
-  // restoring (→ SCHEDULED) and completing apply immediately.
-  const onStatusSelect = (occurrence: BPMOccurrence, status: OccurrenceStatus) => {
-    if (status === occurrence.status) return;
-    if (status === 'CANCELLED') {
+  const onStatusSelect = (
+    occurrence: BPMOccurrence,
+    next: BPMStatusOverride | null,
+  ) => {
+    if (next === occurrence.status_override) return;
+    if (next === 'DELETED') {
       setCancelTarget(occurrence);
       return;
     }
-    void applyStatus(occurrence, status);
+    void applyStatus(occurrence, next);
   };
 
   const confirmCancel = async () => {
     if (!cancelTarget) return;
     const target = cancelTarget;
     setCancelTarget(null);
-    await applyStatus(target, 'CANCELLED');
+    await applyStatus(target, 'DELETED');
   };
 
   return (
@@ -347,32 +356,25 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
           </div>
           <MultiUserSelect selected={smds} onChange={setSmds} placeholder="Search SMDs" />
         </FormRow>
-        <FormRow>
-          <Label>Trainers (optional)</Label>
-          <MultiUserSelect selected={trainers} onChange={setTrainers} placeholder="Search trainers" />
-        </FormRow>
+        {/* Trainers and Email template are hidden for now — neither is in use
+            yet (BPM v2 brief). The state and payload wiring is left intact so
+            re-showing them is a matter of deleting this comment block's guard,
+            not rebuilding the fields. */}
 
-        <FormRowGroup>
+        {isEditing && event ? (
           <FormRow>
-            <Label>Email template</Label>
-            <Select
-              variant="surface"
-              value={form.email_template ?? ''}
-              onChange={(e) => update('email_template', e.target.value ? Number(e.target.value) : null)}
-            >
-              <option value="">None</option>
-              {templates.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.name}
-                </option>
-              ))}
-            </Select>
+            <Label>Attachments (event flyer)</Label>
+            <AttachmentUploader
+              eventId={event.id}
+              attachments={attachments}
+              onChanged={setAttachments}
+            />
           </FormRow>
-        </FormRowGroup>
+        ) : null}
 
         {isEditing && occurrences.length > 0 ? (
           <FormRow>
-            <Label>Occurrences — change status / restore cancelled</Label>
+            <Label>Dates — set a status, or leave it automatic</Label>
             <div className="grid max-h-64 gap-1.5 overflow-y-auto rounded-lg border border-slate-200 p-2 dark:border-white/10">
               {occurrences.map((occurrence) => (
                 <div key={occurrence.id} className="flex items-center justify-between gap-3">
@@ -386,16 +388,12 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
                       </div>
                     ) : null}
                   </div>
-                  <Select
-                    variant="surface"
-                    value={occurrence.status}
+                  <StatusControl
+                    effectiveStatus={occurrence.effective_status}
+                    statusOverride={occurrence.status_override}
                     disabled={statusBusyId === occurrence.id}
-                    onChange={(e) => onStatusSelect(occurrence, e.target.value as OccurrenceStatus)}
-                  >
-                    <option value="SCHEDULED">Scheduled</option>
-                    <option value="CANCELLED">Cancelled</option>
-                    <option value="COMPLETED">Completed</option>
-                  </Select>
+                    onChange={(next) => onStatusSelect(occurrence, next)}
+                  />
                 </div>
               ))}
             </div>
@@ -413,13 +411,16 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
       </Form>
     </Modal>
 
+    {/* Delete is the only status worth confirming: it is the one state that
+        removes the date from participants' Google calendars, and the only one
+        that has to be undone from BPM Settings rather than here. */}
     <ConfirmationDialog
       open={Boolean(cancelTarget)}
-      title="Cancel this BPM occurrence?"
-      message={`This cancels "${cancelTarget?.event_name ?? 'this occurrence'}" on ${
+      title="Delete this BPM date?"
+      message={`This removes "${cancelTarget?.event_name ?? 'this date'}" on ${
         cancelTarget ? formatOccurrenceTime(cancelTarget.start_at) : ''
-      } for everyone and removes it from all participants' calendars. You can restore it later.`}
-      confirmText="Cancel occurrence"
+      } from every list and deletes it from participants' calendars. Its guests and check-ins are kept, and it can be restored from BPM Settings.`}
+      confirmText="Delete date"
       cancelText="Keep it"
       loading={statusBusyId === cancelTarget?.id}
       onConfirm={confirmCancel}

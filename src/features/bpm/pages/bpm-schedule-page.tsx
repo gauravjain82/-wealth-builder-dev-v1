@@ -1,11 +1,21 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Button, ConfirmationDialog, DateRangePicker, Input, LoadingState, Select, type DateRangeValue } from '@shared/components';
+import { Button, DateRangePicker, Input, LoadingState, Select, type DateRangeValue } from '@shared/components';
 import { useToastStore } from '@/store';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMFormModal } from '../components/bpm-form-modal';
+import { StatusBadge, StatusControl } from '../components/status-control';
+import { OccurrenceRowActions } from '../components/occurrence-row-actions';
+import { AttachmentsModal } from '../components/event-attachments';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
-import type { BPMOccurrence, BPMEventDetail, OccurrenceFilters } from '../types';
+import type {
+  BPMCapabilities,
+  BPMEventAttachment,
+  BPMOccurrence,
+  BPMEventDetail,
+  BPMStatusOverride,
+  OccurrenceFilters,
+} from '../types';
 
 /** The calendar date an occurrence runs on, in its own timezone (YYYY-MM-DD). */
 const occurrenceLocalDate = (occurrence: BPMOccurrence): string =>
@@ -67,8 +77,16 @@ export default function BpmSchedulePage() {
   const [busy, setBusy] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<BPMEventDetail | null>(null);
-  const [cancelTarget, setCancelTarget] = useState<BPMOccurrence | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [capabilities, setCapabilities] = useState<BPMCapabilities | null>(null);
+  const [attachmentsFor, setAttachmentsFor] = useState<{
+    name: string;
+    attachments: BPMEventAttachment[];
+  } | null>(null);
+
+  // BPM Schedule is the CRUD surface and the only list that shows HIDDEN /
+  // CANCELLED / DELETED rows. Below broker level the page stays read-only.
+  const canManage = Boolean(capabilities?.can_manage_schedule);
 
   const toggleGroup = (key: string) =>
     setExpanded((prev) => {
@@ -85,9 +103,10 @@ export default function BpmSchedulePage() {
       city: city.trim() || undefined,
       state: stateFilter.trim() || undefined,
       segment: segment || undefined,
+      include_concealed: canManage,
       page_size: 100,
     }),
-    [range, city, stateFilter, segment],
+    [range, city, stateFilter, segment, canManage],
   );
 
   const load = useCallback(async () => {
@@ -105,6 +124,46 @@ export default function BpmSchedulePage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    bpmService.capabilities().then(setCapabilities).catch(() => setCapabilities(null));
+  }, []);
+
+  /** Hard-set (or clear) one date's status, then refresh the list. */
+  const changeStatus = async (
+    occurrence: BPMOccurrence,
+    next: BPMStatusOverride | null,
+  ) => {
+    setBusy(true);
+    try {
+      await bpmService.setOccurrenceStatus(occurrence.id, next);
+      addToast({ type: 'success', message: 'Status updated.' });
+      await load();
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to update status',
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Open the attachments popup for a row's BPM. */
+  const openAttachments = async (occurrence: BPMOccurrence) => {
+    setBusy(true);
+    try {
+      const detail = await bpmService.event(occurrence.event);
+      setAttachmentsFor({ name: detail.name, attachments: detail.attachments || [] });
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to load attachments',
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const groups = useMemo(() => groupOccurrences(occurrences), [occurrences]);
 
@@ -131,26 +190,11 @@ export default function BpmSchedulePage() {
     setEditingEvent(null);
   };
 
-  const confirmCancel = async () => {
-    if (!cancelTarget) return;
-    setBusy(true);
-    try {
-      await bpmService.cancelOccurrence(cancelTarget.id);
-      addToast({ type: 'success', message: 'Occurrence cancelled.' });
-      setCancelTarget(null);
-      await load();
-    } catch (error) {
-      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to cancel' });
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <BPMPageShell
       title="BPM Schedule"
       description="Create BPMs and browse upcoming occurrences by date, location, or team."
-      actions={<Button onClick={openCreate}>Create BPM</Button>}
+      actions={canManage ? <Button onClick={openCreate}>Create BPM</Button> : null}
     >
       <BPMCard className="mb-4">
         <div className="grid gap-3 md:grid-cols-4">
@@ -242,26 +286,42 @@ export default function BpmSchedulePage() {
                                 {occurrence.checked_in_count}/{occurrence.guest_count}
                               </td>
                               <td className="px-3 py-2 text-slate-700 dark:text-white/80">
-                                {occurrence.status}
+                                {canManage ? (
+                                  <StatusControl
+                                    effectiveStatus={occurrence.effective_status}
+                                    statusOverride={occurrence.status_override}
+                                    disabled={busy}
+                                    onChange={(next) => void changeStatus(occurrence, next)}
+                                  />
+                                ) : (
+                                  <StatusBadge status={occurrence.effective_status} />
+                                )}
                               </td>
                               <td className="px-3 py-2">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
+                                <div className="flex flex-wrap justify-end gap-2">
+                                  {/* Same jump-to-sub-tool actions as BPM
+                                      Overview, per the brief. */}
+                                  <OccurrenceRowActions
+                                    occurrences={[occurrence]}
+                                    selected={occurrence}
+                                    onSelect={() => undefined}
+                                    hasAttachments={occurrence.has_attachments}
+                                    onOpenAttachments={(row) => void openAttachments(row)}
                                     disabled={busy}
-                                    onClick={() => void openEdit(occurrence)}
-                                  >
-                                    Edit BPM
-                                  </Button>
-                                  {occurrence.status === 'SCHEDULED' ? (
+                                  />
+                                  {canManage ? (
                                     <Button
                                       size="sm"
-                                      variant="destructive"
-                                      disabled={busy}
-                                      onClick={() => setCancelTarget(occurrence)}
+                                      variant="secondary"
+                                      disabled={busy || occurrence.is_read_only}
+                                      title={
+                                        occurrence.is_read_only
+                                          ? 'Archived and deleted BPMs are read-only'
+                                          : undefined
+                                      }
+                                      onClick={() => void openEdit(occurrence)}
                                     >
-                                      Cancel
+                                      Edit BPM
                                     </Button>
                                   ) : null}
                                 </div>
@@ -280,17 +340,11 @@ export default function BpmSchedulePage() {
 
       <BPMFormModal open={formOpen} onClose={closeForm} onSaved={load} event={editingEvent} />
 
-      <ConfirmationDialog
-        open={Boolean(cancelTarget)}
-        title="Cancel this BPM occurrence?"
-        message={`This cancels "${cancelTarget?.event_name ?? 'this occurrence'}" on ${
-          cancelTarget ? formatOccurrenceTime(cancelTarget.start_at) : ''
-        } for everyone and removes it from all participants' calendars. This cannot be undone.`}
-        confirmText="Cancel occurrence"
-        cancelText="Keep it"
-        loading={busy}
-        onConfirm={confirmCancel}
-        onClose={() => setCancelTarget(null)}
+      <AttachmentsModal
+        open={Boolean(attachmentsFor)}
+        eventName={attachmentsFor?.name ?? ''}
+        attachments={attachmentsFor?.attachments ?? []}
+        onClose={() => setAttachmentsFor(null)}
       />
     </BPMPageShell>
   );
