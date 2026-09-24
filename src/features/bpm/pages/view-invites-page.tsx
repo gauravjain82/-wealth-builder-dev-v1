@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, LoadingState } from '@shared/components';
 import { useToastStore } from '@/store';
+import { AppointmentFormModal } from '@/features/matchup/components/appointment-form-modal';
 import { matchupService } from '@/features/matchup/services/matchup-service';
 import type { AppointmentType } from '@/features/matchup/types';
 import { AddGuestModal } from '../components/add-guest-modal';
@@ -9,12 +10,11 @@ import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { useBpmSelection } from '../context/bpm-selection-context';
 import { GuestList } from '../components/guest-list';
+import { RescheduleGuestModal } from '../components/reschedule-guest-modal';
 import { TransferGuestModal } from '../components/transfer-guest-modal';
-import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
-import { InterestOptionsAdminModal } from '../components/interest-options-admin-modal';
-import { bpmService } from '../services/bpm-service';
+import { bpmService, findStepOneTypeId, formatOccurrenceTime } from '../services/bpm-service';
 import { mergeGuest } from '../components/guest-notes';
-import type { BPMCapabilities, BPMGuest, BPMInterestOption, GuestOutcomeField } from '../types';
+import type { BPMGuest, GuestOutcomeField } from '../types';
 
 export default function ViewInvitesPage() {
   const addToast = useToastStore((state) => state.addToast);
@@ -24,8 +24,9 @@ export default function ViewInvitesPage() {
   const [loading, setLoading] = useState(false);
   const [busyGuestId, setBusyGuestId] = useState<number | null>(null);
   const [transferTarget, setTransferTarget] = useState<BPMGuest | null>(null);
-  const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
-  const [manageOptionsOpen, setManageOptionsOpen] = useState(false);
+  const [rescheduleTarget, setRescheduleTarget] = useState<BPMGuest | null>(null);
+  const [appointmentTarget, setAppointmentTarget] = useState<BPMGuest | null>(null);
+  const [savingAppointment, setSavingAppointment] = useState(false);
   const [addGuestOpen, setAddGuestOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -41,23 +42,13 @@ export default function ViewInvitesPage() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
-  const [capabilities, setCapabilities] = useState<BPMCapabilities | null>(null);
-
-  const loadInterestOptions = useCallback(async () => {
-    try {
-      setInterestOptions(await bpmService.interestOptions({ ordering: 'sort_order' }));
-    } catch {
-      // Non-fatal: the follow-up form simply shows no options.
-    }
-  }, []);
 
   useEffect(() => {
-    void loadInterestOptions();
     matchupService.appointmentTypes().then(setAppointmentTypes).catch(() => setAppointmentTypes([]));
-    bpmService.capabilities().then(setCapabilities).catch(() => setCapabilities(null));
-  }, [loadInterestOptions]);
+  }, []);
+
+  const stepOneTypeId = useMemo(() => findStepOneTypeId(appointmentTypes), [appointmentTypes]);
 
   const load = useCallback(
     async (occurrenceId: number) => {
@@ -80,7 +71,8 @@ export default function ViewInvitesPage() {
 
   const patchGuest = (updated: BPMGuest) => setGuests((prev) => mergeGuest(prev, updated));
 
-  const handleOutcome = async (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => {
+  /** Optimistic toggle shared by the outcome checkboxes and Confirmed. */
+  const setFlag = async (guest: BPMGuest, field: GuestOutcomeField | 'confirmed', value: boolean) => {
     const snapshot = guest;
     setGuests((prev) => mergeGuest(prev, { ...guest, [field]: value }));
     try {
@@ -88,7 +80,7 @@ export default function ViewInvitesPage() {
       patchGuest(updated);
     } catch (error) {
       patchGuest(snapshot);
-      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to update outcome' });
+      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to update guest' });
     }
   };
 
@@ -105,23 +97,57 @@ export default function ViewInvitesPage() {
     }
   };
 
-  const handleFollowUpSaved = (updated: BPMGuest) => patchGuest(updated);
+  /**
+   * Book the 1-on-1 through Match Up, then link it to the guest.
+   *
+   * The appointment is always created by the Match Up endpoint — BPM never grows
+   * a second way to make one — so this is two calls, and a failure to link is
+   * reported without discarding the appointment that was created.
+   */
+  const bookAppointment = async (payload: Parameters<typeof matchupService.createAppointment>[0]) => {
+    const guest = appointmentTarget;
+    if (!guest) return;
+    setSavingAppointment(true);
+    try {
+      const created = await matchupService.createAppointment(payload);
+      const updated = await bpmService.rescheduleGuestToAppointment(guest.occurrence, {
+        guest_id: guest.id,
+        appointment_id: created.id,
+      });
+      patchGuest(updated);
+      setAppointmentTarget(null);
+      addToast({ type: 'success', message: 'Appointment booked and linked.' });
+    } catch (error) {
+      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to book appointment' });
+    } finally {
+      setSavingAppointment(false);
+    }
+  };
+
+  const appointmentInitialValues = useMemo(() => {
+    if (!appointmentTarget) return null;
+    const source = occurrence
+      ? `Rescheduled from ${occurrence.event_name} · ${formatOccurrenceTime(occurrence.start_at)}`
+      : 'Rescheduled from a BPM';
+    return {
+      kind: 'REQUEST_TRAINER' as const,
+      contact: appointmentTarget.prospect,
+      contactLabel: appointmentTarget.prospect_detail?.name ?? '',
+      trainee: appointmentTarget.inviter,
+      traineeLabel: appointmentTarget.inviter_name ?? '',
+      types: stepOneTypeId ? [stepOneTypeId] : [],
+      notes: source,
+    };
+  }, [appointmentTarget, occurrence, stepOneTypeId]);
 
   return (
     <BPMPageShell
       title="Guest Invites"
-      description="Guests invited to a BPM. Track follow-up outcomes, transfer, or remove."
+      description="Guests invited to a BPM. Confirm attendance, track follow-up outcomes, or move a guest to another event."
       actions={
-        <>
-          <Button disabled={!occurrence} onClick={() => setAddGuestOpen(true)}>
-            + Add Guest
-          </Button>
-          {capabilities?.can_manage_templates ? (
-            <Button variant="outline" onClick={() => setManageOptionsOpen(true)}>
-              Manage interest options
-            </Button>
-          ) : null}
-        </>
+        <Button disabled={!occurrence} onClick={() => setAddGuestOpen(true)}>
+          + Add Guest
+        </Button>
       }
     >
       <BPMCard className="mb-4">
@@ -135,11 +161,10 @@ export default function ViewInvitesPage() {
             guests={guests}
             busyGuestId={busyGuestId}
             onGuestUpdated={patchGuest}
-            onSetOutcome={handleOutcome}
-            onFollowUp={(guest) => setFollowUpTarget(guest)}
-            followUpLabel="Blue card"
-            editFollowUpLabel="Edit Blue card"
-            followUpBadgeLabel="Blue card"
+            onSetConfirmed={(guest, value) => setFlag(guest, 'confirmed', value)}
+            onSetOutcome={(guest, field, value) => setFlag(guest, field, value)}
+            onReschedule={(guest) => setRescheduleTarget(guest)}
+            onBookAppointment={(guest) => setAppointmentTarget(guest)}
             onTransfer={(guest) => setTransferTarget(guest)}
             onRemove={handleRemove}
           />
@@ -153,6 +178,12 @@ export default function ViewInvitesPage() {
           if (occurrence) void load(occurrence.id);
         }}
       />
+      <RescheduleGuestModal
+        open={Boolean(rescheduleTarget)}
+        guest={rescheduleTarget}
+        onClose={() => setRescheduleTarget(null)}
+        onRescheduled={(source) => patchGuest(source)}
+      />
       <TransferGuestModal
         open={Boolean(transferTarget)}
         guest={transferTarget}
@@ -163,20 +194,14 @@ export default function ViewInvitesPage() {
           }
         }}
       />
-      <FollowUpGuestModal
-        open={Boolean(followUpTarget)}
-        guest={followUpTarget}
-        interestOptions={interestOptions}
+      <AppointmentFormModal
+        open={Boolean(appointmentTarget)}
+        title="Reschedule to Appointment"
+        initialValues={appointmentInitialValues}
         appointmentTypes={appointmentTypes}
-        heading="Blue card"
-        onClose={() => setFollowUpTarget(null)}
-        onSaved={handleFollowUpSaved}
-      />
-      <InterestOptionsAdminModal
-        open={manageOptionsOpen}
-        options={interestOptions}
-        onClose={() => setManageOptionsOpen(false)}
-        onChanged={loadInterestOptions}
+        saving={savingAppointment}
+        onClose={() => setAppointmentTarget(null)}
+        onSubmit={bookAppointment}
       />
     </BPMPageShell>
   );

@@ -4,7 +4,7 @@ import { useToastStore } from '@/store';
 import { AppointmentFormModal } from '@/features/matchup/components/appointment-form-modal';
 import { matchupService } from '@/features/matchup/services/matchup-service';
 import type { AppointmentDetail, AppointmentListItem, AppointmentType } from '@/features/matchup/types';
-import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
+import { bpmService, findStepOneTypeId, formatOccurrenceTime } from '../services/bpm-service';
 import type { BPMGuest, BPMInterestGroup, BPMInterestOption } from '../types';
 
 interface FollowUpGuestModalProps {
@@ -54,6 +54,7 @@ export function FollowUpGuestModal({
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState('');
   const [appointmentId, setAppointmentId] = useState<number | null>(null);
+  const stepOneTypeId = useMemo(() => findStepOneTypeId(appointmentTypes), [appointmentTypes]);
   const [linkedAppointment, setLinkedAppointment] = useState<AppointmentListItem | AppointmentDetail | null>(null);
   const [apptModalOpen, setApptModalOpen] = useState(false);
   const [savingAppt, setSavingAppt] = useState(false);
@@ -221,6 +222,9 @@ export function FollowUpGuestModal({
           kind: 'PERSONAL',
           contact: guest?.prospect ?? null,
           contactLabel: guest?.prospect_detail?.name ?? '',
+          // D3: an appointment booked off a blue card is the step 1 follow-up,
+          // so its type is pre-checked. By slug, because ids differ per env.
+          types: stepOneTypeId ? [stepOneTypeId] : [],
         }}
         appointmentTypes={appointmentTypes}
         saving={savingAppt}

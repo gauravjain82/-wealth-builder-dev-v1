@@ -16,6 +16,7 @@ import type {
   BPMOccurrence,
   EventFilters,
   GoogleStatus,
+  GuestFlagField,
   GuestOutcomeField,
   GuestProspectSearchHit,
   InviterSearchHit,
@@ -118,6 +119,21 @@ export const DAY_OF_WEEK_OPTIONS = [
   { value: 5, label: 'Saturday' },
   { value: 6, label: 'Sunday' },
 ];
+
+/**
+ * Slug of the appointment type a BPM follow-up is booked as (decision D3 —
+ * *"this is a step 1 appointment, check it"*). Seeded by matchup migration
+ * `0007`; both the 1on1 and Blue Card prefills pre-check it.
+ *
+ * Looked up by slug rather than id: ids differ per environment, and renaming
+ * the type in admin must not silently stop the box being ticked.
+ */
+export const STEP_ONE_TYPE_SLUG = 'follow-up-step-1';
+
+/** Id of the step-1 appointment type in a loaded list, or null if absent. */
+export function findStepOneTypeId(types: { id: number; slug: string }[]): number | null {
+  return types.find((type) => type.slug === STEP_ONE_TYPE_SLUG)?.id ?? null;
+}
 
 export const GUEST_OUTCOME_FIELDS: { field: GuestOutcomeField; label: string }[] = [
   { field: 'called', label: 'Called' },
@@ -307,12 +323,33 @@ export const bpmService = {
     }),
   setGuestFlags: (
     occurrenceId: number,
-    payload: { guest_id: number } & Partial<Record<GuestOutcomeField, boolean>>,
+    payload: { guest_id: number } & Partial<Record<GuestFlagField, boolean>>,
   ) =>
     request<BPMGuest>(`/api/bpm/occurrences/${occurrenceId}/set-guest-flags/`, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  /**
+   * Move a guest on to another date. Unlike `transferGuest` the source row stays
+   * put and is marked rescheduled, so both rows come back.
+   */
+  rescheduleGuest: (
+    occurrenceId: number,
+    payload: { guest_id: number; to_occurrence_id: number },
+  ) =>
+    request<{ guest: BPMGuest; created: BPMGuest }>(
+      `/api/bpm/occurrences/${occurrenceId}/reschedule-guest/`,
+      { method: 'POST', body: JSON.stringify(payload) },
+    ),
+  /** Link the 1-on-1 a guest was moved to (booked through Match Up). */
+  rescheduleGuestToAppointment: (
+    occurrenceId: number,
+    payload: { guest_id: number; appointment_id: number },
+  ) =>
+    request<BPMGuest>(
+      `/api/bpm/occurrences/${occurrenceId}/reschedule-guest-to-appointment/`,
+      { method: 'POST', body: JSON.stringify(payload) },
+    ),
   addGuestNote: (occurrenceId: number, payload: { guest_id: number; text: string }) =>
     request<BPMGuest>(`/api/bpm/occurrences/${occurrenceId}/add-guest-note/`, {
       method: 'POST',

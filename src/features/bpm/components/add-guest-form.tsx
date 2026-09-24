@@ -81,6 +81,19 @@ function defaultForm(): GuestForm {
   };
 }
 
+/**
+ * Last values typed into the Add Guest form, kept for the life of the tab.
+ *
+ * The modal unmounts its children when it closes, so without this the form
+ * would reset every time it reopened. Guests arrive in batches — several people
+ * invited by the same person, often with the same note — and re-picking the
+ * inviter for each one is the single most repeated action on this screen.
+ *
+ * In memory rather than localStorage on purpose: it is a convenience within one
+ * working session, not a preference worth surviving a reload.
+ */
+let lastForm: GuestForm | null = null;
+
 /** Split a free-text name into first/last for prefilling the new-prospect form. */
 function splitName(name: string): { firstName: string; lastName: string } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -129,7 +142,18 @@ function formToCreatePayload(formData: AddProspectFormData) {
 
 export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
   const addToast = useToastStore((state) => state.addToast);
-  const [form, setForm] = useState<GuestForm>(defaultForm);
+  const [form, setForm] = useState<GuestForm>(() => lastForm ?? defaultForm());
+
+  // Mirror every change into the session cache so the next open starts here.
+  const updateForm = useCallback(
+    (update: (prev: GuestForm) => GuestForm) =>
+      setForm((prev) => {
+        const next = update(prev);
+        lastForm = next;
+        return next;
+      }),
+    [],
+  );
   const [saving, setSaving] = useState(false);
   const [addProspectOpen, setAddProspectOpen] = useState(false);
   const [creatingProspect, setCreatingProspect] = useState(false);
@@ -195,7 +219,7 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
       );
       const label =
         created.full_name || `${created.first_name} ${created.last_name}`.trim() || created.email || `Prospect #${created.id}`;
-      setForm((prev) => ({
+      updateForm((prev) => ({
         ...prev,
         prospectId: created.id,
         prospectLabel: label,
@@ -232,7 +256,15 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
         notes: form.notes,
       });
       addToast({ type: 'success', message: 'Guest added.' });
-      setForm(defaultForm());
+      // Clear the guest, keep the inviter and the note: the next guest is
+      // usually the same inviter's, and re-selecting them every time is the
+      // friction this form's session cache exists to remove.
+      updateForm((prev) => ({
+        ...prev,
+        prospectId: null,
+        prospectLabel: '',
+        prospectMeta: '',
+      }));
       onAdded();
     } catch (error) {
       addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add guest' });
@@ -258,7 +290,7 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
               placeholder="Search the organisation"
               fetchOptions={searchInviters}
               onSelect={(option) =>
-                setForm((prev) => {
+                updateForm((prev) => {
                   const inviterChanged = prev.inviterId !== option.id;
                   return {
                     ...prev,
@@ -284,7 +316,7 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
                   disabled={!form.inviterId}
                   fetchOptions={searchGuests}
                   onSelect={(option) =>
-                    setForm((prev) => ({
+                    updateForm((prev) => ({
                       ...prev,
                       prospectId: option.id,
                       prospectLabel: option.label,
@@ -312,7 +344,7 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
         </FormRowGroup>
         <FormRow>
           <Label>Notes</Label>
-          <Textarea value={form.notes} onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))} rows={3} />
+          <Textarea value={form.notes} onChange={(e) => updateForm((prev) => ({ ...prev, notes: e.target.value }))} rows={3} />
         </FormRow>
         <FormActions>
           <Button type="submit" disabled={saving || !occurrence}>

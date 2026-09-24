@@ -1,10 +1,36 @@
 import { useState } from 'react';
 import { Button, Checkbox } from '@shared/components';
 import { UserDetailsLink } from '@/features/team/components/user-details-link';
+import {
+  BPM_GUEST_ROW_COLORS,
+  BPM_GUEST_STATE,
+  resolveRowColors,
+  rowColorLabel,
+  rowColorStyle,
+} from '@shared/components/row-colors';
 import { formatOccurrenceTime, GUEST_OUTCOME_FIELDS } from '../services/bpm-service';
 import type { BPMGuest, GuestOutcomeField } from '../types';
 import { GuestNotesCell } from './guest-notes-cell';
 import { GuestNotesModal } from './guest-notes-modal';
+
+/**
+ * Which colour rules are active for one guest row.
+ *
+ * Note the distinction the brief draws between wanting to reschedule and having
+ * been rescheduled: `reschedule` alone is an intention recorded against the
+ * guest, while `rescheduled` means a destination BPM or 1-on-1 was actually
+ * created. They are different colours, so only one of the two keys is ever on.
+ */
+function guestStateKeys(guest: BPMGuest) {
+  return [
+    guest.rescheduled && BPM_GUEST_STATE.RESCHEDULED,
+    guest.confirmed && BPM_GUEST_STATE.CONFIRMED,
+    guest.not_interested && BPM_GUEST_STATE.NOT_INTERESTED,
+    guest.reschedule && !guest.rescheduled && BPM_GUEST_STATE.RESCHEDULE_REQUESTED,
+    (guest.called || guest.left_message) && BPM_GUEST_STATE.CONTACTED,
+    Boolean(guest.followup?.appointment) && BPM_GUEST_STATE.APPOINTMENT_SCHEDULED,
+  ];
+}
 
 interface GuestListProps {
   guests: BPMGuest[];
@@ -13,13 +39,19 @@ interface GuestListProps {
   busyGuestId?: number | null;
   /** Patch this guest into local state; used after notes are added from the history modal. */
   onGuestUpdated?: (updated: BPMGuest) => void;
-  /** View Invites actions */
+  /** Guest Invites actions */
   onSetOutcome?: (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => void;
+  /** When set, the leftmost Confirmed column is shown. */
+  onSetConfirmed?: (guest: BPMGuest, value: boolean) => void;
   onFollowUp?: (guest: BPMGuest) => void;
   followUpLabel?: string;
   editFollowUpLabel?: string;
   followUpBadgeLabel?: string;
   onTransfer?: (guest: BPMGuest) => void;
+  /** Move the guest to another BPM date, keeping this row. */
+  onReschedule?: (guest: BPMGuest) => void;
+  /** Move the guest to a 1-on-1 appointment instead. */
+  onBookAppointment?: (guest: BPMGuest) => void;
   onRemove?: (guest: BPMGuest) => void;
   /** Guest Check-In action */
   onToggleCheckIn?: (guest: BPMGuest) => void;
@@ -32,11 +64,14 @@ export function GuestList({
   busyGuestId,
   onGuestUpdated,
   onSetOutcome,
+  onSetConfirmed,
   onFollowUp,
   followUpLabel = 'Follow up',
   editFollowUpLabel = 'Edit follow-up',
   followUpBadgeLabel = 'Follow-up',
   onTransfer,
+  onReschedule,
+  onBookAppointment,
   onRemove,
   onToggleCheckIn,
   canCheckIn = true,
@@ -53,16 +88,20 @@ export function GuestList({
   }
 
   const showInteraction = Boolean(onSetOutcome);
+  const showConfirmed = Boolean(onSetConfirmed);
   const showCheckIn = Boolean(onToggleCheckIn);
-  const showRowActions = Boolean(onFollowUp || onTransfer || onRemove);
+  const showRowActions = Boolean(
+    onFollowUp || onTransfer || onReschedule || onBookAppointment || onRemove,
+  );
   const rowBusy = (guestId: number) => Boolean(busy) || busyGuestId === guestId;
 
   return (
     <>
       <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-white/10">
-        <table className="w-full min-w-[860px] border-collapse text-sm">
+        <table className="w-full min-w-[1000px] border-collapse text-sm">
           <thead>
             <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-white/5 dark:text-white/60">
+              {showConfirmed ? <th className="px-3 py-2">Confirmed</th> : null}
               <th className="px-3 py-2">Guest</th>
               <th className="px-3 py-2">Phone</th>
               <th className="px-3 py-2">Email</th>
@@ -76,8 +115,28 @@ export function GuestList({
             </tr>
           </thead>
           <tbody>
-            {guests.map((guest) => (
-              <tr key={guest.id} className="border-t border-slate-100 dark:border-white/10">
+            {guests.map((guest) => {
+              const colors = resolveRowColors(guestStateKeys(guest), BPM_GUEST_ROW_COLORS);
+              const colorReason = rowColorLabel(colors);
+              return (
+              <tr
+                key={guest.id}
+                className="border-t border-slate-100 dark:border-white/10"
+                style={rowColorStyle(colors)}
+                // Colour alone is not an accessible signal, so the reason is
+                // also available as text on hover / to a screen reader.
+                title={colorReason || undefined}
+              >
+                {showConfirmed ? (
+                  <td className="px-3 py-2">
+                    <Checkbox
+                      checked={guest.confirmed}
+                      disabled={rowBusy(guest.id)}
+                      aria-label={`Confirmed: ${guest.prospect_detail?.name || 'guest'}`}
+                      onChange={(e) => onSetConfirmed?.(guest, e.target.checked)}
+                    />
+                  </td>
+                ) : null}
                 <td className="px-3 py-2">
                   <UserDetailsLink
                     userId={guest.prospect}
@@ -93,6 +152,11 @@ export function GuestList({
                       {guest.followup.appointment ? (
                         <span className="rounded-full bg-emerald-50 px-2 py-0.5 dark:bg-emerald-400/10">Appt linked</span>
                       ) : null}
+                    </div>
+                  ) : null}
+                  {guest.rescheduled_to_label ? (
+                    <div className="mt-1 text-[11px] text-slate-500 dark:text-white/60">
+                      Rescheduled → {guest.rescheduled_to_label}
                     </div>
                   ) : null}
                 </td>
@@ -161,6 +225,26 @@ export function GuestList({
                           {guest.followup ? editFollowUpLabel : followUpLabel}
                         </Button>
                       ) : null}
+                      {onReschedule ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={rowBusy(guest.id)}
+                          onClick={() => onReschedule(guest)}
+                        >
+                          Reschedule
+                        </Button>
+                      ) : null}
+                      {onBookAppointment ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={rowBusy(guest.id)}
+                          onClick={() => onBookAppointment(guest)}
+                        >
+                          1on1
+                        </Button>
+                      ) : null}
                       {onTransfer ? (
                         <Button
                           size="sm"
@@ -185,7 +269,8 @@ export function GuestList({
                   </td>
                 ) : null}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

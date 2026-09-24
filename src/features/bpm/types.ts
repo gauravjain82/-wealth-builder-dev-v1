@@ -54,6 +54,9 @@ export interface BPMEventAttachment {
 }
 /** Independent follow-up outcome flags on a guest; multiple may be set at once. */
 export type GuestOutcomeField = 'called' | 'left_message' | 'not_interested' | 'reschedule';
+
+/** Every boolean the set-guest-flags endpoint accepts: the outcomes plus Confirmed. */
+export type GuestFlagField = GuestOutcomeField | 'confirmed';
 /** Section a follow-up interest option belongs to (drives the checkbox groups). */
 export type BPMInterestGroup = 'GOALS' | 'BUSINESS' | 'SELF_IMPROVEMENT';
 
@@ -328,6 +331,17 @@ export interface BPMGuest {
   left_message: boolean;
   not_interested: boolean;
   reschedule: boolean;
+  /** Someone expects this guest to turn up. A separate axis from the outcomes. */
+  confirmed: boolean;
+  /**
+   * `reschedule` is only an intention; `rescheduled` means a destination was
+   * actually created, which is why the two carry different row colours.
+   */
+  rescheduled: boolean;
+  rescheduled_to_occurrence: number | null;
+  rescheduled_to_appointment: number | null;
+  /** "Event / date / location", or "1-on-1 · <when>". Null when not rescheduled. */
+  rescheduled_to_label: string | null;
   notes: BPMGuestNote[];
   followup: BPMGuestFollowup | null;
   checked_in_at: string | null;

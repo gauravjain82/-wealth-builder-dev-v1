@@ -10,8 +10,10 @@ import { useBpmSelection } from '../context/bpm-selection-context';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
 import { AddGuestModal } from '../components/add-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
+import { InterestOptionsAdminModal } from '../components/interest-options-admin-modal';
 import { bpmService } from '../services/bpm-service';
 import type {
+  BPMCapabilities,
   BPMGuest,
   BPMInterestOption,
   GuestOutcomeField,
@@ -41,15 +43,28 @@ export default function GuestCheckinPage() {
   const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
   const [addGuestOpen, setAddGuestOpen] = useState(false);
   const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
+  // The interest list only drives the Blue Card, which lives on this page as of
+  // Phase 4 — so its admin modal moved here with it.
+  const [manageOptionsOpen, setManageOptionsOpen] = useState(false);
+  const [capabilities, setCapabilities] = useState<BPMCapabilities | null>(null);
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
   const [prospectHits, setProspectHits] = useState<ProspectSearchHit[]>([]);
   const [associateHits, setAssociateHits] = useState<ProspectSearchHit[]>([]);
   const [prospectSearching, setProspectSearching] = useState(false);
 
-  useEffect(() => {
-    bpmService.interestOptions({ ordering: 'sort_order' }).then(setInterestOptions).catch(() => setInterestOptions([]));
-    matchupService.appointmentTypes().then(setAppointmentTypes).catch(() => setAppointmentTypes([]));
+  const loadInterestOptions = useCallback(async () => {
+    try {
+      setInterestOptions(await bpmService.interestOptions({ ordering: 'sort_order' }));
+    } catch {
+      // Non-fatal: the Blue Card simply shows no interest options.
+    }
   }, []);
+
+  useEffect(() => {
+    void loadInterestOptions();
+    matchupService.appointmentTypes().then(setAppointmentTypes).catch(() => setAppointmentTypes([]));
+    bpmService.capabilities().then(setCapabilities).catch(() => setCapabilities(null));
+  }, [loadInterestOptions]);
 
   const load = useCallback(
     async (occurrenceId: number) => {
@@ -204,7 +219,17 @@ export default function GuestCheckinPage() {
   ];
 
   return (
-    <BPMPageShell title="Guest Check-In" description="Check guests in as they arrive at the BPM.">
+    <BPMPageShell
+      title="Guest Check-In"
+      description="Check guests in as they arrive at the BPM."
+      actions={
+        capabilities?.can_manage_templates ? (
+          <Button variant="outline" onClick={() => setManageOptionsOpen(true)}>
+            Manage interest options
+          </Button>
+        ) : null
+      }
+    >
       <BPMCard className="mb-4">
         <BPMOccurrencePicker allowPast />
       </BPMCard>
@@ -359,6 +384,12 @@ export default function GuestCheckinPage() {
         appointmentTypes={appointmentTypes}
         onClose={() => setFollowUpTarget(null)}
         onSaved={handleFollowUpSaved}
+      />
+      <InterestOptionsAdminModal
+        open={manageOptionsOpen}
+        options={interestOptions}
+        onClose={() => setManageOptionsOpen(false)}
+        onChanged={loadInterestOptions}
       />
     </BPMPageShell>
   );
