@@ -81,6 +81,7 @@ const BpmOverviewPage = lazy(() => import('@/features/bpm/pages/bpm-overview-pag
 const BpmSchedulePage = lazy(() => import('@/features/bpm/pages/bpm-schedule-page'));
 const BpmAddGuestPage = lazy(() => import('@/features/bpm/pages/add-guest-page'));
 const BpmViewInvitesPage = lazy(() => import('@/features/bpm/pages/view-invites-page'));
+const BpmAssociateInvitesPage = lazy(() => import('@/features/bpm/pages/associate-invites-page'));
 const BpmGuestCheckinPage = lazy(() => import('@/features/bpm/pages/guest-checkin-page'));
 const BpmAssociateCheckinPage = lazy(() => import('@/features/bpm/pages/associate-checkin-page'));
 const BpmSettingsPage = lazy(() => import('@/features/bpm/pages/bpm-settings-page'));
@@ -419,6 +420,12 @@ const router = createBrowserRouter([
           {
             path: 'view-invites',
             element: lazyLoad(BpmViewInvitesPage),
+          },
+          {
+            // Ordered after Guest Invites, and nested here like the rest so it
+            // inherits the sticky BPM/date selection.
+            path: 'associate-invites',
+            element: lazyLoad(BpmAssociateInvitesPage),
           },
           {
             path: 'guest-checkin',

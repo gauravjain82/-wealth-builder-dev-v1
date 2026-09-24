@@ -1,6 +1,9 @@
 import type {
   AddGuestPayload,
   AssociateCheckIn,
+  AssociateInviteFilters,
+  BPMAssociateInviteRow,
+  BPMAssociateInviteState,
   BPMEmailTemplate,
   BPMEventAttachment,
   BPMStatusOverride,
@@ -404,6 +407,39 @@ export const bpmService = {
     }),
   associateCheckins: (occurrenceId: number) =>
     request<AssociateCheckIn[]>(`/api/bpm/occurrences/${occurrenceId}/associate-checkins/`),
+  /**
+   * The team, with one date's invite state joined on — the Associate Invites
+   * list, and the Invited Associates panel on Associate Check-In (`invited=true`).
+   *
+   * Paginated and filtered server-side because it spans a whole downline, which
+   * is a much larger population than a guest list. `filters` carries the
+   * Associate Tracker's own vocabulary (name / recruiter_name / leader_name /
+   * broker_id / from_date / to_date) plus `invited` / `called`.
+   */
+  associateInvites: ({ occurrence, sort, segment, page, page_size, filters = {} }: AssociateInviteFilters) =>
+    request<PaginatedResponse<BPMAssociateInviteRow>>(
+      `/api/bpm/associate-invites/${buildQuery({
+        occurrence,
+        sort,
+        segment,
+        page,
+        page_size,
+        ...filters,
+      })}`,
+    ),
+  /**
+   * Tick (or untick) one associate's invited / called box for one date.
+   *
+   * One setter for both flags, mirroring `setGuestFlags`: only the keys sent are
+   * written, so a screen can flip one box without asserting the other.
+   */
+  setAssociateInviteFlags: (
+    payload: { occurrence_id: number; user_id: number } & Partial<{ invited: boolean; called: boolean }>,
+  ) =>
+    request<BPMAssociateInviteState>('/api/bpm/associate-invites/set-flags/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   /**
    * Leaderboards behind the cards on both check-in screens.
    *

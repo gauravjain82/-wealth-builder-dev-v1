@@ -528,9 +528,9 @@ export interface OccurrenceFilters {
 export type CheckinAudience = 'guest' | 'associate';
 
 /**
- * A rollup dimension. `inviter` exists for the guest audience only — associates
- * check themselves in, so until Phase 6 gives them an inviter there is nobody
- * to rank.
+ * A rollup dimension. Both audiences carry all four since Phase 6 —
+ * `BPMAssociateInvite.invited_by` finally gave the associate audience somebody
+ * to rank, where before that associates only checked themselves in.
  */
 export type CheckinDimension = 'inviter' | 'leader' | 'md' | 'smd';
 
@@ -577,4 +577,65 @@ export interface ProspectMatch {
       })
     | null;
   matched_on: 'email' | 'phone' | null;
+}
+
+
+// -- associate invites (per date) ------------------------------------------
+
+/**
+ * One row of Associate Invites.
+ *
+ * The row is an **associate**, not an invite: the list is the caller's scoped
+ * team with this date's invite state joined on, so somebody nobody has worked
+ * yet comes back with both boxes unticked rather than being absent. That is why
+ * `invited` / `called` are plain booleans and never null.
+ *
+ * `why` and `goal` are legacy Associate Tracker free text, populated only by the
+ * legacy import or by hand in that tracker's inline cells — blank for almost
+ * everybody, which is the normal state and not a broken join.
+ */
+export interface BPMAssociateInviteRow {
+  /** The AssociateTracker row id — the table's key. */
+  id: number;
+  user: number;
+  user_id: number;
+  name: string | null;
+  recruiter_name: string | null;
+  /** The associate's own upline: unlike a guest row, the person *is* the subject. */
+  leader_name: string | null;
+  md_name: string | null;
+  smd_name: string | null;
+  agency_code: string | null;
+  why: string;
+  goal: string;
+  invited: boolean;
+  called: boolean;
+  invited_by: number | null;
+  invited_by_name: string | null;
+  latest_note_text: string | null;
+  latest_note_tracker: string | null;
+  latest_note_created_by_name: string | null;
+  latest_note_created_at: string | null;
+}
+
+/** Response of POST /api/bpm/associate-invites/set-flags/. */
+export interface BPMAssociateInviteState {
+  user_id: number;
+  invited: boolean;
+  called: boolean;
+  invited_by: number | null;
+  invited_by_name: string | null;
+}
+
+/** Query for GET /api/bpm/associate-invites/. `occurrence` is required. */
+export interface AssociateInviteFilters {
+  occurrence: number;
+  /** Server-side sort key, `-` prefixed for descending. */
+  sort?: string;
+  /** BASESHOP / SUPERBASE / SUPERTEAM — the TrackerTeamScopeFilter's value. */
+  segment?: string;
+  page?: number;
+  page_size?: number;
+  /** The inherited Associate Tracker filters, plus `invited` / `called`. */
+  filters?: Record<string, string>;
 }

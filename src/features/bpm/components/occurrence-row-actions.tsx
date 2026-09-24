@@ -23,6 +23,7 @@ import type { BPMOccurrence } from '../types';
 const TARGETS = [
   { key: 'add-guest', label: 'Add Guest', path: '/bpm/view-invites', add: true },
   { key: 'invites', label: 'Guest Invites', path: '/bpm/view-invites' },
+  { key: 'associate-invites', label: 'Associate Invites', path: '/bpm/associate-invites' },
   { key: 'associate', label: 'Associate Check-In', path: '/bpm/associate-checkin' },
   { key: 'guest', label: 'Guest Check-In', path: '/bpm/guest-checkin' },
 ] as const;

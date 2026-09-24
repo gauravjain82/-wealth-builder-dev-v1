@@ -7,12 +7,17 @@ import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { useBpmSelection } from '../context/bpm-selection-context';
 import { CheckinStatCards, type CheckinCountCard } from '../components/checkin-stat-cards';
+import { InvitedAssociatesCard } from '../components/invited-associates-card';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
 import type { AssociateCheckIn, CheckinDimension } from '../types';
 
 /**
- * Which rankings this page shows. No `inviter`: associates check themselves in,
- * so until Phase 6 gives an associate invite an inviter there is nobody to rank.
+ * Which rankings this page shows.
+ *
+ * Four are available since Phase 6 gave associate invites an `invited_by`, but
+ * the screen still shows two: it is read at a door, and the cards above compete
+ * for the same row as the two counters. Top SMD and Top MD are the ones the
+ * brief asked for; `inviter` and `leader` are one line away if that changes.
  */
 const ASSOCIATE_DIMENSIONS: CheckinDimension[] = ['smd', 'md'];
 
@@ -104,6 +109,12 @@ export default function AssociateCheckinPage() {
     setAscending(true);
   };
 
+  // Who is already in the room, for the Invited Associates panel's "Here" mark.
+  const checkedInUserIds = useMemo(
+    () => new Set(records.map((record) => record.user)),
+    [records],
+  );
+
   const sorted = useMemo(() => {
     // Unsorted means the server's order — most recent arrival first, which is
     // what somebody watching the door wants by default.
@@ -117,9 +128,9 @@ export default function AssociateCheckinPage() {
     });
   }, [records, sortKey, ascending]);
 
-  // Both read the leaderboard's own totals. "Invited" is the event's associate
-  // roster — stored per event, not per date, until Phase 6 adds a per-date
-  // invite — which is a number only the stats call has.
+  // Both read the leaderboard's own totals. Since Phase 6 "Invited" is this
+  // date's BPMAssociateInvite rows, not the event-wide roster, so the number
+  // finally describes the date on screen — and the panel below it is the list.
   const countCards = useMemo<CheckinCountCard[]>(
     () => [
       { key: 'invited', label: 'Agents Invited', from: 'invited', className: 'bg-sky-500' },
@@ -143,6 +154,14 @@ export default function AssociateCheckinPage() {
           reloadKey={statsVersion}
         />
       ) : null}
+
+      {/* Above the check-in box on purpose: it is read down while people
+          arrive, so it must not be behind a click. */}
+      <InvitedAssociatesCard
+        occurrenceId={occurrence?.id ?? null}
+        checkedInUserIds={checkedInUserIds}
+        reloadKey={statsVersion}
+      />
 
       <BPMCard className="mb-4">
         <label className="mb-2 block text-xs font-semibold text-slate-700 dark:text-white/80">

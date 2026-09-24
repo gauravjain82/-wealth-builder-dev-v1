@@ -59,6 +59,7 @@ const ICON_MAP: Record<string, IconSpec> = {
   'BPM Overview': { icon: IconChartDots, color: '#1E90FF' },
   'Add Guest': { icon: IconUserSearch, color: '#1E90FF' },
   'Guest Invites': { icon: IconFileAnalytics, color: '#FFA500' },
+  'Associate Invites': { icon: IconFileAnalytics, color: '#22D3EE' },
   'Associate Check-In': { icon: IconChecklist, color: '#32CD32' },
   'Guest Check-In': { icon: IconChecklist, color: '#32CD32' },
   'BPM Schedule': { icon: IconCalendarEvent, color: '#1E90FF' },
