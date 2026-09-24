@@ -52,10 +52,25 @@ export interface BPMEventAttachment {
   uploaded_by_name: string | null;
   created_at: string;
 }
-/** Independent follow-up outcome flags on a guest; multiple may be set at once. */
-export type GuestOutcomeField = 'called' | 'left_message' | 'not_interested' | 'reschedule';
+/**
+ * Outcome flags shown on **Guest Invites** — how the pre-event contact went.
+ * Independent of each other; any combination may be set.
+ */
+export type GuestInviteOutcomeField = 'called' | 'left_message' | 'not_interested' | 'reschedule';
 
-/** Every boolean the set-guest-flags endpoint accepts: the outcomes plus Confirmed. */
+/**
+ * Outcome flags shown on **Guest Check-In** — what happened on the night.
+ *
+ * A different question asked of a different person at a different time, which is
+ * why the two screens render different Outcome columns rather than one widened
+ * list. They share the single `set-guest-flags` setter.
+ */
+export type GuestCheckinOutcomeField = 'late' | 'stayed_after' | 'blue_card' | 'scheduled_appointment';
+
+/** Either screen's outcome flags — the type a shared toggle handler takes. */
+export type GuestOutcomeField = GuestInviteOutcomeField | GuestCheckinOutcomeField;
+
+/** Every boolean the set-guest-flags endpoint accepts: both outcome sets plus Confirmed. */
 export type GuestFlagField = GuestOutcomeField | 'confirmed';
 /** Section a follow-up interest option belongs to (drives the checkbox groups). */
 export type BPMInterestGroup = 'GOALS' | 'BUSINESS' | 'SELF_IMPROVEMENT';
@@ -309,6 +324,14 @@ export interface BPMGuestFollowup {
   spouse_name: string;
   /** Selected interest option slugs — map to labels via the interest-options catalog. */
   interests: string[];
+  /**
+   * The associate who physically took the card at the event. Neither the guest's
+   * inviter nor `submitted_by` (whoever later typed it in).
+   */
+  collected_by: number | null;
+  collected_by_name: string | null;
+  /** Who the guest said they could introduce. Free text, copied off the card. */
+  referral_note: string;
   appointment: number | null;
   appointment_detail: AppointmentListItem | null;
   submitted_by: number | null;
@@ -324,6 +347,13 @@ export interface BPMGuest {
   prospect_detail: BPMGuestProspectCard | null;
   inviter: number | null;
   inviter_name: string | null;
+  /**
+   * The **inviter's** leader and SMD. A guest has no leader of their own — the
+   * question these columns answer is whose invite this is.
+   */
+  leader_name: string | null;
+  md_name: string | null;
+  smd_name: string | null;
   country?: string;
   state?: string;
   // Independent follow-up outcome flags (any combination may be set).
@@ -333,6 +363,13 @@ export interface BPMGuest {
   reschedule: boolean;
   /** Someone expects this guest to turn up. A separate axis from the outcomes. */
   confirmed: boolean;
+  // On-the-night outcomes, recorded on Guest Check-In.
+  late: boolean;
+  stayed_after: boolean;
+  /** A blue card was collected. Set automatically when the card is saved. */
+  blue_card: boolean;
+  /** A 1-on-1 was booked off the blue card — what the green row outline reads. */
+  scheduled_appointment: boolean;
   /**
    * `reschedule` is only an intention; `rescheduled` means a destination was
    * actually created, which is why the two carry different row colours.
@@ -356,6 +393,10 @@ export interface AssociateCheckIn {
   id: number;
   user: number;
   user_name: string | null;
+  /** The associate's own upline — unlike a guest row, the person *is* the subject. */
+  leader_name: string | null;
+  md_name: string | null;
+  smd_name: string | null;
   checked_in_at: string;
   checked_in_by: number | null;
   checked_in_by_name: string | null;
@@ -451,6 +492,10 @@ export interface SaveGuestFollowupPayload {
   guest_id: number;
   /** Interest option slugs. */
   interests?: string[];
+  /** Associate who collected the card. Omit to leave as-is; null to clear. */
+  collected_by?: number | null;
+  /** Free-text referrals from the card. */
+  referral_note?: string;
   /** Match Up appointment id to link (its contact must be the guest's prospect). */
   appointment_id?: number | null;
   /** Free text → written to the prospect's BPM notes timeline. */
@@ -475,4 +520,61 @@ export interface OccurrenceFilters {
   include_concealed?: boolean;
   page?: number;
   page_size?: number;
+}
+
+// -- check-in leaderboards -------------------------------------------------
+
+/** Which population a set of rankings is computed over. */
+export type CheckinAudience = 'guest' | 'associate';
+
+/**
+ * A rollup dimension. `inviter` exists for the guest audience only — associates
+ * check themselves in, so until Phase 6 gives them an inviter there is nobody
+ * to rank.
+ */
+export type CheckinDimension = 'inviter' | 'leader' | 'md' | 'smd';
+
+/** One person's line in a ranking. */
+export interface CheckinRankEntry {
+  user_id: number;
+  name: string;
+  invited: number;
+  checked_in: number;
+  /** Whole-percent check-in rate, 0 when nobody was invited. */
+  ratio: number;
+  /** 1-based; ties share a rank. */
+  rank: number;
+}
+
+/** One card, plus the ranked list its modal shows. */
+export interface CheckinDimensionStats {
+  key: CheckinDimension;
+  label: string;
+  /** The top entry — what the card displays. Null when nobody qualifies. */
+  leader: CheckinRankEntry | null;
+  entries: CheckinRankEntry[];
+}
+
+/** Response of GET /api/bpm/occurrences/{id}/checkin-stats/. */
+export interface CheckinStats {
+  occurrence: number;
+  audience: CheckinAudience;
+  totals: {
+    invited: number;
+    checked_in: number;
+    ratio: number;
+  };
+  /** Keyed by dimension; narrowed when the request passed `?dimension=`. */
+  dimensions: Partial<Record<CheckinDimension, CheckinDimensionStats>>;
+}
+
+/** Response of GET /api/bpm/prospect-match/ — D9's "is this them?" lookup. */
+export interface ProspectMatch {
+  match:
+    | (BPMGuestProspectCard & {
+        /** Coded means a recruited associate, who belongs in Associate Check-In. */
+        agency_code: string | null;
+      })
+    | null;
+  matched_on: 'email' | 'phone' | null;
 }

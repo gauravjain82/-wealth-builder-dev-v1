@@ -15,7 +15,8 @@ import { AddProspectModal } from '@/features/team/prospect/components/add-prospe
 import { createProspect } from '@/features/team/prospect/services/prospect-service';
 import { defaultAddProspectForm, type AddProspectFormData } from '@/features/team/prospect/types';
 import { bpmService } from '../services/bpm-service';
-import type { BPMOccurrence } from '../types';
+import type { BPMOccurrence, ProspectMatch } from '../types';
+import { DuplicateProspectDialog } from './duplicate-prospect-dialog';
 
 interface AddGuestFormProps {
   occurrence: BPMOccurrence | null;
@@ -158,6 +159,10 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
   const [addProspectOpen, setAddProspectOpen] = useState(false);
   const [creatingProspect, setCreatingProspect] = useState(false);
   const [prospectInitialForm, setProspectInitialForm] = useState<AddProspectFormData | null>(null);
+  // D9: a match found before the create, and the form it would have created.
+  // Both are held here so answering the confirm can go either way.
+  const [duplicate, setDuplicate] = useState<ProspectMatch | null>(null);
+  const [pendingProspect, setPendingProspect] = useState<AddProspectFormData | null>(null);
 
   const searchInviters = useCallback(async (search: string): Promise<UserAutocompleteOption[]> => {
     const rows = await bpmService.searchInviters(search);
@@ -198,11 +203,54 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
     setAddProspectOpen(true);
   };
 
+  /** Put a resolved person into the form as the selected guest. */
+  const selectProspect = useCallback(
+    (prospect: { id: number; label: string; meta?: string }) => {
+      updateForm((prev) => ({
+        ...prev,
+        prospectId: prospect.id,
+        prospectLabel: prospect.label,
+        prospectMeta: prospect.meta || '',
+      }));
+      setAddProspectOpen(false);
+    },
+    [updateForm],
+  );
+
+  /**
+   * Ask before creating somebody the system may already have (D9).
+   *
+   * The add endpoint would link to the existing person anyway — that has been
+   * true since Phase 4 — but silently. At a door the person typing needs to see
+   * who they are about to attach the invite to, and needs the option to say no.
+   * A lookup failure falls through to the create rather than blocking it: taking
+   * names is the job, and a duplicate is recoverable where a jammed form is not.
+   */
   const handleCreateProspect = async (formData: AddProspectFormData) => {
     if (!form.inviterId) {
       addToast({ type: 'error', message: 'Select an inviter first.' });
       return;
     }
+    if (formData.email || formData.phone) {
+      try {
+        const found = await bpmService.matchProspect({
+          email: formData.email,
+          phone: formData.phone,
+        });
+        if (found.match) {
+          setDuplicate(found);
+          setPendingProspect(formData);
+          return;
+        }
+      } catch {
+        // Fall through and create.
+      }
+    }
+    await createProspectNow(formData);
+  };
+
+  const createProspectNow = async (formData: AddProspectFormData) => {
+    if (!form.inviterId) return;
     setCreatingProspect(true);
     try {
       // Recruiter is always the selected inviter, even if the modal field was changed.
@@ -219,13 +267,11 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
       );
       const label =
         created.full_name || `${created.first_name} ${created.last_name}`.trim() || created.email || `Prospect #${created.id}`;
-      updateForm((prev) => ({
-        ...prev,
-        prospectId: created.id,
-        prospectLabel: label,
-        prospectMeta: [created.phone, created.email].filter(Boolean).join(' | '),
-      }));
-      setAddProspectOpen(false);
+      selectProspect({
+        id: created.id,
+        label,
+        meta: [created.phone, created.email].filter(Boolean).join(' | '),
+      });
       addToast({ type: 'success', message: 'Prospect created and selected.' });
     } catch (error) {
       addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add prospect' });
@@ -352,6 +398,34 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
           </Button>
         </FormActions>
       </Form>
+
+      <DuplicateProspectDialog
+        open={Boolean(duplicate?.match)}
+        match={duplicate}
+        busy={creatingProspect}
+        onCancel={() => {
+          setDuplicate(null);
+          setPendingProspect(null);
+        }}
+        onUseExisting={() => {
+          const person = duplicate?.match;
+          setDuplicate(null);
+          setPendingProspect(null);
+          if (!person) return;
+          selectProspect({
+            id: person.id,
+            label: person.name || `Prospect #${person.id}`,
+            meta: [person.phone, person.email].filter(Boolean).join(' | '),
+          });
+          addToast({ type: 'success', message: 'Existing prospect selected.' });
+        }}
+        onCreateNew={() => {
+          const formData = pendingProspect;
+          setDuplicate(null);
+          setPendingProspect(null);
+          if (formData) void createProspectNow(formData);
+        }}
+      />
 
       <AddProspectModal
         open={addProspectOpen}

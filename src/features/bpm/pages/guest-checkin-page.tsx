@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Input, LoadingState } from '@shared/components';
+import { Button, Input, LoadingState, Select } from '@shared/components';
 import { useToastStore } from '@/store';
 import { matchupService } from '@/features/matchup/services/matchup-service';
 import type { AppointmentType } from '@/features/matchup/types';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { useBpmSelection } from '../context/bpm-selection-context';
+import { CheckinStatCards } from '../components/checkin-stat-cards';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
 import { AddGuestModal } from '../components/add-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
@@ -16,20 +17,37 @@ import type {
   BPMCapabilities,
   BPMGuest,
   BPMInterestOption,
-  GuestOutcomeField,
+  CheckinDimension,
+  GuestCheckinOutcomeField,
   ProspectSearchHit,
 } from '../types';
 
-type GuestFilter = 'all' | 'checked_in' | 'called' | 'left_message' | 'not_interested' | 'reschedule';
+/**
+ * Attendance pills.
+ *
+ * Phase 5 dropped the outcome pills (called / left message / not interested /
+ * rescheduled) — those are pre-event questions that belong on Guest Invites.
+ * What somebody at a door needs is the inverse: who has *not* arrived yet.
+ */
+type GuestFilter = 'all' | 'checked_in' | 'not_checked_in';
 
 const FILTERS: { key: GuestFilter; label: string; match: (g: BPMGuest) => boolean }[] = [
   { key: 'all', label: 'All', match: () => true },
   { key: 'checked_in', label: 'Checked In', match: (g) => Boolean(g.checked_in_at) },
-  { key: 'called', label: 'Called', match: (g) => g.called },
-  { key: 'left_message', label: 'Left Message', match: (g) => g.left_message },
-  { key: 'not_interested', label: 'Not Interested', match: (g) => g.not_interested },
-  { key: 'reschedule', label: 'Reschedule', match: (g) => g.reschedule },
+  { key: 'not_checked_in', label: 'Not Checked In', match: (g) => !g.checked_in_at },
 ];
+
+/** The three upline selects, and which field on a guest row each one reads. */
+const UPLINE_FILTERS = [
+  { key: 'smd', label: 'SMD', field: 'smd_name' },
+  { key: 'md', label: 'MD', field: 'md_name' },
+  { key: 'leader', label: 'Leader', field: 'leader_name' },
+] as const;
+
+type UplineFilterKey = (typeof UPLINE_FILTERS)[number]['key'];
+
+/** Which rankings Guest Check-In shows, in card order. */
+const GUEST_DIMENSIONS: CheckinDimension[] = ['inviter', 'leader', 'md', 'smd'];
 
 export default function GuestCheckinPage() {
   const addToast = useToastStore((state) => state.addToast);
@@ -39,6 +57,11 @@ export default function GuestCheckinPage() {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState<GuestFilter>('all');
+  const [uplineFilter, setUplineFilter] = useState<Record<UplineFilterKey, string>>({
+    smd: '',
+    md: '',
+    leader: '',
+  });
   const [search, setSearch] = useState('');
   const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
   const [addGuestOpen, setAddGuestOpen] = useState(false);
@@ -51,6 +74,9 @@ export default function GuestCheckinPage() {
   const [prospectHits, setProspectHits] = useState<ProspectSearchHit[]>([]);
   const [associateHits, setAssociateHits] = useState<ProspectSearchHit[]>([]);
   const [prospectSearching, setProspectSearching] = useState(false);
+  // Bumped on every check-in so the leaderboards re-fetch. They are read while
+  // the room fills up, so a card that lags the list is worse than a slow one.
+  const [statsVersion, setStatsVersion] = useState(0);
 
   const loadInterestOptions = useCallback(async () => {
     try {
@@ -71,6 +97,7 @@ export default function GuestCheckinPage() {
       setLoading(true);
       try {
         setGuests(await bpmService.guests(occurrenceId));
+        setStatsVersion((version) => version + 1);
       } catch (error) {
         addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to load guests' });
       } finally {
@@ -104,7 +131,7 @@ export default function GuestCheckinPage() {
     }
   };
 
-  const setGuestOutcome = async (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => {
+  const setGuestOutcome = async (guest: BPMGuest, field: GuestCheckinOutcomeField, value: boolean) => {
     if (!occurrence) return;
     setBusy(true);
     try {
@@ -117,7 +144,9 @@ export default function GuestCheckinPage() {
     }
   };
 
-  // The save endpoint returns the full updated guest, so patch it into the list in place.
+  // The save endpoint returns the full updated guest, so patch it into the list
+  // in place — including the Scheduled Appointment flag the save may have set,
+  // which is what turns the row's outline green.
   const handleFollowUpSaved = (updated: BPMGuest) =>
     setGuests((prev) => prev.map((guest) => (guest.id === updated.id ? updated : guest)));
 
@@ -191,18 +220,32 @@ export default function GuestCheckinPage() {
 
   const totalInvites = guests.length;
   const totalCheckedIn = useMemo(() => guests.filter((g) => g.checked_in_at).length, [guests]);
-  const attendanceRatio = totalInvites ? Math.round((totalCheckedIn / totalInvites) * 100) : 0;
 
   const filterCounts = useMemo(
     () => Object.fromEntries(FILTERS.map((f) => [f.key, guests.filter(f.match).length])) as Record<GuestFilter, number>,
     [guests],
   );
 
+  /** Distinct SMD / MD / Leader names present in the loaded list, for the selects. */
+  const uplineOptions = useMemo(() => {
+    const options = {} as Record<UplineFilterKey, string[]>;
+    for (const { key, field } of UPLINE_FILTERS) {
+      options[key] = [...new Set(guests.map((g) => g[field]).filter((name): name is string => Boolean(name)))].sort();
+    }
+    return options;
+  }, [guests]);
+
   const visibleGuests = useMemo(() => {
     const activeFilter = FILTERS.find((f) => f.key === filter) ?? FILTERS[0];
     const term = search.trim().toLowerCase();
     return guests.filter((g) => {
       if (!activeFilter.match(g)) return false;
+      // The three upline selects narrow cumulatively — picking an SMD and then
+      // a Leader under them is the normal way a leader finds their own people.
+      for (const { key, field } of UPLINE_FILTERS) {
+        const wanted = uplineFilter[key];
+        if (wanted && g[field] !== wanted) return false;
+      }
       if (!term) return true;
       const haystack = [g.prospect_detail?.name, g.prospect_detail?.email, g.prospect_detail?.phone, g.inviter_name]
         .filter(Boolean)
@@ -210,13 +253,7 @@ export default function GuestCheckinPage() {
         .toLowerCase();
       return haystack.includes(term);
     });
-  }, [guests, filter, search]);
-
-  const cards = [
-    { label: 'Total Invites', value: totalInvites, className: 'bg-sky-500' },
-    { label: 'Total Checked In', value: totalCheckedIn, className: 'bg-emerald-500' },
-    { label: 'Attendance Ratio', value: `${attendanceRatio}%`, className: 'bg-violet-500' },
-  ];
+  }, [guests, filter, search, uplineFilter]);
 
   return (
     <BPMPageShell
@@ -236,18 +273,16 @@ export default function GuestCheckinPage() {
 
       {occurrence ? (
         <>
-          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {cards.map((card) => (
-              <div key={card.label} className={`rounded-xl p-4 text-white shadow-sm ${card.className}`}>
-                <div className="text-xs font-medium uppercase tracking-wide text-white/80">{card.label}</div>
-                <div className="mt-1 text-3xl font-bold">{card.value}</div>
-              </div>
-            ))}
-          </div>
+          <CheckinStatCards
+            occurrenceId={occurrence.id}
+            audience="guest"
+            dimensions={GUEST_DIMENSIONS}
+            reloadKey={statsVersion}
+          />
 
           <BPMCard>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {FILTERS.map((f) => (
                   <button
                     key={f.key}
@@ -261,6 +296,23 @@ export default function GuestCheckinPage() {
                   >
                     {f.label} ({filterCounts[f.key]})
                   </button>
+                ))}
+                {UPLINE_FILTERS.map(({ key, label }) => (
+                  <Select
+                    key={key}
+                    variant="surface"
+                    className="w-auto"
+                    value={uplineFilter[key]}
+                    aria-label={`Filter by ${label}`}
+                    onChange={(e) => setUplineFilter((prev) => ({ ...prev, [key]: e.target.value }))}
+                  >
+                    <option value="">All {label}s</option>
+                    {uplineOptions[key].map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </Select>
                 ))}
               </div>
               <div className="flex w-full items-center gap-2 sm:w-auto">
@@ -276,6 +328,10 @@ export default function GuestCheckinPage() {
                   + Add Guest
                 </Button>
               </div>
+            </div>
+
+            <div className="mb-3 text-xs text-slate-500 dark:text-white/60">
+              Showing {visibleGuests.length} of {totalInvites} · {totalCheckedIn} checked in
             </div>
 
             {loading ? (
@@ -380,6 +436,8 @@ export default function GuestCheckinPage() {
       <FollowUpGuestModal
         open={Boolean(followUpTarget)}
         guest={followUpTarget}
+        heading="Blue card"
+        occurrence={occurrence}
         interestOptions={interestOptions}
         appointmentTypes={appointmentTypes}
         onClose={() => setFollowUpTarget(null)}

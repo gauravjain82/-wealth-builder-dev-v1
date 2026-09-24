@@ -3,34 +3,15 @@ import { Button, Checkbox } from '@shared/components';
 import { UserDetailsLink } from '@/features/team/components/user-details-link';
 import {
   BPM_GUEST_ROW_COLORS,
-  BPM_GUEST_STATE,
   resolveRowColors,
   rowColorLabel,
   rowColorStyle,
 } from '@shared/components/row-colors';
-import { formatOccurrenceTime, GUEST_OUTCOME_FIELDS } from '../services/bpm-service';
-import type { BPMGuest, GuestOutcomeField } from '../types';
+import { formatOccurrenceTime, INVITE_OUTCOME_FIELDS } from '../services/bpm-service';
+import type { BPMGuest, GuestInviteOutcomeField } from '../types';
+import { guestStateKeys } from './guest-row-colors';
 import { GuestNotesCell } from './guest-notes-cell';
 import { GuestNotesModal } from './guest-notes-modal';
-
-/**
- * Which colour rules are active for one guest row.
- *
- * Note the distinction the brief draws between wanting to reschedule and having
- * been rescheduled: `reschedule` alone is an intention recorded against the
- * guest, while `rescheduled` means a destination BPM or 1-on-1 was actually
- * created. They are different colours, so only one of the two keys is ever on.
- */
-function guestStateKeys(guest: BPMGuest) {
-  return [
-    guest.rescheduled && BPM_GUEST_STATE.RESCHEDULED,
-    guest.confirmed && BPM_GUEST_STATE.CONFIRMED,
-    guest.not_interested && BPM_GUEST_STATE.NOT_INTERESTED,
-    guest.reschedule && !guest.rescheduled && BPM_GUEST_STATE.RESCHEDULE_REQUESTED,
-    (guest.called || guest.left_message) && BPM_GUEST_STATE.CONTACTED,
-    Boolean(guest.followup?.appointment) && BPM_GUEST_STATE.APPOINTMENT_SCHEDULED,
-  ];
-}
 
 interface GuestListProps {
   guests: BPMGuest[];
@@ -40,7 +21,7 @@ interface GuestListProps {
   /** Patch this guest into local state; used after notes are added from the history modal. */
   onGuestUpdated?: (updated: BPMGuest) => void;
   /** Guest Invites actions */
-  onSetOutcome?: (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => void;
+  onSetOutcome?: (guest: BPMGuest, field: GuestInviteOutcomeField, value: boolean) => void;
   /** When set, the leftmost Confirmed column is shown. */
   onSetConfirmed?: (guest: BPMGuest, value: boolean) => void;
   onFollowUp?: (guest: BPMGuest) => void;
@@ -172,7 +153,7 @@ export function GuestList({
                 {showInteraction ? (
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-x-4 gap-y-1">
-                      {GUEST_OUTCOME_FIELDS.map(({ field, label }) => (
+                      {INVITE_OUTCOME_FIELDS.map(({ field, label }) => (
                         <label
                           key={field}
                           className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-white/80"

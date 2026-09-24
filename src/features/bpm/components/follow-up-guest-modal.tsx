@@ -1,18 +1,31 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button, Checkbox, Form, FormActions, FormRow, Label, Modal, Textarea } from '@shared/components';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Button,
+  Checkbox,
+  Form,
+  FormActions,
+  FormRow,
+  Label,
+  Modal,
+  Textarea,
+  UserAutocompleteDropdown,
+  type UserAutocompleteOption,
+} from '@shared/components';
 import { useToastStore } from '@/store';
 import { AppointmentFormModal } from '@/features/matchup/components/appointment-form-modal';
 import { matchupService } from '@/features/matchup/services/matchup-service';
 import type { AppointmentDetail, AppointmentListItem, AppointmentType } from '@/features/matchup/types';
 import { bpmService, findStepOneTypeId, formatOccurrenceTime } from '../services/bpm-service';
-import type { BPMGuest, BPMInterestGroup, BPMInterestOption } from '../types';
+import type { BPMGuest, BPMInterestGroup, BPMInterestOption, BPMOccurrence } from '../types';
 
 interface FollowUpGuestModalProps {
   open: boolean;
   guest: BPMGuest | null;
+  /** The BPM date the card was collected at — names the appointment's auto-note. */
+  occurrence?: BPMOccurrence | null;
   interestOptions: BPMInterestOption[];
   appointmentTypes: AppointmentType[];
-  /** Heading used in the popup title and save button. View Invites uses "Blue card". */
+  /** Heading used in the popup title and save button. Guest Check-In uses "Blue card". */
   heading?: string;
   onClose: () => void;
   onSaved: (updated: BPMGuest) => void;
@@ -41,9 +54,16 @@ function groupOptions(options: BPMInterestOption[]): GroupedOptions[] {
   }).filter((section) => section.options.length > 0);
 }
 
+/** "Tuesday BPM · Tue 14 Oct, 7:00 PM", for the appointment's auto-note. */
+function eventDetails(occurrence: BPMOccurrence | null | undefined): string {
+  if (!occurrence) return 'a BPM';
+  return `${occurrence.event_name} · ${formatOccurrenceTime(occurrence.start_at)}`;
+}
+
 export function FollowUpGuestModal({
   open,
   guest,
+  occurrence,
   interestOptions,
   appointmentTypes,
   heading = 'Follow-up',
@@ -53,6 +73,11 @@ export function FollowUpGuestModal({
   const addToast = useToastStore((state) => state.addToast);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState('');
+  const [referralNote, setReferralNote] = useState('');
+  const [collectedBy, setCollectedBy] = useState<{ id: number | null; label: string }>({
+    id: null,
+    label: '',
+  });
   const [appointmentId, setAppointmentId] = useState<number | null>(null);
   const stepOneTypeId = useMemo(() => findStepOneTypeId(appointmentTypes), [appointmentTypes]);
   const [linkedAppointment, setLinkedAppointment] = useState<AppointmentListItem | AppointmentDetail | null>(null);
@@ -67,6 +92,11 @@ export function FollowUpGuestModal({
     if (!open) return;
     setChecked(new Set(guest?.followup?.interests ?? []));
     setNotes('');
+    setReferralNote(guest?.followup?.referral_note ?? '');
+    setCollectedBy({
+      id: guest?.followup?.collected_by ?? null,
+      label: guest?.followup?.collected_by_name ?? '',
+    });
     setAppointmentId(guest?.followup?.appointment ?? null);
     setLinkedAppointment(guest?.followup?.appointment_detail ?? null);
     setApptModalOpen(false);
@@ -80,6 +110,52 @@ export function FollowUpGuestModal({
       return next;
     });
   };
+
+  /**
+   * Who took the card: the associates at *this* event first, then anyone in the
+   * company.
+   *
+   * Cards are collected by whoever is working the room, so the people who
+   * checked in here are nearly always the right answer and are offered first.
+   * The company-wide fallback matters because somebody can collect a card
+   * without having remembered to check themselves in, and a door screen must
+   * not make that unrecordable.
+   */
+  const searchCollectors = useCallback(
+    async (search: string): Promise<UserAutocompleteOption[]> => {
+      const term = search.trim().toLowerCase();
+      const atThisEvent: UserAutocompleteOption[] = [];
+      if (occurrence) {
+        try {
+          const records = await bpmService.associateCheckins(occurrence.id);
+          for (const record of records) {
+            const label = record.user_name || `User #${record.user}`;
+            if (!term || label.toLowerCase().includes(term)) {
+              atThisEvent.push({ id: record.user, label, meta: 'Checked in here' });
+            }
+          }
+        } catch {
+          // Fall through to the company-wide search.
+        }
+      }
+      if (!term) return atThisEvent;
+
+      const seen = new Set(atThisEvent.map((option) => option.id));
+      const companyWide = await bpmService.searchInviters(search);
+      return [
+        ...atThisEvent,
+        ...companyWide
+          .filter((row) => !seen.has(row.id))
+          .map((row) => ({
+            id: row.id,
+            label: row.name,
+            agencyCode: row.agency_code || '',
+            meta: [row.agency_code, row.phone].filter(Boolean).join(' | '),
+          })),
+      ];
+    },
+    [occurrence],
+  );
 
   const createAppointment = async (payload: Parameters<typeof matchupService.createAppointment>[0]) => {
     setSavingAppt(true);
@@ -103,10 +179,16 @@ export function FollowUpGuestModal({
       const updated = await bpmService.saveGuestFollowup(guest.occurrence, {
         guest_id: guest.id,
         interests: [...checked],
+        // Always sent, so clearing the picker really clears it. The backend
+        // treats an omitted key as "leave it" and an explicit null as "clear".
+        collected_by: collectedBy.id,
+        referral_note: referralNote.trim(),
         appointment_id: appointmentId ?? undefined,
         notes: notes.trim() || undefined,
       });
       addToast({ type: 'success', message: `${heading} saved.` });
+      // The save ticks Blue card (and Scheduled Appointment when one was
+      // booked), so the patched row is what turns the outline green.
       onSaved(updated);
       onClose();
     } catch (error) {
@@ -115,6 +197,28 @@ export function FollowUpGuestModal({
       setSaving(false);
     }
   };
+
+  /**
+   * Prefill for the 1-on-1 booked off this card (D3).
+   *
+   * `trainee` is the **inviter**, not the logged-in user: the person who brought
+   * the guest is who the follow-up belongs to, even when somebody else is at the
+   * keyboard taking the card at the door.
+   */
+  const appointmentInitialValues = useMemo(
+    () => ({
+      kind: 'REQUEST_TRAINER' as const,
+      contact: guest?.prospect ?? null,
+      contactLabel: guest?.prospect_detail?.name ?? '',
+      trainee: guest?.inviter ?? null,
+      traineeLabel: guest?.inviter_name ?? '',
+      // Looked up by slug, because ids differ per environment and renaming the
+      // type in admin must not silently stop the box being ticked.
+      types: stepOneTypeId ? [stepOneTypeId] : [],
+      notes: `Blue Card follow up from ${eventDetails(occurrence)}`,
+    }),
+    [guest, occurrence, stepOneTypeId],
+  );
 
   return (
     <>
@@ -130,6 +234,19 @@ export function FollowUpGuestModal({
             void save();
           }}
         >
+          <FormRow>
+            <Label>Collected by</Label>
+            <UserAutocompleteDropdown
+              selectedId={collectedBy.id}
+              selectedLabel={collectedBy.label}
+              placeholder="Who took this card?"
+              buttonText="SELECT"
+              disabled={saving}
+              fetchOptions={searchCollectors}
+              onSelect={(option) => setCollectedBy({ id: option.id, label: option.label })}
+            />
+          </FormRow>
+
           <div>
             <p className="mb-2 text-sm font-medium text-slate-700 dark:text-white/80">I am interested in…</p>
             {sections.length === 0 ? (
@@ -165,6 +282,16 @@ export function FollowUpGuestModal({
           </div>
 
           <FormRow>
+            <Label>Referrals</Label>
+            <Textarea
+              value={referralNote}
+              onChange={(event) => setReferralNote(event.target.value)}
+              rows={2}
+              disabled={saving}
+            />
+          </FormRow>
+
+          <FormRow>
             <Label>Appointment</Label>
             {linkedAppointment ? (
               <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-white/10">
@@ -197,12 +324,7 @@ export function FollowUpGuestModal({
 
           <FormRow>
             <Label>Notes</Label>
-            <Textarea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              rows={3}
-              placeholder="Added to the prospect's BPM notes timeline…"
-            />
+            <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} />
           </FormRow>
 
           <FormActions>
@@ -218,14 +340,8 @@ export function FollowUpGuestModal({
 
       <AppointmentFormModal
         open={apptModalOpen}
-        initialValues={{
-          kind: 'PERSONAL',
-          contact: guest?.prospect ?? null,
-          contactLabel: guest?.prospect_detail?.name ?? '',
-          // D3: an appointment booked off a blue card is the step 1 follow-up,
-          // so its type is pre-checked. By slug, because ids differ per env.
-          types: stepOneTypeId ? [stepOneTypeId] : [],
-        }}
+        title="Blue Card Follow Up"
+        initialValues={appointmentInitialValues}
         appointmentTypes={appointmentTypes}
         saving={savingAppt}
         onClose={() => setApptModalOpen(false)}

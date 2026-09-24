@@ -16,8 +16,13 @@ import type {
   BPMOccurrence,
   EventFilters,
   GoogleStatus,
+  CheckinAudience,
+  CheckinDimension,
+  CheckinStats,
+  GuestCheckinOutcomeField,
   GuestFlagField,
-  GuestOutcomeField,
+  GuestInviteOutcomeField,
+  ProspectMatch,
   GuestProspectSearchHit,
   InviterSearchHit,
   OccurrenceFilters,
@@ -135,11 +140,28 @@ export function findStepOneTypeId(types: { id: number; slug: string }[]): number
   return types.find((type) => type.slug === STEP_ONE_TYPE_SLUG)?.id ?? null;
 }
 
-export const GUEST_OUTCOME_FIELDS: { field: GuestOutcomeField; label: string }[] = [
+/**
+ * The Outcome column on **Guest Invites** — how the pre-event contact went.
+ *
+ * There are deliberately two lists rather than one. The backend's
+ * `set-guest-flags` takes the union (see `GuestFlagField`), but each screen
+ * renders only its own: Guest Invites is worked from a phone days beforehand,
+ * Guest Check-In is worked at the door. Widening one list to cover both would
+ * put "Left Message" in front of someone taking names at a door.
+ */
+export const INVITE_OUTCOME_FIELDS: { field: GuestInviteOutcomeField; label: string }[] = [
   { field: 'called', label: 'Called' },
   { field: 'left_message', label: 'Left Message' },
   { field: 'not_interested', label: 'Not Interested' },
   { field: 'reschedule', label: 'Reschedule' },
+];
+
+/** The Outcome column on **Guest Check-In** — what happened on the night. */
+export const CHECKIN_OUTCOME_FIELDS: { field: GuestCheckinOutcomeField; label: string }[] = [
+  { field: 'late', label: 'Late' },
+  { field: 'stayed_after', label: 'Stayed after' },
+  { field: 'blue_card', label: 'Blue card' },
+  { field: 'scheduled_appointment', label: 'Scheduled Appointment' },
 ];
 
 export const bpmService = {
@@ -382,6 +404,32 @@ export const bpmService = {
     }),
   associateCheckins: (occurrenceId: number) =>
     request<AssociateCheckIn[]>(`/api/bpm/occurrences/${occurrenceId}/associate-checkins/`),
+  /**
+   * Leaderboards behind the cards on both check-in screens.
+   *
+   * Called without a `dimension` the response carries every ranking, which is
+   * one request for all four cards *and* the lists their modals show — so
+   * opening a card is instant. Pass a `dimension` to refresh just one.
+   */
+  checkinStats: (
+    occurrenceId: number,
+    audience: CheckinAudience = 'guest',
+    dimension?: CheckinDimension,
+  ) =>
+    request<CheckinStats>(
+      `/api/bpm/occurrences/${occurrenceId}/checkin-stats/${buildQuery({ audience, dimension })}`,
+    ),
+  /**
+   * Whether a typed email/phone already belongs to somebody (D9).
+   *
+   * Backs the "possible duplicate — is this them?" confirm. It calls the same
+   * matcher the add path uses, so the confirm can never disagree with what the
+   * add would actually have done.
+   */
+  matchProspect: (params: { email?: string; phone?: string }) =>
+    request<ProspectMatch>(
+      `/api/bpm/prospect-match/${buildQuery({ email: params.email, phone: params.phone })}`,
+    ),
   cancelOccurrence: (occurrenceId: number) =>
     request<BPMOccurrence>(`/api/bpm/occurrences/${occurrenceId}/cancel/`, { method: 'POST' }),
   completeOccurrence: (occurrenceId: number) =>

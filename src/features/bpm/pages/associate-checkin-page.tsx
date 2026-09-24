@@ -1,12 +1,38 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import { Button, LoadingState, UserAutocompleteDropdown } from '@shared/components';
 import { UserDetailsLink } from '@/features/team/components/user-details-link';
 import { useToastStore } from '@/store';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { useBpmSelection } from '../context/bpm-selection-context';
+import { CheckinStatCards, type CheckinCountCard } from '../components/checkin-stat-cards';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
-import type { AssociateCheckIn } from '../types';
+import type { AssociateCheckIn, CheckinDimension } from '../types';
+
+/**
+ * Which rankings this page shows. No `inviter`: associates check themselves in,
+ * so until Phase 6 gives an associate invite an inviter there is nobody to rank.
+ */
+const ASSOCIATE_DIMENSIONS: CheckinDimension[] = ['smd', 'md'];
+
+/** Sortable columns, keyed by the question they answer rather than the field. */
+type SortKey = 'name' | 'leader' | 'smd' | 'arrived';
+
+function sortValue(record: AssociateCheckIn, key: SortKey): string | number {
+  switch (key) {
+    case 'name':
+      return (record.user_name || '').toLowerCase();
+    case 'leader':
+      return (record.leader_name || '').toLowerCase();
+    case 'smd':
+      return (record.smd_name || '').toLowerCase();
+    case 'arrived':
+      return Date.parse(record.checked_in_at);
+    default:
+      return '';
+  }
+}
 
 export default function AssociateCheckinPage() {
   const addToast = useToastStore((state) => state.addToast);
@@ -15,12 +41,18 @@ export default function AssociateCheckinPage() {
   const [records, setRecords] = useState<AssociateCheckIn[]>([]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [ascending, setAscending] = useState(true);
+  // Bumped on every check-in so the leaderboards re-fetch — they are read while
+  // the room fills up.
+  const [statsVersion, setStatsVersion] = useState(0);
 
   const load = useCallback(
     async (occurrenceId: number) => {
       setLoading(true);
       try {
         setRecords(await bpmService.associateCheckins(occurrenceId));
+        setStatsVersion((version) => version + 1);
       } catch (error) {
         addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to load check-ins' });
       } finally {
@@ -63,11 +95,55 @@ export default function AssociateCheckinPage() {
     }
   };
 
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setAscending((previous) => !previous);
+      return;
+    }
+    setSortKey(key);
+    setAscending(true);
+  };
+
+  const sorted = useMemo(() => {
+    // Unsorted means the server's order — most recent arrival first, which is
+    // what somebody watching the door wants by default.
+    if (!sortKey) return records;
+    const direction = ascending ? 1 : -1;
+    return [...records].sort((a, b) => {
+      const left = sortValue(a, sortKey);
+      const right = sortValue(b, sortKey);
+      if (left === right) return 0;
+      return left > right ? direction : -direction;
+    });
+  }, [records, sortKey, ascending]);
+
+  // Both read the leaderboard's own totals. "Invited" is the event's associate
+  // roster — stored per event, not per date, until Phase 6 adds a per-date
+  // invite — which is a number only the stats call has.
+  const countCards = useMemo<CheckinCountCard[]>(
+    () => [
+      { key: 'invited', label: 'Agents Invited', from: 'invited', className: 'bg-sky-500' },
+      { key: 'checked_in', label: 'Agents Checked In', from: 'checked_in', className: 'bg-emerald-500' },
+    ],
+    [],
+  );
+
   return (
     <BPMPageShell title="Associate Check-In" description="Record associate/member attendance at a BPM.">
       <BPMCard className="mb-4">
         <BPMOccurrencePicker allowPast />
       </BPMCard>
+
+      {occurrence ? (
+        <CheckinStatCards
+          occurrenceId={occurrence.id}
+          audience="associate"
+          countCards={countCards}
+          dimensions={ASSOCIATE_DIMENSIONS}
+          reloadKey={statsVersion}
+        />
+      ) : null}
+
       <BPMCard className="mb-4">
         <label className="mb-2 block text-xs font-semibold text-slate-700 dark:text-white/80">
           Check in an associate
@@ -82,6 +158,7 @@ export default function AssociateCheckinPage() {
           onSelect={(option) => void checkIn(option.id)}
         />
       </BPMCard>
+
       <BPMCard>
         {loading ? (
           <LoadingState />
@@ -90,31 +167,96 @@ export default function AssociateCheckinPage() {
             No associates checked in yet.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100 dark:divide-white/10">
-            {records.map((record) => (
-              <li key={record.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <UserDetailsLink
-                    userId={record.user}
-                    name={record.user_name || `User #${record.user}`}
-                    className="text-slate-900 dark:text-white"
+          <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-white/10">
+            <table className="w-full min-w-[720px] border-collapse text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-white/5 dark:text-white/60">
+                  <SortHeader label="Name" columnKey="name" sortKey={sortKey} ascending={ascending} onSort={toggleSort} />
+                  <SortHeader label="Leader" columnKey="leader" sortKey={sortKey} ascending={ascending} onSort={toggleSort} />
+                  <SortHeader label="SMD" columnKey="smd" sortKey={sortKey} ascending={ascending} onSort={toggleSort} />
+                  <th className="px-3 py-2">4X4</th>
+                  <SortHeader
+                    label="Checked in"
+                    columnKey="arrived"
+                    sortKey={sortKey}
+                    ascending={ascending}
+                    onSort={toggleSort}
                   />
-                  <MissionTrackerDots record={record} />
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-slate-500 dark:text-white/60">
-                    {formatOccurrenceTime(record.checked_in_at, { weekday: undefined })}
-                  </span>
-                  <Button size="sm" variant="secondary" disabled={busy} onClick={() => void undoCheckIn(record.user)}>
-                    Undo
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                  <th className="px-3 py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((record) => (
+                  <tr
+                    key={record.id}
+                    // The row highlight is not decoration: Undo sits at the far
+                    // end of a wide row, and without it there is no way to be
+                    // sure which person is about to be un-checked-in.
+                    className="border-t border-slate-100 transition-colors hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/10"
+                  >
+                    <td className="px-3 py-2">
+                      <UserDetailsLink
+                        userId={record.user}
+                        name={record.user_name || `User #${record.user}`}
+                        className="font-medium text-slate-900 dark:text-white"
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-white/80">{record.leader_name || '—'}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-white/80">{record.smd_name || '—'}</td>
+                    <td className="px-3 py-2">
+                      <MissionTrackerDots record={record} />
+                    </td>
+                    <td className="px-3 py-2 text-xs text-slate-500 dark:text-white/60">
+                      {formatOccurrenceTime(record.checked_in_at, { weekday: undefined })}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={busy}
+                        aria-label={`Undo check-in for ${record.user_name || `user ${record.user}`}`}
+                        onClick={() => void undoCheckIn(record.user)}
+                      >
+                        Undo
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </BPMCard>
     </BPMPageShell>
+  );
+}
+
+/** A clickable column heading that shows which way it is currently sorting. */
+function SortHeader({
+  label,
+  columnKey,
+  sortKey,
+  ascending,
+  onSort,
+}: {
+  label: string;
+  columnKey: SortKey;
+  sortKey: SortKey | null;
+  ascending: boolean;
+  onSort: (key: SortKey) => void;
+}) {
+  const active = sortKey === columnKey;
+  return (
+    <th className="px-3 py-2">
+      <button
+        type="button"
+        onClick={() => onSort(columnKey)}
+        className="inline-flex items-center gap-1 uppercase tracking-wide hover:text-slate-900 dark:hover:text-white"
+      >
+        {label}
+        {active ? (ascending ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : null}
+      </button>
+    </th>
   );
 }
 
