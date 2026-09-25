@@ -5,6 +5,7 @@ import { AdminRoute } from './admin-route';
 import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
 import { WbPipelineRoute } from './wb-pipeline-route';
+import { LeaderboardsRoute } from './leaderboards-route';
 import { ProductsRoute } from './products-route';
 import { PublicRoute } from './public-route';
 import { RouteErrorFallback } from './route-error-boundary';
@@ -52,6 +53,12 @@ const LeaderMisalignmentsPage = lazy(
 );
 const PolicyMisalignmentsPage = lazy(
   () => import('@/features/admin/misalignments/pages/policy-misalignments-page')
+);
+const LeaderboardsPage = lazy(
+  () => import('@/features/leaderboards/pages/leaderboards-page')
+);
+const HomeV2Page = lazy(
+  () => import('@/features/home-v2/pages/home-v2-page')
 );
 const WbPipelinePage = lazy(
   () => import('@/features/admin/wb-pipeline/pages/wb-pipeline-page')
@@ -271,6 +278,17 @@ const router = createBrowserRouter([
         // Admin-only Data Integrity report; gated per-user by misalignments:read.
         path: 'admin/data-integrity/policy-misalignments',
         element: <MisalignmentsRoute>{lazyLoad(PolicyMisalignmentsPage)}</MisalignmentsRoute>,
+      },
+      {
+        // The next home page. Behind homev2:read — a named rollout list, not a
+        // role — while `/home` stays exactly as it is.
+        path: 'home-v2',
+        element: <LeaderboardsRoute>{lazyLoad(HomeV2Page)}</LeaderboardsRoute>,
+      },
+      {
+        // Expanded leaderboard and Full Report; same homev2:read gate.
+        path: 'leaderboards',
+        element: <LeaderboardsRoute>{lazyLoad(LeaderboardsPage)}</LeaderboardsRoute>,
       },
       {
         // Admin-only reporting pipeline operations; gated per-user by

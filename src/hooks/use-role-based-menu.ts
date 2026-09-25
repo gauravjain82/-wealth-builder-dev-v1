@@ -4,6 +4,7 @@ import { useBuilderMyAccess } from '../features/builder-ai/hooks/use-builder-ai'
 import { useMisalignmentsAccess } from '../features/admin/misalignments/hooks/use-misalignments';
 import { useProductsAccess } from '../features/admin/products/hooks/use-products';
 import { usePipelineAccess } from '../features/admin/wb-pipeline';
+import { useLeaderboardAccess } from '../features/leaderboards';
 import { roleToPlan } from '../core/constants/roles';
 import { getMenuForUser, type MenuItem } from '../config/menu';
 
@@ -30,6 +31,9 @@ export function useRoleBasedMenu(): MenuItem[] {
   // The reporting pipeline screen is gated per-user by the backend too.
   const { data: pipelineAccess } = usePipelineAccess();
   const canAccessReportingPipeline = Boolean(pipelineAccess?.can_view);
+  // Home v2 and Leaderboards ride the same limited rollout, gated by homev2:read.
+  const { data: leaderboardAccess } = useLeaderboardAccess();
+  const canAccessLeaderboards = Boolean(leaderboardAccess?.can_view_leaderboards);
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
@@ -42,7 +46,8 @@ export function useRoleBasedMenu(): MenuItem[] {
         isBuilderAiOwner,
         canAccessMisalignments,
         canAccessProducts,
-        canAccessReportingPipeline
+        canAccessReportingPipeline,
+        canAccessLeaderboards
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -52,7 +57,8 @@ export function useRoleBasedMenu(): MenuItem[] {
       isBuilderAiOwner,
       canAccessMisalignments,
       canAccessProducts,
-      canAccessReportingPipeline
+      canAccessReportingPipeline,
+      canAccessLeaderboards
     );
   }, [
     user?.hasPromotionAccess,
@@ -62,5 +68,6 @@ export function useRoleBasedMenu(): MenuItem[] {
     canAccessMisalignments,
     canAccessProducts,
     canAccessReportingPipeline,
+    canAccessLeaderboards,
   ]);
 }

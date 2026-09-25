@@ -82,6 +82,10 @@ const MENU_ITEMS = {
   } as MenuItem,
   // Product catalog management (gated per-user by products:read)
   PRODUCTS: { label: 'Products', icon: '📦', path: '/admin/products' } as MenuItem,
+  // WB Leaderboards + Home v2 (gated per-user by homev2:read — a named rollout
+  // list, not a role, so no plan grants either of these)
+  HOME_V2: { label: 'Home (new)', icon: '✨', path: '/home-v2' } as MenuItem,
+  LEADERBOARDS: { label: 'Leaderboards', icon: '🏅', path: '/leaderboards' } as MenuItem,
   // WB reporting pipeline operations (gated per-user by wbreporting:read/manage)
   REPORTING_PIPELINE: {
     label: 'Reporting Pipeline',
@@ -637,7 +641,8 @@ export function getMenuForUser(
   isBuilderAiOwner: boolean = true,
   canAccessMisalignments: boolean = false,
   canAccessProducts: boolean = false,
-  canAccessReportingPipeline: boolean = false
+  canAccessReportingPipeline: boolean = false,
+  canAccessLeaderboards: boolean = false
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -688,6 +693,16 @@ export function getMenuForUser(
     !menuItems.some((item) => item.label === MENU_ITEMS.REPORTING_PIPELINE.label)
   ) {
     menuItems.push(cloneMenuItems([MENU_ITEMS.REPORTING_PIPELINE])[0]);
+  }
+
+  // Home v2 and Leaderboards are gated by backend access (homev2:read), not by
+  // plan. They are injected at the top because Home v2 is a home page: burying it
+  // under the admin entries would read as an admin tool, which it is not.
+  if (canAccessLeaderboards) {
+    const newEntries = [MENU_ITEMS.HOME_V2, MENU_ITEMS.LEADERBOARDS].filter(
+      (entry) => !menuItems.some((item) => item.label === entry.label)
+    );
+    menuItems = [...cloneMenuItems(newEntries), ...menuItems];
   }
 
   if (normalizedPlan === Plan.NewAgent && !hasPromotionAccess) {
