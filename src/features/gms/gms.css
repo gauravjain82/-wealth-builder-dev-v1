@@ -1,0 +1,359 @@
+/**
+ * Guidance styles, scoped entirely under `wb-gms-`.
+ *
+ * Nothing here is global. `leaderboards.css` and `contests.css` established the
+ * convention and this follows it, so a Help drawer cannot restyle a host tool it is
+ * sitting on top of.
+ *
+ * Containment follows the contract `contests.css` documents, because a Help drawer has
+ * the same problem an embedded card does — it takes a size from its host and must
+ * scroll inside rather than growing the page:
+ *
+ *   1. the drawer root takes its height and sets `overflow: hidden`;
+ *   2. `min-height: 0` appears on EVERY flex ancestor between the root and the scroll
+ *      owner, because a flex item's default `min-height: auto` refuses to shrink below
+ *      its content and turns internal scrolling into page growth;
+ *   3. exactly one element scrolls, and `overscroll-behavior: contain` stops a scroll
+ *      that reaches the end from chaining to the tool underneath.
+ *
+ * The walkthrough overlay is the new part with no precedent here. Two rules matter: the
+ * spotlight never covers the control it is pointing at (the user has to be able to use
+ * it — this is a live tool), and the panel is positioned so it cannot trap focus over
+ * the thing being explained.
+ */
+
+/* -- drawer ---------------------------------------------------------------- */
+
+.wb-gms-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1090; /* below the shared Modal's 1100, so a dialog still wins */
+  display: flex;
+  flex-direction: column;
+  width: min(30rem, 100vw);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--wb-gms-surface, #ffffff);
+  border-left: 1px solid rgb(148 163 184 / 0.3);
+  box-shadow: -12px 0 32px rgb(15 23 42 / 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  .wb-gms-drawer {
+    --wb-gms-surface: #1e2431;
+    color: #ffffff;
+  }
+}
+
+.wb-gms-drawer__header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgb(148 163 184 / 0.25);
+}
+
+.wb-gms-drawer__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/**
+ * The scroll owner. `min-height: 0` is what lets it shrink inside the flex column;
+ * without it the drawer grows and the page scrolls instead.
+ */
+.wb-gms-drawer__body {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem 1.25rem 2rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.wb-gms-drawer__body:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+/* -- Help panel sections --------------------------------------------------- */
+
+.wb-gms-section + .wb-gms-section {
+  margin-top: 1.5rem;
+}
+
+.wb-gms-section__heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.wb-gms-entry {
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  text-align: left;
+  background: rgb(148 163 184 / 0.08);
+  border: 1px solid rgb(148 163 184 / 0.25);
+  border-radius: 0.625rem;
+  cursor: pointer;
+}
+
+.wb-gms-entry:hover {
+  background: rgb(148 163 184 / 0.16);
+}
+
+.wb-gms-entry:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.wb-gms-entry[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.wb-gms-entry__title {
+  font-weight: 600;
+}
+
+.wb-gms-entry__meta {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  opacity: 0.75;
+}
+
+/* -- content blocks -------------------------------------------------------- */
+
+.wb-gms-content h2,
+.wb-gms-content h3 {
+  margin: 1.25rem 0 0.5rem;
+  font-weight: 600;
+}
+
+.wb-gms-content h2 {
+  font-size: 1rem;
+}
+
+.wb-gms-content h3 {
+  font-size: 0.9375rem;
+}
+
+.wb-gms-content p,
+.wb-gms-content li {
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.wb-gms-content ul,
+.wb-gms-content ol {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.wb-gms-content li {
+  margin-bottom: 0.25rem;
+}
+
+.wb-gms-note {
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+  border-left: 3px solid currentColor;
+  border-radius: 0.375rem;
+}
+
+.wb-gms-note--info {
+  color: #1d4ed8;
+  background: rgb(37 99 235 / 0.08);
+}
+
+.wb-gms-note--warning {
+  color: #b45309;
+  background: rgb(217 119 6 / 0.1);
+}
+
+.wb-gms-note--caution {
+  color: #b91c1c;
+  background: rgb(220 38 38 / 0.08);
+}
+
+/**
+ * A metric note renders the host's own wording, fetched at read time (decision G6).
+ * It looks different from ordinary prose on purpose: a manager should be able to see
+ * that this sentence comes from the same place as the label on the field.
+ */
+.wb-gms-metric {
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  background: rgb(217 119 6 / 0.08);
+  border: 1px dashed rgb(217 119 6 / 0.5);
+  border-radius: 0.5rem;
+}
+
+.wb-gms-metric__label {
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.wb-gms-metric--unavailable {
+  background: rgb(148 163 184 / 0.1);
+  border-style: solid;
+  border-color: rgb(148 163 184 / 0.4);
+}
+
+/* -- prerequisites --------------------------------------------------------- */
+
+.wb-gms-prereq {
+  display: flex;
+  gap: 0.625rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid rgb(148 163 184 / 0.2);
+}
+
+.wb-gms-prereq__icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  text-align: center;
+}
+
+.wb-gms-prereq__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.wb-gms-prereq__detail {
+  margin-top: 0.125rem;
+  font-size: 0.8125rem;
+  opacity: 0.8;
+}
+
+/* -- the live-data warning ------------------------------------------------- */
+
+/**
+ * Not decoration. `workflow.add_guest` creates a prospect, writes a note and emails the
+ * guest on commit, so this is the only warning between a learner and a real message
+ * reaching a real person.
+ */
+.wb-gms-live-warning {
+  padding: 0.875rem;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+  color: #b45309;
+  background: rgb(217 119 6 / 0.12);
+  border: 1px solid rgb(217 119 6 / 0.45);
+  border-radius: 0.5rem;
+}
+
+.wb-gms-live-warning strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* -- walkthrough overlay --------------------------------------------------- */
+
+/**
+ * The spotlight ring. It is a ring, not a mask: the control it points at must stay
+ * clickable, because the user is operating the real tool through it.
+ */
+.wb-gms-spotlight {
+  position: fixed;
+  z-index: 1080;
+  pointer-events: none; /* never intercept a click meant for the tool */
+  border: 2px solid #2563eb;
+  border-radius: 0.5rem;
+  box-shadow:
+    0 0 0 4px rgb(37 99 235 / 0.25),
+    0 0 0 9999px rgb(15 23 42 / 0.35);
+  transition: all 180ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-gms-spotlight {
+    transition: none;
+  }
+}
+
+.wb-gms-step-panel {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1085;
+  display: flex;
+  flex-direction: column;
+  width: min(24rem, calc(100vw - 2rem));
+  max-height: min(60vh, 32rem);
+  min-height: 0;
+  overflow: hidden;
+  background: var(--wb-gms-surface, #ffffff);
+  border: 1px solid rgb(148 163 184 / 0.35);
+  border-radius: 0.75rem;
+  box-shadow: 0 18px 40px rgb(15 23 42 / 0.22);
+}
+
+@media (prefers-color-scheme: dark) {
+  .wb-gms-step-panel {
+    --wb-gms-surface: #1e2431;
+    color: #ffffff;
+  }
+}
+
+.wb-gms-step-panel__body {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.wb-gms-step-panel__footer {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgb(148 163 184 / 0.25);
+}
+
+.wb-gms-step-panel__progress {
+  margin-right: auto;
+  font-size: 0.8125rem;
+  opacity: 0.7;
+}
+
+/** "Already complete" — the state that must offer a choice, never rush forward. */
+.wb-gms-already-complete {
+  padding: 0.625rem 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  color: #15803d;
+  background: rgb(22 163 74 / 0.1);
+  border: 1px solid rgb(22 163 74 / 0.4);
+  border-radius: 0.5rem;
+}
+
+/* On a phone the panel takes the full width and sits above the safe area. */
+@media (max-width: 30rem) {
+  .wb-gms-step-panel {
+    right: 0.5rem;
+    left: 0.5rem;
+    bottom: 0.5rem;
+    width: auto;
+    max-height: 50vh;
+  }
+
+  .wb-gms-drawer {
+    width: 100vw;
+  }
+}

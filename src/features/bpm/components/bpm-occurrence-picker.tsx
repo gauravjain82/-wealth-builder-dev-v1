@@ -5,6 +5,8 @@ import { useBpmSelection } from '../context/bpm-selection-context';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
 import { CONCEALED_STATUSES } from '../types';
 import type { BPMEventListItem, BPMOccurrence } from '../types';
+import { BPM_TARGETS } from '../gms-targets';
+import { emit, gmsTarget } from '@/features/gms/services/gms-adapter';
 
 /**
  * The two-step "BPM name / BPM date-location" picker.
@@ -82,13 +84,16 @@ function PickerFields({
 
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <label className="grid gap-1.5">
+      <label className="grid gap-1.5" {...gmsTarget(BPM_TARGETS.contextEvent)}>
         <span className="text-xs font-semibold text-slate-700 dark:text-white/80">BPM Name</span>
         <Select
           variant="surface"
           value={eventId ?? ''}
           disabled={eventsLoading}
-          onChange={(event) => onEventChange(event.target.value ? Number(event.target.value) : null)}
+          onChange={(event) => {
+            onEventChange(event.target.value ? Number(event.target.value) : null);
+            emit(BPM_TARGETS.contextEvent, 'selected');
+          }}
         >
           <option value="">{eventsLoading ? 'Loading BPMs…' : 'Select a BPM'}</option>
           {events.map((event) => (
@@ -99,7 +104,7 @@ function PickerFields({
         </Select>
       </label>
 
-      <label className="grid gap-1.5">
+      <label className="grid gap-1.5" {...gmsTarget(BPM_TARGETS.contextOccurrence)}>
         <span className="flex items-center justify-between gap-2 text-xs font-semibold text-slate-700 dark:text-white/80">
           <span>BPM Date / Location</span>
           {allowPast ? (
@@ -116,9 +121,10 @@ function PickerFields({
           variant="surface"
           value={occurrenceId ?? ''}
           disabled={eventId === null || occurrencesLoading}
-          onChange={(event) =>
-            onOccurrenceChange(event.target.value ? Number(event.target.value) : null)
-          }
+          onChange={(event) => {
+            onOccurrenceChange(event.target.value ? Number(event.target.value) : null);
+            emit(BPM_TARGETS.contextOccurrence, 'selected');
+          }}
         >
           <option value="">{datePlaceholder()}</option>
           {occurrences.map((occurrence) => {

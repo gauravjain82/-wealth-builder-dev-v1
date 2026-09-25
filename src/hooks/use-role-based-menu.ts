@@ -7,6 +7,7 @@ import { usePipelineAccess } from '../features/admin/wb-pipeline';
 import { useLeaderboardAccess } from '../features/leaderboards';
 import { roleToPlan } from '../core/constants/roles';
 import { getMenuForUser, type MenuItem } from '../config/menu';
+import { useGmsAccess } from '@/features/gms';
 
 /**
  * Hook to get plan-based menu structure
@@ -36,6 +37,9 @@ export function useRoleBasedMenu(): MenuItem[] {
   const canAccessLeaderboards = Boolean(leaderboardAccess?.can_view_leaderboards);
   // Contest configuration needs wbreporting:manage, which the same payload reports.
   const canManageReporting = Boolean(pipelineAccess?.can_manage);
+  // Guidance authoring is its own per-user grant (gms:author), reported by gms.
+  const { data: gmsAccess } = useGmsAccess();
+  const canAuthorGuidance = Boolean(gmsAccess?.gms_enabled && gmsAccess?.can_author);
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
@@ -50,7 +54,8 @@ export function useRoleBasedMenu(): MenuItem[] {
         canAccessProducts,
         canAccessReportingPipeline,
         canAccessLeaderboards,
-        canManageReporting
+        canManageReporting,
+        canAuthorGuidance
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -62,7 +67,8 @@ export function useRoleBasedMenu(): MenuItem[] {
       canAccessProducts,
       canAccessReportingPipeline,
       canAccessLeaderboards,
-      canManageReporting
+      canManageReporting,
+      canAuthorGuidance
     );
   }, [
     user?.hasPromotionAccess,
@@ -74,5 +80,6 @@ export function useRoleBasedMenu(): MenuItem[] {
     canAccessReportingPipeline,
     canAccessLeaderboards,
     canManageReporting,
+    canAuthorGuidance,
   ]);
 }

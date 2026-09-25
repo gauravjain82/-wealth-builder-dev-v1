@@ -6,6 +6,7 @@ import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
 import { WbPipelineRoute } from './wb-pipeline-route';
 import { ContestSettingsRoute } from './contest-settings-route';
+import { GuidanceRoute } from './guidance-route';
 import { ContestsRoute } from './contests-route';
 import { LeaderboardsRoute } from './leaderboards-route';
 import { ProductsRoute } from './products-route';
@@ -63,6 +64,7 @@ const ContestsPage = lazy(() => import('@/features/contests/pages/contests-page'
 const ContestSettingsPage = lazy(
   () => import('@/features/contests/pages/contest-settings-page')
 );
+const GuidanceAdminPage = lazy(() => import('@/features/gms/pages/guidance-admin-page'));
 const HomeV2Page = lazy(
   () => import('@/features/home-v2/pages/home-v2-page')
 );
@@ -308,6 +310,11 @@ const router = createBrowserRouter([
         // opens the card - a different gate for a different job.
         path: 'admin/contest-settings',
         element: <ContestSettingsRoute>{lazyLoad(ContestSettingsPage)}</ContestSettingsRoute>,
+      },
+      {
+        // Guidance library and review queue, gated per-user by gms:author.
+        path: 'admin/guidance',
+        element: <GuidanceRoute>{lazyLoad(GuidanceAdminPage)}</GuidanceRoute>,
       },
       {
         // Admin-only reporting pipeline operations; gated per-user by
