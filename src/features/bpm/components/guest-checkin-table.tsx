@@ -151,6 +151,36 @@ function OutcomeChecklist({
   );
 }
 
+/**
+ * Blue Card button styling: **outlined blue until a card is saved, solid blue
+ * after** — the brief asks for the button itself to carry the state, so somebody
+ * working a door can see at a glance which guests have been through the card.
+ *
+ * Keyed on `guest.followup` existing rather than on the `blue_card` flag, and the
+ * two agree by construction: `workflow.save_guest_followup` ticks `blue_card` on
+ * **any** save, which is the backend's reading of the brief's "saved with any
+ * data". Reading the row instead would let the button and the ticked Blue card
+ * outcome disagree on screen.
+ *
+ * Kept local rather than added as a shared `Button` variant: nothing else in the
+ * app wants a blue button, and a variant exists to be reused.
+ */
+const BLUE_CARD_CLASS = {
+  /** No card yet — present but not shouting. */
+  empty:
+    'border-blue-500 bg-transparent text-blue-600 hover:bg-blue-50 ' +
+    'dark:border-blue-400 dark:text-blue-300 dark:hover:bg-blue-400/10',
+  /** Card on file. */
+  saved:
+    'border-blue-600 bg-blue-600 text-white hover:bg-blue-700 ' +
+    'dark:border-blue-500 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-600',
+} as const;
+
+/** The two-state class for one guest's Blue Card button. */
+function blueCardClass(guest: BPMGuest): string {
+  return guest.followup ? BLUE_CARD_CLASS.saved : BLUE_CARD_CLASS.empty;
+}
+
 /** Small pill summarising a saved blue card (interest count + linked appointment). */
 function FollowUpBadge({ guest }: { guest: BPMGuest }) {
   if (!guest.followup) return null;
@@ -270,10 +300,10 @@ function GuestCheckinCard({
         <div className="mt-3 border-t border-slate-100 pt-3 dark:border-white/10">
           <Button
             size="sm"
-            variant={guest.followup ? 'secondary' : 'default'}
+            variant="outline"
             disabled={busy}
             onClick={() => onFollowUp(guest)}
-            className="w-full"
+            className={`w-full ${blueCardClass(guest)}`}
           >
             {guest.followup ? 'Edit blue card' : 'Blue card'}
           </Button>
@@ -481,9 +511,10 @@ export function GuestCheckinTable({
                     <div className="flex flex-col items-start gap-1">
                       <Button
                         size="sm"
-                        variant={guest.followup ? 'secondary' : 'default'}
+                        variant="outline"
                         disabled={busy}
                         onClick={() => onFollowUp?.(guest)}
+                        className={blueCardClass(guest)}
                       >
                         {guest.followup ? 'Edit blue card' : 'Blue card'}
                       </Button>
