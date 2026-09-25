@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LoadingState, TrackerTable, type TrackerTableColumn } from '@shared/components';
+import {
+  LoadingState,
+  TrackerDateRangeFilter,
+  TrackerTable,
+  type DatePresetKey,
+  type TrackerDateRangeChange,
+  type TrackerTableColumn,
+} from '@shared/components';
 import { UserDetailsLink } from '@/features/team/components/user-details-link';
 import { TrackerNotesModal } from '@/features/team/components/tracker-notes-modal';
 import {
@@ -83,6 +90,14 @@ export default function AssociateInvitesPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [sortState, setSortState] = useState<{ key: string; direction: SortDirection } | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
+  // The date range lives in its own state, *not* inside `filters`, for the same
+  // reason `teamScopeUserId` does: `TrackerTable` spreads its own internal
+  // `searchApplied` when it reports a column search, so `onServerFilterChange`
+  // emits only the column filters and **replaces** whatever else was in the
+  // object. Anything parked in `filters` that the table does not own is wiped the
+  // first time somebody types in a search box. Merged at request time instead.
+  const [datePreset, setDatePreset] = useState<DatePresetKey>('all');
+  const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
   const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
   const [teamScopeUserId, setTeamScopeUserId] = useState<string | null>(null);
   // Keyed `${userId}:${field}` so two boxes on one row can save independently.
@@ -118,6 +133,12 @@ export default function AssociateInvitesPage() {
           filters: {
             ...toBackendFilters(filters),
             ...(teamScopeUserId ? { broker_id: teamScopeUserId } : {}),
+            // Inherited from `AssociateTrackerFilter`, so these narrow by the
+            // associate's **ama_date** — when they joined — exactly as the same
+            // control does on the Associate Tracker. Not the BPM's date, which is
+            // already fixed by the selected occurrence.
+            ...(dateRange.startDate ? { from_date: dateRange.startDate } : {}),
+            ...(dateRange.endDate ? { to_date: dateRange.endDate } : {}),
           },
         });
         if (requestId !== latestRequestRef.current) return;
@@ -140,7 +161,7 @@ export default function AssociateInvitesPage() {
         }
       }
     },
-    [addToast, filters, occurrence, sortState, teamScope, teamScopeUserId],
+    [addToast, dateRange, filters, occurrence, sortState, teamScope, teamScopeUserId],
   );
 
   useEffect(() => {
@@ -152,6 +173,12 @@ export default function AssociateInvitesPage() {
       void load(nextPage, false);
     }
   }, [hasMore, load, loading, loadingMore, nextPage, rows.length]);
+
+  /** Apply a preset or custom range. "All Ranges" clears both bounds. */
+  const handleDateRangeChange = useCallback((value: TrackerDateRangeChange) => {
+    setDatePreset(value.preset);
+    setDateRange({ startDate: value.startDate, endDate: value.endDate });
+  }, []);
 
   const handleTeamScopeChange = useCallback(
     (next: { scope: TrackerTeamScope; user: { id: string } | null }) => {
@@ -392,11 +419,18 @@ export default function AssociateInvitesPage() {
       title="Associate Invites"
       description="Who on your team was invited to this BPM date, and who has been called."
       actions={
-        <TrackerTeamScopeFilter
-          value={teamScope}
-          selectedUserId={teamScopeUserId}
-          onChange={handleTeamScopeChange}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <TrackerTeamScopeFilter
+            value={teamScope}
+            selectedUserId={teamScopeUserId}
+            onChange={handleTeamScopeChange}
+          />
+          <TrackerDateRangeFilter
+            value={datePreset}
+            selectedRange={dateRange}
+            onChange={handleDateRangeChange}
+          />
+        </div>
       }
     >
       <BPMCard className="mb-4">
