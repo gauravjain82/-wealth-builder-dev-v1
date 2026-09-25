@@ -11,6 +11,8 @@ import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { useBpmSelection } from '../context/bpm-selection-context';
 import { GuestList } from '../components/guest-list';
 import { RescheduleGuestModal } from '../components/reschedule-guest-modal';
+import { SendEventModal } from '../components/send-event-modal';
+import { GuestMessageHistoryModal } from '../components/guest-message-history';
 import { TransferGuestModal } from '../components/transfer-guest-modal';
 import { bpmService, findStepOneTypeId, formatOccurrenceTime } from '../services/bpm-service';
 import { mergeGuest } from '../components/guest-notes';
@@ -25,6 +27,11 @@ export default function ViewInvitesPage() {
   const [busyGuestId, setBusyGuestId] = useState<number | null>(null);
   const [transferTarget, setTransferTarget] = useState<BPMGuest | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<BPMGuest | null>(null);
+  // Who the sender has ticked to message. Ids, not guest objects, so a reload
+  // of the list does not strand a selection against stale rows.
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [sendOpen, setSendOpen] = useState(false);
+  const [historyGuest, setHistoryGuest] = useState<BPMGuest | null>(null);
   const [appointmentTarget, setAppointmentTarget] = useState<BPMGuest | null>(null);
   const [savingAppointment, setSavingAppointment] = useState(false);
   const [addGuestOpen, setAddGuestOpen] = useState(false);
@@ -140,14 +147,60 @@ export default function ViewInvitesPage() {
     };
   }, [appointmentTarget, occurrence, stepOneTypeId]);
 
+  const toggleSelected = useCallback((guest: BPMGuest, value: boolean) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (value) next.add(guest.id);
+      else next.delete(guest.id);
+      return next;
+    });
+  }, []);
+
+  /** Select-all covers the rows on screen, which is what the filters above mean. */
+  const toggleSelectAll = useCallback(
+    (value: boolean) => {
+      setSelectedIds(value ? new Set(guests.map((guest) => guest.id)) : new Set());
+    },
+    [guests],
+  );
+
+  // Kept in sync with the loaded list: a guest transferred or removed elsewhere
+  // must not stay silently ticked and then be messaged.
+  const selectedGuests = useMemo(
+    () => guests.filter((guest) => selectedIds.has(guest.id)),
+    [guests, selectedIds],
+  );
+
+  /**
+   * Who the send button targets.
+   *
+   * **Ticking nothing means everyone shown**, so chasing a whole list is one
+   * click rather than select-all-then-send. Ticking narrows it. Either way the
+   * modal lists exactly who is about to be written to, with what each of them has
+   * already had, so "one click" opens a confirmation rather than sending.
+   *
+   * The server still requires explicit ids — there is no "send to everyone on
+   * this date" shorthand it could be asked for by mistake.
+   */
+  const sendTargets = selectedGuests.length > 0 ? selectedGuests : guests;
+
   return (
     <BPMPageShell
       title="Guest Invites"
       description="Guests invited to a BPM. Confirm attendance, track follow-up outcomes, or move a guest to another event."
       actions={
-        <Button disabled={!occurrence} onClick={() => setAddGuestOpen(true)}>
-          + Add Guest
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {sendTargets.length > 0 ? (
+            <Button variant="outline" onClick={() => setSendOpen(true)}>
+              {selectedGuests.length > 0
+                ? `Send event to ${selectedGuests.length} selected`
+                : `Send event to all ${sendTargets.length}`}
+            </Button>
+          ) : null}
+          <Button disabled={!occurrence} onClick={() => setAddGuestOpen(true)}>
+            + Add Guest
+          </Button>
+        </div>
       }
     >
       <BPMCard className="mb-4">
@@ -162,6 +215,10 @@ export default function ViewInvitesPage() {
             busyGuestId={busyGuestId}
             onGuestUpdated={patchGuest}
             onSetConfirmed={(guest, value) => setFlag(guest, 'confirmed', value)}
+            selectedIds={selectedIds}
+            onToggleSelected={toggleSelected}
+            onToggleSelectAll={toggleSelectAll}
+            onOpenMessageHistory={setHistoryGuest}
             onSetOutcome={(guest, field, value) => setFlag(guest, field, value)}
             onReschedule={(guest) => setRescheduleTarget(guest)}
             onBookAppointment={(guest) => setAppointmentTarget(guest)}
@@ -177,6 +234,24 @@ export default function ViewInvitesPage() {
         onAdded={() => {
           if (occurrence) void load(occurrence.id);
         }}
+      />
+      <SendEventModal
+        open={sendOpen}
+        occurrenceId={occurrence?.id ?? null}
+        guests={sendTargets}
+        onClose={() => setSendOpen(false)}
+        onSent={() => {
+          // Reload so the contact badges reflect what was just sent — the next
+          // person looking at this list is who the history exists for.
+          if (occurrence) void load(occurrence.id);
+          setSelectedIds(new Set());
+        }}
+      />
+      <GuestMessageHistoryModal
+        open={Boolean(historyGuest)}
+        occurrenceId={occurrence?.id ?? null}
+        guest={historyGuest}
+        onClose={() => setHistoryGuest(null)}
       />
       <RescheduleGuestModal
         open={Boolean(rescheduleTarget)}

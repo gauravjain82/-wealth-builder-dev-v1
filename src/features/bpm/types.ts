@@ -390,6 +390,8 @@ export interface BPMGuest {
   /** "Event / date / location", or "1-on-1 · <when>". Null when not rescheduled. */
   rescheduled_to_label: string | null;
   notes: BPMGuestNote[];
+  /** Prior contact about this date. `null` means never contacted. */
+  messages_summary: BPMGuestMessageSummary | null;
   followup: BPMGuestFollowup | null;
   checked_in_at: string | null;
   checked_in_by: number | null;
@@ -685,6 +687,81 @@ export interface BPMSettings {
 export type BPMSettingsPayload = Partial<
   Omit<BPMSettings, 'updated_by' | 'updated_by_name' | 'updated_at'>
 >;
+
+// -- Sending the event to guests -------------------------------------------
+
+/** A reusable SMS body. No subject and no HTML — hence its own model. */
+export interface BPMSmsTemplate {
+  id: number;
+  name: string;
+  slug: string;
+  body: string;
+  /** Billed 160-char segments for the raw template, before placeholders expand. */
+  segment_estimate: number;
+  is_active: boolean;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * How often this guest has already been messaged about this date.
+ *
+ * `null` on a guest row means **never contacted** — rendered as nothing at all
+ * rather than a zero, so the eye is only drawn to people who have already heard
+ * from someone.
+ *
+ * Counts exclude skips: a skip is history worth seeing in the detail view, but
+ * counting it would overstate how often this person was actually contacted,
+ * which is the number the sender acts on.
+ */
+export interface BPMGuestMessageSummary {
+  email: number;
+  sms: number;
+  last_sent_at: string | null;
+  last_status: string;
+}
+
+/** One recorded attempt to message a guest. */
+export interface BPMGuestMessageRow {
+  id: number;
+  channel: 'EMAIL' | 'SMS';
+  stage: string;
+  /** The outcome recorded when the send was made. */
+  status: 'queued' | 'sent' | 'skipped' | 'failed';
+  /** Live state from SendGrid / Twilio — a queued email may since have bounced. */
+  delivery_status: string;
+  detail: string;
+  sent_by: number | null;
+  sent_by_name: string | null;
+  created_at: string;
+}
+
+export type BPMSendChannel = 'email' | 'sms';
+
+/** What happened for one guest on one channel. */
+export interface BPMSendOutcome {
+  guest_id: number;
+  name: string;
+  channel: BPMSendChannel;
+  /** `queued` for email (the SendGrid pass sends it), `sent` for SMS. */
+  status: 'queued' | 'sent' | 'skipped' | 'failed';
+  /** Why this guest was not reached, phrased for the sender. */
+  detail: string;
+}
+
+export interface BPMSendReport {
+  stage: string;
+  counts: Partial<Record<BPMSendOutcome['status'], number>>;
+  outcomes: BPMSendOutcome[];
+}
+
+export interface BPMSendPayload {
+  guest_ids: number[];
+  channels: BPMSendChannel[];
+  email_template_id?: number | null;
+  sms_template_id?: number | null;
+}
 
 // -- QR check-in (Phase 8) -------------------------------------------------
 

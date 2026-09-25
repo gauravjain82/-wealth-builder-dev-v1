@@ -21,8 +21,12 @@ import type {
   BPMQrToken,
   BPMRowColorRule,
   BPMRowColorRulePayload,
+  BPMGuestMessageRow,
+  BPMSendPayload,
+  BPMSendReport,
   BPMSettings,
   BPMSettingsPayload,
+  BPMSmsTemplate,
   EventFilters,
   GoogleStatus,
   CheckinAudience,
@@ -275,6 +279,44 @@ export const bpmService = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
+
+  // -- Sending the event to guests -----------------------------------------
+  // D5's sender, added after Phase 7 shipped the switches. Gated server-side on
+  // `email_event_to_guests` / `text_event_to_guests`, so a refusal arrives as a
+  // sentence naming the switch to flip.
+
+  /** The reusable SMS bodies, for the send modal's picker.
+   *  (The email side reuses `emailTemplates` above — it already existed.) */
+  smsTemplates: () =>
+    request<PaginatedResponse<BPMSmsTemplate>>(
+      `/api/bpm/sms-templates/${buildQuery({ page_size: 100 })}`,
+    ),
+
+  /**
+   * Every message attempt against one guest on this date, newest first.
+   *
+   * The detail behind the count on the row. Includes skips and failures, because
+   * "we tried and they have no phone number" is what somebody needs *before*
+   * trying the same thing again.
+   */
+  guestMessages: (occurrenceId: number, guestId: number) =>
+    request<BPMGuestMessageRow[]>(
+      `/api/bpm/occurrences/${occurrenceId}/guest-messages/${buildQuery({ guest_id: guestId })}`,
+    ),
+
+  /**
+   * Send this date's details to the chosen guests.
+   *
+   * Recipients are always explicit — there is no "everyone on this date"
+   * shorthand, by design. The response reports one outcome **per guest per
+   * channel**, because a guest with no email is something the sender has to act
+   * on and must not read as the whole send having failed.
+   */
+  sendEventToGuests: (occurrenceId: number, payload: BPMSendPayload) =>
+    request<BPMSendReport>(
+      `/api/bpm/occurrences/${occurrenceId}/send-event-to-guests/`,
+      { method: 'POST', body: JSON.stringify(payload) },
+    ),
 
   // -- QR check-in ---------------------------------------------------------
   // Two codes pointing opposite ways, and one endpoint that resolves either —

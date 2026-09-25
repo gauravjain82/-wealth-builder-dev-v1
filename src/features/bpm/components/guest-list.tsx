@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button, Checkbox } from '@shared/components';
 import { UserDetailsLink } from '@/features/team/components/user-details-link';
+import { ContactBadge } from './guest-message-history';
 import {
   resolveRowColors,
   rowColorLabel,
@@ -24,6 +25,18 @@ interface GuestListProps {
   onSetOutcome?: (guest: BPMGuest, field: GuestInviteOutcomeField, value: boolean) => void;
   /** When set, the leftmost Confirmed column is shown. */
   onSetConfirmed?: (guest: BPMGuest, value: boolean) => void;
+  /**
+   * When set, a row-**selection** column appears to the left of everything,
+   * including Confirmed. Two checkbox columns is a real risk of confusion, so
+   * they are deliberately distinguishable: selection is unlabelled with a
+   * select-all in its header, Confirmed is a labelled data column. Selection is
+   * for "who am I about to message"; Confirmed is a fact about the guest.
+   */
+  selectedIds?: Set<number>;
+  onToggleSelected?: (guest: BPMGuest, value: boolean) => void;
+  onToggleSelectAll?: (value: boolean) => void;
+  /** Open this guest's message history. Also shows the contact badge on the row. */
+  onOpenMessageHistory?: (guest: BPMGuest) => void;
   onFollowUp?: (guest: BPMGuest) => void;
   followUpLabel?: string;
   editFollowUpLabel?: string;
@@ -46,6 +59,10 @@ export function GuestList({
   onGuestUpdated,
   onSetOutcome,
   onSetConfirmed,
+  selectedIds,
+  onToggleSelected,
+  onToggleSelectAll,
+  onOpenMessageHistory,
   onFollowUp,
   followUpLabel = 'Follow up',
   editFollowUpLabel = 'Edit follow-up',
@@ -72,6 +89,12 @@ export function GuestList({
 
   const showInteraction = Boolean(onSetOutcome);
   const showConfirmed = Boolean(onSetConfirmed);
+  const showSelection = Boolean(onToggleSelected);
+  // "All" means all rows *currently rendered* — the filters above this table are
+  // the sender's way of narrowing who they are about to message, so select-all
+  // has to respect them rather than reaching past to the whole date.
+  const allSelected =
+    showSelection && guests.length > 0 && guests.every((guest) => selectedIds?.has(guest.id));
   const showCheckIn = Boolean(onToggleCheckIn);
   const showRowActions = Boolean(
     onFollowUp || onTransfer || onReschedule || onBookAppointment || onRemove,
@@ -84,6 +107,15 @@ export function GuestList({
         <table className="w-full min-w-[1000px] border-collapse text-sm">
           <thead>
             <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-white/5 dark:text-white/60">
+              {showSelection ? (
+                <th className="w-10 px-3 py-2">
+                  <Checkbox
+                    checked={allSelected}
+                    aria-label={allSelected ? 'Clear selection' : 'Select every guest shown'}
+                    onChange={(e) => onToggleSelectAll?.(e.target.checked)}
+                  />
+                </th>
+              ) : null}
               {showConfirmed ? <th className="px-3 py-2">Confirmed</th> : null}
               <th className="px-3 py-2">Guest</th>
               <th className="px-3 py-2">Phone</th>
@@ -110,6 +142,15 @@ export function GuestList({
                 // also available as text on hover / to a screen reader.
                 title={colorReason || undefined}
               >
+                {showSelection ? (
+                  <td className="px-3 py-2">
+                    <Checkbox
+                      checked={Boolean(selectedIds?.has(guest.id))}
+                      aria-label={`Select ${guest.prospect_detail?.name || 'guest'} to message`}
+                      onChange={(e) => onToggleSelected?.(guest, e.target.checked)}
+                    />
+                  </td>
+                ) : null}
                 {showConfirmed ? (
                   <td className="px-3 py-2">
                     <Checkbox
@@ -126,6 +167,14 @@ export function GuestList({
                     name={guest.prospect_detail?.name}
                     className="font-medium text-slate-900 dark:text-white"
                   />
+                  {onOpenMessageHistory ? (
+                    <div className="mt-1">
+                      <ContactBadge
+                        summary={guest.messages_summary}
+                        onOpen={() => onOpenMessageHistory(guest)}
+                      />
+                    </div>
+                  ) : null}
                   {guest.followup ? (
                     <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
                       <span className="rounded-full bg-emerald-50 px-2 py-0.5 dark:bg-emerald-400/10">
