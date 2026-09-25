@@ -34,6 +34,8 @@ export function useRoleBasedMenu(): MenuItem[] {
   // Home v2 and Leaderboards ride the same limited rollout, gated by homev2:read.
   const { data: leaderboardAccess } = useLeaderboardAccess();
   const canAccessLeaderboards = Boolean(leaderboardAccess?.can_view_leaderboards);
+  // Contest configuration needs wbreporting:manage, which the same payload reports.
+  const canManageReporting = Boolean(pipelineAccess?.can_manage);
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
@@ -47,7 +49,8 @@ export function useRoleBasedMenu(): MenuItem[] {
         canAccessMisalignments,
         canAccessProducts,
         canAccessReportingPipeline,
-        canAccessLeaderboards
+        canAccessLeaderboards,
+        canManageReporting
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -58,7 +61,8 @@ export function useRoleBasedMenu(): MenuItem[] {
       canAccessMisalignments,
       canAccessProducts,
       canAccessReportingPipeline,
-      canAccessLeaderboards
+      canAccessLeaderboards,
+      canManageReporting
     );
   }, [
     user?.hasPromotionAccess,
@@ -69,5 +73,6 @@ export function useRoleBasedMenu(): MenuItem[] {
     canAccessProducts,
     canAccessReportingPipeline,
     canAccessLeaderboards,
+    canManageReporting,
   ]);
 }

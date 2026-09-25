@@ -11,15 +11,24 @@
  * the card does not fetch four dialogs' worth of data nobody asked for.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
+  createContest,
+  deleteContest,
   fetchAgentProfile,
   fetchContestAccess,
   fetchContests,
+  fetchEditableContests,
+  fetchEditorOptions,
   fetchFlyer,
   fetchProof,
   fetchStandings,
+  removeFlyer,
+  saveContest,
+  setContestHidden,
+  setFlyerVisible,
+  uploadFlyer,
 } from '../services/contests-service';
 import type { StandingsQuery, ThresholdMetric } from '../types';
 
@@ -102,4 +111,84 @@ export function useFlyer(contestId: number | null) {
     staleTime: 10 * 60 * 1000,
     retry: false,
   });
+}
+
+/* --- settings (wbreporting:manage) ---------------------------------------- */
+
+/** Editor metadata: levels, metrics, statuses, period modes, flyer limits. */
+export function useEditorOptions(enabled: boolean) {
+  return useQuery({
+    queryKey: [KEY, 'editor-options'],
+    queryFn: ({ signal }) => fetchEditorOptions(signal),
+    enabled,
+    // Host facts that change when an operator edits the level table, not per render.
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Every editable contest, with the revision tokens a save needs. */
+export function useEditableContests(enabled: boolean) {
+  return useQuery({
+    queryKey: [KEY, 'editable'],
+    queryFn: ({ signal }) => fetchEditableContests(signal),
+    enabled,
+  });
+}
+
+/**
+ * Every settings mutation, sharing one invalidation.
+ *
+ * All of them return the contest's fresh editor payload, and all of them advance a
+ * `revision`. Re-reading the list after any write is what keeps the editor's tokens
+ * current — a stale token is a 409 on the next save, which is correct but useless to
+ * a user who only pressed "Hide".
+ */
+export function useContestSettingsMutations() {
+  const queryClient = useQueryClient();
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: [KEY, 'editable'] });
+    // The reader surfaces show the same contests; a rename or a hide must reach them.
+    queryClient.invalidateQueries({ queryKey: [KEY, 'list'] });
+    queryClient.invalidateQueries({ queryKey: [KEY, 'standings'] });
+  };
+
+  return {
+    create: useMutation({ mutationFn: createContest, onSuccess: invalidate }),
+    save: useMutation({
+      mutationFn: (input: { contestId: number; body: Record<string, unknown> }) =>
+        saveContest(input.contestId, input.body),
+      onSuccess: invalidate,
+    }),
+    setHidden: useMutation({
+      mutationFn: (input: { contestId: number; hidden: boolean; revision: number }) =>
+        setContestHidden(input.contestId, {
+          hidden: input.hidden,
+          revision: input.revision,
+        }),
+      onSuccess: invalidate,
+    }),
+    setFlyerVisible: useMutation({
+      mutationFn: (input: { contestId: number; visible: boolean; revision: number }) =>
+        setFlyerVisible(input.contestId, {
+          visible: input.visible,
+          revision: input.revision,
+        }),
+      onSuccess: invalidate,
+    }),
+    remove: useMutation({
+      mutationFn: (input: { contestId: number; revision: number }) =>
+        deleteContest(input.contestId, input.revision),
+      onSuccess: invalidate,
+    }),
+    uploadFlyer: useMutation({
+      mutationFn: (input: { contestId: number; file: File; revision: number }) =>
+        uploadFlyer(input.contestId, input.file, input.revision),
+      onSuccess: invalidate,
+    }),
+    removeFlyer: useMutation({
+      mutationFn: (input: { contestId: number; revision: number }) =>
+        removeFlyer(input.contestId, input.revision),
+      onSuccess: invalidate,
+    }),
+  };
 }

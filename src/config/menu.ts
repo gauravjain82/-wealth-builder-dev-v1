@@ -87,6 +87,12 @@ const MENU_ITEMS = {
   HOME_V2: { label: 'Home (new)', icon: '✨', path: '/home-v2' } as MenuItem,
   LEADERBOARDS: { label: 'Leaderboards', icon: '🏅', path: '/leaderboards' } as MenuItem,
   CONTESTS: { label: 'Contests', icon: '🏆', path: '/contests' } as MenuItem,
+  // Contest configuration, gated per-user by wbreporting:manage (not homev2:read).
+  CONTEST_SETTINGS: {
+    label: 'Contest Settings',
+    icon: '🎛️',
+    path: '/admin/contest-settings',
+  } as MenuItem,
   // WB reporting pipeline operations (gated per-user by wbreporting:read/manage)
   REPORTING_PIPELINE: {
     label: 'Reporting Pipeline',
@@ -643,7 +649,10 @@ export function getMenuForUser(
   canAccessMisalignments: boolean = false,
   canAccessProducts: boolean = false,
   canAccessReportingPipeline: boolean = false,
-  canAccessLeaderboards: boolean = false
+  canAccessLeaderboards: boolean = false,
+  // wbreporting:manage. Separate from canAccessReportingPipeline, which is the
+  // read gate for the operations screen — configuring a contest needs manage.
+  canManageReporting: boolean = false
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -694,6 +703,15 @@ export function getMenuForUser(
     !menuItems.some((item) => item.label === MENU_ITEMS.REPORTING_PIPELINE.label)
   ) {
     menuItems.push(cloneMenuItems([MENU_ITEMS.REPORTING_PIPELINE])[0]);
+  }
+
+  // Contest configuration rides wbreporting:manage, the same gate as the pipeline
+  // screen and every other reporting configuration model.
+  if (
+    canManageReporting &&
+    !menuItems.some((item) => item.label === MENU_ITEMS.CONTEST_SETTINGS.label)
+  ) {
+    menuItems.push(cloneMenuItems([MENU_ITEMS.CONTEST_SETTINGS])[0]);
   }
 
   // Home v2 and Leaderboards are gated by backend access (homev2:read), not by

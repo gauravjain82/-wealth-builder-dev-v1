@@ -226,3 +226,97 @@ export interface StandingsQuery extends FilterDraft {
   direction: SortDirection;
   cursor?: string;
 }
+
+/* --- settings (wbreporting:manage) ---------------------------------------- */
+
+/** One selectable eligibility level, driven by the host's `accounts.Level` table. */
+export interface LevelOption {
+  code: string;
+  label: string;
+  /** True only for `NON`, which means "no level assigned" rather than a real row. */
+  synthetic: boolean;
+}
+
+/** One threshold field in the tier metric row. */
+export interface MetricOption {
+  metric: ThresholdMetric;
+  label: string;
+  maximum: number;
+  /** False for metrics this deployment has no source for; they cannot be required. */
+  measurable: boolean;
+  single_hop_team: boolean;
+  /** The Leader-credit note, present only for the single-hop metrics. */
+  note: string;
+}
+
+/** Everything the editor needs to render itself, served rather than hard-coded. */
+export interface EditorOptions {
+  levels: LevelOption[];
+  metrics: MetricOption[];
+  contest_statuses: Array<{ value: string; label: string }>;
+  period_modes: Array<{ value: string; label: string }>;
+  flyer: { max_bytes: number; allowed_types: string[] };
+  near_percent: number;
+}
+
+/** A tier as the editor holds it. `revision` is the concurrency token. */
+export interface EditableTier {
+  id?: number;
+  revision?: number;
+  tier_order: number;
+  tier_name: string;
+  reward: string;
+  notes: string;
+  non_license: boolean;
+  is_hidden: boolean;
+  only_levels: string;
+  restricted_levels: string;
+  tier_period_mode: string;
+  tier_start: string | null;
+  tier_end: string | null;
+  tier_rolling_days: number | null;
+  thresholds: Partial<Record<ThresholdMetric, number | null>>;
+  /** Client-only: marks a tier for deletion in the next save. */
+  pending_delete?: boolean;
+}
+
+/** A contest as the editor holds it — carries private fields a reader never sees. */
+export interface EditableContest {
+  id: number;
+  revision: number;
+  name: string;
+  status: ContestStatus;
+  contest_status: string;
+  period_mode: string;
+  period_label: string;
+  notes: string;
+  qualifying_start: string | null;
+  qualifying_end: string | null;
+  rolling_days: number | null;
+  hidden: boolean;
+  deleted: boolean;
+  flyer_visible: boolean;
+  flyer_original_name: string;
+  has_visible_flyer: boolean;
+  flyer_kind: 'image' | 'pdf' | null;
+  tiers: EditableTier[];
+}
+
+/** The tier shape the save endpoint accepts. */
+export interface TierSubmission {
+  id?: number;
+  revision?: number;
+  tier_order: number;
+  tier_name: string;
+  reward: string;
+  notes: string;
+  non_license: boolean;
+  is_hidden: boolean;
+  levels: string[];
+  tier_period_mode: string;
+  tier_start: string | null;
+  tier_end: string | null;
+  tier_rolling_days: number | null;
+  thresholds: Partial<Record<ThresholdMetric, string>>;
+  pending_delete?: boolean;
+}
