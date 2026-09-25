@@ -1,8 +1,10 @@
 import { Button, FormRow, FormRowGroup, Input, Label, Select } from '@shared/components';
 import { Trash2 } from 'lucide-react';
 import type { BPMEventLocation, LocationKind } from '../types';
+// The per-location check-in input is hidden, but the selected users are still
+// held on the draft and submitted, so the type is still needed.
+import type { SelectedUser } from './multi-user-select';
 import { OfficePicker } from './office-picker';
-import { MultiUserSelect, type SelectedUser } from './multi-user-select';
 
 /** One editable location row in the BPM form (mirrors BPMEventLocation for the UI). */
 export interface LocationDraft {
@@ -142,14 +144,10 @@ export function LocationsEditor({ locations, onChange }: LocationsEditorProps) {
             </FormRowGroup>
           )}
 
-          <FormRow>
-            <Label>Check-in people for this location</Label>
-            <MultiUserSelect
-              selected={location.checkinUsers}
-              onChange={(users) => update(index, { checkinUsers: users })}
-              placeholder="Who checks people in here"
-            />
-          </FormRow>
+          {/* Per-location check-in allow-list is hidden: check-in is not gated
+              on it today, so asking who may check people in here is noise
+              (BPM v2 brief). Existing values are preserved and still submitted —
+              only the input is hidden. */}
         </div>
       ))}
     </div>

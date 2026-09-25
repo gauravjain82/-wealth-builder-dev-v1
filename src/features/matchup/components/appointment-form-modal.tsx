@@ -51,6 +51,12 @@ const PROFILE_LANGUAGES = [
 
 interface AppointmentFormModalProps {
   open: boolean;
+  /**
+   * Overrides the default "New Appointment" / "Edit Appointment" heading, for
+   * callers that open this form as a step in some other flow (e.g. BPM's
+   * "Reschedule to Appointment").
+   */
+  title?: string;
   appointment?: AppointmentFormAppointment | null;
   initialValues?: Partial<FormState> | null;
   appointmentTypes: AppointmentType[];
@@ -167,6 +173,7 @@ function formFromAppointment(
 
 export function AppointmentFormModal({
   open,
+  title,
   appointment,
   initialValues,
   appointmentTypes,
@@ -370,7 +377,12 @@ export function AppointmentFormModal({
   };
 
   return (
-    <Modal open={open} title={appointment ? 'Edit Appointment' : 'New Appointment'} onClose={onClose} contentClassName="matchup-modal-content">
+    <Modal
+      open={open}
+      title={title ?? (appointment ? 'Edit Appointment' : 'New Appointment')}
+      onClose={onClose}
+      contentClassName="matchup-modal-content"
+    >
       <form className="matchup-form" onSubmit={(event) => void submit(event)}>
         {error ? <div className="matchup-form-error">{error}</div> : null}
 

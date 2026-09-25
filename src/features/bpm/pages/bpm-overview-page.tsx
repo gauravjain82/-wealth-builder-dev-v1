@@ -1,25 +1,35 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CalendarCheck, Plus, Unplug, UserPlus } from 'lucide-react';
-import { Button, ConfirmationDialog, Input, LoadingState, Select, UserAutocompleteDropdown } from '@shared/components';
+import { Button, Input, LoadingState, Select } from '@shared/components';
 import { useToastStore } from '@/store';
-import { useAuth } from '@/features/auth/hooks/use-auth';
-import { hasRoleAtLeast } from '@core/constants/roles';
-import { Plan } from '@core/types';
-import { matchupService } from '@/features/matchup/services/matchup-service';
-import type { AppointmentType } from '@/features/matchup/types';
-import { BPMMetricsCards } from '../components/bpm-metrics-cards';
 import { BPMMonthCalendar } from '../components/bpm-month-calendar';
 import { AddGuestModal } from '../components/add-guest-modal';
 import { BPMFormModal } from '../components/bpm-form-modal';
-import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
-import { GuestList } from '../components/guest-list';
-import { TransferGuestModal } from '../components/transfer-guest-modal';
-import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
+import { AttachmentsModal } from '../components/event-attachments';
+import { useAttachmentsDownloadAllowed } from '../context/bpm-config-context';
+import { OccurrenceRowActions } from '../components/occurrence-row-actions';
+import { StatusBadge } from '../components/status-control';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
-import { mergeGuest } from '../components/guest-notes';
-import type { AssociateCheckIn, BPMCapabilities, BPMEventDetail, BPMGuest, BPMInterestOption, BPMOccurrence, GoogleStatus, GuestOutcomeField, OccurrenceFilters } from '../types';
+import type {
+  BPMCapabilities,
+  BPMEventAttachment,
+  BPMOccurrence,
+  DistinctLocations,
+  GoogleStatus,
+  OccurrenceFilters,
+} from '../types';
 // Reuse the Matchup dashboard styling so the BPM overview matches it 1:1.
 import '@/features/matchup/pages/matchup-page.css';
+
+/**
+ * BPM Overview — the month calendar and the list of BPMs under it.
+ *
+ * This is a *browsing* surface. Everything that acts on a BPM happens elsewhere:
+ * guests and check-ins in their own sub-tools (reached from each row's jump
+ * buttons), and editing, cancelling and status changes in BPM Schedule. The stat
+ * cards, the Guest List / Associates tabs and the Edit / Cancel row actions that
+ * used to live here have all been removed per the BPM v2 brief.
+ */
 
 const FORMAT_LABELS: Record<string, string> = {
   IN_PERSON: 'In person',
@@ -35,37 +45,30 @@ function monthRange(month: Date) {
 
 export default function BpmOverviewPage() {
   const addToast = useToastStore((state) => state.addToast);
-  const { user } = useAuth();
-  // "Add Associate" is a leadership action; only Leader and above may check in associates.
-  const isLeaderOrAbove = hasRoleAtLeast(user?.roles ?? [], Plan.Leader);
   const [capabilities, setCapabilities] = useState<BPMCapabilities | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [search, setSearch] = useState('');
   const [city, setCity] = useState('');
   const [stateFilter, setStateFilter] = useState('');
   const [segment, setSegment] = useState('');
+  // City / State options are derived from the BPMs actually in the window, so
+  // the selects never offer a place that would return nothing.
+  const [locationOptions, setLocationOptions] = useState<DistinctLocations>({
+    cities: [],
+    states: [],
+  });
   const [occurrences, setOccurrences] = useState<BPMOccurrence[]>([]);
   const [googleStatus, setGoogleStatus] = useState<GoogleStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [busyGuestId, setBusyGuestId] = useState<number | null>(null);
   const [addGuestOpen, setAddGuestOpen] = useState(false);
-  const [addGuestFor, setAddGuestFor] = useState<BPMOccurrence | null>(null);
   const [bpmFormOpen, setBpmFormOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<BPMEventDetail | null>(null);
-  const [cancelTarget, setCancelTarget] = useState<BPMOccurrence | null>(null);
-  // Detail views: pick any BPM event/occurrence and inspect its guests or associates.
-  const [listView, setListView] = useState<'occurrences' | 'guests' | 'associates'>('occurrences');
-  const [detailOccurrence, setDetailOccurrence] = useState<BPMOccurrence | null>(null);
-  const [guests, setGuests] = useState<BPMGuest[]>([]);
-  const [guestsLoading, setGuestsLoading] = useState(false);
-  const [guestSearch, setGuestSearch] = useState('');
-  const [transferTarget, setTransferTarget] = useState<BPMGuest | null>(null);
-  const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
-  const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
-  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
-  const [associates, setAssociates] = useState<AssociateCheckIn[]>([]);
-  const [associatesLoading, setAssociatesLoading] = useState(false);
-  const [associateSearch, setAssociateSearch] = useState('');
+  const [attachmentsFor, setAttachmentsFor] = useState<{
+    name: string;
+    attachments: BPMEventAttachment[];
+  } | null>(null);
+  // D11: a UI gate only — the CDN URL stays reachable either way.
+  const allowDownload = useAttachmentsDownloadAllowed();
 
   const filters = useMemo<OccurrenceFilters>(() => {
     const range = monthRange(calendarMonth);
@@ -75,9 +78,10 @@ export default function BpmOverviewPage() {
       city: city.trim() || undefined,
       state: stateFilter.trim() || undefined,
       segment: segment || undefined,
+      search: search.trim() || undefined,
       page_size: 200,
     };
-  }, [calendarMonth, city, stateFilter, segment]);
+  }, [calendarMonth, city, stateFilter, segment, search]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,11 +108,21 @@ export default function BpmOverviewPage() {
     bpmService.capabilities().then(setCapabilities).catch(() => setCapabilities(null));
   }, []);
 
-  // Follow-up form data: interest options and appointment types.
+  // Refresh the City / State options when the window, scope or search changes.
+  // City and State themselves are deliberately excluded: narrowing by one city
+  // must not drop every other city out of the dropdown.
   useEffect(() => {
-    bpmService.interestOptions({ ordering: 'sort_order' }).then(setInterestOptions).catch(() => setInterestOptions([]));
-    matchupService.appointmentTypes().then(setAppointmentTypes).catch(() => setAppointmentTypes([]));
-  }, []);
+    const range = monthRange(calendarMonth);
+    bpmService
+      .distinctLocations({
+        start_after: range.start,
+        start_before: range.end,
+        segment: segment || undefined,
+        search: search.trim() || undefined,
+      })
+      .then(setLocationOptions)
+      .catch(() => setLocationOptions({ cities: [], states: [] }));
+  }, [calendarMonth, segment, search]);
 
   const connectGoogle = async () => {
     setBusy(true);
@@ -134,132 +148,21 @@ export default function BpmOverviewPage() {
     }
   };
 
-  const openAddGuest = (occurrence: BPMOccurrence | null = null) => {
-    setAddGuestFor(occurrence);
-    setAddGuestOpen(true);
-  };
-
-  const openEditEvent = async (occurrence: BPMOccurrence) => {
+  /** Load a BPM's attachments and open the popup. */
+  const openAttachments = async (occurrence: BPMOccurrence) => {
     setBusy(true);
     try {
       const detail = await bpmService.event(occurrence.event);
-      setEditingEvent(detail);
-      setBpmFormOpen(true);
+      setAttachmentsFor({ name: detail.name, attachments: detail.attachments || [] });
     } catch (error) {
-      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to load BPM' });
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to load attachments',
+      });
     } finally {
       setBusy(false);
     }
   };
-
-  const confirmCancel = async () => {
-    if (!cancelTarget) return;
-    setBusy(true);
-    try {
-      await bpmService.cancelOccurrence(cancelTarget.id);
-      addToast({ type: 'success', message: 'Occurrence cancelled.' });
-      setCancelTarget(null);
-      await load();
-    } catch (error) {
-      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to cancel' });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const loadGuests = useCallback(
-    async (occurrenceId: number) => {
-      setGuestsLoading(true);
-      try {
-        setGuests(await bpmService.guests(occurrenceId));
-      } catch (error) {
-        addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to load guests' });
-      } finally {
-        setGuestsLoading(false);
-      }
-    },
-    [addToast],
-  );
-
-  const loadAssociates = useCallback(
-    async (occurrenceId: number) => {
-      setAssociatesLoading(true);
-      try {
-        setAssociates(await bpmService.associateCheckins(occurrenceId));
-      } catch (error) {
-        addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to load associates' });
-      } finally {
-        setAssociatesLoading(false);
-      }
-    },
-    [addToast],
-  );
-
-  useEffect(() => {
-    if (!detailOccurrence) {
-      setGuests([]);
-      setAssociates([]);
-      return;
-    }
-    if (listView === 'guests') void loadGuests(detailOccurrence.id);
-    if (listView === 'associates') void loadAssociates(detailOccurrence.id);
-  }, [listView, detailOccurrence, loadGuests, loadAssociates]);
-
-  const patchGuest = (updated: BPMGuest) => setGuests((prev) => mergeGuest(prev, updated));
-
-  const setGuestOutcome = async (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => {
-    const snapshot = guest;
-    setGuests((prev) => mergeGuest(prev, { ...guest, [field]: value }));
-    try {
-      const updated = await bpmService.setGuestFlags(guest.occurrence, { guest_id: guest.id, [field]: value });
-      patchGuest(updated);
-    } catch (error) {
-      patchGuest(snapshot);
-      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to update outcome' });
-    }
-  };
-
-  const removeGuest = async (guest: BPMGuest) => {
-    setBusyGuestId(guest.id);
-    try {
-      await bpmService.removeGuest(guest.occurrence, guest.id);
-      setGuests((prev) => prev.filter((row) => row.id !== guest.id));
-      addToast({ type: 'success', message: 'Guest removed.' });
-    } catch (error) {
-      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Action failed' });
-    } finally {
-      setBusyGuestId(null);
-    }
-  };
-
-  const handleFollowUpSaved = (updated: BPMGuest) => patchGuest(updated);
-
-  const checkInAssociate = async (userId: number) => {
-    if (!detailOccurrence) return;
-    setBusy(true);
-    try {
-      await bpmService.checkInAssociate(detailOccurrence.id, userId);
-      addToast({ type: 'success', message: 'Associate checked in.' });
-      await loadAssociates(detailOccurrence.id);
-    } catch (error) {
-      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Check-in failed' });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const guestQuery = guestSearch.trim().toLowerCase();
-  const filteredGuests = guestQuery
-    ? guests.filter((guest) =>
-        [guest.prospect_detail?.name, guest.prospect_detail?.phone, guest.prospect_detail?.email, guest.inviter_name]
-          .some((field) => field?.toLowerCase().includes(guestQuery)),
-      )
-    : guests;
-
-  const associateQuery = associateSearch.trim().toLowerCase();
-  const filteredAssociates = associateQuery
-    ? associates.filter((record) => (record.user_name || '').toLowerCase().includes(associateQuery))
-    : associates;
 
   const upcoming = [...occurrences].sort(
     (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
@@ -270,174 +173,76 @@ export default function BpmOverviewPage() {
       <div className="matchup-hero-actions" style={{ justifyContent: 'space-between' }}>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, lineHeight: 1.2 }}>BPM Overview</h1>
         <div className="matchup-hero-actions" style={{ justifyContent: 'flex-end' }}>
-        <Button
-          variant="outline"
-          disabled={busy}
-          onClick={() => void (googleStatus?.connected ? disconnectGoogle() : connectGoogle())}
-          title={
-            googleStatus?.connected
-              ? `Connected${googleStatus.google_email ? ` as ${googleStatus.google_email}` : ''} — synced to your “BPM” calendar`
-              : undefined
-          }
-        >
-          {googleStatus?.connected ? <Unplug size={16} /> : <CalendarCheck size={16} />}
-          {googleStatus?.connected ? 'Disconnect Google' : 'Google Calendar Sync'}
-        </Button>
-        {capabilities?.can_create ? (
-          <Button variant="outline" onClick={() => { setEditingEvent(null); setBpmFormOpen(true); }}>
-            <Plus size={16} /> Create BPM
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => void (googleStatus?.connected ? disconnectGoogle() : connectGoogle())}
+            title={
+              googleStatus?.connected
+                ? `Connected${googleStatus.google_email ? ` as ${googleStatus.google_email}` : ''} — synced to your “BPM” calendar`
+                : undefined
+            }
+          >
+            {googleStatus?.connected ? <Unplug size={16} /> : <CalendarCheck size={16} />}
+            {googleStatus?.connected ? 'Disconnect Google' : 'Google Calendar Sync'}
           </Button>
-        ) : null}
-        <Button onClick={() => openAddGuest()}>
-          <UserPlus size={16} /> Add Guest
-        </Button>
+          {capabilities?.can_create ? (
+            <Button variant="outline" onClick={() => setBpmFormOpen(true)}>
+              <Plus size={16} /> Create BPM
+            </Button>
+          ) : null}
+          <Button onClick={() => setAddGuestOpen(true)}>
+            <UserPlus size={16} /> Add Guest
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-stretch gap-2">
-        <div className="min-w-0 flex-[1_1_460px]">
-          <BPMMetricsCards occurrences={occurrences} />
-        </div>
-        <div className="matchup-filter-bar flex-[1_1_300px]">
-          <Input variant="surface" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
-          <Input variant="surface" placeholder="State" value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} />
-          <Select value={segment} onChange={(e) => setSegment(e.target.value)}>
-            <option value="">Baseshop</option>
-            <option value="SUPERBASE">Super Base</option>
-            <option value="SUPERTEAM">Super Team</option>
-          </Select>
-        </div>
+      {/* Stat cards removed per the BPM v2 brief. Search sits to the left of
+          City / State / Baseshop, and City / State offer only places that
+          actually have a BPM in the month on screen. */}
+      <div className="matchup-filter-bar">
+        <Input
+          variant="surface"
+          placeholder="Search BPM name or location…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <Select variant="surface" value={city} onChange={(e) => setCity(e.target.value)}>
+          <option value="">All cities</option>
+          {locationOptions.cities.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </Select>
+        <Select variant="surface" value={stateFilter} onChange={(e) => setStateFilter(e.target.value)}>
+          <option value="">All states</option>
+          {locationOptions.states.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </Select>
+        <Select value={segment} onChange={(e) => setSegment(e.target.value)}>
+          <option value="">Baseshop</option>
+          <option value="SUPERBASE">Super Base</option>
+          <option value="SUPERTEAM">Super Team</option>
+        </Select>
       </div>
 
       <BPMMonthCalendar
         month={calendarMonth}
         occurrences={occurrences}
         onMonthChange={setCalendarMonth}
-        onOccurrenceClick={(occurrence) => void openEditEvent(occurrence)}
-        onAddGuest={(occurrence) => openAddGuest(occurrence)}
+        onOpenAttachments={(occurrence) => void openAttachments(occurrence)}
       />
 
       <section className="matchup-panel matchup-list-panel">
         <div className="matchup-panel-header">
-          <div className="matchup-view-toggle" role="group" aria-label="BPM list view">
-            <Button
-              variant={listView === 'occurrences' ? 'default' : 'outline'}
-              size="sm"
-              aria-pressed={listView === 'occurrences'}
-              onClick={() => setListView('occurrences')}
-            >
-              BPM Events
-            </Button>
-            <Button
-              variant={listView === 'guests' ? 'default' : 'outline'}
-              size="sm"
-              aria-pressed={listView === 'guests'}
-              onClick={() => setListView('guests')}
-            >
-              Guest List
-            </Button>
-            <Button
-              variant={listView === 'associates' ? 'default' : 'outline'}
-              size="sm"
-              aria-pressed={listView === 'associates'}
-              onClick={() => setListView('associates')}
-            >
-              Associates
-            </Button>
-          </div>
-          <span>
-            {listView === 'occurrences'
-              ? upcoming.length
-              : listView === 'guests'
-                ? filteredGuests.length
-                : filteredAssociates.length}
-          </span>
+          {/* The BPM Events / Guest List / Associates toggle is gone per the
+              brief ("remove the buttons on top of the list"). Guests and
+              associates have their own sub-tools, reached from each row. */}
+          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>BPM Events</h2>
+          <span>{upcoming.length}</span>
         </div>
 
-        {listView === 'guests' ? (
-          <div style={{ display: 'grid', gap: 12 }}>
-            <BPMOccurrencePicker value={detailOccurrence} onChange={setDetailOccurrence} />
-            <Input
-              variant="surface"
-              placeholder="Search guest by name, phone, email, or inviter…"
-              value={guestSearch}
-              disabled={!detailOccurrence}
-              onChange={(e) => setGuestSearch(e.target.value)}
-            />
-            {!detailOccurrence ? (
-              <p className="matchup-muted">Select a BPM and date to view its guest list.</p>
-            ) : guestsLoading ? (
-              <LoadingState />
-            ) : (
-              <GuestList
-                guests={filteredGuests}
-                busyGuestId={busyGuestId}
-                onGuestUpdated={patchGuest}
-                onSetOutcome={setGuestOutcome}
-                onFollowUp={setFollowUpTarget}
-                onTransfer={setTransferTarget}
-                onRemove={removeGuest}
-              />
-            )}
-          </div>
-        ) : listView === 'associates' ? (
-          <div style={{ display: 'grid', gap: 12 }}>
-            <BPMOccurrencePicker value={detailOccurrence} onChange={setDetailOccurrence} />
-            {!detailOccurrence ? (
-              <p className="matchup-muted">Select a BPM and date to view associate check-ins.</p>
-            ) : (
-              <>
-                {isLeaderOrAbove ? (
-                  <UserAutocompleteDropdown
-                    selectedId={null}
-                    selectedLabel=""
-                    placeholder="Check in an associate"
-                    fetchFromApi
-                    disabled={busy}
-                    buttonText="CHECK IN"
-                    onSelect={(option) => void checkInAssociate(option.id)}
-                  />
-                ) : null}
-                <Input
-                  variant="surface"
-                  placeholder="Search checked-in associates…"
-                  value={associateSearch}
-                  onChange={(e) => setAssociateSearch(e.target.value)}
-                />
-                {associatesLoading ? (
-                  <LoadingState />
-                ) : filteredAssociates.length === 0 ? (
-                  <p className="matchup-muted">No associates checked in yet.</p>
-                ) : (
-                  <div className="matchup-table-wrap">
-                    <table className="matchup-table">
-                      <thead>
-                        <tr>
-                          <th>Associate</th>
-                          <th>Checked in</th>
-                          <th>By</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredAssociates.map((record) => (
-                          <tr key={record.id}>
-                            <td>
-                              <div className="matchup-cell-main">{record.user_name || `User #${record.user}`}</div>
-                            </td>
-                            <td className="matchup-when-cell">
-                              {formatOccurrenceTime(record.checked_in_at, { weekday: undefined })}
-                            </td>
-                            <td>{record.checked_in_by_name || '—'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        ) : loading ? (
+        {loading ? (
           <LoadingState />
         ) : upcoming.length === 0 ? (
           <p className="matchup-muted">No BPM events match these filters.</p>
@@ -450,16 +255,14 @@ export default function BpmOverviewPage() {
                   <th>Date</th>
                   <th>Type</th>
                   <th>Guests</th>
+                  <th>Associates</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {upcoming.map((occurrence) => (
-                  <tr
-                    key={occurrence.id}
-                    style={{ ['--appointment-status-color' as string]: occurrence.status === 'CANCELLED' ? '#fb7185' : '#22c55e' }}
-                  >
+                  <tr key={occurrence.id}>
                     <td>
                       <div className="matchup-cell-main">{occurrence.event_name}</div>
                       {occurrence.location_detail ? (
@@ -472,23 +275,19 @@ export default function BpmOverviewPage() {
                     </td>
                     <td>{FORMAT_LABELS[occurrence.bpm_format] || occurrence.bpm_format}</td>
                     <td>{occurrence.checked_in_count}/{occurrence.guest_count}</td>
-                    <td>{occurrence.status}</td>
+                    <td>{occurrence.associate_count}</td>
+                    <td><StatusBadge status={occurrence.effective_status} /></td>
                     <td>
-                      <div className="matchup-row-actions">
-                        {occurrence.status === 'SCHEDULED' ? (
-                          <Button size="sm" disabled={busy} onClick={() => openAddGuest(occurrence)}>
-                            Add Guest
-                          </Button>
-                        ) : null}
-                        <Button size="sm" variant="outline" disabled={busy} onClick={() => void openEditEvent(occurrence)}>
-                          Edit BPM
-                        </Button>
-                        {occurrence.status === 'SCHEDULED' ? (
-                          <Button size="sm" variant="destructive" disabled={busy} onClick={() => setCancelTarget(occurrence)}>
-                            Cancel
-                          </Button>
-                        ) : null}
-                      </div>
+                      {/* Edit and Cancel live in BPM Schedule. These are the
+                          same jump-to-sub-tool actions as the day modal. */}
+                      <OccurrenceRowActions
+                        occurrences={[occurrence]}
+                        selected={occurrence}
+                        onSelect={() => undefined}
+                        hasAttachments={occurrence.has_attachments}
+                        onOpenAttachments={(row) => void openAttachments(row)}
+                        disabled={busy}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -498,48 +297,25 @@ export default function BpmOverviewPage() {
         )}
       </section>
 
+      <AttachmentsModal
+        open={Boolean(attachmentsFor)}
+        eventName={attachmentsFor?.name ?? ''}
+        attachments={attachmentsFor?.attachments ?? []}
+        allowDownload={allowDownload}
+        onClose={() => setAttachmentsFor(null)}
+      />
+
       <AddGuestModal
         open={addGuestOpen}
-        presetOccurrence={addGuestFor}
         onClose={() => setAddGuestOpen(false)}
         onAdded={() => void load()}
       />
+
       <BPMFormModal
         open={bpmFormOpen}
-        event={editingEvent}
-        onClose={() => { setBpmFormOpen(false); setEditingEvent(null); }}
+        event={null}
+        onClose={() => setBpmFormOpen(false)}
         onSaved={load}
-      />
-      <TransferGuestModal
-        open={Boolean(transferTarget)}
-        guest={transferTarget}
-        onClose={() => setTransferTarget(null)}
-        onTransferred={() => {
-          if (transferTarget) {
-            setGuests((prev) => prev.filter((guest) => guest.id !== transferTarget.id));
-          }
-        }}
-      />
-      <FollowUpGuestModal
-        open={Boolean(followUpTarget)}
-        guest={followUpTarget}
-        interestOptions={interestOptions}
-        appointmentTypes={appointmentTypes}
-        onClose={() => setFollowUpTarget(null)}
-        onSaved={handleFollowUpSaved}
-      />
-
-      <ConfirmationDialog
-        open={Boolean(cancelTarget)}
-        title="Cancel this BPM occurrence?"
-        message={`This cancels "${cancelTarget?.event_name ?? 'this occurrence'}" on ${
-          cancelTarget ? formatOccurrenceTime(cancelTarget.start_at) : ''
-        } for everyone and removes it from all participants' calendars. This cannot be undone.`}
-        confirmText="Cancel occurrence"
-        cancelText="Keep it"
-        loading={busy}
-        onConfirm={confirmCancel}
-        onClose={() => setCancelTarget(null)}
       />
     </main>
   );

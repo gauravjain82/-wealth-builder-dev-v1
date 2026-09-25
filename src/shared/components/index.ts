@@ -48,6 +48,7 @@ export {
 	type DateRangePickerProps,
 } from './ui/date-picker';
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './ui/card';
+export { QrCode, type QrCodeProps } from './qr-code';
 export { ToastContainer } from './toast/toast';
 export { TrackerTable, type TrackerTableColumn } from './tracker-table/index';
 export { LoadingState } from './state/loading-state';
@@ -63,3 +64,18 @@ export {
 	type TrackerDateRangeChange,
 	type DatePresetKey,
 } from './tracker-date-range-filter';
+export {
+	BPM_GUEST_ROW_COLORS,
+	BPM_GUEST_STATE,
+	RESERVED_ROW_COLOR_HEXES,
+	isHexAvailable,
+	normalizeHex,
+	resolveRowColors,
+	rowColorLabel,
+	rowColorStyle,
+	rowColorStyleFor,
+	type ResolvedRowColors,
+	type RowColorChannel,
+	type RowColorRule,
+	type RowColorStyle,
+} from './row-colors';

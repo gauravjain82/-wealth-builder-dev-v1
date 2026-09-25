@@ -1,7 +1,13 @@
 import type {
   AddGuestPayload,
   AssociateCheckIn,
+  AssociateInviteFilters,
+  BPMAssociateInviteRow,
+  BPMAssociateInviteState,
   BPMEmailTemplate,
+  BPMEventAttachment,
+  BPMStatusOverride,
+  DistinctLocations,
   BPMEventDetail,
   BPMEventListItem,
   BPMEventPayload,
@@ -11,9 +17,26 @@ import type {
   BPMInterestOption,
   BPMInterestOptionPayload,
   BPMOccurrence,
+  BPMGuestPass,
+  BPMQrScanResult,
+  BPMQrToken,
+  BPMRowColorRule,
+  BPMRowColorRulePayload,
+  BPMGuestMessageRow,
+  BPMSendPayload,
+  BPMSendReport,
+  BPMSettings,
+  BPMSettingsPayload,
+  BPMSmsTemplate,
   EventFilters,
   GoogleStatus,
-  GuestOutcomeField,
+  CheckinAudience,
+  CheckinDimension,
+  CheckinStats,
+  GuestCheckinOutcomeField,
+  GuestFlagField,
+  GuestInviteOutcomeField,
+  ProspectMatch,
   GuestProspectSearchHit,
   InviterSearchHit,
   OccurrenceFilters,
@@ -116,11 +139,43 @@ export const DAY_OF_WEEK_OPTIONS = [
   { value: 6, label: 'Sunday' },
 ];
 
-export const GUEST_OUTCOME_FIELDS: { field: GuestOutcomeField; label: string }[] = [
+/**
+ * Slug of the appointment type a BPM follow-up is booked as (decision D3 —
+ * *"this is a step 1 appointment, check it"*). Seeded by matchup migration
+ * `0007`; both the 1on1 and Blue Card prefills pre-check it.
+ *
+ * Looked up by slug rather than id: ids differ per environment, and renaming
+ * the type in admin must not silently stop the box being ticked.
+ */
+export const STEP_ONE_TYPE_SLUG = 'follow-up-step-1';
+
+/** Id of the step-1 appointment type in a loaded list, or null if absent. */
+export function findStepOneTypeId(types: { id: number; slug: string }[]): number | null {
+  return types.find((type) => type.slug === STEP_ONE_TYPE_SLUG)?.id ?? null;
+}
+
+/**
+ * The Outcome column on **Guest Invites** — how the pre-event contact went.
+ *
+ * There are deliberately two lists rather than one. The backend's
+ * `set-guest-flags` takes the union (see `GuestFlagField`), but each screen
+ * renders only its own: Guest Invites is worked from a phone days beforehand,
+ * Guest Check-In is worked at the door. Widening one list to cover both would
+ * put "Left Message" in front of someone taking names at a door.
+ */
+export const INVITE_OUTCOME_FIELDS: { field: GuestInviteOutcomeField; label: string }[] = [
   { field: 'called', label: 'Called' },
   { field: 'left_message', label: 'Left Message' },
   { field: 'not_interested', label: 'Not Interested' },
   { field: 'reschedule', label: 'Reschedule' },
+];
+
+/** The Outcome column on **Guest Check-In** — what happened on the night. */
+export const CHECKIN_OUTCOME_FIELDS: { field: GuestCheckinOutcomeField; label: string }[] = [
+  { field: 'late', label: 'Late' },
+  { field: 'stayed_after', label: 'Stayed after' },
+  { field: 'blue_card', label: 'Blue card' },
+  { field: 'scheduled_appointment', label: 'Scheduled Appointment' },
 ];
 
 export const bpmService = {
@@ -176,6 +231,7 @@ export const bpmService = {
         state: filters.state,
         segment: filters.segment,
         ordering: filters.ordering,
+        include_concealed: filters.include_concealed ? 1 : undefined,
         page: filters.page,
         page_size: filters.page_size,
       })}`,
@@ -194,6 +250,176 @@ export const bpmService = {
     }),
   deleteEvent: (id: number) =>
     request<void>(`/api/bpm/events/${id}/`, { method: 'DELETE' }),
+
+  // -- status (BPM Schedule) -----------------------------------------------
+  /** Hard-set a BPM's status, or pass null to let it derive from the clock. */
+  setEventStatus: (id: number, statusOverride: BPMStatusOverride | null) =>
+    request<BPMEventDetail>(`/api/bpm/events/${id}/set-status/`, {
+      method: 'POST',
+      body: JSON.stringify({ status_override: statusOverride }),
+    }),
+  /** Hard-set one date's status; it wins over the BPM-level status. */
+  setOccurrenceStatus: (id: number, statusOverride: BPMStatusOverride | null) =>
+    request<BPMOccurrence>(`/api/bpm/occurrences/${id}/set-status/`, {
+      method: 'POST',
+      body: JSON.stringify({ status_override: statusOverride }),
+    }),
+
+  // -- BPM Settings: deleted-item recovery ---------------------------------
+  deletedEvents: () => request<BPMEventListItem[]>('/api/bpm/events/deleted/'),
+  undeleteEvent: (id: number) =>
+    request<BPMEventDetail>(`/api/bpm/events/${id}/undelete/`, { method: 'POST' }),
+
+  // -- BPM Settings: the switchboard ---------------------------------------
+  // A singleton, so there is no id and no list. Reading is open to any BPM
+  // reader — `attachments_download` and the check-in window decide what an
+  // ordinary user's screen renders — while writing needs bpm_settings:manage.
+  settings: () => request<BPMSettings>('/api/bpm/settings/'),
+  updateSettings: (payload: BPMSettingsPayload) =>
+    request<BPMSettings>('/api/bpm/settings/', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  // -- Sending the event to guests -----------------------------------------
+  // D5's sender, added after Phase 7 shipped the switches. Gated server-side on
+  // `email_event_to_guests` / `text_event_to_guests`, so a refusal arrives as a
+  // sentence naming the switch to flip.
+
+  /** The reusable SMS bodies, for the send modal's picker.
+   *  (The email side reuses `emailTemplates` above — it already existed.) */
+  smsTemplates: () =>
+    request<PaginatedResponse<BPMSmsTemplate>>(
+      `/api/bpm/sms-templates/${buildQuery({ page_size: 100 })}`,
+    ),
+
+  /**
+   * Every message attempt against one guest on this date, newest first.
+   *
+   * The detail behind the count on the row. Includes skips and failures, because
+   * "we tried and they have no phone number" is what somebody needs *before*
+   * trying the same thing again.
+   */
+  guestMessages: (occurrenceId: number, guestId: number) =>
+    request<BPMGuestMessageRow[]>(
+      `/api/bpm/occurrences/${occurrenceId}/guest-messages/${buildQuery({ guest_id: guestId })}`,
+    ),
+
+  /**
+   * Send this date's details to the chosen guests.
+   *
+   * Recipients are always explicit — there is no "everyone on this date"
+   * shorthand, by design. The response reports one outcome **per guest per
+   * channel**, because a guest with no email is something the sender has to act
+   * on and must not read as the whole send having failed.
+   */
+  sendEventToGuests: (occurrenceId: number, payload: BPMSendPayload) =>
+    request<BPMSendReport>(
+      `/api/bpm/occurrences/${occurrenceId}/send-event-to-guests/`,
+      { method: 'POST', body: JSON.stringify(payload) },
+    ),
+
+  // -- QR check-in ---------------------------------------------------------
+  // Three codes and one endpoint that resolves any of them — the scanner does not
+  // know which code it just read, so the token decides. The third is a guest's
+  // pass, which the guest holds on a hosted page rather than in this app.
+  //
+  // `kind` on the result says which table the attendance landed in, and it is
+  // the thing to branch on: an associate and a guest come back in different keys
+  // because they are different records.
+
+  /**
+   * The caller's own permanent identity code, minted on first request (D6).
+   *
+   * Needs no BPM permission: it is the caller's own code, and somebody whose
+   * only role at a door is to *be* scanned must still be able to show it.
+   */
+  myQrIdentity: () => request<BPMQrToken>('/api/bpm/qr/my-identity/'),
+
+  /**
+   * Reissue the caller's identity code, invalidating the previous one at once.
+   *
+   * The escape hatch for a permanent token (D6): scoped to the caller, because
+   * the token is not the user id and so nobody else's code changes.
+   */
+  regenerateQrIdentity: () =>
+    request<BPMQrToken>('/api/bpm/qr/regenerate/', { method: 'POST' }),
+
+  /** This date's check-in code, for the screen in the room. */
+  occurrenceQr: (occurrenceId: number) =>
+    request<BPMQrToken>(`/api/bpm/occurrences/${occurrenceId}/qr/`),
+
+  /**
+   * This guest's own door pass — the code, its caption and the link they were
+   * sent. Minted on first request, like every other code.
+   *
+   * `POST`, not `GET`, because it can mint and — with `regenerate` — replace a
+   * token. Reissuing invalidates every copy already emailed or texted, so it must
+   * not be reachable by a prefetch or a back button.
+   */
+  guestPass: (occurrenceId: number, guestId: number, regenerate = false) =>
+    request<BPMGuestPass>(`/api/bpm/occurrences/${occurrenceId}/guest-pass/`, {
+      method: 'POST',
+      body: JSON.stringify({ guest_id: guestId, regenerate }),
+    }),
+
+  /**
+   * Submit a scanned payload; the server works out who to check in.
+   *
+   * `occurrenceId` is only consulted when an *identity* code was scanned — an
+   * event code names its own room, and a guest pass belongs to a row that is
+   * already on one date — so it is optional, which is what lets the profile-menu
+   * scanner work with no BPM selected.
+   *
+   * The payload is passed through untouched: the resolver pulls a token out of
+   * whatever it is given, so the client never parses. That is no longer
+   * hypothetical — a guest pass is delivered as a link, so a guest who pastes the
+   * whole URL resolves just as a scan does.
+   */
+  scanQr: (scan: string, occurrenceId?: number | null) =>
+    request<BPMQrScanResult>('/api/bpm/qr/scan/', {
+      method: 'POST',
+      body: JSON.stringify(
+        occurrenceId ? { scan, occurrence_id: occurrenceId } : { scan },
+      ),
+    }),
+
+  // -- BPM Settings: row colours -------------------------------------------
+  // Reading is open to everyone because every list render needs the rules.
+  // The endpoint is unpaginated: the rule set is a handful of rows by nature.
+  rowColorRules: () => request<BPMRowColorRule[]>('/api/bpm/row-color-rules/'),
+  createRowColorRule: (payload: BPMRowColorRulePayload) =>
+    request<BPMRowColorRule>('/api/bpm/row-color-rules/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateRowColorRule: (id: number, payload: Partial<BPMRowColorRulePayload>) =>
+    request<BPMRowColorRule>(`/api/bpm/row-color-rules/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteRowColorRule: (id: number) =>
+    request<void>(`/api/bpm/row-color-rules/${id}/`, { method: 'DELETE' }),
+
+  // -- attachments (event flyer) -------------------------------------------
+  // Uploaded straight to the CDN; the returned `href` is a permanent URL the
+  // client fetches directly, so there is no download endpoint here.
+  uploadAttachment: async (eventId: number, file: File) => {
+    const body = new FormData();
+    body.append('file', file);
+    // Content-Type is omitted so the browser sets the multipart boundary.
+    const response = await fetch(
+      `${API_BASE_URL}/api/bpm/events/${eventId}/upload-attachment/`,
+      { method: 'POST', headers: authHeaders(false), body },
+    );
+    if (!response.ok) throw new Error(await parseError(response));
+    return (await response.json()) as BPMEventAttachment;
+  },
+  deleteAttachment: (eventId: number, attachmentId: number) =>
+    request<{ removed: boolean }>(
+      `/api/bpm/events/${eventId}/attachments/${attachmentId}/`,
+      { method: 'DELETE' },
+    ),
   eventOccurrences: (id: number) =>
     request<BPMOccurrence[]>(`/api/bpm/events/${id}/occurrences/`),
 
@@ -210,11 +436,27 @@ export const bpmService = {
         state: filters.state,
         bpm_format: filters.bpm_format,
         segment: filters.segment,
+        search: filters.search,
+        include_concealed: filters.include_concealed ? 1 : undefined,
         page: filters.page,
         page_size: filters.page_size,
       })}`,
     ),
   occurrence: (id: number) => request<BPMOccurrence>(`/api/bpm/occurrences/${id}/`),
+  /**
+   * City / state options for the Overview filters — only places that actually
+   * have BPMs in the window on screen. Takes the same filters as `occurrences`
+   * so the options always describe the list being viewed.
+   */
+  distinctLocations: (filters: OccurrenceFilters = {}) =>
+    request<DistinctLocations>(
+      `/api/bpm/occurrences/distinct-locations/${buildQuery({
+        start_after: filters.start_after,
+        start_before: filters.start_before,
+        segment: filters.segment,
+        search: filters.search,
+      })}`,
+    ),
 
   guests: (occurrenceId: number) =>
     request<BPMGuest[]>(`/api/bpm/occurrences/${occurrenceId}/guests/`),
@@ -248,12 +490,33 @@ export const bpmService = {
     }),
   setGuestFlags: (
     occurrenceId: number,
-    payload: { guest_id: number } & Partial<Record<GuestOutcomeField, boolean>>,
+    payload: { guest_id: number } & Partial<Record<GuestFlagField, boolean>>,
   ) =>
     request<BPMGuest>(`/api/bpm/occurrences/${occurrenceId}/set-guest-flags/`, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  /**
+   * Move a guest on to another date. Unlike `transferGuest` the source row stays
+   * put and is marked rescheduled, so both rows come back.
+   */
+  rescheduleGuest: (
+    occurrenceId: number,
+    payload: { guest_id: number; to_occurrence_id: number },
+  ) =>
+    request<{ guest: BPMGuest; created: BPMGuest }>(
+      `/api/bpm/occurrences/${occurrenceId}/reschedule-guest/`,
+      { method: 'POST', body: JSON.stringify(payload) },
+    ),
+  /** Link the 1-on-1 a guest was moved to (booked through Match Up). */
+  rescheduleGuestToAppointment: (
+    occurrenceId: number,
+    payload: { guest_id: number; appointment_id: number },
+  ) =>
+    request<BPMGuest>(
+      `/api/bpm/occurrences/${occurrenceId}/reschedule-guest-to-appointment/`,
+      { method: 'POST', body: JSON.stringify(payload) },
+    ),
   addGuestNote: (occurrenceId: number, payload: { guest_id: number; text: string }) =>
     request<BPMGuest>(`/api/bpm/occurrences/${occurrenceId}/add-guest-note/`, {
       method: 'POST',
@@ -286,6 +549,65 @@ export const bpmService = {
     }),
   associateCheckins: (occurrenceId: number) =>
     request<AssociateCheckIn[]>(`/api/bpm/occurrences/${occurrenceId}/associate-checkins/`),
+  /**
+   * The team, with one date's invite state joined on — the Associate Invites
+   * list, and the Invited Associates panel on Associate Check-In (`invited=true`).
+   *
+   * Paginated and filtered server-side because it spans a whole downline, which
+   * is a much larger population than a guest list. `filters` carries the
+   * Associate Tracker's own vocabulary (name / recruiter_name / leader_name /
+   * broker_id / from_date / to_date) plus `invited` / `called`.
+   */
+  associateInvites: ({ occurrence, sort, segment, page, page_size, filters = {} }: AssociateInviteFilters) =>
+    request<PaginatedResponse<BPMAssociateInviteRow>>(
+      `/api/bpm/associate-invites/${buildQuery({
+        occurrence,
+        sort,
+        segment,
+        page,
+        page_size,
+        ...filters,
+      })}`,
+    ),
+  /**
+   * Tick (or untick) one associate's invited / called box for one date.
+   *
+   * One setter for both flags, mirroring `setGuestFlags`: only the keys sent are
+   * written, so a screen can flip one box without asserting the other.
+   */
+  setAssociateInviteFlags: (
+    payload: { occurrence_id: number; user_id: number } & Partial<{ invited: boolean; called: boolean }>,
+  ) =>
+    request<BPMAssociateInviteState>('/api/bpm/associate-invites/set-flags/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  /**
+   * Leaderboards behind the cards on both check-in screens.
+   *
+   * Called without a `dimension` the response carries every ranking, which is
+   * one request for all four cards *and* the lists their modals show — so
+   * opening a card is instant. Pass a `dimension` to refresh just one.
+   */
+  checkinStats: (
+    occurrenceId: number,
+    audience: CheckinAudience = 'guest',
+    dimension?: CheckinDimension,
+  ) =>
+    request<CheckinStats>(
+      `/api/bpm/occurrences/${occurrenceId}/checkin-stats/${buildQuery({ audience, dimension })}`,
+    ),
+  /**
+   * Whether a typed email/phone already belongs to somebody (D9).
+   *
+   * Backs the "possible duplicate — is this them?" confirm. It calls the same
+   * matcher the add path uses, so the confirm can never disagree with what the
+   * add would actually have done.
+   */
+  matchProspect: (params: { email?: string; phone?: string }) =>
+    request<ProspectMatch>(
+      `/api/bpm/prospect-match/${buildQuery({ email: params.email, phone: params.phone })}`,
+    ),
   cancelOccurrence: (occurrenceId: number) =>
     request<BPMOccurrence>(`/api/bpm/occurrences/${occurrenceId}/cancel/`, { method: 'POST' }),
   completeOccurrence: (occurrenceId: number) =>

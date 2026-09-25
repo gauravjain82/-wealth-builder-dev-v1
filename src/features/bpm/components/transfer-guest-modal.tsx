@@ -3,7 +3,7 @@ import { Button, Form, FormActions, FormRow, Label, Modal, Textarea } from '@sha
 import { useToastStore } from '@/store';
 import { bpmService } from '../services/bpm-service';
 import type { BPMGuest, BPMOccurrence } from '../types';
-import { BPMOccurrencePicker } from './bpm-occurrence-picker';
+import { BPMOccurrenceSelect } from './bpm-occurrence-picker';
 
 interface TransferGuestModalProps {
   open: boolean;
@@ -55,7 +55,7 @@ export function TransferGuestModal({ open, guest, onClose, onTransferred }: Tran
         </p>
         <FormRow>
           <Label>Destination BPM</Label>
-          <BPMOccurrencePicker
+          <BPMOccurrenceSelect
             value={destination}
             onChange={setDestination}
             excludeOccurrenceId={guest?.occurrence}

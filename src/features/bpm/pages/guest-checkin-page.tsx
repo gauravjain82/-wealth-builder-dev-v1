@@ -1,60 +1,115 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Input, LoadingState } from '@shared/components';
+import { Button, Input, LoadingState, Select } from '@shared/components';
 import { useToastStore } from '@/store';
 import { matchupService } from '@/features/matchup/services/matchup-service';
 import type { AppointmentType } from '@/features/matchup/types';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
+import { useBpmSelection } from '../context/bpm-selection-context';
+import { CheckinStatCards } from '../components/checkin-stat-cards';
+import { CheckinWindowNotice } from '../components/checkin-window-notice';
+import { BpmQrModal } from '../components/bpm-qr-modal';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
+import { GuestPassModal } from '../components/guest-pass-modal';
 import { AddGuestModal } from '../components/add-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
+import { InterestOptionsAdminModal } from '../components/interest-options-admin-modal';
 import { bpmService } from '../services/bpm-service';
 import type {
+  BPMCapabilities,
   BPMGuest,
   BPMInterestOption,
-  BPMOccurrence,
-  GuestOutcomeField,
+  CheckinDimension,
+  GuestCheckinOutcomeField,
   ProspectSearchHit,
 } from '../types';
 
-type GuestFilter = 'all' | 'checked_in' | 'called' | 'left_message' | 'not_interested' | 'reschedule';
+/**
+ * Attendance pills.
+ *
+ * Phase 5 dropped the outcome pills (called / left message / not interested /
+ * rescheduled) — those are pre-event questions that belong on Guest Invites.
+ * What somebody at a door needs is the inverse: who has *not* arrived yet.
+ */
+type GuestFilter = 'all' | 'checked_in' | 'not_checked_in';
 
 const FILTERS: { key: GuestFilter; label: string; match: (g: BPMGuest) => boolean }[] = [
   { key: 'all', label: 'All', match: () => true },
   { key: 'checked_in', label: 'Checked In', match: (g) => Boolean(g.checked_in_at) },
-  { key: 'called', label: 'Called', match: (g) => g.called },
-  { key: 'left_message', label: 'Left Message', match: (g) => g.left_message },
-  { key: 'not_interested', label: 'Not Interested', match: (g) => g.not_interested },
-  { key: 'reschedule', label: 'Reschedule', match: (g) => g.reschedule },
+  { key: 'not_checked_in', label: 'Not Checked In', match: (g) => !g.checked_in_at },
 ];
+
+/** The three upline selects, and which field on a guest row each one reads. */
+const UPLINE_FILTERS = [
+  { key: 'smd', label: 'SMD', field: 'smd_name' },
+  { key: 'md', label: 'MD', field: 'md_name' },
+  { key: 'leader', label: 'Leader', field: 'leader_name' },
+] as const;
+
+type UplineFilterKey = (typeof UPLINE_FILTERS)[number]['key'];
+
+/** Which rankings Guest Check-In shows, in card order. */
+const GUEST_DIMENSIONS: CheckinDimension[] = ['inviter', 'leader', 'md', 'smd'];
 
 export default function GuestCheckinPage() {
   const addToast = useToastStore((state) => state.addToast);
-  const [occurrence, setOccurrence] = useState<BPMOccurrence | null>(null);
+  // Sticky: the BPM/date chosen here follows the user to the other sub-tools.
+  const { occurrence } = useBpmSelection();
   const [guests, setGuests] = useState<BPMGuest[]>([]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState<GuestFilter>('all');
+  const [uplineFilter, setUplineFilter] = useState<Record<UplineFilterKey, string>>({
+    smd: '',
+    md: '',
+    leader: '',
+  });
   const [search, setSearch] = useState('');
+  // QR sits beside the search because that is where somebody stands when a
+  // person arrives: find them, or scan them.
+  const [qrOpen, setQrOpen] = useState(false);
   const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
+  // The guest whose door pass is on screen. Null means the modal is closed, so
+  // there is no second boolean to keep in step with it.
+  const [passTarget, setPassTarget] = useState<BPMGuest | null>(null);
   const [addGuestOpen, setAddGuestOpen] = useState(false);
   const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
+  // The interest list only drives the Blue Card, which lives on this page as of
+  // Phase 4 — so its admin modal moved here with it.
+  const [manageOptionsOpen, setManageOptionsOpen] = useState(false);
+  const [capabilities, setCapabilities] = useState<BPMCapabilities | null>(null);
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
   const [prospectHits, setProspectHits] = useState<ProspectSearchHit[]>([]);
   const [associateHits, setAssociateHits] = useState<ProspectSearchHit[]>([]);
   const [prospectSearching, setProspectSearching] = useState(false);
+  // Bumped on every check-in so the leaderboards re-fetch. They are read while
+  // the room fills up, so a card that lags the list is worse than a slow one.
+  const [statsVersion, setStatsVersion] = useState(0);
+  // Server-derived: the window opens N hours before start and never closes, so
+  // everything else on this page keeps working — only checking in is held back.
+  const checkinOpen = occurrence?.checkin_open ?? true;
+
+  const loadInterestOptions = useCallback(async () => {
+    try {
+      setInterestOptions(await bpmService.interestOptions({ ordering: 'sort_order' }));
+    } catch {
+      // Non-fatal: the Blue Card simply shows no interest options.
+    }
+  }, []);
 
   useEffect(() => {
-    bpmService.interestOptions({ ordering: 'sort_order' }).then(setInterestOptions).catch(() => setInterestOptions([]));
+    void loadInterestOptions();
     matchupService.appointmentTypes().then(setAppointmentTypes).catch(() => setAppointmentTypes([]));
-  }, []);
+    bpmService.capabilities().then(setCapabilities).catch(() => setCapabilities(null));
+  }, [loadInterestOptions]);
 
   const load = useCallback(
     async (occurrenceId: number) => {
       setLoading(true);
       try {
         setGuests(await bpmService.guests(occurrenceId));
+        setStatsVersion((version) => version + 1);
       } catch (error) {
         addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to load guests' });
       } finally {
@@ -88,7 +143,7 @@ export default function GuestCheckinPage() {
     }
   };
 
-  const setGuestOutcome = async (guest: BPMGuest, field: GuestOutcomeField, value: boolean) => {
+  const setGuestOutcome = async (guest: BPMGuest, field: GuestCheckinOutcomeField, value: boolean) => {
     if (!occurrence) return;
     setBusy(true);
     try {
@@ -101,7 +156,9 @@ export default function GuestCheckinPage() {
     }
   };
 
-  // The save endpoint returns the full updated guest, so patch it into the list in place.
+  // The save endpoint returns the full updated guest, so patch it into the list
+  // in place — including the Scheduled Appointment flag the save may have set,
+  // which is what turns the row's outline green.
   const handleFollowUpSaved = (updated: BPMGuest) =>
     setGuests((prev) => prev.map((guest) => (guest.id === updated.id ? updated : guest)));
 
@@ -175,18 +232,32 @@ export default function GuestCheckinPage() {
 
   const totalInvites = guests.length;
   const totalCheckedIn = useMemo(() => guests.filter((g) => g.checked_in_at).length, [guests]);
-  const attendanceRatio = totalInvites ? Math.round((totalCheckedIn / totalInvites) * 100) : 0;
 
   const filterCounts = useMemo(
     () => Object.fromEntries(FILTERS.map((f) => [f.key, guests.filter(f.match).length])) as Record<GuestFilter, number>,
     [guests],
   );
 
+  /** Distinct SMD / MD / Leader names present in the loaded list, for the selects. */
+  const uplineOptions = useMemo(() => {
+    const options = {} as Record<UplineFilterKey, string[]>;
+    for (const { key, field } of UPLINE_FILTERS) {
+      options[key] = [...new Set(guests.map((g) => g[field]).filter((name): name is string => Boolean(name)))].sort();
+    }
+    return options;
+  }, [guests]);
+
   const visibleGuests = useMemo(() => {
     const activeFilter = FILTERS.find((f) => f.key === filter) ?? FILTERS[0];
     const term = search.trim().toLowerCase();
     return guests.filter((g) => {
       if (!activeFilter.match(g)) return false;
+      // The three upline selects narrow cumulatively — picking an SMD and then
+      // a Leader under them is the normal way a leader finds their own people.
+      for (const { key, field } of UPLINE_FILTERS) {
+        const wanted = uplineFilter[key];
+        if (wanted && g[field] !== wanted) return false;
+      }
       if (!term) return true;
       const haystack = [g.prospect_detail?.name, g.prospect_detail?.email, g.prospect_detail?.phone, g.inviter_name]
         .filter(Boolean)
@@ -194,34 +265,38 @@ export default function GuestCheckinPage() {
         .toLowerCase();
       return haystack.includes(term);
     });
-  }, [guests, filter, search]);
-
-  const cards = [
-    { label: 'Total Invites', value: totalInvites, className: 'bg-sky-500' },
-    { label: 'Total Checked In', value: totalCheckedIn, className: 'bg-emerald-500' },
-    { label: 'Attendance Ratio', value: `${attendanceRatio}%`, className: 'bg-violet-500' },
-  ];
+  }, [guests, filter, search, uplineFilter]);
 
   return (
-    <BPMPageShell title="Guest Check-In" description="Check guests in as they arrive at the BPM.">
+    <BPMPageShell
+      title="Guest Check-In"
+      description="Check guests in as they arrive at the BPM."
+      actions={
+        capabilities?.can_manage_templates ? (
+          <Button variant="outline" onClick={() => setManageOptionsOpen(true)}>
+            Manage interest options
+          </Button>
+        ) : null
+      }
+    >
       <BPMCard className="mb-4">
-        <BPMOccurrencePicker value={occurrence} onChange={setOccurrence} />
+        <BPMOccurrencePicker allowPast />
       </BPMCard>
 
       {occurrence ? (
         <>
-          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {cards.map((card) => (
-              <div key={card.label} className={`rounded-xl p-4 text-white shadow-sm ${card.className}`}>
-                <div className="text-xs font-medium uppercase tracking-wide text-white/80">{card.label}</div>
-                <div className="mt-1 text-3xl font-bold">{card.value}</div>
-              </div>
-            ))}
-          </div>
+          <CheckinWindowNotice occurrence={occurrence} />
+
+          <CheckinStatCards
+            occurrenceId={occurrence.id}
+            audience="guest"
+            dimensions={GUEST_DIMENSIONS}
+            reloadKey={statsVersion}
+          />
 
           <BPMCard>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {FILTERS.map((f) => (
                   <button
                     key={f.key}
@@ -236,6 +311,23 @@ export default function GuestCheckinPage() {
                     {f.label} ({filterCounts[f.key]})
                   </button>
                 ))}
+                {UPLINE_FILTERS.map(({ key, label }) => (
+                  <Select
+                    key={key}
+                    variant="surface"
+                    className="w-auto"
+                    value={uplineFilter[key]}
+                    aria-label={`Filter by ${label}`}
+                    onChange={(e) => setUplineFilter((prev) => ({ ...prev, [key]: e.target.value }))}
+                  >
+                    <option value="">All {label}s</option>
+                    {uplineOptions[key].map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </Select>
+                ))}
               </div>
               <div className="flex w-full items-center gap-2 sm:w-auto">
                 <div className="w-full sm:w-64">
@@ -246,10 +338,23 @@ export default function GuestCheckinPage() {
                     placeholder="Search invites & prospects…"
                   />
                 </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="whitespace-nowrap"
+                  onClick={() => setQrOpen(true)}
+                >
+                  QR
+                </Button>
                 <Button type="button" size="sm" className="whitespace-nowrap" onClick={() => setAddGuestOpen(true)}>
                   + Add Guest
                 </Button>
               </div>
+            </div>
+
+            <div className="mb-3 text-xs text-slate-500 dark:text-white/60">
+              Showing {visibleGuests.length} of {totalInvites} · {totalCheckedIn} checked in
             </div>
 
             {loading ? (
@@ -258,10 +363,12 @@ export default function GuestCheckinPage() {
               <GuestCheckinTable
                 guests={visibleGuests}
                 busy={busy}
+                canCheckIn={checkinOpen}
                 onToggleCheckIn={toggleCheckIn}
                 onSetOutcome={setGuestOutcome}
                 onAddNote={addGuestNote}
                 onFollowUp={setFollowUpTarget}
+                onShowPass={setPassTarget}
               />
             )}
 
@@ -305,7 +412,9 @@ export default function GuestCheckinPage() {
                         <Button
                           type="button"
                           size="sm"
-                          disabled={busy}
+                          // This adds *and* checks in, so it obeys the window
+                          // too — otherwise it would be a way around it.
+                          disabled={busy || !checkinOpen}
                           className="whitespace-nowrap"
                           onClick={() => quickAddProspect(p)}
                         >
@@ -354,10 +463,37 @@ export default function GuestCheckinPage() {
       <FollowUpGuestModal
         open={Boolean(followUpTarget)}
         guest={followUpTarget}
+        heading="Blue card"
+        occurrence={occurrence}
         interestOptions={interestOptions}
         appointmentTypes={appointmentTypes}
         onClose={() => setFollowUpTarget(null)}
         onSaved={handleFollowUpSaved}
+      />
+      <InterestOptionsAdminModal
+        open={manageOptionsOpen}
+        options={interestOptions}
+        onClose={() => setManageOptionsOpen(false)}
+        onChanged={loadInterestOptions}
+      />
+      {/* A scan here can now land on either list: an associate code records an
+          associate, and a guest's pass checks in a row on the very list behind
+          this modal (D8 reopened). Reloading covers both. */}
+      <BpmQrModal
+        open={qrOpen}
+        occurrenceId={occurrence?.id ?? null}
+        onClose={() => setQrOpen(false)}
+        onCheckedIn={() => {
+          if (occurrence) void load(occurrence.id);
+        }}
+      />
+      {/* For the guest who says the link never arrived — the same code, on the
+          host's screen. */}
+      <GuestPassModal
+        open={passTarget !== null}
+        guest={passTarget}
+        occurrenceId={occurrence?.id ?? null}
+        onClose={() => setPassTarget(null)}
       />
     </BPMPageShell>
   );

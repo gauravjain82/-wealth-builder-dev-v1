@@ -1,25 +1,30 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, Modal } from '@shared/components';
 import { formatOccurrenceTime } from '../services/bpm-service';
+import { MonthJumpModal } from './month-jump-modal';
+import { OccurrenceRowActions } from './occurrence-row-actions';
+import { StatusBadge } from './status-control';
 import type { BPMOccurrence } from '../types';
 
 interface BPMMonthCalendarProps {
   month: Date;
   occurrences: BPMOccurrence[];
   onMonthChange: (date: Date) => void;
-  /** Open the BPM behind an occurrence for editing. */
-  onOccurrenceClick?: (occurrence: BPMOccurrence) => void;
-  /** Add a guest to a specific occurrence. */
-  onAddGuest?: (occurrence: BPMOccurrence) => void;
+  /** Open the attachments popup for an occurrence's BPM. */
+  onOpenAttachments?: (occurrence: BPMOccurrence) => void;
 }
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const STATUS_COLOR: Record<string, string> = {
   SCHEDULED: '#22c55e',
+  LIVE: '#f59e0b',
   COMPLETED: '#64748b',
+  ARCHIVED: '#64748b',
+  HIDDEN: '#a78bfa',
   CANCELLED: '#fb7185',
+  DELETED: '#f43f5e',
 };
 
 function sameDate(a: Date, b: Date) {
@@ -40,14 +45,63 @@ function buildDays(month: Date) {
   ];
 }
 
+/** One BPM on one day, with every location it runs at that day. */
+interface DayGroup {
+  key: string;
+  eventId: number;
+  eventName: string;
+  occurrences: BPMOccurrence[];
+  guestCount: number;
+  checkedInCount: number;
+  associateCount: number;
+  hasAttachments: boolean;
+}
+
+/**
+ * Group a day's occurrences by BPM.
+ *
+ * A multi-location BPM materialises one occurrence per (location, date), so a
+ * day can hold several rows for what people think of as a single meeting.
+ * Grouping keeps the day modal readable and turns the location into a dropdown
+ * on one row rather than a repeated block.
+ */
+function groupByEvent(occurrences: BPMOccurrence[]): DayGroup[] {
+  const groups = new Map<number, DayGroup>();
+  for (const occurrence of occurrences) {
+    let group = groups.get(occurrence.event);
+    if (!group) {
+      group = {
+        key: String(occurrence.event),
+        eventId: occurrence.event,
+        eventName: occurrence.event_name,
+        occurrences: [],
+        guestCount: 0,
+        checkedInCount: 0,
+        associateCount: 0,
+        hasAttachments: false,
+      };
+      groups.set(occurrence.event, group);
+    }
+    group.occurrences.push(occurrence);
+    group.guestCount += occurrence.guest_count;
+    group.checkedInCount += occurrence.checked_in_count;
+    group.associateCount += occurrence.associate_count;
+    group.hasAttachments = group.hasAttachments || occurrence.has_attachments;
+  }
+  return [...groups.values()];
+}
+
 export function BPMMonthCalendar({
   month,
   occurrences,
   onMonthChange,
-  onOccurrenceClick,
-  onAddGuest,
+  onOpenAttachments,
 }: BPMMonthCalendarProps) {
   const [modalDate, setModalDate] = useState<Date | null>(null);
+  const [jumpOpen, setJumpOpen] = useState(false);
+  // Which location is targeted per BPM, for multi-location days.
+  const [picked, setPicked] = useState<Record<number, BPMOccurrence>>({});
+
   const days = buildDays(month);
   const monthLabel = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(month);
   const today = new Date();
@@ -58,7 +112,12 @@ export function BPMMonthCalendar({
     return acc;
   }, {});
 
-  const modalItems = modalDate ? byDay[dayKey(modalDate)] || [] : [];
+  const modalGroups = useMemo(
+    () => (modalDate ? groupByEvent(byDay[dayKey(modalDate)] || []) : []),
+    // `byDay` is rebuilt on every render, so key off the source list instead.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [modalDate, occurrences],
+  );
 
   return (
     <section className="matchup-calendar-shell">
@@ -71,7 +130,17 @@ export function BPMMonthCalendar({
         >
           <ChevronLeft size={18} />
         </Button>
-        <h2>{monthLabel}</h2>
+        {/* Clicking the heading opens the month / year jump. */}
+        <h2>
+          <button
+            type="button"
+            onClick={() => setJumpOpen(true)}
+            title="Jump to another month"
+            className="cursor-pointer underline decoration-dotted underline-offset-4 hover:decoration-solid"
+          >
+            {monthLabel}
+          </button>
+        </h2>
         <Button
           variant="outline"
           size="icon"
@@ -107,7 +176,7 @@ export function BPMMonthCalendar({
                   {items.slice(0, 3).map((occurrence) => (
                     <span
                       key={occurrence.id}
-                      style={{ ['--status-color' as string]: STATUS_COLOR[occurrence.status] || '#64748b' }}
+                      style={{ ['--status-color' as string]: STATUS_COLOR[occurrence.effective_status] || '#64748b' }}
                     >
                       {occurrence.event_name}
                     </span>
@@ -124,45 +193,47 @@ export function BPMMonthCalendar({
         open={Boolean(modalDate)}
         title={modalDate ? new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(modalDate) : ''}
         onClose={() => setModalDate(null)}
-        contentClassName="matchup-day-modal"
+        contentClassName="matchup-day-modal max-w-[860px]"
       >
         <div className="matchup-day-modal-list">
-          {modalItems.map((occurrence) => (
-            <div key={occurrence.id} className="matchup-day-modal-item">
-              <div>
-                <strong>{occurrence.event_name}</strong>
-                <span>{formatOccurrenceTime(occurrence.start_at)}</span>
-                <small>{occurrence.checked_in_count}/{occurrence.guest_count} guests · {occurrence.status}</small>
+          {modalGroups.map((group) => {
+            const target = picked[group.eventId] ?? group.occurrences[0];
+            return (
+              <div key={group.key} className="matchup-day-modal-item">
+                <div>
+                  <strong>{group.eventName}</strong>
+                  <span>{formatOccurrenceTime(target.start_at)}</span>
+                  <small>
+                    {group.checkedInCount}/{group.guestCount} guests · {group.associateCount} associates
+                  </small>
+                  <div className="mt-1">
+                    <StatusBadge status={target.effective_status} />
+                  </div>
+                </div>
+                <div className="matchup-day-modal-item-actions">
+                  <OccurrenceRowActions
+                    occurrences={group.occurrences}
+                    selected={target}
+                    onSelect={(occurrence) =>
+                      setPicked((prev) => ({ ...prev, [group.eventId]: occurrence }))
+                    }
+                    hasAttachments={group.hasAttachments}
+                    onOpenAttachments={onOpenAttachments}
+                    onNavigate={() => setModalDate(null)}
+                  />
+                </div>
               </div>
-              <div className="matchup-day-modal-item-actions">
-                {onAddGuest && occurrence.status === 'SCHEDULED' ? (
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setModalDate(null);
-                      onAddGuest(occurrence);
-                    }}
-                  >
-                    Add Guest
-                  </Button>
-                ) : null}
-                {onOccurrenceClick ? (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      setModalDate(null);
-                      onOccurrenceClick(occurrence);
-                    }}
-                  >
-                    Edit BPM
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Modal>
+
+      <MonthJumpModal
+        open={jumpOpen}
+        current={month}
+        onClose={() => setJumpOpen(false)}
+        onPick={onMonthChange}
+      />
     </section>
   );
 }

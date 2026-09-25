@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { ProtectedRoute } from './protected-route';
 import { AdminRoute } from './admin-route';
 import { BuilderAiRoute } from './builder-ai-route';
@@ -9,6 +9,8 @@ import { PublicRoute } from './public-route';
 import { RouteErrorFallback } from './route-error-boundary';
 import { RootRedirect } from './root-redirect.tsx';
 import { MainLayout } from '@shared/layouts';
+import { BpmSelectionProvider } from '@/features/bpm/context/bpm-selection-context';
+import { BpmConfigProvider } from '@/features/bpm/context/bpm-config-context';
 import { LoginPage, SignupPage } from '@/features/auth';
 
 // Lazy load pages for code splitting
@@ -30,6 +32,8 @@ const EventLandingPage = lazy(() => import('@/features/events/pages/public/event
 const EventCheckoutPage = lazy(() => import('@/features/events/pages/public/event-checkout-page'));
 const EventTransferPage = lazy(() => import('@/features/events/pages/public/event-transfer-page'));
 const EventTicketPage = lazy(() => import('@/features/events/pages/public/event-ticket-page'));
+// BPM's one public page: the pass a guest is emailed or texted a link to.
+const BpmGuestPassPage = lazy(() => import('@/features/bpm/pages/public/bpm-guest-pass-page'));
 const EducationPage = lazy(() => import('@/features/education/pages/education-page'));
 const ProspectTrackerPage = lazy(() => import('@/features/team/prospect/pages/prospect-tracker-page'));
 const OrgChartPage = lazy(() => import('@/features/team/org-chart/pages/org-chart-page'));
@@ -80,8 +84,10 @@ const BpmOverviewPage = lazy(() => import('@/features/bpm/pages/bpm-overview-pag
 const BpmSchedulePage = lazy(() => import('@/features/bpm/pages/bpm-schedule-page'));
 const BpmAddGuestPage = lazy(() => import('@/features/bpm/pages/add-guest-page'));
 const BpmViewInvitesPage = lazy(() => import('@/features/bpm/pages/view-invites-page'));
+const BpmAssociateInvitesPage = lazy(() => import('@/features/bpm/pages/associate-invites-page'));
 const BpmGuestCheckinPage = lazy(() => import('@/features/bpm/pages/guest-checkin-page'));
 const BpmAssociateCheckinPage = lazy(() => import('@/features/bpm/pages/associate-checkin-page'));
+const BpmSettingsPage = lazy(() => import('@/features/bpm/pages/bpm-settings-page'));
 const HelpNeededPage = lazy(() => import('@/features/helpdesk/pages/help-needed-page'));
 const PrivacyPolicyPage = lazy(() => import('@/features/legal/pages/privacy-policy-page'));
 const TermsPage = lazy(() => import('@/features/legal/pages/terms-page'));
@@ -388,32 +394,61 @@ const router = createBrowserRouter([
         element: lazyLoad(CalendarPage),
       },
       {
+        // Nested so every BPM sub-tool shares one BpmSelectionProvider: the
+        // chosen BPM / date / location survives navigation between them instead
+        // of each page resetting its own picker. Paths are unchanged.
+        // BpmConfigProvider sits here for the same reason: the settings
+        // singleton and the row-colour rules are each read by several
+        // components across several pages, and one provider fetches them once
+        // instead of every consumer issuing its own request.
         path: 'bpm',
-        element: <Navigate to="/bpm/overview" replace />,
-      },
-      {
-        path: 'bpm/overview',
-        element: lazyLoad(BpmOverviewPage),
-      },
-      {
-        path: 'bpm/schedule',
-        element: lazyLoad(BpmSchedulePage),
-      },
-      {
-        path: 'bpm/add-guest',
-        element: lazyLoad(BpmAddGuestPage),
-      },
-      {
-        path: 'bpm/view-invites',
-        element: lazyLoad(BpmViewInvitesPage),
-      },
-      {
-        path: 'bpm/guest-checkin',
-        element: lazyLoad(BpmGuestCheckinPage),
-      },
-      {
-        path: 'bpm/associate-checkin',
-        element: lazyLoad(BpmAssociateCheckinPage),
+        element: (
+          <BpmSelectionProvider>
+            <BpmConfigProvider>
+              <Outlet />
+            </BpmConfigProvider>
+          </BpmSelectionProvider>
+        ),
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/bpm/overview" replace />,
+          },
+          {
+            path: 'overview',
+            element: lazyLoad(BpmOverviewPage),
+          },
+          {
+            path: 'schedule',
+            element: lazyLoad(BpmSchedulePage),
+          },
+          {
+            path: 'add-guest',
+            element: lazyLoad(BpmAddGuestPage),
+          },
+          {
+            path: 'view-invites',
+            element: lazyLoad(BpmViewInvitesPage),
+          },
+          {
+            // Ordered after Guest Invites, and nested here like the rest so it
+            // inherits the sticky BPM/date selection.
+            path: 'associate-invites',
+            element: lazyLoad(BpmAssociateInvitesPage),
+          },
+          {
+            path: 'guest-checkin',
+            element: lazyLoad(BpmGuestCheckinPage),
+          },
+          {
+            path: 'associate-checkin',
+            element: lazyLoad(BpmAssociateCheckinPage),
+          },
+          {
+            path: 'settings',
+            element: lazyLoad(BpmSettingsPage),
+          },
+        ],
       },
       {
         path: 'file-vault',
@@ -529,6 +564,13 @@ const router = createBrowserRouter([
   {
     path: '/event/ticket/:qrToken',
     element: lazyLoad(EventTicketPage),
+    errorElement: <RouteErrorFallback />,
+  },
+  // Unauthenticated, and must stay in step with `bpm.services.qr.guest_pass_url`,
+  // which builds this path into every message a guest is sent.
+  {
+    path: '/bpm/pass/:token',
+    element: lazyLoad(BpmGuestPassPage),
     errorElement: <RouteErrorFallback />,
   },
 
