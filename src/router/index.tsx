@@ -10,6 +10,7 @@ import { RouteErrorFallback } from './route-error-boundary';
 import { RootRedirect } from './root-redirect.tsx';
 import { MainLayout } from '@shared/layouts';
 import { BpmSelectionProvider } from '@/features/bpm/context/bpm-selection-context';
+import { BpmConfigProvider } from '@/features/bpm/context/bpm-config-context';
 import { LoginPage, SignupPage } from '@/features/auth';
 
 // Lazy load pages for code splitting
@@ -394,10 +395,16 @@ const router = createBrowserRouter([
         // Nested so every BPM sub-tool shares one BpmSelectionProvider: the
         // chosen BPM / date / location survives navigation between them instead
         // of each page resetting its own picker. Paths are unchanged.
+        // BpmConfigProvider sits here for the same reason: the settings
+        // singleton and the row-colour rules are each read by several
+        // components across several pages, and one provider fetches them once
+        // instead of every consumer issuing its own request.
         path: 'bpm',
         element: (
           <BpmSelectionProvider>
-            <Outlet />
+            <BpmConfigProvider>
+              <Outlet />
+            </BpmConfigProvider>
           </BpmSelectionProvider>
         ),
         children: [

@@ -17,6 +17,10 @@ import type {
   BPMInterestOption,
   BPMInterestOptionPayload,
   BPMOccurrence,
+  BPMRowColorRule,
+  BPMRowColorRulePayload,
+  BPMSettings,
+  BPMSettingsPayload,
   EventFilters,
   GoogleStatus,
   CheckinAudience,
@@ -258,6 +262,34 @@ export const bpmService = {
   deletedEvents: () => request<BPMEventListItem[]>('/api/bpm/events/deleted/'),
   undeleteEvent: (id: number) =>
     request<BPMEventDetail>(`/api/bpm/events/${id}/undelete/`, { method: 'POST' }),
+
+  // -- BPM Settings: the switchboard ---------------------------------------
+  // A singleton, so there is no id and no list. Reading is open to any BPM
+  // reader — `attachments_download` and the check-in window decide what an
+  // ordinary user's screen renders — while writing needs bpm_settings:manage.
+  settings: () => request<BPMSettings>('/api/bpm/settings/'),
+  updateSettings: (payload: BPMSettingsPayload) =>
+    request<BPMSettings>('/api/bpm/settings/', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  // -- BPM Settings: row colours -------------------------------------------
+  // Reading is open to everyone because every list render needs the rules.
+  // The endpoint is unpaginated: the rule set is a handful of rows by nature.
+  rowColorRules: () => request<BPMRowColorRule[]>('/api/bpm/row-color-rules/'),
+  createRowColorRule: (payload: BPMRowColorRulePayload) =>
+    request<BPMRowColorRule>('/api/bpm/row-color-rules/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateRowColorRule: (id: number, payload: Partial<BPMRowColorRulePayload>) =>
+    request<BPMRowColorRule>(`/api/bpm/row-color-rules/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteRowColorRule: (id: number) =>
+    request<void>(`/api/bpm/row-color-rules/${id}/`, { method: 'DELETE' }),
 
   // -- attachments (event flyer) -------------------------------------------
   // Uploaded straight to the CDN; the returned `href` is a permanent URL the

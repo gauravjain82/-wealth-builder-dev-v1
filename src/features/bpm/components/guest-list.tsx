@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { Button, Checkbox } from '@shared/components';
 import { UserDetailsLink } from '@/features/team/components/user-details-link';
 import {
-  BPM_GUEST_ROW_COLORS,
   resolveRowColors,
   rowColorLabel,
   rowColorStyle,
 } from '@shared/components/row-colors';
 import { formatOccurrenceTime, INVITE_OUTCOME_FIELDS } from '../services/bpm-service';
 import type { BPMGuest, GuestInviteOutcomeField } from '../types';
+import { useRowColorRules } from '../context/bpm-config-context';
 import { guestStateKeys } from './guest-row-colors';
 import { GuestNotesCell } from './guest-notes-cell';
 import { GuestNotesModal } from './guest-notes-modal';
@@ -59,6 +59,8 @@ export function GuestList({
 }: GuestListProps) {
   const [notesGuestId, setNotesGuestId] = useState<number | null>(null);
   const notesGuest = guests.find((guest) => guest.id === notesGuestId) ?? null;
+  // The rule set is served from BPM Settings; the resolver is unchanged.
+  const rules = useRowColorRules();
 
   if (guests.length === 0) {
     return (
@@ -97,7 +99,7 @@ export function GuestList({
           </thead>
           <tbody>
             {guests.map((guest) => {
-              const colors = resolveRowColors(guestStateKeys(guest), BPM_GUEST_ROW_COLORS);
+              const colors = resolveRowColors(guestStateKeys(guest), rules);
               const colorReason = rowColorLabel(colors);
               return (
               <tr

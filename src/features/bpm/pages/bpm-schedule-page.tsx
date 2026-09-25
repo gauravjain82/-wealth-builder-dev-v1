@@ -7,6 +7,7 @@ import { BPMFormModal } from '../components/bpm-form-modal';
 import { StatusBadge, StatusControl } from '../components/status-control';
 import { OccurrenceRowActions } from '../components/occurrence-row-actions';
 import { AttachmentsModal } from '../components/event-attachments';
+import { useAttachmentsDownloadAllowed } from '../context/bpm-config-context';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
 import type {
   BPMCapabilities,
@@ -83,6 +84,8 @@ export default function BpmSchedulePage() {
     name: string;
     attachments: BPMEventAttachment[];
   } | null>(null);
+  // D11: a UI gate only — the CDN URL stays reachable either way.
+  const allowDownload = useAttachmentsDownloadAllowed();
 
   // BPM Schedule is the CRUD surface and the only list that shows HIDDEN /
   // CANCELLED / DELETED rows. Below broker level the page stays read-only.
@@ -344,6 +347,7 @@ export default function BpmSchedulePage() {
         open={Boolean(attachmentsFor)}
         eventName={attachmentsFor?.name ?? ''}
         attachments={attachmentsFor?.attachments ?? []}
+        allowDownload={allowDownload}
         onClose={() => setAttachmentsFor(null)}
       />
     </BPMPageShell>

@@ -1,3 +1,5 @@
+import type { RowColorRule } from '@shared/components/row-colors';
+
 import type { AppointmentListItem } from '@/features/matchup/types';
 
 export type EventType = 'ONE_TIME' | 'RECURRING';
@@ -213,6 +215,14 @@ export interface BPMOccurrence {
   associate_count: number;
   /** Whether the parent BPM has a flyer, so the UI can offer the button. */
   has_attachments: boolean;
+  /**
+   * When check-in opens for this date, or null when the window is switched off.
+   * Derived server-side from BPM Settings — never re-derive it from `start_at`,
+   * or the rule ends up in two places and drifts.
+   */
+  checkin_opens_at: string | null;
+  /** Whether check-in is open right now. Opens early; never closes again. */
+  checkin_open: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -639,3 +649,53 @@ export interface AssociateInviteFilters {
   /** The inherited Associate Tracker filters, plus `invited` / `called`. */
   filters?: Record<string, string>;
 }
+
+// -- BPM General Settings ---------------------------------------------------
+
+/**
+ * The BPM settings singleton.
+ *
+ * Readable by anyone who can see BPM at all, because two of the values steer
+ * what an ordinary user's screen renders: `attachments_download` hides a
+ * control, and the check-in window disables a button. Only writing needs
+ * `bpm_settings:manage`.
+ */
+export interface BPMSettings {
+  /** Off by default, so existing BPMs keep their always-open check-in. */
+  checkin_window_enabled: boolean;
+  /** Hours before start that check-in opens. The window never closes again. */
+  checkin_window_hours: number;
+  qr_host_to_associate: boolean;
+  /** Reserved for the emailed-guest-QR feature (D8) — the switch, not the feature. */
+  qr_host_to_guest: boolean;
+  qr_associate_to_host: boolean;
+  /** Off removes the attachment URL from every response — the real gate (D11). */
+  attachments_view: boolean;
+  /** Off hides the download control only; the CDN URL stays reachable (D11). */
+  attachments_download: boolean;
+  /** A switch for a sender that does not exist yet (D5). */
+  text_event_to_guests: boolean;
+  /** A switch for a sender that does not exist yet (D5). */
+  email_event_to_guests: boolean;
+  updated_by: number | null;
+  updated_by_name: string | null;
+  updated_at: string;
+}
+
+export type BPMSettingsPayload = Partial<
+  Omit<BPMSettings, 'updated_by' | 'updated_by_name' | 'updated_at'>
+>;
+
+/**
+ * A server-stored row-colour rule.
+ *
+ * Deliberately the shared `RowColorRule` plus an `id`: the API serialises to
+ * that shape exactly, so server rules drop straight into `resolveRowColors`
+ * alongside the shipped defaults, and the `id` is only the CRUD handle the
+ * settings editor needs.
+ */
+export interface BPMRowColorRule extends RowColorRule {
+  id: number;
+}
+
+export type BPMRowColorRulePayload = Omit<BPMRowColorRule, 'id' | 'reserved'>;

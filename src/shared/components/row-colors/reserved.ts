@@ -3,10 +3,19 @@ import type { RowColorRule } from './types';
 /**
  * Reserved default row colours.
  *
- * These are the schemes the BPM brief specifies by name. They ship in the client
- * so lists are coloured correctly before any backend configuration exists, and
- * they stay `reserved: true` afterwards: from Phase 7 the business can add its
- * own rules, but it may not reuse a reserved colour (see `isHexAvailable`).
+ * These are the schemes the BPM brief specifies by name.
+ *
+ * **Since Phase 7 the server owns them.** They are seeded as `BPMRowColorRule`
+ * rows (migration `bpm/0020`) with the same keys and hexes, so an admin can
+ * recolour or disable a built-in scheme from BPM Settings exactly as they would
+ * one of their own. This constant is kept as the **fallback** a BPM list falls
+ * back to when the rule fetch fails — a permanently uncoloured list would be a
+ * silent regression — and as the definition of what "reserved" means to
+ * `isHexAvailable` for any consumer not reading the server set.
+ *
+ * Because the built-ins are now rows, the uniqueness rule enforces itself: a
+ * reserved colour is simply a colour a rule already holds, so passing the whole
+ * server set to `isHexAvailable` covers both cases in one comparison.
  */
 
 /** Condition keys for BPM guest rows. Exported so call sites cannot typo them. */
@@ -103,7 +112,13 @@ export const BPM_GUEST_ROW_COLORS: RowColorRule[] = [
   },
 ];
 
-/** Every reserved hex across all rule sets — what custom colours must avoid. */
+/**
+ * Every reserved hex across all rule sets — what custom colours must avoid.
+ *
+ * Only needed by a consumer that does *not* have the server's rule set to
+ * compare against: with the built-ins seeded as rows, passing the full set to
+ * `isHexAvailable` already rejects a reserved colour.
+ */
 export const RESERVED_ROW_COLOR_HEXES: string[] = BPM_GUEST_ROW_COLORS.map(
   (rule) => rule.hex,
 );

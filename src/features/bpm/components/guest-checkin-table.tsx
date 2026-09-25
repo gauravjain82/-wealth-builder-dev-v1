@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, CheckCircle2, Mail, Phone, UserRound } from 'lucide-react';
 import { Button, Checkbox, Input } from '@shared/components';
 import {
-  BPM_GUEST_ROW_COLORS,
   resolveRowColors,
   rowColorLabel,
   rowColorStyle,
@@ -10,6 +9,7 @@ import {
 import { UserDetailsLink } from '@/features/team/components/user-details-link';
 import { formatOccurrenceTime, CHECKIN_OUTCOME_FIELDS } from '../services/bpm-service';
 import type { BPMGuest, BPMGuestNote, GuestCheckinOutcomeField } from '../types';
+import { useRowColorRules } from '../context/bpm-config-context';
 import { guestStateKeys } from './guest-row-colors';
 
 /**
@@ -190,7 +190,9 @@ function GuestCheckinCard({
   const location = [guest.prospect_detail?.city, guest.prospect_detail?.state].filter(Boolean).join(', ');
   const email = guest.prospect_detail?.email;
   const phone = guest.prospect_detail?.phone;
-  const colors = resolveRowColors(guestStateKeys(guest), BPM_GUEST_ROW_COLORS);
+  // The rule set is served from BPM Settings; the resolver is unchanged.
+  const rules = useRowColorRules();
+  const colors = resolveRowColors(guestStateKeys(guest), rules);
   const colorReason = rowColorLabel(colors);
 
   return (
@@ -329,6 +331,7 @@ export function GuestCheckinTable({
 }: GuestCheckinTableProps) {
   const showOutcome = Boolean(onSetOutcome);
   const showFollowUp = Boolean(onFollowUp);
+  const rules = useRowColorRules();
   const [sortKey, setSortKey] = useState<GuestCheckinSortKey | null>(null);
   const [ascending, setAscending] = useState(true);
 
@@ -413,7 +416,7 @@ export function GuestCheckinTable({
         </thead>
         <tbody>
           {sorted.map((guest, index) => {
-            const colors = resolveRowColors(guestStateKeys(guest), BPM_GUEST_ROW_COLORS);
+            const colors = resolveRowColors(guestStateKeys(guest), rules);
             const colorReason = rowColorLabel(colors);
             return (
               <tr

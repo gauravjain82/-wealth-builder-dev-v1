@@ -6,6 +6,7 @@ import { BPMMonthCalendar } from '../components/bpm-month-calendar';
 import { AddGuestModal } from '../components/add-guest-modal';
 import { BPMFormModal } from '../components/bpm-form-modal';
 import { AttachmentsModal } from '../components/event-attachments';
+import { useAttachmentsDownloadAllowed } from '../context/bpm-config-context';
 import { OccurrenceRowActions } from '../components/occurrence-row-actions';
 import { StatusBadge } from '../components/status-control';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
@@ -66,6 +67,8 @@ export default function BpmOverviewPage() {
     name: string;
     attachments: BPMEventAttachment[];
   } | null>(null);
+  // D11: a UI gate only — the CDN URL stays reachable either way.
+  const allowDownload = useAttachmentsDownloadAllowed();
 
   const filters = useMemo<OccurrenceFilters>(() => {
     const range = monthRange(calendarMonth);
@@ -298,6 +301,7 @@ export default function BpmOverviewPage() {
         open={Boolean(attachmentsFor)}
         eventName={attachmentsFor?.name ?? ''}
         attachments={attachmentsFor?.attachments ?? []}
+        allowDownload={allowDownload}
         onClose={() => setAttachmentsFor(null)}
       />
 

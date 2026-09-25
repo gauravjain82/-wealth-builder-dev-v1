@@ -7,6 +7,7 @@ import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { useBpmSelection } from '../context/bpm-selection-context';
 import { CheckinStatCards, type CheckinCountCard } from '../components/checkin-stat-cards';
+import { CheckinWindowNotice } from '../components/checkin-window-notice';
 import { InvitedAssociatesCard } from '../components/invited-associates-card';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
 import type { AssociateCheckIn, CheckinDimension } from '../types';
@@ -131,6 +132,9 @@ export default function AssociateCheckinPage() {
   // Both read the leaderboard's own totals. Since Phase 6 "Invited" is this
   // date's BPMAssociateInvite rows, not the event-wide roster, so the number
   // finally describes the date on screen — and the panel below it is the list.
+  // Server-derived: the window opens N hours before start and never closes.
+  const checkinOpen = occurrence?.checkin_open ?? true;
+
   const countCards = useMemo<CheckinCountCard[]>(
     () => [
       { key: 'invited', label: 'Agents Invited', from: 'invited', className: 'bg-sky-500' },
@@ -144,6 +148,8 @@ export default function AssociateCheckinPage() {
       <BPMCard className="mb-4">
         <BPMOccurrencePicker allowPast />
       </BPMCard>
+
+      <CheckinWindowNotice occurrence={occurrence} />
 
       {occurrence ? (
         <CheckinStatCards
@@ -170,9 +176,15 @@ export default function AssociateCheckinPage() {
         <UserAutocompleteDropdown
           selectedId={null}
           selectedLabel=""
-          placeholder={occurrence ? 'Search associate' : 'Select a BPM first'}
+          placeholder={
+            occurrence
+              ? checkinOpen
+                ? 'Search associate'
+                : 'Check-in has not opened yet'
+              : 'Select a BPM first'
+          }
           fetchFromApi
-          disabled={!occurrence || busy}
+          disabled={!occurrence || busy || !checkinOpen}
           buttonText="CHECK IN"
           onSelect={(option) => void checkIn(option.id)}
         />

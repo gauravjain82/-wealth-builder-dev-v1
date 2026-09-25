@@ -8,6 +8,7 @@ import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { useBpmSelection } from '../context/bpm-selection-context';
 import { CheckinStatCards } from '../components/checkin-stat-cards';
+import { CheckinWindowNotice } from '../components/checkin-window-notice';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
 import { AddGuestModal } from '../components/add-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
@@ -77,6 +78,9 @@ export default function GuestCheckinPage() {
   // Bumped on every check-in so the leaderboards re-fetch. They are read while
   // the room fills up, so a card that lags the list is worse than a slow one.
   const [statsVersion, setStatsVersion] = useState(0);
+  // Server-derived: the window opens N hours before start and never closes, so
+  // everything else on this page keeps working — only checking in is held back.
+  const checkinOpen = occurrence?.checkin_open ?? true;
 
   const loadInterestOptions = useCallback(async () => {
     try {
@@ -273,6 +277,8 @@ export default function GuestCheckinPage() {
 
       {occurrence ? (
         <>
+          <CheckinWindowNotice occurrence={occurrence} />
+
           <CheckinStatCards
             occurrenceId={occurrence.id}
             audience="guest"
@@ -340,6 +346,7 @@ export default function GuestCheckinPage() {
               <GuestCheckinTable
                 guests={visibleGuests}
                 busy={busy}
+                canCheckIn={checkinOpen}
                 onToggleCheckIn={toggleCheckIn}
                 onSetOutcome={setGuestOutcome}
                 onAddNote={addGuestNote}
@@ -387,7 +394,9 @@ export default function GuestCheckinPage() {
                         <Button
                           type="button"
                           size="sm"
-                          disabled={busy}
+                          // This adds *and* checks in, so it obeys the window
+                          // too — otherwise it would be a way around it.
+                          disabled={busy || !checkinOpen}
                           className="whitespace-nowrap"
                           onClick={() => quickAddProspect(p)}
                         >

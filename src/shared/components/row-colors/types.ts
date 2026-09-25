@@ -6,10 +6,12 @@
  * BPM but is deliberately domain-agnostic so Prospect Tracker, Associate Tracker
  * and any future list can adopt it without a rewrite.
  *
- * A rule set is just data: built-in "reserved" rules ship in `reserved.ts`, and
- * from Phase 7 the same shape is served from the backend so the business can add
- * its own. Nothing that consumes `resolveRowColors` needs to change when that
- * swap happens.
+ * A rule set is just data. Since Phase 7 it comes from the backend
+ * (`GET /api/bpm/row-color-rules/`, which serialises to exactly this shape),
+ * including the built-in "reserved" schemes; `reserved.ts` keeps a copy of those
+ * as the fallback for a failed fetch. The resolver did not change for that
+ * swap — only where consumers get the rules from, which for BPM is
+ * `useRowColorRules()`.
  */
 
 /**
