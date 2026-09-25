@@ -48,6 +48,7 @@ export {
 	type DateRangePickerProps,
 } from './ui/date-picker';
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './ui/card';
+export { QrCode, type QrCodeProps } from './qr-code';
 export { ToastContainer } from './toast/toast';
 export { TrackerTable, type TrackerTableColumn } from './tracker-table/index';
 export { LoadingState } from './state/loading-state';

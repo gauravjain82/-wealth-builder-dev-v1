@@ -686,6 +686,36 @@ export type BPMSettingsPayload = Partial<
   Omit<BPMSettings, 'updated_by' | 'updated_by_name' | 'updated_at'>
 >;
 
+// -- QR check-in (Phase 8) -------------------------------------------------
+
+/**
+ * One QR code, ready to paint.
+ *
+ * The same shape serves a person's identity code and a date's check-in code:
+ * `token` goes in the square, `label` goes under it.
+ *
+ * `token` is the **bare token**, not a URL — deliberately, so a stranger's phone
+ * camera pointed at the screen in a room does nothing. Only the app's own
+ * scanner reads these. See `bpm/services/qr.py`.
+ */
+export interface BPMQrToken {
+  token: string;
+  label: string;
+}
+
+/** Which way a resolved scan pointed. */
+export type BPMQrDirection = 'associate_to_host' | 'host_to_associate';
+
+/** What the server made of a scan. */
+export interface BPMQrScanResult {
+  direction: BPMQrDirection;
+  /** True when this person was already in the room — reported, not refused. */
+  duplicate: boolean;
+  occurrence_id: number;
+  occurrence_label: string;
+  check_in: AssociateCheckIn;
+}
+
 /**
  * A server-stored row-colour rule.
  *

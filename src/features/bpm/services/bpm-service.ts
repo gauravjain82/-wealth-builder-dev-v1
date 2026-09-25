@@ -17,6 +17,8 @@ import type {
   BPMInterestOption,
   BPMInterestOptionPayload,
   BPMOccurrence,
+  BPMQrScanResult,
+  BPMQrToken,
   BPMRowColorRule,
   BPMRowColorRulePayload,
   BPMSettings,
@@ -272,6 +274,50 @@ export const bpmService = {
     request<BPMSettings>('/api/bpm/settings/', {
       method: 'PATCH',
       body: JSON.stringify(payload),
+    }),
+
+  // -- QR check-in ---------------------------------------------------------
+  // Two codes pointing opposite ways, and one endpoint that resolves either —
+  // the scanner does not know which code it just read, so the token decides.
+
+  /**
+   * The caller's own permanent identity code, minted on first request (D6).
+   *
+   * Needs no BPM permission: it is the caller's own code, and somebody whose
+   * only role at a door is to *be* scanned must still be able to show it.
+   */
+  myQrIdentity: () => request<BPMQrToken>('/api/bpm/qr/my-identity/'),
+
+  /**
+   * Reissue the caller's identity code, invalidating the previous one at once.
+   *
+   * The escape hatch for a permanent token (D6): scoped to the caller, because
+   * the token is not the user id and so nobody else's code changes.
+   */
+  regenerateQrIdentity: () =>
+    request<BPMQrToken>('/api/bpm/qr/regenerate/', { method: 'POST' }),
+
+  /** This date's check-in code, for the screen in the room. */
+  occurrenceQr: (occurrenceId: number) =>
+    request<BPMQrToken>(`/api/bpm/occurrences/${occurrenceId}/qr/`),
+
+  /**
+   * Submit a scanned payload; the server works out who to check in.
+   *
+   * `occurrenceId` is only consulted when an *identity* code was scanned — an
+   * event code names its own room — so it is optional, which is what lets the
+   * profile-menu scanner work with no BPM selected.
+   *
+   * The payload is passed through untouched: the resolver pulls a token out of
+   * whatever it is given, so the client never parses and a URL-shaped code keeps
+   * working if one is ever introduced.
+   */
+  scanQr: (scan: string, occurrenceId?: number | null) =>
+    request<BPMQrScanResult>('/api/bpm/qr/scan/', {
+      method: 'POST',
+      body: JSON.stringify(
+        occurrenceId ? { scan, occurrence_id: occurrenceId } : { scan },
+      ),
     }),
 
   // -- BPM Settings: row colours -------------------------------------------

@@ -9,6 +9,7 @@ import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { useBpmSelection } from '../context/bpm-selection-context';
 import { CheckinStatCards } from '../components/checkin-stat-cards';
 import { CheckinWindowNotice } from '../components/checkin-window-notice';
+import { BpmQrModal } from '../components/bpm-qr-modal';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
 import { AddGuestModal } from '../components/add-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
@@ -64,6 +65,9 @@ export default function GuestCheckinPage() {
     leader: '',
   });
   const [search, setSearch] = useState('');
+  // QR sits beside the search because that is where somebody stands when a
+  // person arrives: find them, or scan them.
+  const [qrOpen, setQrOpen] = useState(false);
   const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
   const [addGuestOpen, setAddGuestOpen] = useState(false);
   const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
@@ -330,6 +334,15 @@ export default function GuestCheckinPage() {
                     placeholder="Search invites & prospects…"
                   />
                 </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="whitespace-nowrap"
+                  onClick={() => setQrOpen(true)}
+                >
+                  QR
+                </Button>
                 <Button type="button" size="sm" className="whitespace-nowrap" onClick={() => setAddGuestOpen(true)}>
                   + Add Guest
                 </Button>
@@ -457,6 +470,17 @@ export default function GuestCheckinPage() {
         options={interestOptions}
         onClose={() => setManageOptionsOpen(false)}
         onChanged={loadInterestOptions}
+      />
+      {/* A scan checks somebody in as an *associate*, which is the only direction
+          that exists (D8 leaves guest codes out of scope), so this reloads the
+          guest list only because the stat cards above it share the occurrence. */}
+      <BpmQrModal
+        open={qrOpen}
+        occurrenceId={occurrence?.id ?? null}
+        onClose={() => setQrOpen(false)}
+        onCheckedIn={() => {
+          if (occurrence) void load(occurrence.id);
+        }}
       />
     </BPMPageShell>
   );

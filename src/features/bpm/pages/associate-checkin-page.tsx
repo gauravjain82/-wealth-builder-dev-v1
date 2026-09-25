@@ -8,6 +8,7 @@ import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { useBpmSelection } from '../context/bpm-selection-context';
 import { CheckinStatCards, type CheckinCountCard } from '../components/checkin-stat-cards';
 import { CheckinWindowNotice } from '../components/checkin-window-notice';
+import { BpmQrModal } from '../components/bpm-qr-modal';
 import { InvitedAssociatesCard } from '../components/invited-associates-card';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
 import type { AssociateCheckIn, CheckinDimension } from '../types';
@@ -52,6 +53,9 @@ export default function AssociateCheckinPage() {
   // Bumped on every check-in so the leaderboards re-fetch — they are read while
   // the room fills up.
   const [statsVersion, setStatsVersion] = useState(0);
+  // Beside the associate search, which is this page's equivalent of the guest
+  // list's search box — the two ways of finding a person who just walked in.
+  const [qrOpen, setQrOpen] = useState(false);
 
   const load = useCallback(
     async (occurrenceId: number) => {
@@ -170,9 +174,22 @@ export default function AssociateCheckinPage() {
       />
 
       <BPMCard className="mb-4">
-        <label className="mb-2 block text-xs font-semibold text-slate-700 dark:text-white/80">
-          Check in an associate
-        </label>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-white/80">
+            Check in an associate
+          </label>
+          {occurrence ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="whitespace-nowrap"
+              onClick={() => setQrOpen(true)}
+            >
+              QR
+            </Button>
+          ) : null}
+        </div>
         <UserAutocompleteDropdown
           selectedId={null}
           selectedLabel=""
@@ -258,6 +275,18 @@ export default function AssociateCheckinPage() {
           </div>
         )}
       </BPMCard>
+
+      {/* The check-in window is enforced server-side either way, so the button is
+          not disabled outside it — the modal reports the refusal in the sentence
+          the server sends, which says when it opens. */}
+      <BpmQrModal
+        open={qrOpen}
+        occurrenceId={occurrence?.id ?? null}
+        onClose={() => setQrOpen(false)}
+        onCheckedIn={() => {
+          if (occurrence) void load(occurrence.id);
+        }}
+      />
     </BPMPageShell>
   );
 }

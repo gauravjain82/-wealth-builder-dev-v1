@@ -95,7 +95,11 @@ export function CheckinScanBox({ onScan }: CheckinScanBoxProps) {
         </div>
 
         {cameraOn ? (
-          <CheckinCameraScanner paused={busy} onDetected={(payload) => void submit(payload)} />
+          <CheckinCameraScanner
+            paused={busy}
+            fallbackHint="Type the ticket number instead."
+            onDetected={(payload) => void submit(payload)}
+          />
         ) : null}
 
         {outcome ? (

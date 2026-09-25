@@ -4,6 +4,8 @@ import { useAuth } from '@/features/auth/hooks/use-auth';
 import { ThemeToggle } from '@/shared/components/theme-toggle';
 import { Bell, CheckCheck } from 'lucide-react';
 import { inAppNotificationService, type InAppNotification } from '@/features/matchup/services/inapp-notification-service';
+import { BpmQrModal } from '@/features/bpm/components/bpm-qr-modal';
+import { MyQrCodeModal } from '@/features/bpm/components/my-qr-code-modal';
 import './header.css';
 
 const LOGO_URL =
@@ -17,6 +19,12 @@ export function Header() {
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  // BPM QR (Phase 8). Both modals live here rather than on a page because they
+  // are reached from the profile menu, which is on every screen. `BpmQrModal` is
+  // opened with no occurrence: from here only an event code on a screen resolves,
+  // because nothing has selected a BPM date.
+  const [scanOpen, setScanOpen] = useState(false);
+  const [myQrOpen, setMyQrOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
@@ -175,6 +183,30 @@ export function Header() {
 
               <div className="header__dropdown-divider" />
 
+              {/* QR check-in. §3 asked for these "between my login and Profile";
+                  there is no "my login" item — the name/email block above is it. */}
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  setScanOpen(true);
+                }}
+                className="header__dropdown-item"
+              >
+                <span>📷</span> Scan QR
+              </button>
+
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  setMyQrOpen(true);
+                }}
+                className="header__dropdown-item"
+              >
+                <span>🔳</span> My QR Code
+              </button>
+
+              <div className="header__dropdown-divider" />
+
               {/* Profile Item */}
               <button
                 onClick={handleProfileClick}
@@ -206,6 +238,9 @@ export function Header() {
           )}
         </div>
       </div>
+
+      <BpmQrModal open={scanOpen} onClose={() => setScanOpen(false)} />
+      <MyQrCodeModal open={myQrOpen} onClose={() => setMyQrOpen(false)} />
     </header>
   );
 }
