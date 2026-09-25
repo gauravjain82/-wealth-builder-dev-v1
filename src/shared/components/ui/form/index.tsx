@@ -34,10 +34,25 @@ export function FormRowGroup({ children, className, columns = 2 }: FormRowGroupP
 interface FormRowProps {
   children: ReactNode;
   className?: string;
+  /**
+   * Optional stable key for contextual guidance (GMS decision G9).
+   *
+   * A pass-through only: it renders as a `data-gms-target` attribute on the row's
+   * existing wrapper and changes no behaviour, no styling and no layout. Guidance
+   * spotlights elements that already exist rather than adding wrappers of its own, and
+   * this row is a plain layout div that did not previously forward props — so the
+   * alternative was a GMS-owned element inside every form, which would have been a
+   * larger change than this one.
+   */
+  'data-gms-target'?: string;
 }
 
-export function FormRow({ children, className }: FormRowProps) {
-  return <div className={cn('grid gap-1.5', className)}>{children}</div>;
+export function FormRow({ children, className, ...rest }: FormRowProps) {
+  return (
+    <div className={cn('grid gap-1.5', className)} {...rest}>
+      {children}
+    </div>
+  );
 }
 
 interface FormActionsProps {

@@ -17,10 +17,21 @@ import { defaultAddProspectForm, type AddProspectFormData } from '@/features/tea
 import { bpmService } from '../services/bpm-service';
 import type { BPMOccurrence, ProspectMatch } from '../types';
 import { DuplicateProspectDialog } from './duplicate-prospect-dialog';
+import { BPM_TARGETS } from '../gms-targets';
+import { emit, gmsTarget } from '@/features/gms/services/gms-adapter';
 
 interface AddGuestFormProps {
   occurrence: BPMOccurrence | null;
   onAdded: () => void;
+  /**
+   * Whether the form currently holds anything unsaved.
+   *
+   * A boolean, deliberately. It exists so a guidance walkthrough can warn before exit
+   * ("anything typed but not saved will be lost") without being told what was typed —
+   * the same boundary `emit` enforces, applied to the one piece of state guidance has
+   * a legitimate reason to know about. Optional, so every existing caller is unchanged.
+   */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 interface GuestForm {
@@ -141,7 +152,7 @@ function formToCreatePayload(formData: AddProspectFormData) {
   };
 }
 
-export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
+export function AddGuestForm({ occurrence, onAdded, onDirtyChange }: AddGuestFormProps) {
   const addToast = useToastStore((state) => state.addToast);
   const [form, setForm] = useState<GuestForm>(() => lastForm ?? defaultForm());
 
@@ -151,9 +162,13 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
       setForm((prev) => {
         const next = update(prev);
         lastForm = next;
+        // Report only *that* something is unsaved, never what. A guest chosen or a
+        // note typed both count; an inviter alone does not, because the form keeps
+        // that between entries on purpose.
+        onDirtyChange?.(Boolean(next.prospectId) || next.notes.trim().length > 0);
         return next;
       }),
-    [],
+    [onDirtyChange],
   );
   const [saving, setSaving] = useState(false);
   const [addProspectOpen, setAddProspectOpen] = useState(false);
@@ -302,6 +317,11 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
         notes: form.notes,
       });
       addToast({ type: 'success', message: 'Guest added.' });
+      // Tell guidance the save succeeded. `emit` takes a target key and a signal and
+      // has no third parameter, so nothing about the guest can travel with it - and
+      // the persisted record this call returns is deliberately not passed anywhere.
+      // A no-op when no walkthrough is running, which is the normal case.
+      emit(BPM_TARGETS.addGuestSave, 'saved');
       // Clear the guest, keep the inviter and the note: the next guest is
       // usually the same inviter's, and re-selecting them every time is the
       // friction this form's session cache exists to remove.
@@ -313,6 +333,7 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
       }));
       onAdded();
     } catch (error) {
+      emit(BPM_TARGETS.addGuestSave, 'failed');
       addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add guest' });
     } finally {
       setSaving(false);
@@ -328,7 +349,7 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
         }}
       >
         <FormRowGroup>
-          <FormRow>
+          <FormRow {...gmsTarget(BPM_TARGETS.addGuestInviter)}>
             <Label>Inviter *</Label>
             <UserAutocompleteDropdown
               selectedId={form.inviterId}
@@ -350,7 +371,7 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
               }
             />
           </FormRow>
-          <FormRow>
+          <FormRow {...gmsTarget(BPM_TARGETS.addGuestIdentity)}>
             <Label>Guest (Prospect) *</Label>
             <div className="flex items-center gap-2">
               <div className="flex-1">
@@ -388,12 +409,16 @@ export function AddGuestForm({ occurrence, onAdded }: AddGuestFormProps) {
             ) : null}
           </FormRow>
         </FormRowGroup>
-        <FormRow>
+        <FormRow {...gmsTarget(BPM_TARGETS.addGuestOptionalDetails)}>
           <Label>Notes</Label>
           <Textarea value={form.notes} onChange={(e) => updateForm((prev) => ({ ...prev, notes: e.target.value }))} rows={3} />
         </FormRow>
         <FormActions>
-          <Button type="submit" disabled={saving || !occurrence}>
+          <Button
+            type="submit"
+            disabled={saving || !occurrence}
+            {...gmsTarget(BPM_TARGETS.addGuestSave)}
+          >
             {saving ? 'Adding…' : 'Add Guest'}
           </Button>
         </FormActions>

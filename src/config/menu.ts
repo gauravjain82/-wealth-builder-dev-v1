@@ -93,6 +93,8 @@ const MENU_ITEMS = {
     icon: '🎛️',
     path: '/admin/contest-settings',
   } as MenuItem,
+  // Guidance library and review queue, gated per-user by gms:author (no role holds it).
+  GUIDANCE: { label: 'Guidance', icon: '🧭', path: '/admin/guidance' } as MenuItem,
   // WB reporting pipeline operations (gated per-user by wbreporting:read/manage)
   REPORTING_PIPELINE: {
     label: 'Reporting Pipeline',
@@ -652,7 +654,10 @@ export function getMenuForUser(
   canAccessLeaderboards: boolean = false,
   // wbreporting:manage. Separate from canAccessReportingPipeline, which is the
   // read gate for the operations screen — configuring a contest needs manage.
-  canManageReporting: boolean = false
+  canManageReporting: boolean = false,
+  // gms:author. A limited rollout like the others: no role holds it, so the entry
+  // stays hidden until someone is named in the access console.
+  canAuthorGuidance: boolean = false
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -712,6 +717,14 @@ export function getMenuForUser(
     !menuItems.some((item) => item.label === MENU_ITEMS.CONTEST_SETTINGS.label)
   ) {
     menuItems.push(cloneMenuItems([MENU_ITEMS.CONTEST_SETTINGS])[0]);
+  }
+
+  // Guidance authoring rides gms:author, its own per-user grant.
+  if (
+    canAuthorGuidance &&
+    !menuItems.some((item) => item.label === MENU_ITEMS.GUIDANCE.label)
+  ) {
+    menuItems.push(cloneMenuItems([MENU_ITEMS.GUIDANCE])[0]);
   }
 
   // Home v2 and Leaderboards are gated by backend access (homev2:read), not by
