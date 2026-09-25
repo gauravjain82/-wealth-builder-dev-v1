@@ -15,6 +15,8 @@ import type {
   ContestAccess,
   ContestErrorCode,
   ContestSummary,
+  EditableContest,
+  EditorOptions,
   FlyerResponse,
   ProfileResponse,
   ProofResponse,
@@ -171,4 +173,131 @@ export function fetchFlyer(contestId: number, signal?: AbortSignal): Promise<Fly
     new URLSearchParams(),
     signal
   );
+}
+
+/* --- settings (wbreporting:manage) ---------------------------------------- */
+
+/**
+ * Send a JSON body and surface the backend's stable code on failure.
+ *
+ * `edit_conflict` (409) is the one a caller must handle rather than merely report:
+ * it means somebody else saved while this editor was open, so the right response is
+ * to reload, not to retry.
+ */
+async function sendJson<T>(path: string, method: string, body: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${BASE}${path}`, {
+    method,
+    headers: getAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw await describeFailure(response);
+  if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
+}
+
+/** Levels, metrics, statuses, period modes and flyer limits — all host facts. */
+export function fetchEditorOptions(signal?: AbortSignal): Promise<EditorOptions> {
+  return getJson<EditorOptions>('/contest-settings/', new URLSearchParams(), signal);
+}
+
+/**
+ * Every editable contest, with the `revision` tokens the editor needs.
+ *
+ * Deliberately not Package 1's `contests/` CRUD: that serializer carries no
+ * `revision`, so a save built from it could never satisfy the concurrency check.
+ */
+export async function fetchEditableContests(signal?: AbortSignal): Promise<EditableContest[]> {
+  const body = await getJson<{ results: EditableContest[] }>(
+    '/contest-settings/contests/',
+    new URLSearchParams(),
+    signal
+  );
+  return body.results;
+}
+
+/** Create a contest. Tiers are added afterwards, once a revision exists. */
+export function createContest(input: {
+  contest_name: string;
+  contest_status: string;
+  period_mode: string;
+  qualifying_start?: string | null;
+  qualifying_end?: string | null;
+  rolling_days?: number | null;
+  notes?: string;
+}): Promise<EditableContest> {
+  return sendJson<EditableContest>('/contest-settings/contests/', 'POST', input);
+}
+
+/**
+ * Save a contest and its tiers in one validated transaction.
+ *
+ * `replace_tiers` must be explicit for an omitted tier to be deleted — the backend
+ * will not infer a full replacement from the payload's shape, so a partial save
+ * cannot destroy a tier it simply did not send.
+ */
+export function saveContest(
+  contestId: number,
+  body: Record<string, unknown>
+): Promise<EditableContest> {
+  return sendJson<EditableContest>(`/contest-settings/${contestId}/`, 'PUT', body);
+}
+
+/** Hide or unhide a contest. Hiding preserves it; deleting does not. */
+export function setContestHidden(
+  contestId: number,
+  input: { hidden: boolean; revision: number }
+): Promise<EditableContest> {
+  return sendJson<EditableContest>(
+    `/contest-settings/${contestId}/visibility/`,
+    'PATCH',
+    input
+  );
+}
+
+/** Publish or unpublish an already-uploaded flyer. */
+export function setFlyerVisible(
+  contestId: number,
+  input: { visible: boolean; revision: number }
+): Promise<EditableContest> {
+  return sendJson<EditableContest>(
+    `/contest-settings/${contestId}/flyer-visibility/`,
+    'PATCH',
+    input
+  );
+}
+
+/** Soft-delete a contest. The row survives; it leaves every list. */
+export function deleteContest(contestId: number, revision: number): Promise<void> {
+  return sendJson<void>(`/contest-settings/${contestId}/delete/`, 'DELETE', { revision });
+}
+
+/**
+ * Upload a flyer.
+ *
+ * No `Content-Type` header: the browser must set the multipart boundary itself, and
+ * overriding it with `application/json` is the classic way to make an upload fail
+ * with an unhelpful parser error.
+ */
+export async function uploadFlyer(
+  contestId: number,
+  file: File,
+  revision: number
+): Promise<EditableContest> {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('revision', String(revision));
+  const token = localStorage.getItem('wb.authToken');
+  const response = await fetch(
+    `${API_BASE_URL}${BASE}/contest-settings/${contestId}/flyer/`,
+    { method: 'POST', headers: { Authorization: `Token ${token}` }, body: form }
+  );
+  if (!response.ok) throw await describeFailure(response);
+  return (await response.json()) as EditableContest;
+}
+
+/** Remove a flyer; the stored file is discarded once the metadata write commits. */
+export function removeFlyer(contestId: number, revision: number): Promise<EditableContest> {
+  return sendJson<EditableContest>(`/contest-settings/${contestId}/flyer/`, 'DELETE', {
+    revision,
+  });
 }

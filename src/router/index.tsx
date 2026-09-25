@@ -5,6 +5,7 @@ import { AdminRoute } from './admin-route';
 import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
 import { WbPipelineRoute } from './wb-pipeline-route';
+import { ContestSettingsRoute } from './contest-settings-route';
 import { ContestsRoute } from './contests-route';
 import { LeaderboardsRoute } from './leaderboards-route';
 import { ProductsRoute } from './products-route';
@@ -59,6 +60,9 @@ const LeaderboardsPage = lazy(
   () => import('@/features/leaderboards/pages/leaderboards-page')
 );
 const ContestsPage = lazy(() => import('@/features/contests/pages/contests-page'));
+const ContestSettingsPage = lazy(
+  () => import('@/features/contests/pages/contest-settings-page')
+);
 const HomeV2Page = lazy(
   () => import('@/features/home-v2/pages/home-v2-page')
 );
@@ -298,6 +302,12 @@ const router = createBrowserRouter([
         // grant the Home v2 page does (decision C11).
         path: 'contests',
         element: <ContestsRoute>{lazyLoad(ContestsPage)}</ContestsRoute>,
+      },
+      {
+        // Configuring a contest is wbreporting:manage, not the homev2:read that
+        // opens the card - a different gate for a different job.
+        path: 'admin/contest-settings',
+        element: <ContestSettingsRoute>{lazyLoad(ContestSettingsPage)}</ContestSettingsRoute>,
       },
       {
         // Admin-only reporting pipeline operations; gated per-user by
