@@ -86,6 +86,7 @@ const MENU_ITEMS = {
   // list, not a role, so no plan grants either of these)
   HOME_V2: { label: 'Home (new)', icon: '✨', path: '/home-v2' } as MenuItem,
   LEADERBOARDS: { label: 'Leaderboards', icon: '🏅', path: '/leaderboards' } as MenuItem,
+  CONTESTS: { label: 'Contests', icon: '🏆', path: '/contests' } as MenuItem,
   // WB reporting pipeline operations (gated per-user by wbreporting:read/manage)
   REPORTING_PIPELINE: {
     label: 'Reporting Pipeline',
@@ -699,7 +700,13 @@ export function getMenuForUser(
   // plan. They are injected at the top because Home v2 is a home page: burying it
   // under the admin entries would read as an admin tool, which it is not.
   if (canAccessLeaderboards) {
-    const newEntries = [MENU_ITEMS.HOME_V2, MENU_ITEMS.LEADERBOARDS].filter(
+    const newEntries = [
+      MENU_ITEMS.HOME_V2,
+      MENU_ITEMS.LEADERBOARDS,
+      // Contests ride the same homev2:read rollout (decision C11): the card lives on
+      // Home v2, so anyone who can open that page can read the standalone view too.
+      MENU_ITEMS.CONTESTS,
+    ].filter(
       (entry) => !menuItems.some((item) => item.label === entry.label)
     );
     menuItems = [...cloneMenuItems(newEntries), ...menuItems];
