@@ -3,6 +3,7 @@ import { useAuth } from '../features/auth/hooks/use-auth';
 import { useBuilderMyAccess } from '../features/builder-ai/hooks/use-builder-ai';
 import { useMisalignmentsAccess } from '../features/admin/misalignments/hooks/use-misalignments';
 import { useProductsAccess } from '../features/admin/products/hooks/use-products';
+import { usePipelineAccess } from '../features/admin/wb-pipeline';
 import { roleToPlan } from '../core/constants/roles';
 import { getMenuForUser, type MenuItem } from '../config/menu';
 
@@ -26,6 +27,9 @@ export function useRoleBasedMenu(): MenuItem[] {
   // Product Management is gated per-user by the backend, independent of plan.
   const { data: productsAccess } = useProductsAccess();
   const canAccessProducts = Boolean(productsAccess?.can_view);
+  // The reporting pipeline screen is gated per-user by the backend too.
+  const { data: pipelineAccess } = usePipelineAccess();
+  const canAccessReportingPipeline = Boolean(pipelineAccess?.can_view);
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
@@ -37,7 +41,8 @@ export function useRoleBasedMenu(): MenuItem[] {
         canAccessBuilderAI,
         isBuilderAiOwner,
         canAccessMisalignments,
-        canAccessProducts
+        canAccessProducts,
+        canAccessReportingPipeline
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -46,7 +51,8 @@ export function useRoleBasedMenu(): MenuItem[] {
       canAccessBuilderAI,
       isBuilderAiOwner,
       canAccessMisalignments,
-      canAccessProducts
+      canAccessProducts,
+      canAccessReportingPipeline
     );
   }, [
     user?.hasPromotionAccess,
@@ -55,5 +61,6 @@ export function useRoleBasedMenu(): MenuItem[] {
     isBuilderAiOwner,
     canAccessMisalignments,
     canAccessProducts,
+    canAccessReportingPipeline,
   ]);
 }

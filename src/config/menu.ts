@@ -82,6 +82,12 @@ const MENU_ITEMS = {
   } as MenuItem,
   // Product catalog management (gated per-user by products:read)
   PRODUCTS: { label: 'Products', icon: '📦', path: '/admin/products' } as MenuItem,
+  // WB reporting pipeline operations (gated per-user by wbreporting:read/manage)
+  REPORTING_PIPELINE: {
+    label: 'Reporting Pipeline',
+    icon: '⚙️',
+    path: '/admin/reporting-pipeline',
+  } as MenuItem,
   LICENSING_TRACKER: { label: 'Licensing Tracker', icon: '📝', path: '/team/licensing-tracker' } as MenuItem,
   PRODUCTION_TRACKER: { label: 'Production Tracker', icon: '💰', path: '/team/production-tracker' } as MenuItem,
   TEAM_PROMOTION: { label: 'Team Promotion Tracker', icon: '📈', path: '/promotion/team' } as MenuItem,
@@ -630,7 +636,8 @@ export function getMenuForUser(
   // caller that doesn't distinguish the two keeps the full owner menu.
   isBuilderAiOwner: boolean = true,
   canAccessMisalignments: boolean = false,
-  canAccessProducts: boolean = false
+  canAccessProducts: boolean = false,
+  canAccessReportingPipeline: boolean = false
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -672,6 +679,15 @@ export function getMenuForUser(
     !menuItems.some((item) => item.label === MENU_ITEMS.PRODUCTS.label)
   ) {
     menuItems.push(cloneMenuItems([MENU_ITEMS.PRODUCTS])[0]);
+  }
+
+  // Reporting Pipeline is gated by backend access (wbreporting:read or :manage),
+  // not by plan — inject it only for users the backend authorizes.
+  if (
+    canAccessReportingPipeline &&
+    !menuItems.some((item) => item.label === MENU_ITEMS.REPORTING_PIPELINE.label)
+  ) {
+    menuItems.push(cloneMenuItems([MENU_ITEMS.REPORTING_PIPELINE])[0]);
   }
 
   if (normalizedPlan === Plan.NewAgent && !hasPromotionAccess) {
