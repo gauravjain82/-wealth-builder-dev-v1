@@ -4,6 +4,7 @@ import { ProtectedRoute } from './protected-route';
 import { AdminRoute } from './admin-route';
 import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
+import { WbPipelineRoute } from './wb-pipeline-route';
 import { ProductsRoute } from './products-route';
 import { PublicRoute } from './public-route';
 import { RouteErrorFallback } from './route-error-boundary';
@@ -51,6 +52,9 @@ const LeaderMisalignmentsPage = lazy(
 );
 const PolicyMisalignmentsPage = lazy(
   () => import('@/features/admin/misalignments/pages/policy-misalignments-page')
+);
+const WbPipelinePage = lazy(
+  () => import('@/features/admin/wb-pipeline/pages/wb-pipeline-page')
 );
 const ProductsListPage = lazy(
   () => import('@/features/admin/products/pages/products-list-page')
@@ -267,6 +271,12 @@ const router = createBrowserRouter([
         // Admin-only Data Integrity report; gated per-user by misalignments:read.
         path: 'admin/data-integrity/policy-misalignments',
         element: <MisalignmentsRoute>{lazyLoad(PolicyMisalignmentsPage)}</MisalignmentsRoute>,
+      },
+      {
+        // Admin-only reporting pipeline operations; gated per-user by
+        // wbreporting:read / wbreporting:manage.
+        path: 'admin/reporting-pipeline',
+        element: <WbPipelineRoute>{lazyLoad(WbPipelinePage)}</WbPipelineRoute>,
       },
       {
         // Product catalog management; gated per-user by products:read.
