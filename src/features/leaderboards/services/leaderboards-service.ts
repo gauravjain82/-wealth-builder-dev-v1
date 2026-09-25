@@ -12,7 +12,10 @@ import type {
   FullReportResponse,
   LeaderboardAccess,
   LeaderboardCardResponse,
+  LeaderboardDateRange,
+  LeaderboardDisplaySettings,
   LeaderboardErrorCode,
+  LeaderboardGoals,
   LeaderboardResponse,
   LeaderboardSelection,
   Scope,
@@ -130,4 +133,57 @@ export function fetchLeaderboardDetail(
   params.set('metric', input.detailMetric);
   if (input.cursor) params.set('cursor', input.cursor);
   return getJson<DetailResponse>('/leaderboards/detail/', params, signal);
+}
+
+/* --- settings (wbreporting:manage) --------------------------------------- */
+
+async function patchJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${BASE}${path}`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw await describeFailure(response);
+  return (await response.json()) as T;
+}
+
+/** Company-wide goals — the Full Report's gauge denominators. */
+export function fetchLeaderboardGoals(signal?: AbortSignal): Promise<LeaderboardGoals> {
+  return getJson<LeaderboardGoals>('/leaderboard-settings/', new URLSearchParams(), signal);
+}
+
+export function saveLeaderboardGoals(patch: Partial<LeaderboardGoals>): Promise<LeaderboardGoals> {
+  return patchJson<LeaderboardGoals>('/leaderboard-settings/', patch);
+}
+
+/** Section visibility, milestone mode and the masking matrix. */
+export function fetchDisplaySettings(signal?: AbortSignal): Promise<LeaderboardDisplaySettings> {
+  return getJson<LeaderboardDisplaySettings>(
+    '/leaderboard-display-settings/',
+    new URLSearchParams(),
+    signal
+  );
+}
+
+export function saveDisplaySettings(
+  patch: Partial<LeaderboardDisplaySettings>
+): Promise<LeaderboardDisplaySettings> {
+  return patchJson<LeaderboardDisplaySettings>('/leaderboard-display-settings/', patch);
+}
+
+/** The named date ranges the leaderboard offers. */
+export async function fetchDateRanges(signal?: AbortSignal): Promise<LeaderboardDateRange[]> {
+  const body = await getJson<LeaderboardDateRange[] | { results: LeaderboardDateRange[] }>(
+    '/date-ranges/',
+    new URLSearchParams(),
+    signal
+  );
+  return Array.isArray(body) ? body : body.results;
+}
+
+export function saveDateRange(
+  rangeKey: string,
+  patch: Partial<LeaderboardDateRange>
+): Promise<LeaderboardDateRange> {
+  return patchJson<LeaderboardDateRange>(`/date-ranges/${rangeKey}/`, patch);
 }

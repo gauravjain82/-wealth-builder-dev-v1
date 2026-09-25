@@ -172,3 +172,47 @@ export interface LeaderboardSelection {
   start?: string;
   end?: string;
 }
+
+/** Company-wide goals used as the Full Report's gauge denominators. */
+export interface LeaderboardGoals {
+  recruits_goal: string;
+  points_goal: string;
+  licenses_goal: string;
+  convention_goal: string;
+  updated_at?: string;
+}
+
+/** How much of another agent's detail one viewer relationship may see. */
+export type DetailVisibility = 'hidden' | 'masked' | 'full';
+
+/** The relationship keys of the 7x3 visibility matrix. */
+export type VisibilityRelationship =
+  | 'public'
+  | 'self'
+  | 'direct_downline'
+  | 'downline'
+  | 'leader'
+  | 'smd'
+  | 'broker';
+
+/** Section visibility, milestone mode, and the per-relationship masking matrix. */
+export interface LeaderboardDisplaySettings {
+  show_net_base: boolean;
+  milestone_measurement_mode: 'new_recruit_cohort' | 'milestones_completed';
+  public_detail: DetailVisibility;
+  self_detail: DetailVisibility;
+  direct_downline_detail: DetailVisibility;
+  downline_detail: DetailVisibility;
+  leader_detail: DetailVisibility;
+  smd_detail: DetailVisibility;
+  broker_detail: DetailVisibility;
+  updated_at?: string;
+}
+
+/** A named date-range choice offered in the leaderboard's range selector. */
+export interface LeaderboardDateRange {
+  range_key: string;
+  label: string;
+  sort_order: number;
+  is_visible: boolean;
+}

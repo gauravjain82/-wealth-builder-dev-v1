@@ -16,10 +16,12 @@ import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
 import { FullReport } from '../components/full-report';
 import { LeaderboardPanel } from '../components/leaderboard-panel';
+import { LeaderboardSettings } from '../components/leaderboard-settings';
+import { useLeaderboardAccess } from '../hooks/use-leaderboards';
 import type { LeaderboardMetric, Scope } from '../types';
 import '../leaderboards.css';
 
-type View = 'board' | 'report';
+type View = 'board' | 'report' | 'settings';
 
 const METRICS = new Set([
   'recruits', 'points', 'licenses', 'convention', 'npr', 'ppr', 'ppl', 'lr',
@@ -28,6 +30,9 @@ const METRICS = new Set([
 export default function LeaderboardsPage() {
   const [searchParams] = useSearchParams();
   const [view, setView] = useState<View>('board');
+  // The settings tab appears only for holders of wbreporting:manage. The backend
+  // enforces the same gate on every PATCH, so this only decides whether to offer it.
+  const { data: access } = useLeaderboardAccess();
 
   const requested = searchParams.get('metric');
   const initialMetric = (
@@ -52,17 +57,26 @@ export default function LeaderboardsPage() {
         >
           Full Report
         </Button>
+        {access?.can_manage && (
+          <Button
+            type="button"
+            variant={view === 'settings' ? 'default' : 'outline'}
+            onClick={() => setView('settings')}
+          >
+            Settings
+          </Button>
+        )}
       </nav>
 
-      {view === 'board' ? (
+      {view === 'board' && (
         <LeaderboardPanel
           initialMetric={initialMetric}
           initialScope={scope}
           onOpenFullReport={() => setView('report')}
         />
-      ) : (
-        <FullReport scope={scope} />
       )}
+      {view === 'report' && <FullReport scope={scope} />}
+      {view === 'settings' && access?.can_manage && <LeaderboardSettings />}
     </div>
   );
 }

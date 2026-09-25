@@ -8,16 +8,22 @@
  * instead of running to completion and being thrown away.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
+  fetchDateRanges,
+  fetchDisplaySettings,
   fetchFullReport,
   fetchLeaderboard,
   fetchLeaderboardAccess,
   fetchLeaderboardCard,
   fetchLeaderboardDetail,
+  fetchLeaderboardGoals,
+  saveDateRange,
+  saveDisplaySettings,
+  saveLeaderboardGoals,
 } from '../services/leaderboards-service';
-import type { LeaderboardSelection, Scope } from '../types';
+import type { LeaderboardDateRange, LeaderboardSelection, Scope } from '../types';
 
 const KEY = 'leaderboards';
 
@@ -93,5 +99,61 @@ export function useLeaderboardDetail(
     queryFn: ({ signal }) => fetchLeaderboardDetail(input!, signal),
     enabled: Boolean(input),
     staleTime: 30 * 1000,
+  });
+}
+
+/* --- settings ------------------------------------------------------------ */
+
+/**
+ * Settings reads and writes.
+ *
+ * Every mutation invalidates the leaderboard queries as well as its own: changing a
+ * goal moves the Full Report's gauges, and switching Net Base on changes which scopes
+ * the expanded view may offer. Leaving the board cached would show the old answer
+ * until it went stale on its own.
+ */
+export function useLeaderboardGoals() {
+  return useQuery({
+    queryKey: [KEY, 'goals'],
+    queryFn: ({ signal }) => fetchLeaderboardGoals(signal),
+  });
+}
+
+export function useSaveLeaderboardGoals() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveLeaderboardGoals,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [KEY] }),
+  });
+}
+
+export function useDisplaySettings() {
+  return useQuery({
+    queryKey: [KEY, 'display-settings'],
+    queryFn: ({ signal }) => fetchDisplaySettings(signal),
+  });
+}
+
+export function useSaveDisplaySettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveDisplaySettings,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [KEY] }),
+  });
+}
+
+export function useDateRanges() {
+  return useQuery({
+    queryKey: [KEY, 'date-ranges'],
+    queryFn: ({ signal }) => fetchDateRanges(signal),
+  });
+}
+
+export function useSaveDateRange() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { rangeKey: string; patch: Partial<LeaderboardDateRange> }) =>
+      saveDateRange(input.rangeKey, input.patch),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [KEY] }),
   });
 }
