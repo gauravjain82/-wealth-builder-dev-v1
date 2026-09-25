@@ -781,16 +781,67 @@ export interface BPMQrToken {
 }
 
 /** Which way a resolved scan pointed. */
-export type BPMQrDirection = 'associate_to_host' | 'host_to_associate';
+export type BPMQrDirection = 'associate_to_host' | 'host_to_associate' | 'host_to_guest';
+
+/**
+ * Which table the attendance landed in.
+ *
+ * Not derivable from `direction`: an associate arrives under either associate
+ * direction, and only a guest pass produces a guest. A guest is recorded on
+ * `BPMGuest.checked_in_at` and an associate on an `AssociateCheckIn` row — two
+ * genuinely different records, which is why the result below carries both keys
+ * rather than one polymorphic field.
+ */
+export type BPMQrSubjectKind = 'associate' | 'guest';
 
 /** What the server made of a scan. */
 export interface BPMQrScanResult {
   direction: BPMQrDirection;
+  kind: BPMQrSubjectKind;
   /** True when this person was already in the room — reported, not refused. */
   duplicate: boolean;
   occurrence_id: number;
   occurrence_label: string;
-  check_in: AssociateCheckIn;
+  /** Who was checked in. Named by the server so no client has to parse for it. */
+  subject_name: string;
+  /** Set when `kind` is `associate`; null for a guest. */
+  check_in: AssociateCheckIn | null;
+  /** Set when `kind` is `guest`; null for an associate. */
+  guest: BPMGuest | null;
+}
+
+/**
+ * A guest's own door pass, as a host sees it.
+ *
+ * `BPMQrToken` plus the `url` the guest was actually sent — a host asking for a
+ * pass is usually asking because the guest never got it, so the link is the part
+ * they need. `token` is still the bare token for the on-screen square.
+ */
+export interface BPMGuestPass extends BPMQrToken {
+  url: string;
+}
+
+/**
+ * The hosted guest pass, as the guest's own browser sees it.
+ *
+ * Served unauthenticated — the token in the URL is the whole credential — so it
+ * deliberately carries no ids of any kind and nothing about anybody else who is
+ * coming. `when` is pre-formatted by the server in the BPM's **own** timezone,
+ * not the reader's, because a guest travelling to a room needs the room's clock.
+ */
+export interface PublicBPMGuestPass {
+  token: string;
+  guest_name: string;
+  bpm_name: string;
+  when: string;
+  timezone: string;
+  /** One printable line, or empty for an online BPM. */
+  venue: string;
+  /** The joining link for an online BPM, or empty for one in a room. */
+  webinar_url: string;
+  inviter_name: string;
+  checked_in: boolean;
+  status: string;
 }
 
 /**

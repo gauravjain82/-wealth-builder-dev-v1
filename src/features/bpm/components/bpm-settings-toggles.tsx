@@ -12,26 +12,23 @@ import type { BPMSettings, BPMSettingsPayload } from '../types';
  * meaning worth protecting. A failed write reverts the control it came from, so
  * what is on screen is always what the server holds.
  *
- * Three groups here are deliberately inert, and say so in their own help text
- * rather than being hidden:
+ * One group here is still not what it looks like, and says so in its own help
+ * text rather than being hidden: **Download attachments** hides a control and
+ * nothing more (**D11**). The files live on a permanent CDN URL, which is what
+ * keeps a flyer free to render on every Overview visit, and that URL is reachable
+ * by anyone who opens devtools. Only *view* is a real gate.
  *
- * - **Download attachments** hides a control and nothing more (**D11**). The
- *   files live on a permanent CDN URL, which is what keeps a flyer free to
- *   render on every Overview visit, and that URL is reachable by anyone who
- *   opens devtools. Only *view* is a real gate.
- * - **Host to Guest QR** ships present but disabled (**D8**) — there is no
- *   email with a QR code in it to scan yet.
- * - **Text / email event to guests** are switches for a sender that does not
- *   exist (**D5**). The brief asks for the control; the feature is separate
- *   work.
+ * Two groups that *were* inert now drive something: **Text / email event to
+ * guests** gained their sender (**D5** reopened), and **Host scans a guest pass**
+ * gained its direction (**D8** reopened). The guest switch is the one control here
+ * that defaults **off** on the server, and the help text says why: it is the only
+ * BPM code that is sent out of the building.
  */
 
 interface ToggleRow {
   field: keyof BPMSettingsPayload;
   label: string;
   help: string;
-  /** Rendered but not editable — the feature behind it is not built yet. */
-  disabled?: boolean;
 }
 
 const ATTACHMENT_TOGGLES: ToggleRow[] = [
@@ -60,9 +57,8 @@ const QR_TOGGLES: ToggleRow[] = [
   },
   {
     field: 'qr_host_to_guest',
-    label: 'Host scans a guest QR',
-    help: 'Reserved for when guests are emailed a code of their own. Not built yet.',
-    disabled: true,
+    label: 'Host scans a guest pass',
+    help: "Somebody working the door checks a guest in from the pass they were emailed or texted. Off unless you turn it on — a guest pass is the one code that leaves the building. Add {{ guest_pass_url }} to a guest template to send one.",
   },
 ];
 
@@ -70,12 +66,12 @@ const MESSAGING_TOGGLES: ToggleRow[] = [
   {
     field: 'text_event_to_guests',
     label: 'Text the event to guests',
-    help: 'Permission only — the sender itself is separate work and is not built yet.',
+    help: 'Allows the Send button on the guest list to text chosen guests. There is no opt-out handling, so keep bodies to people who asked to hear from somebody.',
   },
   {
     field: 'email_event_to_guests',
     label: 'Email the event to guests',
-    help: 'Permission only — the sender itself is separate work and is not built yet.',
+    help: 'Allows the Send button on the guest list to email chosen guests.',
   },
 ];
 
@@ -124,17 +120,11 @@ export function BpmSettingsToggles({ settings, onSaved }: BpmSettingsTogglesProp
             <Checkbox
               id={`bpm-setting-${row.field}`}
               checked={Boolean(settings[row.field as keyof BPMSettings])}
-              disabled={row.disabled || saving === row.field}
+              disabled={saving === row.field}
               onChange={(e) => void save({ [row.field]: e.target.checked }, row.field)}
             />
             <div className="min-w-0">
-              <Label
-                htmlFor={`bpm-setting-${row.field}`}
-                className={row.disabled ? 'opacity-60' : undefined}
-              >
-                {row.label}
-                {row.disabled ? ' (not available yet)' : ''}
-              </Label>
+              <Label htmlFor={`bpm-setting-${row.field}`}>{row.label}</Label>
               <p className="text-xs text-slate-500 dark:text-white/60">{row.help}</p>
             </div>
           </li>

@@ -21,6 +21,16 @@ interface SendEventModalProps {
   onSent?: () => void;
 }
 
+/**
+ * The placeholder that puts a scannable door pass in a guest's message.
+ *
+ * Checked against the template body so the modal can say, before anything is
+ * sent, whether these guests will get a pass. Without that the only way to find
+ * out is to look in somebody's inbox afterwards — and a host who switched guest
+ * scanning on will reasonably assume it happens by itself.
+ */
+const PASS_PLACEHOLDER = 'guest_pass_url';
+
 /** Human label for an outcome status. */
 const STATUS_LABEL: Record<BPMSendReport['outcomes'][number]['status'], string> = {
   queued: 'Queued',
@@ -52,6 +62,45 @@ const STATUS_LABEL: Record<BPMSendReport['outcomes'][number]['status'], string> 
  *
  * Everything is fetched on open, because `Modal` unmounts its children.
  */
+/**
+ * Whether the chosen template will carry a door pass, said plainly.
+ *
+ * Two different problems, deliberately separated: a template with no placeholder
+ * sends no pass, and a pass sent while the direction is switched off is a code
+ * nobody at the door can scan. A host can hit either one without noticing.
+ */
+function PassHint({
+  body,
+  scanningEnabled,
+}: {
+  /** The selected template's body, or null when the BPM's assignment is used. */
+  body: string | null;
+  scanningEnabled: boolean;
+}) {
+  if (body === null) return null;
+  if (!body.includes(PASS_PLACEHOLDER)) {
+    return (
+      <Text variant="muted" className="mt-1 text-xs">
+        No door pass in this template. Add {'{{ guest_pass_url }}'} to it if you want
+        guests to be scanned in at the door.
+      </Text>
+    );
+  }
+  if (!scanningEnabled) {
+    return (
+      <Text className="mt-1 text-xs text-amber-700 dark:text-amber-200">
+        This sends each guest a pass, but scanning guest passes is switched off in BPM
+        Settings, so nobody at the door can use one yet.
+      </Text>
+    );
+  }
+  return (
+    <Text variant="muted" className="mt-1 text-xs">
+      Includes each guest&rsquo;s own door pass.
+    </Text>
+  );
+}
+
 export function SendEventModal({
   open,
   onClose,
@@ -64,6 +113,7 @@ export function SendEventModal({
   // the server is the gate that matters, and it names the switch in its refusal.
   const emailAllowed = settings?.email_event_to_guests ?? false;
   const smsAllowed = settings?.text_event_to_guests ?? false;
+  const guestScanningEnabled = settings?.qr_host_to_guest ?? false;
 
   const [emailTemplates, setEmailTemplates] = useState<BPMEmailTemplate[]>([]);
   const [smsTemplates, setSmsTemplates] = useState<BPMSmsTemplate[]>([]);
@@ -131,6 +181,11 @@ export function SendEventModal({
   const selectedSms = useMemo(
     () => smsTemplates.find((template) => String(template.id) === smsTemplateId),
     [smsTemplates, smsTemplateId],
+  );
+
+  const selectedEmail = useMemo(
+    () => emailTemplates.find((template) => String(template.id) === emailTemplateId),
+    [emailTemplates, emailTemplateId],
   );
 
   const send = async () => {
@@ -272,6 +327,10 @@ export function SendEventModal({
                   </option>
                 ))}
               </Select>
+              <PassHint
+                body={selectedEmail ? selectedEmail.body : null}
+                scanningEnabled={guestScanningEnabled}
+              />
             </div>
           ) : null}
 
@@ -303,6 +362,10 @@ export function SendEventModal({
                     {selectedSms.segment_estimate === 1 ? '' : 's'} per guest, before names
                     are filled in. Each one is billed.
                   </Text>
+                  <PassHint
+                    body={selectedSms.body}
+                    scanningEnabled={guestScanningEnabled}
+                  />
                 </>
               ) : null}
             </div>

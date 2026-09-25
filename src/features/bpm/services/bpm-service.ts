@@ -17,6 +17,7 @@ import type {
   BPMInterestOption,
   BPMInterestOptionPayload,
   BPMOccurrence,
+  BPMGuestPass,
   BPMQrScanResult,
   BPMQrToken,
   BPMRowColorRule,
@@ -319,8 +320,13 @@ export const bpmService = {
     ),
 
   // -- QR check-in ---------------------------------------------------------
-  // Two codes pointing opposite ways, and one endpoint that resolves either —
-  // the scanner does not know which code it just read, so the token decides.
+  // Three codes and one endpoint that resolves any of them — the scanner does not
+  // know which code it just read, so the token decides. The third is a guest's
+  // pass, which the guest holds on a hosted page rather than in this app.
+  //
+  // `kind` on the result says which table the attendance landed in, and it is
+  // the thing to branch on: an associate and a guest come back in different keys
+  // because they are different records.
 
   /**
    * The caller's own permanent identity code, minted on first request (D6).
@@ -344,15 +350,31 @@ export const bpmService = {
     request<BPMQrToken>(`/api/bpm/occurrences/${occurrenceId}/qr/`),
 
   /**
+   * This guest's own door pass — the code, its caption and the link they were
+   * sent. Minted on first request, like every other code.
+   *
+   * `POST`, not `GET`, because it can mint and — with `regenerate` — replace a
+   * token. Reissuing invalidates every copy already emailed or texted, so it must
+   * not be reachable by a prefetch or a back button.
+   */
+  guestPass: (occurrenceId: number, guestId: number, regenerate = false) =>
+    request<BPMGuestPass>(`/api/bpm/occurrences/${occurrenceId}/guest-pass/`, {
+      method: 'POST',
+      body: JSON.stringify({ guest_id: guestId, regenerate }),
+    }),
+
+  /**
    * Submit a scanned payload; the server works out who to check in.
    *
    * `occurrenceId` is only consulted when an *identity* code was scanned — an
-   * event code names its own room — so it is optional, which is what lets the
-   * profile-menu scanner work with no BPM selected.
+   * event code names its own room, and a guest pass belongs to a row that is
+   * already on one date — so it is optional, which is what lets the profile-menu
+   * scanner work with no BPM selected.
    *
    * The payload is passed through untouched: the resolver pulls a token out of
-   * whatever it is given, so the client never parses and a URL-shaped code keeps
-   * working if one is ever introduced.
+   * whatever it is given, so the client never parses. That is no longer
+   * hypothetical — a guest pass is delivered as a link, so a guest who pastes the
+   * whole URL resolves just as a scan does.
    */
   scanQr: (scan: string, occurrenceId?: number | null) =>
     request<BPMQrScanResult>('/api/bpm/qr/scan/', {

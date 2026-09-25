@@ -36,17 +36,24 @@ function outcomeClass(outcome: ScanOutcome): string {
  * The scanning half of BPM's QR support: a camera feed, a paste box, and the
  * outcome of the last scan.
  *
- * One panel for both directions, because the person holding the phone does not
- * choose — the token they scanned decides, and the server says which way it went.
- * Both the profile menu and the two check-in pages mount this, so the door
- * behaviour cannot diverge between them.
+ * One panel for all three directions, because the person holding the phone does
+ * not choose — the token they scanned decides, and the server says which way it
+ * went and who it checked in. Both the profile menu and the two check-in pages
+ * mount this, so the door behaviour cannot diverge between them.
+ *
+ * **Nothing here branches on the kind of person scanned.** The outcome line reads
+ * `subject_name`, which the server fills for an associate and a guest alike;
+ * `kind` only picks the word in the badge. A panel that dug the name out of
+ * whichever record came back would be a panel that shows "Checked in" with no name
+ * the first time a guest pass is scanned.
  *
  * The typed box is not only a fallback. Hardware scanners type and send Enter,
  * and it is the way to proceed when the camera cannot be opened at all — which on
- * an insecure origin or inside an iOS in-app webview it cannot. What is *not*
- * available is a person's number to type instead of a code: a BPM guest has no
- * ticket, so the manual path is the searchable list on the check-in page, which
- * is what `CheckinCameraScanner`'s hint points at.
+ * an insecure origin or inside an iOS in-app webview it cannot. It is also where
+ * a pasted pass link goes: a guest is sent a URL, and the server pulls the token
+ * out of it. What is *not* available is a person's number to type instead of a
+ * code, so the manual path is the searchable list on the check-in page, which is
+ * what `CheckinCameraScanner`'s hint points at.
  */
 export function BpmQrScanPanel({ occurrenceId = null, onCheckedIn }: BpmQrScanPanelProps) {
   const [value, setValue] = useState('');
@@ -132,9 +139,13 @@ export function BpmQrScanPanel({ occurrenceId = null, onCheckedIn }: BpmQrScanPa
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {outcome.result.check_in.user_name || 'Checked in'}
+                  {outcome.result.subject_name || 'Checked in'}
                 </p>
                 <Text variant="muted" className="text-xs">
+                  {/* Named so a host can see at a glance that a pass checked in a
+                      guest and not an associate — the two land in different lists,
+                      and a mis-scan is otherwise invisible until someone counts. */}
+                  {outcome.result.kind === 'guest' ? 'Guest · ' : 'Associate · '}
                   {outcome.result.occurrence_label}
                 </Text>
               </div>
@@ -150,8 +161,9 @@ export function BpmQrScanPanel({ occurrenceId = null, onCheckedIn }: BpmQrScanPa
 
       {occurrenceId === null ? (
         <Text variant="muted" className="text-xs">
-          No BPM is selected, so only an event code on a screen will check you in. To scan
-          somebody else's code, open Guest or Associate Check-In and pick the date first.
+          No BPM is selected, so an event code on a screen will check you in and a guest's
+          pass will check them in — both name their own date. To scan an associate's
+          personal code, open Associate Check-In and pick the date first.
         </Text>
       ) : null}
     </div>

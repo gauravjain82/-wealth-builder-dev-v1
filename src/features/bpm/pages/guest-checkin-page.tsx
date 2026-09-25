@@ -11,6 +11,7 @@ import { CheckinStatCards } from '../components/checkin-stat-cards';
 import { CheckinWindowNotice } from '../components/checkin-window-notice';
 import { BpmQrModal } from '../components/bpm-qr-modal';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
+import { GuestPassModal } from '../components/guest-pass-modal';
 import { AddGuestModal } from '../components/add-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
 import { InterestOptionsAdminModal } from '../components/interest-options-admin-modal';
@@ -69,6 +70,9 @@ export default function GuestCheckinPage() {
   // person arrives: find them, or scan them.
   const [qrOpen, setQrOpen] = useState(false);
   const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
+  // The guest whose door pass is on screen. Null means the modal is closed, so
+  // there is no second boolean to keep in step with it.
+  const [passTarget, setPassTarget] = useState<BPMGuest | null>(null);
   const [addGuestOpen, setAddGuestOpen] = useState(false);
   const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
   // The interest list only drives the Blue Card, which lives on this page as of
@@ -364,6 +368,7 @@ export default function GuestCheckinPage() {
                 onSetOutcome={setGuestOutcome}
                 onAddNote={addGuestNote}
                 onFollowUp={setFollowUpTarget}
+                onShowPass={setPassTarget}
               />
             )}
 
@@ -471,9 +476,9 @@ export default function GuestCheckinPage() {
         onClose={() => setManageOptionsOpen(false)}
         onChanged={loadInterestOptions}
       />
-      {/* A scan checks somebody in as an *associate*, which is the only direction
-          that exists (D8 leaves guest codes out of scope), so this reloads the
-          guest list only because the stat cards above it share the occurrence. */}
+      {/* A scan here can now land on either list: an associate code records an
+          associate, and a guest's pass checks in a row on the very list behind
+          this modal (D8 reopened). Reloading covers both. */}
       <BpmQrModal
         open={qrOpen}
         occurrenceId={occurrence?.id ?? null}
@@ -481,6 +486,14 @@ export default function GuestCheckinPage() {
         onCheckedIn={() => {
           if (occurrence) void load(occurrence.id);
         }}
+      />
+      {/* For the guest who says the link never arrived — the same code, on the
+          host's screen. */}
+      <GuestPassModal
+        open={passTarget !== null}
+        guest={passTarget}
+        occurrenceId={occurrence?.id ?? null}
+        onClose={() => setPassTarget(null)}
       />
     </BPMPageShell>
   );

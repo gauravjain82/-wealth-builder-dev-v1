@@ -27,6 +27,14 @@ interface GuestCheckinTableProps {
   onSetOutcome?: (guest: BPMGuest, field: GuestCheckinOutcomeField, value: boolean) => void;
   onAddNote?: (guest: BPMGuest, text: string) => void;
   onFollowUp?: (guest: BPMGuest) => void;
+  /**
+   * Show this guest their own door pass.
+   *
+   * Optional, and the whole reason it exists is the guest who says the link never
+   * arrived — a host can put the code on their own screen instead of standing at
+   * a door resending an email.
+   */
+  onShowPass?: (guest: BPMGuest) => void;
 }
 
 /** Read a note's text, tolerant of either a note object or a plain string. */
@@ -207,6 +215,7 @@ function GuestCheckinCard({
   onSetOutcome,
   onAddNote,
   onFollowUp,
+  onShowPass,
 }: {
   guest: BPMGuest;
   index: number;
@@ -216,6 +225,7 @@ function GuestCheckinCard({
   onSetOutcome?: (guest: BPMGuest, field: GuestCheckinOutcomeField, value: boolean) => void;
   onAddNote?: (guest: BPMGuest, text: string) => void;
   onFollowUp?: (guest: BPMGuest) => void;
+  onShowPass?: (guest: BPMGuest) => void;
 }) {
   const location = [guest.prospect_detail?.city, guest.prospect_detail?.state].filter(Boolean).join(', ');
   const email = guest.prospect_detail?.email;
@@ -257,6 +267,17 @@ function GuestCheckinCard({
           <CheckCircle2 size={14} />
           Arrived {formatOccurrenceTime(guest.checked_in_at, { weekday: undefined })}
         </div>
+      ) : null}
+      {onShowPass ? (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() => onShowPass(guest)}
+          className="mt-1.5 w-full"
+        >
+          Show pass
+        </Button>
       ) : null}
 
       <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3 text-sm text-slate-700 dark:border-white/10 dark:text-white/80">
@@ -358,6 +379,7 @@ export function GuestCheckinTable({
   onSetOutcome,
   onAddNote,
   onFollowUp,
+  onShowPass,
 }: GuestCheckinTableProps) {
   const showOutcome = Boolean(onSetOutcome);
   const showFollowUp = Boolean(onFollowUp);
@@ -410,6 +432,7 @@ export function GuestCheckinTable({
             onSetOutcome={onSetOutcome}
             onAddNote={onAddNote}
             onFollowUp={onFollowUp}
+            onShowPass={onShowPass}
           />
         ))}
       </div>
@@ -479,6 +502,16 @@ export function GuestCheckinTable({
                         <CheckCircle2 size={14} />
                         Arrived {formatOccurrenceTime(guest.checked_in_at, { weekday: undefined })}
                       </span>
+                    ) : null}
+                    {onShowPass ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() => onShowPass(guest)}
+                      >
+                        Show pass
+                      </Button>
                     ) : null}
                   </div>
                 </td>

@@ -32,6 +32,8 @@ const EventLandingPage = lazy(() => import('@/features/events/pages/public/event
 const EventCheckoutPage = lazy(() => import('@/features/events/pages/public/event-checkout-page'));
 const EventTransferPage = lazy(() => import('@/features/events/pages/public/event-transfer-page'));
 const EventTicketPage = lazy(() => import('@/features/events/pages/public/event-ticket-page'));
+// BPM's one public page: the pass a guest is emailed or texted a link to.
+const BpmGuestPassPage = lazy(() => import('@/features/bpm/pages/public/bpm-guest-pass-page'));
 const EducationPage = lazy(() => import('@/features/education/pages/education-page'));
 const ProspectTrackerPage = lazy(() => import('@/features/team/prospect/pages/prospect-tracker-page'));
 const OrgChartPage = lazy(() => import('@/features/team/org-chart/pages/org-chart-page'));
@@ -562,6 +564,13 @@ const router = createBrowserRouter([
   {
     path: '/event/ticket/:qrToken',
     element: lazyLoad(EventTicketPage),
+    errorElement: <RouteErrorFallback />,
+  },
+  // Unauthenticated, and must stay in step with `bpm.services.qr.guest_pass_url`,
+  // which builds this path into every message a guest is sent.
+  {
+    path: '/bpm/pass/:token',
+    element: lazyLoad(BpmGuestPassPage),
     errorElement: <RouteErrorFallback />,
   },
 
