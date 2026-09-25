@@ -5,6 +5,7 @@ import { AdminRoute } from './admin-route';
 import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
 import { WbPipelineRoute } from './wb-pipeline-route';
+import { ContestsRoute } from './contests-route';
 import { LeaderboardsRoute } from './leaderboards-route';
 import { ProductsRoute } from './products-route';
 import { PublicRoute } from './public-route';
@@ -57,6 +58,7 @@ const PolicyMisalignmentsPage = lazy(
 const LeaderboardsPage = lazy(
   () => import('@/features/leaderboards/pages/leaderboards-page')
 );
+const ContestsPage = lazy(() => import('@/features/contests/pages/contests-page'));
 const HomeV2Page = lazy(
   () => import('@/features/home-v2/pages/home-v2-page')
 );
@@ -289,6 +291,13 @@ const router = createBrowserRouter([
         // Expanded leaderboard and Full Report; same homev2:read gate.
         path: 'leaderboards',
         element: <LeaderboardsRoute>{lazyLoad(LeaderboardsPage)}</LeaderboardsRoute>,
+      },
+      {
+        // The optional standalone route from UI_CONTRACT.md. Same card, same rules,
+        // a taller box. Gated on can_view_contests, which reads the same homev2:read
+        // grant the Home v2 page does (decision C11).
+        path: 'contests',
+        element: <ContestsRoute>{lazyLoad(ContestsPage)}</ContestsRoute>,
       },
       {
         // Admin-only reporting pipeline operations; gated per-user by

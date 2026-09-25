@@ -20,6 +20,7 @@
 import { useRef, useState } from 'react';
 
 import { VideoHero, CanvaVideoCard, PerformanceTable } from '@/features/home/components';
+import { ContestsCard } from '@/features/contests';
 import { LeaderboardsCard } from '@/features/leaderboards';
 import { useHomePageContent } from '@/features/home/hooks/use-home-content';
 import type { HomePageSlot } from '@/features/home/services/home-content-service';
@@ -31,7 +32,6 @@ const DEFAULT_TRAILER_URL =
   'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/IMG_7934.MP4?alt=media&token=597143ab-4dfc-42bb-87f3-428e54c345df';
 const DEFAULT_REGISTER_URL = 'https://bscpro.com/event/wb2026';
 const DEFAULT_TITLE = 'Wealth Bowl 2026 - Oct 9 - 11 | St. Louis Union Station Hotel, MO';
-const DEFAULT_EVENTS_VIDEO_URL = 'https://www.canva.com/design/DAG6eJasb0c/QMcDazQ53A-DPwBIfKIn-Q/view?embed';
 const DEFAULT_RECOGNITION_VIDEO_URL = 'https://www.canva.com/design/DAG-W6V-Uxc/qjp27ftg9x_dXxF9O9WBvA/view?embed';
 
 export default function HomeV2Page() {
@@ -46,7 +46,6 @@ export default function HomeV2Page() {
 
   const backgroundUrl = slotHref('background', DEFAULT_BACKGROUND_URL);
   const trailerUrl = slotHref('hero_trailer', DEFAULT_TRAILER_URL);
-  const eventsVideoUrl = slotHref('events', DEFAULT_EVENTS_VIDEO_URL);
   const recognitionVideoUrl = slotHref('recognition', DEFAULT_RECOGNITION_VIDEO_URL);
   const heroTitle = homeContent?.config?.hero_title || DEFAULT_TITLE;
   const registerUrl = homeContent?.config?.register_url || DEFAULT_REGISTER_URL;
@@ -83,8 +82,15 @@ export default function HomeV2Page() {
         <section className="px-4 pb-8" aria-label="Events and recognition">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Replaced by live contest standings when the contests package lands. */}
-              <CanvaVideoCard title="Event & Contests" videoUrl={eventsVideoUrl} />
+              {/*
+                The contests package replaces the "Event & Contests" media card with
+                live standings. The host owns the card's size and always has: the
+                Recognition card beside it sets the row height through its 3 / 2
+                aspect ratio, and grid `align-items: stretch` hands that height to
+                the contest card, which fills it and scrolls internally. Nothing in
+                the contests feature guesses a height.
+              */}
+              <ContestsCard />
               <CanvaVideoCard title="Recognition" videoUrl={recognitionVideoUrl} />
             </div>
           </div>
