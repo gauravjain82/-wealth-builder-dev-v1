@@ -51,16 +51,6 @@ export const GENERAL_METRIC_LABELS: Record<string, string> = {
 };
 
 /**
- * The three first-milestone metric tabs, ranked alongside the additive metrics on the
- * standard board. Their keys are what the `/leaderboards/` endpoint ranks by.
- */
-export const MILESTONE_METRICS: Array<{ key: 'rr' | 'rc' | 'rbe'; label: string }> = [
-  { key: 'rr', label: '1st Recruit' },
-  { key: 'rc', label: '10% Evaluation' },
-  { key: 'rbe', label: 'Register for Convention' },
-];
-
-/**
  * What the period's numbers were read from, in the reader's words.
  *
  * `daily_fallback` is deliberately phrased as a fact rather than a warning: until the

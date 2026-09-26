@@ -28,17 +28,18 @@ import type {
 } from '../types';
 import { DetailDialog } from './detail-dialog';
 import { LeaderList } from './leader-list';
-import {
-  GENERAL_METRIC_LABELS,
-  MILESTONE_METRICS,
-  RATIO_LABELS,
-  RATIO_METRICS,
-  SCOPE_LABELS,
-} from './format';
+import { GENERAL_METRIC_LABELS, RATIO_LABELS, RATIO_METRICS, SCOPE_LABELS } from './format';
 import '../leaderboards.css';
 
 /** Metrics that have a proof view. The ratios are derived, so they have none. */
 const DETAILABLE = new Set(['recruits', 'points', 'licenses', 'convention']);
+
+/**
+ * The first-milestone metric keys. The API already returns these inside
+ * `general_metrics`, so they are not added here — this set only tells the tab row
+ * where to break: the milestones go on their own second line.
+ */
+const MILESTONE_KEYS = new Set<string>(['rr', 'rc', 'rbe']);
 
 interface LeaderboardPanelProps {
   initialMetric?: LeaderboardMetric;
@@ -96,6 +97,32 @@ export function LeaderboardPanel({
       metricLabel: metricLabel(metric, data?.general_metrics),
     });
   };
+
+  // The API returns the milestone metrics inside `general_metrics`; we only split them
+  // out so they land on their own row rather than trailing the additive metrics.
+  const generalTabs = (data?.general_metrics ?? []).map((item) => ({
+    key: item.key as LeaderboardMetric,
+    label: GENERAL_METRIC_LABELS[item.key] ?? item.label,
+  }));
+  const additiveTabs = generalTabs.filter((tab) => !MILESTONE_KEYS.has(tab.key));
+  const milestoneTabs = generalTabs.filter((tab) => MILESTONE_KEYS.has(tab.key));
+  const ratioTabs = (data?.ratio_metrics ?? []).map((key) => ({
+    key: key as LeaderboardMetric,
+    label: RATIO_LABELS[key] ?? key,
+  }));
+
+  const renderTab = (item: { key: LeaderboardMetric; label: string }) => (
+    <Button
+      key={item.key}
+      type="button"
+      role="tab"
+      aria-selected={metric === item.key}
+      variant={metric === item.key ? 'default' : 'outline'}
+      onClick={() => setMetric(item.key)}
+    >
+      {item.label}
+    </Button>
+  );
 
   return (
     <section className="wb-lb-expanded" aria-label="Wealth Builders Leaderboards">
@@ -189,27 +216,16 @@ export function LeaderboardPanel({
       </div>
 
       <div className="wb-lb-expanded__metrics" role="tablist" aria-label="Metric">
-        {(mode === 'general'
-          ? [
-              ...(data?.general_metrics ?? []).map((item) => ({
-                key: item.key,
-                label: GENERAL_METRIC_LABELS[item.key] ?? item.label,
-              })),
-              ...MILESTONE_METRICS,
-            ]
-          : (data?.ratio_metrics ?? []).map((key) => ({ key, label: RATIO_LABELS[key] ?? key }))
-        ).map((item) => (
-          <Button
-            key={item.key}
-            type="button"
-            role="tab"
-            aria-selected={metric === item.key}
-            variant={metric === item.key ? 'default' : 'outline'}
-            onClick={() => setMetric(item.key as LeaderboardMetric)}
-          >
-            {item.label}
-          </Button>
-        ))}
+        {mode === 'general' ? (
+          <>
+            <div className="wb-lb-expanded__metrics-row">{additiveTabs.map(renderTab)}</div>
+            {milestoneTabs.length > 0 && (
+              <div className="wb-lb-expanded__metrics-row">{milestoneTabs.map(renderTab)}</div>
+            )}
+          </>
+        ) : (
+          <div className="wb-lb-expanded__metrics-row">{ratioTabs.map(renderTab)}</div>
+        )}
       </div>
 
       {isLoading && (
