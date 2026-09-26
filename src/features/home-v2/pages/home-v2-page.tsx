@@ -94,23 +94,33 @@ export default function HomeV2Page() {
           </div>
         </section>
 
+        <section className="px-4 pb-8" aria-label="Leaderboards">
+          <div className="max-w-7xl mx-auto">
+            <LeaderboardPanel onOpenFullReport={() => navigate('/leaderboards?view=report')} />
+          </div>
+        </section>
+
         <section className="px-4 pb-8" aria-label="Contests">
           <div className="max-w-7xl mx-auto">
             {/*
               The live contest standings are their own full-width block, like the
               leaderboard — not the Event & Contests media card above. ContestsCard
               sets no height of its own (see the containment contract in contests.css),
-              so this wrapper gives it a bounded height and the standings scroll inside.
+              so this wrapper gives it a bounded height. It is a flex column that clips
+              overflow, so only the card's own `.wb-ct-scroll` shows a scrollbar — never
+              a second one on the wrapper.
             */}
-            <div style={{ height: 'clamp(480px, 70vh, 760px)' }}>
+            <div
+              style={{
+                height: 'clamp(480px, 70vh, 760px)',
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: 0,
+                overflow: 'hidden',
+              }}
+            >
               <ContestsCard />
             </div>
-          </div>
-        </section>
-
-        <section className="px-4 pb-8" aria-label="Leaderboards">
-          <div className="max-w-7xl mx-auto">
-            <LeaderboardPanel onOpenFullReport={() => navigate('/leaderboards?view=report')} />
           </div>
         </section>
 

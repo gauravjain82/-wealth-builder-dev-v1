@@ -27,6 +27,18 @@ function formatPercent(value: number | null): string {
   return value === null ? '' : `${Number.isInteger(value) ? value : value.toFixed(1)}%`;
 }
 
+/**
+ * A metric amount for display: whole numbers with thousands separators. Points arrive
+ * with cents (17385.53) but are read as a round score, so the decimals are dropped;
+ * counts like recruits and licences are already integers.
+ */
+function formatAmount(value: number | string | null | undefined): string {
+  if (value === null || value === undefined || value === '') return '0';
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return String(value);
+  return Math.round(numeric).toLocaleString('en-US');
+}
+
 export function ContestCell({
   evaluation,
   tierName,
@@ -82,8 +94,15 @@ export function ContestCell({
             }
             onClick={() => onOpenProof(metric)}
           >
-            {metric.metric.toUpperCase()}{' '}
-            {metric.available ? `${metric.actual ?? 0}/${metric.requirement}` : 'n/a'}
+            <span className="wb-ct-pill__label">{metric.metric.toUpperCase()}</span>
+            {metric.available ? (
+              <span className="wb-ct-pill__value">
+                <span className="wb-ct-pill__actual">{formatAmount(metric.actual)}</span>
+                <span className="wb-ct-pill__req">/{formatAmount(metric.requirement)}</span>
+              </span>
+            ) : (
+              <span className="wb-ct-pill__value">n/a</span>
+            )}
           </button>
         ))}
       </div>
