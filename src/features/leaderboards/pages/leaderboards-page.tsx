@@ -29,7 +29,9 @@ const METRICS = new Set([
 
 export default function LeaderboardsPage() {
   const [searchParams] = useSearchParams();
-  const [view, setView] = useState<View>('board');
+  // Home v2's "Full Report" deep-links here with ?view=report; the board is the default.
+  const requestedView = searchParams.get('view');
+  const [view, setView] = useState<View>(requestedView === 'report' ? 'report' : 'board');
   // The settings tab appears only for holders of wbreporting:manage. The backend
   // enforces the same gate on every PATCH, so this only decides whether to offer it.
   const { data: access } = useLeaderboardAccess();

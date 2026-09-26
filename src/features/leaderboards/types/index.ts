@@ -19,7 +19,14 @@ export type ResultSource = 'daily_current' | 'monthly_snapshot' | 'daily_fallbac
 /** The four additive metrics, plus the four read-time ratios. */
 export type GeneralMetric = 'recruits' | 'points' | 'licenses' | 'convention';
 export type RatioMetric = 'npr' | 'ppr' | 'ppl' | 'lr';
-export type LeaderboardMetric = GeneralMetric | RatioMetric;
+/**
+ * The three first-milestone metrics — ranked in the standard board alongside the
+ * additive metrics. `rr` 1st Recruit, `rc` 10% Evaluation, `rbe` Register for
+ * Convention. They are ranked leaders here, not the aggregate counts the Full Report
+ * shows.
+ */
+export type MilestoneMetric = 'rr' | 'rc' | 'rbe';
+export type LeaderboardMetric = GeneralMetric | RatioMetric | MilestoneMetric;
 
 /** Stable error codes the API returns in the `code` field of a 4xx body. */
 export type LeaderboardErrorCode =

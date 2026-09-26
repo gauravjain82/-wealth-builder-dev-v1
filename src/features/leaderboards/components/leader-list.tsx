@@ -11,7 +11,7 @@
  */
 
 import type { LeaderRow, LeaderboardMetric } from '../types';
-import { formatMetricValue, getInitials } from './format';
+import { formatMetricValue, levelLabel } from './format';
 
 interface LeaderListProps {
   title: string;
@@ -63,15 +63,14 @@ export function LeaderList({
         {visibleRows.map((row) => (
           <li key={`${row.agent_id}-${row.rank}`} className="wb-lb-panel__row">
             <span className="wb-lb-panel__rank">#{row.rank}</span>
-            <span className="wb-lb-panel__avatar" aria-hidden="true">
-              {getInitials(row.name)}
-            </span>
             <span className="wb-lb-panel__identity">
               <span className="wb-lb-panel__name" title={row.name}>
                 {row.name || row.agent_id}
               </span>
               <span className="wb-lb-panel__meta">
-                {row.member_count} in base
+                {levelLabel(row.level_code)}
+                {levelLabel(row.level_code) && ' · '}
+                {row.member_count} members
                 {row.contributes_to_label && row.contributes_to_name && (
                   <>
                     {' · '}

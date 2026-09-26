@@ -109,12 +109,11 @@
 }
 
 .wb-lb-panel__title {
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  opacity: 0.8;
+  text-align: center;
+  color: #facc15;
 }
 
 .wb-lb-panel__list {
@@ -129,11 +128,12 @@
 .wb-lb-panel__row {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  min-height: 2.75rem;
-  padding: 0.375rem 0.5rem;
-  border-radius: 0.5rem;
-  background: rgb(255 255 255 / 0.04);
+  gap: 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.625rem;
+  border: 1px solid rgb(255 255 255 / 0.06);
+  background: rgb(0 0 0 / 0.35);
 }
 
 .wb-lb-panel__row--blank {
@@ -190,20 +190,25 @@
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+  font-size: 1.25rem;
+  color: #facc15;
 }
 
+/* The number is the affordance for its proof, but reads as a plain figure rather than
+   a boxed button — the box would crowd the row and fight the reference layout. */
 .wb-lb-panel__value--action {
-  padding: 0.25rem 0.625rem;
-  border: 1px solid rgb(250 204 21 / 0.4);
-  border-radius: 0.5rem;
-  background: rgb(250 204 21 / 0.12);
+  padding: 0;
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
   color: #facc15;
   cursor: pointer;
 }
 
 .wb-lb-panel__value--action:hover,
 .wb-lb-panel__value--action:focus-visible {
-  background: rgb(250 204 21 / 0.24);
+  background: transparent;
+  text-decoration: underline;
 }
 
 .wb-lb-panel__empty {
@@ -225,12 +230,19 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  /* A self-contained dark card, so the board reads the same whether it sits on the
+     standalone page or embedded on Home v2. */
+  padding: 1.5rem 1.75rem;
+  border: 1px solid rgb(250 204 21 / 0.18);
+  border-radius: 1rem;
+  background: rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(12px);
 }
 
 .wb-lb-expanded__header {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
 }
@@ -241,15 +253,48 @@
   color: #facc15;
 }
 
-.wb-lb-expanded__status {
+.wb-lb-expanded__status-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.8125rem;
+}
+
+.wb-lb-expanded__status {
   opacity: 0.75;
+}
+
+/* The freshness indicator: the board is showing live figures for the stated range. */
+.wb-lb-expanded__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 6px rgb(34 197 94 / 0.7);
 }
 
 .wb-lb-expanded__controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1rem 1.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.wb-lb-expanded__controls-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wb-lb-expanded__controls-col--right {
+  align-items: flex-end;
+}
+
+.wb-lb-expanded__dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   align-items: flex-end;
 }
 
@@ -282,42 +327,32 @@
   letter-spacing: normal;
 }
 
+.wb-lb-expanded__range-select {
+  min-width: 12rem;
+}
+
+.wb-lb-expanded__metrics {
+  justify-content: center;
+}
+
 .wb-lb-expanded__panels {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
 }
 
-.wb-lb-expanded__viewer dl {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  gap: 0.75rem;
-  margin: 0.5rem 0;
-}
-
-.wb-lb-expanded__viewer dt {
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.65;
-}
-
-.wb-lb-expanded__viewer dd {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.wb-lb-expanded__viewer-meta,
-.wb-lb-expanded__note {
-  font-size: 0.75rem;
-  opacity: 0.65;
+.wb-lb-expanded__footer {
+  display: flex;
+  justify-content: flex-end;
 }
 
 @container (max-width: 660px) {
   .wb-lb-expanded__panels {
     grid-template-columns: 1fr;
+  }
+
+  .wb-lb-expanded__controls-col--right {
+    align-items: flex-start;
   }
 }
 

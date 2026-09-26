@@ -17,6 +17,7 @@
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/shared/components/ui/button';
+import { HelpAction } from '@/features/gms';
 import { useLeaderboard } from '../hooks/use-leaderboards';
 import type {
   LeaderRow,
@@ -27,16 +28,17 @@ import type {
 } from '../types';
 import { DetailDialog } from './detail-dialog';
 import { LeaderList } from './leader-list';
-import { RATIO_LABELS, RATIO_METRICS, SCOPE_LABELS, SOURCE_LABELS, formatMetricValue } from './format';
+import {
+  GENERAL_METRIC_LABELS,
+  MILESTONE_METRICS,
+  RATIO_LABELS,
+  RATIO_METRICS,
+  SCOPE_LABELS,
+} from './format';
 import '../leaderboards.css';
 
 /** Metrics that have a proof view. The ratios are derived, so they have none. */
 const DETAILABLE = new Set(['recruits', 'points', 'licenses', 'convention']);
-
-const MEASUREMENT_MODE_LABELS: Record<string, string> = {
-  new_recruit_cohort: 'people recruited in the period',
-  milestones_completed: 'people recruited in, or completing in, the period',
-};
 
 interface LeaderboardPanelProps {
   initialMetric?: LeaderboardMetric;
@@ -98,87 +100,103 @@ export function LeaderboardPanel({
   return (
     <section className="wb-lb-expanded" aria-label="Wealth Builders Leaderboards">
       <header className="wb-lb-expanded__header">
-        <div>
-          <h2 className="wb-lb-expanded__title">Wealth Builders Leaderboards</h2>
-          <p className="wb-lb-expanded__status">
-            {data ? `${data.period_label} · ${SOURCE_LABELS[data.source]}` : 'Loading…'}
-          </p>
+        <h2 className="wb-lb-expanded__title">Wealth Builders Leaderboards</h2>
+        <div className="wb-lb-expanded__status-group">
+          <span className="wb-lb-expanded__dot" aria-hidden="true" />
+          <span className="wb-lb-expanded__status">
+            {data ? `${data.start} through ${data.end}` : 'Loading…'}
+          </span>
+          <HelpAction toolKey="leaderboards" />
         </div>
-        {onOpenFullReport && (
-          <Button type="button" variant="outline" onClick={onOpenFullReport}>
-            Full Report
-          </Button>
-        )}
       </header>
 
       <div className="wb-lb-expanded__controls">
-        <div className="wb-lb-expanded__control-group" role="group" aria-label="Date range">
-          {(data?.visible_ranges ?? [{ key: 'current', label: 'This Month' }]).map((range) => (
-            <Button
-              key={range.key}
-              type="button"
-              variant={rangeKey === range.key && !applied.start ? 'default' : 'outline'}
-              onClick={() => selectNamedRange(range.key)}
+        <div className="wb-lb-expanded__controls-col">
+          <label className="wb-lb-expanded__field">
+            <span className="sr-only">Date range</span>
+            <select
+              className="wb-lb-expanded__range-select"
+              value={applied.start ? 'custom' : rangeKey}
+              onChange={(event) => {
+                if (event.target.value !== 'custom') selectNamedRange(event.target.value);
+              }}
             >
-              {range.label}
+              {(data?.visible_ranges ?? [{ key: 'current', label: 'Current month' }]).map(
+                (range) => (
+                  <option key={range.key} value={range.key}>
+                    {range.label}
+                  </option>
+                )
+              )}
+              {applied.start && <option value="custom">Custom range</option>}
+            </select>
+          </label>
+
+          <div className="wb-lb-expanded__dates">
+            <label className="wb-lb-expanded__field">
+              <span>Start</span>
+              <input
+                type="date"
+                value={draftStart}
+                onChange={(event) => setDraftStart(event.target.value)}
+              />
+            </label>
+            <label className="wb-lb-expanded__field">
+              <span>End</span>
+              <input
+                type="date"
+                value={draftEnd}
+                onChange={(event) => setDraftEnd(event.target.value)}
+              />
+            </label>
+            <Button type="button" onClick={applyCustomRange} disabled={!draftStart || !draftEnd}>
+              Apply
             </Button>
-          ))}
+          </div>
         </div>
 
-        <div className="wb-lb-expanded__control-group wb-lb-expanded__dates">
-          <label className="wb-lb-expanded__field">
-            <span>From</span>
-            <input
-              type="date"
-              value={draftStart}
-              onChange={(event) => setDraftStart(event.target.value)}
-            />
-          </label>
-          <label className="wb-lb-expanded__field">
-            <span>To</span>
-            <input
-              type="date"
-              value={draftEnd}
-              onChange={(event) => setDraftEnd(event.target.value)}
-            />
-          </label>
-          <Button type="button" onClick={applyCustomRange} disabled={!draftStart || !draftEnd}>
-            Apply
-          </Button>
-        </div>
+        <div className="wb-lb-expanded__controls-col wb-lb-expanded__controls-col--right">
+          <div className="wb-lb-expanded__control-group" role="group" aria-label="Statistics mode">
+            <Button
+              type="button"
+              variant={mode === 'general' ? 'default' : 'outline'}
+              onClick={() => setMode('general')}
+            >
+              General Stats
+            </Button>
+            <Button
+              type="button"
+              variant={mode === 'ratios' ? 'default' : 'outline'}
+              onClick={() => setMode('ratios')}
+            >
+              Ratio Stats
+            </Button>
+          </div>
 
-        <div className="wb-lb-expanded__control-group" role="group" aria-label="Statistics mode">
-          <Button
-            type="button"
-            variant={mode === 'general' ? 'default' : 'outline'}
-            onClick={() => setMode('general')}
-          >
-            General Stats
-          </Button>
-          <Button
-            type="button"
-            variant={mode === 'ratios' ? 'default' : 'outline'}
-            onClick={() => setMode('ratios')}
-          >
-            Ratio Stats
-          </Button>
-        </div>
-
-        <label className="wb-lb-expanded__field">
-          <span>Scope</span>
-          <select value={scope} onChange={(event) => setScope(event.target.value as Scope)}>
-            {(data?.visible_scopes ?? ['smd_base']).map((option) => (
-              <option key={option} value={option}>
+          <div className="wb-lb-expanded__control-group" role="group" aria-label="Scope">
+            {(data?.visible_scopes ?? (['smd_base'] as Scope[])).map((option) => (
+              <Button
+                key={option}
+                type="button"
+                variant={scope === option ? 'default' : 'outline'}
+                onClick={() => setScope(option)}
+              >
                 {SCOPE_LABELS[option] ?? option}
-              </option>
+              </Button>
             ))}
-          </select>
-        </label>
+          </div>
+        </div>
       </div>
 
       <div className="wb-lb-expanded__metrics" role="tablist" aria-label="Metric">
         {(mode === 'general'
-          ? (data?.general_metrics ?? []).map((item) => ({ key: item.key, label: item.label }))
+          ? [
+              ...(data?.general_metrics ?? []).map((item) => ({
+                key: item.key,
+                label: GENERAL_METRIC_LABELS[item.key] ?? item.label,
+              })),
+              ...MILESTONE_METRICS,
+            ]
           : (data?.ratio_metrics ?? []).map((key) => ({ key, label: RATIO_LABELS[key] ?? key }))
         ).map((item) => (
           <Button
@@ -222,33 +240,13 @@ export function LeaderboardPanel({
             />
           </div>
 
-          <aside className="wb-lb-expanded__viewer">
-            <h3>Your {SCOPE_LABELS[data.scope] ?? data.scope}</h3>
-            <dl>
-              {data.general_metrics.map((item) => (
-                <div key={item.key}>
-                  <dt>{item.label}</dt>
-                  <dd>{formatMetricValue(item.key, data.viewer.totals[item.key])}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="wb-lb-expanded__viewer-meta">
-              {data.viewer.member_count} people in scope
-              {data.viewer.uncoded_member_count > 0 && (
-                <>
-                  {' · '}
-                  <span title="Agents without an agency code are not represented in the reporting tables.">
-                    {data.viewer.uncoded_member_count} without an agency code
-                  </span>
-                </>
-              )}
-            </p>
-          </aside>
-
-          <p className="wb-lb-expanded__note">
-            Milestone ratios count {MEASUREMENT_MODE_LABELS[data.measurement_mode]}. This is set
-            in Settings, not here, so everyone compares the same population.
-          </p>
+          {onOpenFullReport && (
+            <footer className="wb-lb-expanded__footer">
+              <Button type="button" onClick={onOpenFullReport}>
+                Full Report
+              </Button>
+            </footer>
+          )}
         </>
       )}
 

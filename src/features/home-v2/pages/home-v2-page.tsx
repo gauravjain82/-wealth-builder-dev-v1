@@ -18,10 +18,11 @@
  */
 
 import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { VideoHero, CanvaVideoCard, PerformanceTable } from '@/features/home/components';
 import { ContestsCard } from '@/features/contests';
-import { LeaderboardsCard } from '@/features/leaderboards';
+import { LeaderboardPanel } from '@/features/leaderboards';
 import { useHomePageContent } from '@/features/home/hooks/use-home-content';
 import type { HomePageSlot } from '@/features/home/services/home-content-service';
 
@@ -35,6 +36,7 @@ const DEFAULT_TITLE = 'Wealth Bowl 2026 - Oct 9 - 11 | St. Louis Union Station H
 const DEFAULT_RECOGNITION_VIDEO_URL = 'https://www.canva.com/design/DAG-W6V-Uxc/qjp27ftg9x_dXxF9O9WBvA/view?embed';
 
 export default function HomeV2Page() {
+  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
 
@@ -98,7 +100,7 @@ export default function HomeV2Page() {
 
         <section className="px-4 pb-8" aria-label="Leaderboards">
           <div className="max-w-7xl mx-auto">
-            <LeaderboardsCard />
+            <LeaderboardPanel onOpenFullReport={() => navigate('/leaderboards?view=report')} />
           </div>
         </section>
 

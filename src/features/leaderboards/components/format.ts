@@ -25,6 +25,42 @@ export const SCOPE_LABELS: Record<string, string> = {
 };
 
 /**
+ * The director title behind a row's `level_code`, shown under the name. Falls back to
+ * the raw code so an unmapped level still reads as something rather than nothing.
+ */
+export const LEVEL_LABELS: Record<string, string> = {
+  SMD: 'Senior Marketing Director',
+  MD: 'Marketing Director',
+};
+
+export function levelLabel(code: string | null | undefined): string {
+  if (!code) return '';
+  return LEVEL_LABELS[code] ?? code;
+}
+
+/**
+ * Business-facing labels for the additive metric tabs. `recruits` reads "Business
+ * Partners" the way the home card and the rest of the app already name it, rather than
+ * the API's raw metric name. Falls back to the server's label for any unmapped key.
+ */
+export const GENERAL_METRIC_LABELS: Record<string, string> = {
+  recruits: 'Business Partners',
+  points: 'Points',
+  licenses: 'Licenses',
+  convention: 'Convention',
+};
+
+/**
+ * The three first-milestone metric tabs, ranked alongside the additive metrics on the
+ * standard board. Their keys are what the `/leaderboards/` endpoint ranks by.
+ */
+export const MILESTONE_METRICS: Array<{ key: 'rr' | 'rc' | 'rbe'; label: string }> = [
+  { key: 'rr', label: '1st Recruit' },
+  { key: 'rc', label: '10% Evaluation' },
+  { key: 'rbe', label: 'Register for Convention' },
+];
+
+/**
  * What the period's numbers were read from, in the reader's words.
  *
  * `daily_fallback` is deliberately phrased as a fact rather than a warning: until the
