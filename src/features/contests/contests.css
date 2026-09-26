@@ -150,7 +150,15 @@ select.wb-ct-title:focus-visible {
 .wb-ct-tiers {
   display: flex;
   gap: 0.5rem;
+  /*
+   * A fixed-size row, not a flex item that shrinks. Without `flex: 0 0 auto` the strip
+   * shrinks below the tier tile inside the height-bounded card; and because `overflow-x`
+   * is non-visible, `overflow-y` computes to `auto`, so that shrink shows a spurious
+   * VERTICAL scrollbar over the tier metrics. Pinning both stops it.
+   */
+  flex: 0 0 auto;
   overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
   padding-bottom: 0.5rem;
