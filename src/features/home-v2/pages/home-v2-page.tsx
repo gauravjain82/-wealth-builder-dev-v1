@@ -13,8 +13,10 @@
  * They live on different pages instead, and v2 replaces v1 once the numbers have been
  * compared on QA. That replacement is out of scope here.
  *
- * The contest slot is still the existing "Event & Contests" media card; the contests
- * package replaces it with live standings.
+ * The "Event & Contests" slot is a Canva media card (like Recognition), the two
+ * sitting side by side as on `/home`. The live contest standings are a separate
+ * full-width block below, styled like the leaderboard rather than replacing the media
+ * card.
  */
 
 import { useRef, useState } from 'react';
@@ -33,6 +35,7 @@ const DEFAULT_TRAILER_URL =
   'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/IMG_7934.MP4?alt=media&token=597143ab-4dfc-42bb-87f3-428e54c345df';
 const DEFAULT_REGISTER_URL = 'https://bscpro.com/event/wb2026';
 const DEFAULT_TITLE = 'Wealth Bowl 2026 - Oct 9 - 11 | St. Louis Union Station Hotel, MO';
+const DEFAULT_EVENTS_VIDEO_URL = 'https://www.canva.com/design/DAG6eJasb0c/QMcDazQ53A-DPwBIfKIn-Q/view?embed';
 const DEFAULT_RECOGNITION_VIDEO_URL = 'https://www.canva.com/design/DAG-W6V-Uxc/qjp27ftg9x_dXxF9O9WBvA/view?embed';
 
 export default function HomeV2Page() {
@@ -48,6 +51,7 @@ export default function HomeV2Page() {
 
   const backgroundUrl = slotHref('background', DEFAULT_BACKGROUND_URL);
   const trailerUrl = slotHref('hero_trailer', DEFAULT_TRAILER_URL);
+  const eventsVideoUrl = slotHref('events', DEFAULT_EVENTS_VIDEO_URL);
   const recognitionVideoUrl = slotHref('recognition', DEFAULT_RECOGNITION_VIDEO_URL);
   const heroTitle = homeContent?.config?.hero_title || DEFAULT_TITLE;
   const registerUrl = homeContent?.config?.register_url || DEFAULT_REGISTER_URL;
@@ -84,16 +88,22 @@ export default function HomeV2Page() {
         <section className="px-4 pb-8" aria-label="Events and recognition">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/*
-                The contests package replaces the "Event & Contests" media card with
-                live standings. The host owns the card's size and always has: the
-                Recognition card beside it sets the row height through its 3 / 2
-                aspect ratio, and grid `align-items: stretch` hands that height to
-                the contest card, which fills it and scrolls internally. Nothing in
-                the contests feature guesses a height.
-              */}
-              <ContestsCard />
+              <CanvaVideoCard title="Event & Contests" videoUrl={eventsVideoUrl} />
               <CanvaVideoCard title="Recognition" videoUrl={recognitionVideoUrl} />
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 pb-8" aria-label="Contests">
+          <div className="max-w-7xl mx-auto">
+            {/*
+              The live contest standings are their own full-width block, like the
+              leaderboard — not the Event & Contests media card above. ContestsCard
+              sets no height of its own (see the containment contract in contests.css),
+              so this wrapper gives it a bounded height and the standings scroll inside.
+            */}
+            <div style={{ height: 'clamp(480px, 70vh, 760px)' }}>
+              <ContestsCard />
             </div>
           </div>
         </section>
