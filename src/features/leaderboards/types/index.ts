@@ -109,6 +109,11 @@ export interface FullReportMetric {
   percent: number | null;
   smd: LeaderRow[];
   md: LeaderRow[];
+  /**
+   * The viewer's own people ranked by this metric — the "Personal <metric>" list under
+   * the column. Optional: rendered only when the backend includes it.
+   */
+  personal?: LeaderRow[];
 }
 
 /**

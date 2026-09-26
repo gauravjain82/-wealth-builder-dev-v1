@@ -19,6 +19,8 @@ interface LeaderListProps {
   metric: LeaderboardMetric;
   /** Pad to five slots for Full Report alignment. */
   reserveSlots?: boolean;
+  /** Drop the director-title subtitle — the Full Report's narrow columns show one line per row. */
+  compact?: boolean;
   /** Opens the proof detail for one leader. Omit to render values as plain text. */
   onSelect?: (row: LeaderRow) => void;
   emptyMessage?: string;
@@ -31,6 +33,7 @@ export function LeaderList({
   rows,
   metric,
   reserveSlots = false,
+  compact = false,
   onSelect,
   emptyMessage = 'No results for this period',
 }: LeaderListProps) {
@@ -67,19 +70,21 @@ export function LeaderList({
               <span className="wb-lb-panel__name" title={row.name}>
                 {row.name || row.agent_id}
               </span>
-              <span className="wb-lb-panel__meta">
-                {levelLabel(row.level_code)}
-                {levelLabel(row.level_code) && ' · '}
-                {row.member_count} members
-                {row.contributes_to_label && row.contributes_to_name && (
-                  <>
-                    {' · '}
-                    <span title={`Contributes to ${row.contributes_to_name}`}>
-                      → {row.contributes_to_label}
-                    </span>
-                  </>
-                )}
-              </span>
+              {!compact && (
+                <span className="wb-lb-panel__meta">
+                  {levelLabel(row.level_code)}
+                  {levelLabel(row.level_code) && ' · '}
+                  {row.member_count} members
+                  {row.contributes_to_label && row.contributes_to_name && (
+                    <>
+                      {' · '}
+                      <span title={`Contributes to ${row.contributes_to_name}`}>
+                        → {row.contributes_to_label}
+                      </span>
+                    </>
+                  )}
+                </span>
+              )}
             </span>
             {onSelect ? (
               <button

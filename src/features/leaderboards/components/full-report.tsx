@@ -20,7 +20,7 @@ import type { LeaderRow, LeaderboardSelection, Scope } from '../types';
 import { DetailDialog } from './detail-dialog';
 import { LeaderList } from './leader-list';
 import { Speedometer } from './speedometer';
-import { SOURCE_LABELS } from './format';
+import { SOURCE_LABELS, formatMetricValue } from './format';
 import '../leaderboards.css';
 
 const MILESTONE_LABELS: Record<string, string> = {
@@ -109,20 +109,48 @@ export function FullReport({ scope = 'smd_base' }: FullReportProps) {
                   label={column.label}
                 />
 
-                <LeaderList
-                  title="Top 5 SMD Base"
-                  rows={column.smd}
-                  metric={column.key}
-                  reserveSlots
-                  onSelect={(row) => openDetail(row, column.key, column.label)}
-                />
-                <LeaderList
-                  title="Top 5 MD Base"
-                  rows={column.md}
-                  metric={column.key}
-                  reserveSlots
-                  onSelect={(row) => openDetail(row, column.key, column.label)}
-                />
+                <div className="wb-lb-report__panels">
+                  <LeaderList
+                    title="Top 5 SMD Base"
+                    rows={column.smd}
+                    metric={column.key}
+                    reserveSlots
+                    compact
+                    onSelect={(row) => openDetail(row, column.key, column.label)}
+                  />
+                  <LeaderList
+                    title="Top 5 MD Base"
+                    rows={column.md}
+                    metric={column.key}
+                    reserveSlots
+                    compact
+                    onSelect={(row) => openDetail(row, column.key, column.label)}
+                  />
+                </div>
+
+                {column.personal && column.personal.length > 0 && (
+                  <div className="wb-lb-report__personal">
+                    <h4 className="wb-lb-report__personal-title">Personal {column.label}</h4>
+                    <ol className="wb-lb-report__personal-list">
+                      {column.personal.map((row) => (
+                        <li
+                          key={`${column.key}-${row.agent_id}`}
+                          className="wb-lb-report__personal-row"
+                        >
+                          <span className="wb-lb-report__personal-name" title={row.name}>
+                            {row.name || row.agent_id}
+                            {row.agent_id && (
+                              <span className="wb-lb-report__personal-code"> ({row.agent_id})</span>
+                            )}
+                          </span>
+                          <span className="wb-lb-report__personal-value">
+                            {formatMetricValue(column.key, row.value)}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
               </article>
             ))}
           </div>
