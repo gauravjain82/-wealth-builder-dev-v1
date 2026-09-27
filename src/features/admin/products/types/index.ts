@@ -3,28 +3,6 @@
  * `tracker` CompanyProduct model / serializers 1:1.
  */
 
-/** Fixed carrier list (matches CompanyProduct.COMPANY_CHOICES on the backend). */
-export const COMPANY_CHOICES: readonly string[] = [
-  'AIG',
-  'Allianz',
-  'Athene',
-  'COREBRIDGE (AMS)',
-  'Everest',
-  'FIDELITY & GUARANTY (AMS)',
-  'Franklin Templeton',
-  'GLOBAL ATLANTIC',
-  'Gerber',
-  'Jackson',
-  'John Hancock',
-  'NATIONAL LIFE GROUP',
-  'Nationwide',
-  'North American',
-  'PacLife',
-  'Prudential',
-  'Transamerica',
-  'Other',
-];
-
 export interface PaginatedResponse<T> {
   count: number;
   next: string | null;

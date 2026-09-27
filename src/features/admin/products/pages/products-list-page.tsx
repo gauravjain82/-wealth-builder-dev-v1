@@ -3,13 +3,13 @@ import { Button, ConfirmationDialog, Input, Select } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { ProductFormModal } from '../components/product-form-modal';
 import { ProductHistoryModal } from '../components/product-history-modal';
-import { useProductsAccess } from '../hooks/use-products';
+import { useCompanies, useProductsAccess } from '../hooks/use-products';
 import {
   activateProduct,
   deactivateProduct,
   listProducts,
 } from '../services/products-service';
-import { COMPANY_CHOICES, PRODUCT_TYPE_CHOICES, productTypeLabel, type Product } from '../types';
+import { PRODUCT_TYPE_CHOICES, productTypeLabel, type Product } from '../types';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 /** Sentinel type-filter value matching legacy products with no type set. */
@@ -18,6 +18,8 @@ const UNTYPED = '__untyped__';
 export default function ProductsListPage() {
   const { addToast } = useToastStore();
   const { data: access } = useProductsAccess();
+  // Companies are the distinct names in the catalog, not a fixed list.
+  const { data: companies = [] } = useCompanies();
   const canManage = Boolean(access?.can_manage);
   const canViewHistory = Boolean(access?.can_view_history);
 
@@ -143,7 +145,7 @@ export default function ProductsListPage() {
           </label>
           <Select value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)}>
             <option value="">All companies</option>
-            {COMPANY_CHOICES.map((company) => (
+            {companies.map((company) => (
               <option key={company} value={company}>
                 {company}
               </option>

@@ -64,6 +64,23 @@ export function fetchProductsAccess(): Promise<ProductsAccess> {
   return request<ProductsAccess>('/api/tracker/products/my-access/');
 }
 
+/* ---------------------------------------------------------------- Companies */
+
+/**
+ * The company list for dropdowns — the distinct company names in the catalog.
+ *
+ * There is no company table on the backend: a company exists exactly insofar as
+ * products are filed under it, so this is derived server-side from
+ * `CompanyProduct.company_name`. Creating a product under a new name is what adds
+ * a company.
+ */
+export async function listCompanies(): Promise<string[]> {
+  const data = await request<{ results: string[]; count: number }>(
+    '/api/tracker/products/companies/',
+  );
+  return data.results;
+}
+
 /* ----------------------------------------------------------------- Products */
 
 export async function listProducts(): Promise<Product[]> {

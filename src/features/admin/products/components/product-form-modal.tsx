@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button, Checkbox, Input, Modal, Select, Textarea } from '@/shared/components';
 import { useToastStore } from '@/store';
+import { COMPANIES_QUERY_KEY, useCompanies } from '../hooks/use-products';
 import { createProduct, updateProduct } from '../services/products-service';
-import { COMPANY_CHOICES, PRODUCT_TYPE_CHOICES, type Product } from '../types';
+import { PRODUCT_TYPE_CHOICES, type Product } from '../types';
 
 interface ProductFormModalProps {
   open: boolean;
@@ -12,11 +14,25 @@ interface ProductFormModalProps {
   onSaved: () => void;
 }
 
-const DEFAULT_COMPANY = 'Transamerica';
+/** Collapse internal whitespace, mirroring CompanyProduct.normalize_company_name. */
+function normalizeCompanyName(value: string): string {
+  return value.trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * Company names the backend rejects, matched exactly — mirrors
+ * `CompanyProduct.RESERVED_COMPANY_NAMES`. The policy form reads a company of
+ * `'OTHER'` as its "free-text product, no product FK" sentinel, so a product filed
+ * under that literal name would save policies without their product link. `'Other'`
+ * in any other casing is an ordinary company.
+ */
+const RESERVED_COMPANY_NAMES = new Set(['OTHER']);
 
 export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFormModalProps) {
   const { addToast } = useToastStore();
-  const [companyName, setCompanyName] = useState(DEFAULT_COMPANY);
+  const queryClient = useQueryClient();
+  const { data: companies = [] } = useCompanies();
+  const [companyName, setCompanyName] = useState('');
   const [productName, setProductName] = useState('');
   const [productType, setProductType] = useState('');
   const [description, setDescription] = useState('');
@@ -28,7 +44,7 @@ export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFor
 
   useEffect(() => {
     if (!open) return;
-    setCompanyName(editing?.company_name ?? DEFAULT_COMPANY);
+    setCompanyName(editing?.company_name ?? '');
     setProductName(editing?.product_name ?? '');
     setProductType(editing?.product_type ?? '');
     setDescription(editing?.product_description ?? '');
@@ -41,8 +57,30 @@ export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFor
   // Existing policies keep their snapshotted multiplier — warn on edit when in use.
   const showMultiplierWarning = !!editing && editing.policy_count > 0;
 
+  // Companies come from the catalog, so an unrecognised name creates one. Flag that
+  // explicitly, otherwise a typo silently becomes a new carrier in every dropdown.
+  const normalizedCompany = normalizeCompanyName(companyName);
+  const isNewCompany =
+    normalizedCompany.length > 0 &&
+    !companies.some((company) => company.toLowerCase() === normalizedCompany.toLowerCase());
+  // Only a clash when it would actually be stored as the sentinel: if a differently
+  // cased company already exists, the backend snaps onto that spelling instead.
+  const isReservedCompany = isNewCompany && RESERVED_COMPANY_NAMES.has(normalizedCompany);
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    const trimmedCompany = normalizeCompanyName(companyName);
+    if (!trimmedCompany) {
+      addToast({ message: 'Company is required', type: 'error' });
+      return;
+    }
+    if (isReservedCompany) {
+      addToast({
+        message: `“${trimmedCompany}” is reserved by the policy form — use “Other” instead`,
+        type: 'error',
+      });
+      return;
+    }
     const trimmedName = productName.trim();
     if (!trimmedName) {
       addToast({ message: 'Product name is required', type: 'error' });
@@ -64,7 +102,7 @@ export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFor
     }
 
     const payload = {
-      company_name: companyName,
+      company_name: trimmedCompany,
       product_name: trimmedName,
       product_type: productType,
       product_description: description.trim(),
@@ -83,6 +121,8 @@ export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFor
         await createProduct(payload);
         addToast({ message: 'Product created', type: 'success' });
       }
+      // The company list is derived from the catalog, so a save may have added one.
+      await queryClient.invalidateQueries({ queryKey: COMPANIES_QUERY_KEY });
       onSaved();
       onClose();
     } catch (err) {
@@ -105,15 +145,33 @@ export function ProductFormModal({ open, editing, onClose, onSaved }: ProductFor
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-white/80">
-            Company
+            Company <span className="font-normal text-red-500">*</span>
           </label>
-          <Select value={companyName} onChange={(e) => setCompanyName(e.target.value)}>
-            {COMPANY_CHOICES.map((company) => (
-              <option key={company} value={company}>
-                {company}
-              </option>
+          <Input
+            list="product-company-options"
+            placeholder="Select or type a new company…"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            autoComplete="off"
+          />
+          <datalist id="product-company-options">
+            {companies.map((company) => (
+              <option key={company} value={company} />
             ))}
-          </Select>
+          </datalist>
+          {isReservedCompany ? (
+            <p className="mt-1 rounded-md bg-red-50 px-3 py-2 text-xs text-red-800 dark:bg-red-400/15 dark:text-red-200">
+              “{normalizedCompany}” is reserved by the policy form, which reads it as “no
+              product selected”. Use “Other” instead.
+            </p>
+          ) : (
+            isNewCompany && (
+              <p className="mt-1 rounded-md bg-sky-50 px-3 py-2 text-xs text-sky-800 dark:bg-sky-400/15 dark:text-sky-200">
+                “{normalizedCompany}” is a new company — saving this product will add it
+                to the company list.
+              </p>
+            )
+          )}
         </div>
 
         <div>
