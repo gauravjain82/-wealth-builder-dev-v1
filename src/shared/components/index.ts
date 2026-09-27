@@ -1,6 +1,7 @@
 export { Button, buttonVariants, type ButtonProps } from './ui/button';
 export { ButtonIcon, type ButtonIconProps } from './ui/button-icon';
 export { Input, type InputProps } from './ui/input';
+export { Combobox, type ComboboxProps } from './ui/combobox';
 export { Block } from './ui/block';
 export { Form, FormRowGroup, FormRow, FormActions } from './ui/form';
 export { Select, type SelectProps } from './ui/select';
