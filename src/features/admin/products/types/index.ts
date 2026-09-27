@@ -10,10 +10,18 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
-/** Product type options (match CompanyProduct.ProductType on the backend). */
+/**
+ * Product type options (match CompanyProduct.ProductType on the backend).
+ *
+ * The backend enum is closed — there is no endpoint serving these, so this list
+ * must be updated alongside any change to `CompanyProduct.ProductType`. A stored
+ * value missing from here renders as an em dash and matches no filter.
+ */
 export const PRODUCT_TYPE_CHOICES: readonly { value: string; label: string }[] = [
   { value: 'LIFE_INSURANCE', label: 'Life Insurance' },
   { value: 'ANNUITY', label: 'Annuity' },
+  { value: 'OTHER', label: 'Other' },
+  { value: 'LEGACY', label: 'Legacy' },
 ];
 
 /** Human label for a stored product_type code ('' → em dash). */
