@@ -2,7 +2,8 @@
  * Styling for the WB Leaderboards feature.
  *
  * Every rule is scoped under a `wb-lb-` prefix. The delivered package ships a
- * dark/gold palette as a global theme; `UI_CONTRACT.md` calls that fallback guidance,
+ * dark/gold palette as a global theme; `docs/leaderboards/UI.md` §7 calls that
+ * fallback guidance,
  * not permission to create a competing theme, so colours here are drawn from the
  * host's own surfaces and the accent follows the yellow the home page already uses.
  *
@@ -510,7 +511,7 @@
   letter-spacing: normal;
 }
 
-/* 4 / 2 / 1 columns, per UI_CONTRACT.md. */
+/* 4 / 2 / 1 columns, per `docs/leaderboards/UI.md` §5. */
 .wb-lb-report__columns {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

@@ -4,7 +4,7 @@
  * `Modal` renders with `createPortal` to `document.body`, which is the whole point:
  * the contest card sets `overflow: hidden` so its body can scroll internally, and a
  * dialog rendered inside that element would be clipped by it. Nothing here builds its
- * own overlay layer — `UI_CONTRACT.md` asks for host-native portals and the host has
+ * own overlay layer — `docs/contests/UI.md` §2.6 asks for host-native portals and the host has
  * one.
  *
  * Each dialog opens immediately with a loading state and fetches its own data; the

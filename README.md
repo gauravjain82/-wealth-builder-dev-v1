@@ -1,125 +1,99 @@
-# Wealth Builder v1 - Modern Architecture
+# Wealth Builder — frontend
 
-A complete redesign of Wealth Builder using modern, scalable architecture.
+The Wealth Builder web app: a Vite + React + TypeScript single-page application over the
+Django REST backend in `mlm_platform`.
 
-## Tech Stack
+## Tech stack
 
-- **Frontend Framework**: Vite + React 18 + TypeScript
-- **State Management**: 
-  - TanStack Query (React Query) for server state
-  - Zustand for global UI state
-- **Routing**: React Router v6 with nested routes and lazy loading
-- **Styling**: Tailwind CSS
-- **Backend**: Firebase (Firestore, Auth, Storage, Functions)
-- **Payment**: Stripe
+| | |
+|---|---|
+| Build | Vite 5, TypeScript 5.5 |
+| UI | React 18, Tailwind CSS, Radix primitives |
+| Server state | TanStack Query v5 |
+| UI state | Zustand (two slices: theme, toasts) |
+| Routing | React Router v6, lazy-loaded per route |
+| Backend | Django REST — `fetch` + `Authorization: Token` |
+| Payments | Stripe Elements |
+| Hosting | Firebase Hosting |
 
-## Architecture
+Firebase is the **deploy target**, not the backend. Identity is a DRF token from
+`/api/accounts/login/`, and Firestore is used only for the home carousel and a video config.
 
-### Feature-Based Structure
-- Each feature is self-contained with its own components, hooks, types, and services
-- Shared UI components live in `/shared`
-- Core infrastructure (config, types, utils) in `/core`
+## Getting started
 
-### Separation of Concerns
-- **UI Layer**: React components (no direct Firebase/API calls)
-- **Service Layer**: Business logic and orchestration
-- **Repository Layer**: Data access abstraction (Firebase SDK interactions)
-- **Domain Models**: Pure TypeScript interfaces, independent of Firebase
+```bash
+npm install
+cp .env.example .env     # then add VITE_API_BASE_URL — see below
+npm run dev              # http://localhost:3000
+```
 
-### Data Layer Design
-- All Firestore-specific types converted in repository layer
-- Domain models use standard JavaScript types (Date, not Timestamp)
-- Easy migration path to PostgreSQL or other databases
+| Script | Does |
+|---|---|
+| `npm run dev` | Vite dev server on :3000 |
+| `npm run type-check` | `tsc --noEmit` — the project's main safety net |
+| `npm run lint` | ESLint, `--max-warnings 0` |
+| `npm run build` | type-check, then build to `build/` |
+| `npm run preview` | serve the built output |
 
-## Folder Structure
+**`.env.example` is incomplete.** It omits `VITE_API_BASE_URL` and
+`VITE_FRONTEND_BASE_URL`. Without the first, every request silently goes to
+`http://localhost:8000`. The full environment contract is in
+[`docs/platform/OPERATIONS.md`](docs/platform/OPERATIONS.md#1-environment-and-configuration).
+
+## Layout
 
 ```
 src/
-├── core/                    # Core infrastructure
-│   ├── config/             # App configuration
-│   ├── types/              # Global TypeScript types
-│   └── utils/              # Utility functions
-│
-├── shared/                 # Shared across features
-│   ├── components/         # Reusable UI components
-│   ├── hooks/              # Shared React hooks
-│   ├── layouts/            # Layout components
-│   └── lib/                # Shared utilities
-│
-├── features/              # Feature modules
-│   ├── auth/
-│   ├── dashboard/
-│   ├── education/
-│   ├── events/
-│   ├── team/
-│   └── ...
-│
-├── infrastructure/        # External service integrations
-│   ├── firebase/          # Firebase setup and repositories
-│   ├── stripe/            # Stripe integration
-│   └── api/               # API client setup
-│
-├── store/                 # Global state (Zustand)
-│   ├── slices/
-│   └── index.ts
-│
-└── router/               # Routing configuration
-    ├── routes.tsx
-    └── guards.tsx
+├── router/          route table (98 entries) and 12 guards
+├── shared/          layouts, shared UI components, shared services
+├── features/        28 feature modules — the application
+├── infrastructure/  React Query client; residual Firebase
+├── store/           Zustand slices (theme, toasts)
+├── core/            constants, global types, utils
+├── config/          menu definition
+└── hooks/           cross-cutting hooks (theme, menu)
 ```
 
-### Feature Structure
-
-Each feature follows this pattern:
+Each feature module follows the same internal shape, and the layering is a rule, not a
+suggestion — a component never calls `fetch`:
 
 ```
-features/[feature-name]/
-├── components/           # Feature-specific components
-├── hooks/               # Feature-specific hooks
-├── services/            # Business logic layer
-├── repositories/        # Data access layer
-├── types/              # Feature types and interfaces
-├── store/              # Feature-specific state (if needed)
-├── routes.tsx          # Feature routes
-└── index.ts            # Public API
+features/<module>/
+├── pages/        route components
+├── components/   feature components
+├── hooks/        React Query wrappers — query keys, cache policy
+├── services/     fetch, URL building, auth headers, typed errors
+└── types/        wire types
 ```
 
-## Key Principles
+## Documentation
 
-1. **No styling in logic files**: CSS/Tailwind only in component files
-2. **No direct API calls in components**: Use services/repositories
-3. **Type safety**: Full TypeScript coverage
-4. **Performance**: Code splitting, lazy loading, memoization
-5. **Scalability**: Easy to add new features without affecting existing code
-6. **Testability**: Pure functions, dependency injection
-7. **Database agnostic**: Easy to replace Firestore
+**Start at [`docs/README.md`](docs/README.md)** — the index of every module.
 
-## Getting Started
+| If you want to | Read |
+|---|---|
+| Understand the shell before touching anything | [`docs/platform/`](docs/platform/) |
+| See what a complete module doc looks like | [`docs/leaderboards/`](docs/leaderboards/) |
+| Document a module | [`docs/DOCUMENTATION_STANDARD.md`](docs/DOCUMENTATION_STANDARD.md), then copy [`docs/_standard/`](docs/_standard/) |
+| Work on the backend | `mlm_platform/docs/` — same standard, same shape |
 
-```bash
-# Install dependencies
-npm install
+Docs live at `docs/<module>/`, where `<module>` is the feature directory name exactly. Six
+files per documented module: `README`, `ARCHITECTURE`, `UI`, `API`, `OPERATIONS`, `PHASES`.
 
-# Run development server
-npm run dev
+The repository root holds only this file and `CLAUDE.md`. Superseded documents are in
+[`docs/_archive/`](docs/_archive/), each with a banner naming its replacement and what it got
+wrong — do not cite them.
 
-# Build for production
-npm run build
+## Things worth knowing before you start
 
-# Type check
-npm run type-check
-```
-
-## Environment Variables
-
-Create a `.env` file:
-
-```env
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_key
-```
+- **Rollouts are backend grants, not deploys.** Gated features are gated by a per-user
+  capability the client asks about at runtime (`homev2:read`, `gms:author`, …). There are no
+  client-side feature flags, and a frontend deploy cannot turn a gated feature on.
+- **Some branches must deploy with the backend.** `feature/wb-leaderboards`,
+  `feature/wb-contests`, `feature/wb-gms`, `feature/wb-reporting-pipeline` and
+  `feature/bpm-v2` each have a counterpart in `mlm_platform`. Merging one side alone produces
+  a page that renders and then fails every request.
+- **A route guard is not authorization.** The backend re-checks every request independently.
+- **There is no test suite.** `npm run type-check` plus the backend's own tests are the
+  current safety net. See
+  [`docs/platform/OPERATIONS.md`](docs/platform/OPERATIONS.md#4-tests-and-checks).

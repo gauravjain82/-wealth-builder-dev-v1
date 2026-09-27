@@ -1,9 +1,10 @@
 /**
  * Type definitions for the Two-Way, Multi-Calendar Google Sync feature.
  *
- * These mirror the backend contract documented in
- * `mlm_platform/CALENDAR_SYNC_PROGRESS.md` (§ "API contract") served under
- * `/api/calendarsync/*`.
+ * These mirror the backend contract served under `/api/calendarsync/*`. See
+ * `docs/calendar-sync/API.md` for the endpoint table and the three field-level
+ * details that have caused bugs here (`pull` is an object; `PullSummary` counters
+ * are optional, so absent is not zero; `google_calendar_id` is nullable).
  */
 
 /** The four platform sources that can each map to a Google calendar. */

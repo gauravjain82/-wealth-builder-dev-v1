@@ -1,7 +1,7 @@
 /**
  * The Help drawer: what is relevant here, and nothing that is not.
  *
- * `UI_CONTRACT.md` is specific about the order and about what must *not* happen:
+ * `docs/gms/UI.md` §2.2 is specific about the order and about what must *not* happen:
  * "Show authorized **Walk Me Through It** task choices first; reference and
  * troubleshooting topics follow" and "Do not recommend, auto-open, or expose workflows
  * from unrelated tools or unauthorized actions."

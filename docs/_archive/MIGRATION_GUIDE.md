@@ -1,3 +1,13 @@
+> **ARCHIVED — historical.**
+>
+> This guided the migration off the previous Wealth Builder app, which is complete. Its
+> "new pattern" examples are Firebase-repository code and are no longer the pattern; see
+> [`docs/platform/ARCHITECTURE.md`](../platform/ARCHITECTURE.md) §1.
+>
+> Kept as the record of what the migration was trying to achieve.
+
+---
+
 # Migration Guide: Old → New Architecture
 
 This guide helps you migrate code from the old Wealth Builder to the new architecture.

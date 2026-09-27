@@ -2,7 +2,7 @@
  * One ranking panel — "Top 5 SMD" or "Top 5 MD".
  *
  * Two presentations from one component, because they differ in exactly one way
- * (`DATA_CONTRACT.md` §Rankings): a standard ranking shows what exists, while the
+ * (`docs/leaderboards/API.md` §6): a standard ranking shows what exists, while the
  * Full Report reserves five equal-height slots so its four columns stay aligned.
  * `reserveSlots` picks between them.
  *

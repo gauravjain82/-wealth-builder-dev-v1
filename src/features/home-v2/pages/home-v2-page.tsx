@@ -26,7 +26,7 @@ import { VideoHero, CanvaVideoCard, PerformanceTable } from '@/features/home/com
 import { ContestsCard } from '@/features/contests';
 import { LeaderboardPanel } from '@/features/leaderboards';
 import { useHomePageContent } from '@/features/home/hooks/use-home-content';
-import type { HomePageSlot } from '@/features/home/services/home-content-service';
+import type { HomeMediaType, HomePageSlot } from '@/features/home/services/home-content-service';
 
 /** Fallbacks used while the CMS content loads, matching the current home page. */
 const DEFAULT_BACKGROUND_URL =
@@ -47,6 +47,11 @@ export default function HomeV2Page() {
   const slotHref = (slot: HomePageSlot, fallback: string): string => {
     const media = homeContent?.media?.[slot];
     return media && media.is_active && media.href ? media.href : fallback;
+  };
+
+  const slotMediaType = (slot: HomePageSlot): HomeMediaType | undefined => {
+    const media = homeContent?.media?.[slot];
+    return media && media.is_active && media.href ? media.media_type : undefined;
   };
 
   const backgroundUrl = slotHref('background', DEFAULT_BACKGROUND_URL);
@@ -78,6 +83,7 @@ export default function HomeV2Page() {
       <main className="text-white transition-all duration-300 relative z-20 pb-8">
         <VideoHero
           videoUrl={trailerUrl}
+          mediaType={slotMediaType('hero_trailer')}
           title={heroTitle}
           registerUrl={registerUrl}
           muted={muted}

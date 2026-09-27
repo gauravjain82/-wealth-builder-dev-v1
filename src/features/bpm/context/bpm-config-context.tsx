@@ -28,7 +28,7 @@ import type { BPMRowColorRule, BPMSettings } from '../types';
  * before a backend existed. Phase 7 moved them into the database (migration
  * `bpm/0020`) so an admin can recolour or switch one off from BPM Settings the
  * same way as their own rules. `BPM_GUEST_ROW_COLORS` is kept only as a
- * lifeboat for a failed fetch — see §6.10 of BPM_V2_PLAN.md for the trade.
+ * lifeboat for a failed fetch — see `docs/bpm/UI.md` §7 for the trade.
  *
  * **What renders before the rules arrive: nothing.** Rows stay plain until the
  * set resolves. A list where "not interested" is briefly the *wrong* colour is

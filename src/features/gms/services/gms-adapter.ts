@@ -20,7 +20,7 @@
  *
  * **When GMS is absent, every call here is a no-op.** A BPM component may call `emit`
  * unconditionally — with GMS switched off, uninstalled, or failing to load, the tool
- * behaves exactly as it did before (decision G12, and `APPLICATION_CONTRACT.md`'s
+ * behaves exactly as it did before (decision G12, and `docs/gms/ARCHITECTURE.md` §8's
  * failure-isolation rule).
  */
 

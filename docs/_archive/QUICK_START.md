@@ -1,3 +1,16 @@
+> **ARCHIVED — do not cite this document.**
+>
+> Its folder tree and its "add a feature" walkthrough describe the Firebase-era design:
+> `features/dashboard/`, `infrastructure/stripe/`, `infrastructure/api/`, `shared/hooks/`,
+> `shared/lib/` and a per-feature `routes.tsx` do not exist. Routes live in one file,
+> `src/router/index.tsx`.
+>
+> Current: [`docs/platform/OPERATIONS.md`](../platform/OPERATIONS.md) to run it,
+> [`docs/platform/ARCHITECTURE.md`](../platform/ARCHITECTURE.md) for the real layering,
+> [`docs/_standard/`](../_standard/) to document a new module.
+
+---
+
 # Quick Start Guide
 
 ## Prerequisites

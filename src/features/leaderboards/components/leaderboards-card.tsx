@@ -1,7 +1,8 @@
 /**
  * The compact home-page card.
  *
- * Deliberately small (`APPLICATION_CONTRACT.md` puts a 750 ms warm target on it): one
+ * Deliberately small (`docs/leaderboards/API.md` §6 puts a 750 ms warm target on it):
+ * one
  * metric, a three-row preview per panel, and no proof rows or personal list. The full
  * filter matrix lives in the expanded view.
  *

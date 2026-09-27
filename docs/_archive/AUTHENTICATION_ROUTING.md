@@ -1,3 +1,22 @@
+> **ARCHIVED — do not cite this document.** Superseded by [`docs/auth/`](../auth/) and
+> [`docs/platform/`](../platform/).
+>
+> It is wrong on its central claim. It states throughout that an authenticated user lands on
+> `/dashboard` — from `RootRedirect`, from `PublicRoute`, and after login. All three go to
+> `/home`; `/dashboard` is a `<Navigate to="/home" replace />` stub with no page behind it.
+> It also documents self-service signup and Google sign-in as working features: both throw
+> (`auth-repository.ts:237`, `:241`). Its list of seven protected routes has since become
+> roughly eighty, and it predates capability guards entirely.
+>
+> Current: [`docs/auth/UI.md`](../auth/UI.md) §1 for the routes and redirect targets,
+> [`docs/auth/ARCHITECTURE.md`](../auth/ARCHITECTURE.md) §3 for the flows, and
+> [`docs/platform/ARCHITECTURE.md`](../platform/ARCHITECTURE.md) §2 for the guards.
+>
+> Kept because its flow diagrams and its troubleshooting section describe intent clearly, and
+> because the `/dashboard` → `/home` change is itself recorded as decision A4.
+
+---
+
 # Authentication Routing Documentation
 
 ## Overview

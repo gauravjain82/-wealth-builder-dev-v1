@@ -1,8 +1,8 @@
 /**
  * The filter controls: person, view, Net, Leaders, Agents.
  *
- * Everything here is a **draft**. `UI_CONTRACT.md` is explicit that filter drafts do
- * not alter results until Apply, so this component owns local state and only calls
+ * Everything here is a **draft**. `docs/contests/UI.md` §4 is explicit that filter drafts
+ * do not alter results until Apply, so this component owns local state and only calls
  * `onApply` when the button is pressed. A person picked from the autocomplete changes
  * the draft, not the standings.
  *

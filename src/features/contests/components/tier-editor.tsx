@@ -8,7 +8,7 @@
  * manager typing `BR >= 50` — which is the moment it matters, because a contest
  * threshold is a promise about a prize.
  *
- * Three rules the form enforces, all from `DATA_CONTRACT.md` and all also enforced
+ * Three rules the form enforces, all from `docs/contests/UI.md` §2.7 and all also enforced
  * server-side, because a disabled input is not validation:
  *
  * - `TR`, `TP` and `TE` are result components, never threshold inputs. They are not

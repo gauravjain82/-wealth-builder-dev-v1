@@ -1,3 +1,16 @@
+> **ARCHIVED — do not cite this document.**
+>
+> It describes the Firebase repository architecture this codebase was designed around in
+> March 2026 and abandoned within weeks. The data layer is a Django REST API reached with
+> `fetch` and a DRF token; there is no Firestore repository layer, and
+> `src/infrastructure/firebase/base-repository.ts` is unused.
+>
+> Current: [`docs/platform/ARCHITECTURE.md`](../platform/ARCHITECTURE.md).
+> Why it went this way: [`docs/platform/PHASES.md`](../platform/PHASES.md) phase ~0 → ~1.
+> Kept because the reasoning behind the original design is still worth reading.
+
+---
+
 # Wealth Builder v1 - Architecture Guide
 
 ## Overview

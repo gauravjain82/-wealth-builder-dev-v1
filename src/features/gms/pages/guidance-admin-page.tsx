@@ -2,7 +2,7 @@
  * The guidance library and review queue.
  *
  * This page exists because without it the seeded SOPs could only be approved by hand
- * with an API client. `UI_CONTRACT.md` asks for a fuller management interface — a
+ * with an API client. `docs/gms/PHASES.md` §3 G11 asks for a fuller management interface — a
  * structured editor, a step builder, permissions and feedback screens — and this is
  * deliberately less than that: the library, the review queue, the change note, a content
  * preview, and the lifecycle actions. That is the subset needed to get the imported

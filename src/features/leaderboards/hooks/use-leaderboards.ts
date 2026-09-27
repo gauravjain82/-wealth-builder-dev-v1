@@ -3,8 +3,9 @@
  *
  * The selection is part of every query key, so changing scope, metric or range makes
  * the old response irrelevant rather than merely stale — which is what
- * `UI_CONTRACT.md` means by discarding stale responses. Each query forwards React
- * Query's `signal` to `fetch`, so the superseded request is actually cancelled
+ * `docs/leaderboards/ARCHITECTURE.md` §4 means by discarding stale responses. Each
+ * query forwards React Query's `signal` to `fetch`, so the superseded request is
+ * actually cancelled
  * instead of running to completion and being thrown away.
  */
 

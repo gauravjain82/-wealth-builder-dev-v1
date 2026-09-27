@@ -3,8 +3,9 @@
  *
  * Every endpoint is gated server-side by `homev2:read`; hiding a control here is not
  * authorization. Requests take an `AbortSignal` so a filter change can cancel work
- * that is already in flight — `UI_CONTRACT.md` requires stale responses to be
- * discarded, and React Query only does that reliably if the fetch is abortable.
+ * that is already in flight — `docs/leaderboards/ARCHITECTURE.md` §4 requires stale
+ * responses to be discarded, and React Query only does that reliably if the fetch is
+ * abortable.
  */
 
 import type {

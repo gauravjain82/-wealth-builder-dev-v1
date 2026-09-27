@@ -15,7 +15,7 @@
  *
  * **A full tier replacement is opt-in.** The backend deletes omitted tiers only when
  * `replace_tiers` is sent, so this editor sends the complete collection *and* says so,
- * which is the case `API_CONTRACT.md` permits. Tiers marked for deletion travel as
+ * which is the case `docs/contests/API.md` §2 permits. Tiers marked for deletion travel as
  * `pending_delete` rather than simply being dropped, so the intent is explicit in the
  * payload instead of inferred from an absence.
  */

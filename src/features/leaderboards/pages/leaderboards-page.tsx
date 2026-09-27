@@ -1,7 +1,7 @@
 /**
  * The standalone Leaderboards route.
  *
- * Two surfaces on one page, because `APPLICATION_CONTRACT.md` treats them as
+ * Two surfaces on one page, because `docs/leaderboards/README.md` §1 treats them as
  * different readings of the same data rather than different features: the expanded
  * leaderboard answers "who is ahead right now", the Full Report answers "how is the
  * period going against goal".

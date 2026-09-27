@@ -1,7 +1,7 @@
 /**
  * The standalone contest route.
  *
- * `UI_CONTRACT.md` lists an optional full route alongside the embedded card, sharing
+ * `docs/contests/UI.md` §1 lists an optional full route alongside the embedded card, sharing
  * the same state model, APIs, filters, tier toggles and standings — an expanded
  * placement may show more, but it cannot use different qualification rules. So this
  * renders the same `ContestsCard`, given a taller box.

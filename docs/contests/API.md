@@ -1,0 +1,164 @@
+# Contests — API
+
+| | |
+|---|---|
+| **Module** | `contests` |
+| **Source** | `src/features/contests/services/contests-service.ts` |
+| **Routes** | `/contests`, `/admin/contest-settings`, embedded card |
+| **Backend module** | `wbreporting` → `mlm_platform/docs/wbreporting/API.md` |
+| **API prefix** | `/api/wbreporting/` |
+| **Status** | Gated |
+| **Doc version** | 1.0 |
+| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+
+> Endpoints **consumed**, not exposed.
+
+## 1. Conventions
+
+Identical to [leaderboards](../leaderboards/API.md#1-conventions) by design — same auth header, same
+error shape, same guarded parse — so the two siblings cannot drift.
+
+| | |
+|---|---|
+| Base | `${VITE_API_BASE_URL}/api/wbreporting` (`:28`) |
+| Auth | `Authorization: Token <localStorage['wb.authToken']>` (`:44`) |
+| Cancellation | every read takes an `AbortSignal`, forwarded from React Query |
+| Errors | non-2xx → `ContestError` with `status` and the backend's `code` (`:32`) |
+| Reads | `getJson` |
+| Writes | `sendJson`, which returns `undefined` on 204 (`:186`) |
+| **Uploads** | `FormData` with **no `Content-Type` header** |
+
+The upload rule is worth stating because getting it wrong fails unhelpfully: the browser must set the
+multipart boundary itself, and overriding it with `application/json` produces an opaque parser error
+(`:265`).
+
+## 2. Endpoints consumed
+
+Thirteen. Five reads under `homev2:read`, eight writes under `wbreporting:manage`.
+
+### Reads
+
+| Method | Path | Service function | Hook |
+|---|---|---|---|
+| GET | `/my-access/` | `fetchContestAccess` | `useContestAccess` |
+| GET | `/contest-board/` | `fetchContests` | `useContests` |
+| GET | `/contest-board/{id}/standings/` | `fetchStandings` | `useStandings` |
+| GET | `/contest-board/{id}/proof/` | `fetchProof` | `useProof` |
+| GET | `/contest-board/{id}/agents/{agentId}/` | `fetchAgentProfile` | `useAgentProfile` |
+| GET | `/contest-board/{id}/flyer/` | `fetchFlyer` | `useFlyer` |
+
+### Writes — settings
+
+| Method | Path | Service function |
+|---|---|---|
+| GET | `/contest-settings/` | `fetchEditorOptions` |
+| GET · POST | `/contest-settings/contests/` | `fetchEditableContests`, `createContest` |
+| PUT | `/contest-settings/{id}/` | `saveContest` |
+| PATCH | `/contest-settings/{id}/visibility/` | `setContestHidden` |
+| PATCH | `/contest-settings/{id}/flyer-visibility/` | `setFlyerVisible` |
+| POST · DELETE | `/contest-settings/{id}/flyer/` | `uploadFlyer`, `removeFlyer` |
+| DELETE | `/contest-settings/{id}/delete/` | `deleteContest` |
+
+**`/contest-settings/contests/` rather than Package 1's `contests/` CRUD** is deliberate: that
+serializer carries no `revision`, so a save built from it could never satisfy the concurrency check
+(`:198`).
+
+`my-access` is **the same endpoint** [leaderboards](../leaderboards/API.md#2-endpoints-consumed) and
+`admin/wb-pipeline` call. One payload, three consumers, three different flags.
+
+## 3. Payload types
+
+`types/index.ts` (322 lines), mirroring `wbreporting/serializers_contests.py`. Its header states the
+two rules that a well-meaning edit would break:
+
+1. **`progress` is `number | null`, and `null` means there is no number** — an ineligible cell, or a
+   tier nothing could be measured for. Never coalesce it to `0`; a zero reads as a real score.
+2. **Nothing here describes a daily result row.** Django prepares the standings; the browser receives
+   *evaluations*.
+
+| Type | Note |
+|---|---|
+| `ContestScope` | `all \| personal \| base \| smd_base \| super_base \| super_team`. **`net` is a filter, not a scope** |
+| `ContestStatus` | three reader values derived from five stored ones |
+| `ThresholdMetric` | the eleven configurable metrics |
+| `TierRequirement` | carries `single_hop_team` and `available` |
+| `TierEvaluation` | `eligible`, `progress`, `qualified`, `near`, `unavailable`, `partially_measurable`, `unmeasured`, `metrics` |
+| `MetricProgress` | `actual: number \| null` — never a substituted zero |
+| `StandingRow` | identity plus `evaluations` keyed by tier |
+| `StandingsResponse` | rows, tiers, cursor, `near_percent`, `team_credit_note`, display switches, echoed `filters` |
+| `ProofResponse` | period, columns, rows, cards, formula, cursor |
+| `FilterDraft` / `StandingsQuery` | draft state vs what is actually queried |
+| `EditableContest` / `EditableTier` | carry **`revision`**; `pending_delete` is client-only |
+| `EditorOptions` | levels, metrics, statuses, period modes, flyer limits — **served, not hard-coded** |
+| `LevelOption.synthetic` | true only for `NON` — "no level assigned", not a real row |
+| `MetricOption.measurable` | false for metrics this deployment has no source for |
+
+`TierEvaluation.metrics` is **empty** for an ineligible cell: there is deliberately no number to
+display.
+
+## 4. Query parameters
+
+`standingsParams` (`:95`) builds them, so the card, the sort and the pager cannot disagree.
+
+| Parameter | Note |
+|---|---|
+| `scope` | always sent |
+| `net`, `leaders`, `agents` | booleans, always sent |
+| `person` | sent **only** when set **and** `scope !== 'all'` |
+| `tiers` | comma-joined, omitted when nothing is selected |
+| `sort_tier` | omitted when null |
+| `cursor` | pagination |
+
+Proof takes `agent_id`, `tier_id`, `metric` and an optional `cursor` — **and no dates.** The server
+resolves the period from the tier, because a browser-supplied window is not authoritative and a client
+that could choose one could show a number the standings cell never claimed.
+
+## 5. Error codes and handling
+
+Nineteen stable codes (`types/index.ts:27`) — the largest vocabulary in the app.
+
+| Code | Meaning | Client behaviour |
+|---|---|---|
+| `contest_not_found`, `tier_not_found`, `agent_not_found` | 404s | surfaced |
+| `profile_forbidden` | may not see this agent | dialog reports it; `retry: false` |
+| `flyer_not_found` | no flyer | dialog reports it |
+| `invalid_scope`, `invalid_period`, `invalid_request` | bad request | should be unreachable — controls are server-driven |
+| `metric_not_supported` | not rankable | " |
+| `person_required` | a scope needing a person got none | " |
+| **`edit_conflict`** | **409 — somebody else saved first** | **the one a caller must *handle*: reload, never retry** |
+| `invalid_tier_threshold`, `invalid_level_rule`, `invalid_tier_order` | tier validation | shown against the field |
+| `tier_metric_unavailable` | required an unmeasurable metric | the editor disables it, but the server is the gate |
+| `flyer_file_required`, `flyer_size_invalid`, `flyer_type_invalid` | upload validation | shown on the upload control; limits come from `EditorOptions.flyer` |
+| `storage_failed` | the file store failed | retryable |
+
+`edit_conflict` is the only code with a mandated client behaviour. Everything else is reported;
+this one must **reload**, because retrying is the silent overwrite the revisions exist to prevent
+(`:180`).
+
+## 6. Backend ownership
+
+`wbreporting` owns, and the client must not recompute:
+
+- **Aggregation, eligibility and ranking.** The client receives evaluations, not result rows.
+- **Pagination**, 50 default / 200 maximum, by cursor.
+- **The period for any proof request.** No dates cross the wire.
+- **Eligibility semantics** — Non-License via `LicensingTracker.is_licensed`, level rules, and the
+  fact that all-levels and no-levels collapse to the same "anyone".
+- **Measurability.** Which metrics this deployment can measure, per tier period; `mr`/`mp` are
+  computed at read time and gated on `WB_MILESTONE_TIMESTAMPS_SINCE`.
+- **The qualified rule**: never `qualified` while any requirement is unmeasurable (C7).
+- **Optimistic concurrency.** Revisions are issued and checked server-side; a tier edit bumps the
+  contest's revision too.
+- **Whether an omitted tier is deleted** — only on explicit `replace_tiers`.
+- **Flyer storage and signing.** URLs are short-lived (≈15 minutes).
+- **Status derivation** — three reader values from five stored ones.
+- **The editor's own options.** Levels, metrics, statuses, period modes and flyer limits are served,
+  so a level added to `accounts.Level` appears here with no release.
+
+The client owns draft filters, tier selection, which controls to offer, the containment of its own
+card, and reloading on a 409.
+
+**One cross-surface consequence worth knowing.** `slic` counts `agent_approval_date` while the
+Non-License rule reads `LicensingTracker.is_licensed` — a *different column*. The two can therefore
+disagree inside one contest, and a backend test asserts that they can (decision C1). It is not a bug
+to be reconciled in the client.

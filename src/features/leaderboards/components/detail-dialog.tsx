@@ -2,8 +2,8 @@
  * The proof dialog: where one number on a leaderboard came from.
  *
  * It opens **immediately** with a loading state and never waits on the summary
- * request — `UI_CONTRACT.md` is explicit about that, and the reason is that the
- * dialog is the answer to "is this number right", which is exactly the moment a
+ * request — `docs/leaderboards/UI.md` §4 is explicit about that, and the reason is
+ * that the dialog is the answer to "is this number right", which is exactly the moment a
  * reader will not tolerate a blank screen.
  *
  * Nothing here decides what may be shown. Protected fields arrive already masked, or

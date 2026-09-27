@@ -6,7 +6,7 @@
  * - **Draft dates do nothing until Apply.** Typing in the start or end field changes
  *   a draft, not the query. Without that, a half-typed date fires a request for a
  *   range nobody asked for and the results flicker through nonsense.
- * - **Milestone mode is shown, not chosen.** `UI_CONTRACT.md` forbids a per-view
+ * - **Milestone mode is shown, not chosen.** `docs/leaderboards/UI.md` §4 forbids a per-view
  *   control for it; it is a Settings decision, because two people comparing screens
  *   would otherwise be comparing different populations.
  *

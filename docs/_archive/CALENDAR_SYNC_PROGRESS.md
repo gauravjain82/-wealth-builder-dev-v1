@@ -1,3 +1,23 @@
+> **ARCHIVED — superseded, not wrong.** Current documentation:
+> [`docs/calendar-sync/`](../calendar-sync/).
+>
+> Every factual claim in this log was re-verified against the source on 2026-09-27 and held:
+> the eight files, the Settings wire-in, the Match Up link, the deleted `google-sync-card.tsx`
+> orphan, and the OAuth `next`-sealing mechanism. It is unusually good handover writing.
+>
+> It is archived because it is **silently incomplete**. It describes the module as of
+> 2026-09-04; Phase 11 (2026-09-15) added three imported-event endpoints, so the log covers
+> eight endpoints where the code has eleven — with nothing to signal the gap. That is the
+> failure mode a dated handover log always ends in, and the reason this repo documents modules
+> under a standard with a `Verified against` commit instead.
+>
+> Its phase numbering is authoritative and was carried into
+> [`docs/calendar-sync/PHASES.md`](../calendar-sync/PHASES.md) unchanged. Its unnumbered
+> decisions became CS1–CS6 there. The backend's fuller log is
+> `mlm_platform/CALENDAR_SYNC_PROGRESS.md`.
+
+---
+
 # Calendar Sync — Frontend Progress & Handover Log
 
 > Living handover log for the **frontend** of the Two-Way, Multi-Calendar Google

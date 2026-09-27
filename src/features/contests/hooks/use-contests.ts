@@ -5,7 +5,7 @@
  * key, so changing any of them makes the previous response irrelevant rather than
  * merely stale. Each query forwards React Query's `signal` to `fetch`, so a
  * superseded request is actually cancelled instead of running to completion and being
- * discarded, which is what `UI_CONTRACT.md` asks for.
+ * discarded, which is what `docs/contests/ARCHITECTURE.md` §4 asks for.
  *
  * Proof, profile and flyer are `enabled`-gated on the dialog being open, so opening
  * the card does not fetch four dialogs' worth of data nobody asked for.

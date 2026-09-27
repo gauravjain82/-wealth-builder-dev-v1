@@ -17,7 +17,7 @@
  * BPM renders and submits with GMS absent (decision G12). That property is structural —
  * `emit` returns immediately when nothing is attached, and `HelpAction` returns null
  * without the capability — but structural is not asserted. It is recorded in
- * `WB_GMS_PROGRESS.md` as the one piece of the plan this package could not deliver.
+ * `docs/gms/PHASES.md` §5 as the one piece of the plan this package could not deliver.
  *
  * Nothing here is imported at runtime; it exists to be type-checked.
  */

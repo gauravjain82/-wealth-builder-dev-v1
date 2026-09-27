@@ -1,7 +1,8 @@
 /*
  * WB Contests — feature styles.
  *
- * Everything is scoped under `wb-ct-`, following `leaderboards.css`. Nothing here is
+ * Everything is scoped under `wb-ct-`, following `leaderboards.css`. See
+ * `docs/contests/UI.md` §7. Nothing here is
  * a global rule and nothing here styles a shared component.
  *
  * THE CONTAINMENT CONTRACT
@@ -303,7 +304,7 @@ select.wb-ct-title:focus-visible {
 }
 
 /*
- * The blank cell. It carries no visible text at all — `AGENTS.md` forbids the word
+ * The blank cell. It carries no visible text at all — `docs/contests/UI.md` §2.5 forbids the word
  * "Restricted" — while the screen-reader text below keeps its meaning.
  */
 .wb-ct-blank {

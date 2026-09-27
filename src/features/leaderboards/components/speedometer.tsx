@@ -1,7 +1,7 @@
 /**
  * The Full Report's progress gauge.
  *
- * Geometry is fixed by `UI_CONTRACT.md` and is not a style choice: viewBox
+ * Geometry is fixed by `docs/leaderboards/UI.md` §5 and is not a style choice: viewBox
  * `0 0 200 120`, centre `(100,100)`, track radius 78, zone radius 84, 20 tick
  * intervals with 5 labelled major positions, and a needle sweeping -90° at 0% to
  * +90° at 100%.

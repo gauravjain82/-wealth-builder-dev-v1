@@ -1,3 +1,30 @@
+> **ARCHIVED — a design proposal that was not built as specified. Do not treat it as a
+> contract.**
+>
+> This is a backend database and API specification, written in April 2026 by reading the *old*
+> site's code, to propose how admin-managed page content should be modelled. It describes ~30
+> SQL tables and 18 endpoints under `/api/admin/pages/*`.
+>
+> **None of those 18 endpoints exists.** Nothing in this repo calls `/api/admin/pages/`. The
+> content API that was actually built lives under `/api/content/`:
+>
+> | Consumed today | By |
+> |---|---|
+> | `/api/content/home-page/` | `home` |
+> | `/api/content/file-vault/`, `/api/content/file-vault/items/` | `file-vault` |
+> | `/api/content/training-center/`, `/items/`, `/progress/` | `training-center` |
+> | `/api/content/admin/home-page`, `/admin/file-vault`, `/admin/training-center` | `admin` |
+>
+> The shape also differs: a `{page_key, updated_at, data}` envelope with full-replace `PUT`s
+> was proposed; the built API is resource-oriented. Treat the table designs and the page-by-page
+> content inventory as useful historical analysis of what each page needs, and nothing here as
+> a description of the deployed schema.
+>
+> The authority on the real endpoints is `mlm_platform/docs/content/` in the backend repo.
+> `docs/admin/API.md` will document the frontend's consumption of them when batch D is written.
+
+---
+
 ﻿# Admin Content Management - Old Code Driven DB and API Document
 
 ## Goal

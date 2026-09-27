@@ -8,7 +8,8 @@
  *   no full-screen click-catcher. The user is operating the live tool through this, and
  *   an overlay that swallowed the click would make the walkthrough impossible to finish.
  * - **A satisfied step shows "Already complete" and offers Next or End.** It does not
- *   advance itself. `OWNER_DECISIONS.md` is explicit — "do not silently rush forward" —
+ *   advance itself. `docs/gms/PHASES.md` §3 OD9 is explicit — "do not silently rush
+ *   forward" —
  *   and rushing is exactly what a well-meaning auto-advance would do.
  * - **Exit warns when unsaved tool data may be lost**, and says plainly that saved work
  *   stays saved. Those are different things and conflating them would frighten people

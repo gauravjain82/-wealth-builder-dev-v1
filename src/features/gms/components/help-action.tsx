@@ -1,7 +1,7 @@
 /**
  * The labelled top-right Help action, and everything it owns.
  *
- * Wrapped in an error boundary because `APPLICATION_CONTRACT.md` requires that a GMS
+ * Wrapped in an error boundary because `docs/gms/ARCHITECTURE.md` §8 requires that a GMS
  * failure never impairs the tool underneath. If anything in here throws, the button
  * disappears and the page carries on — which is the correct outcome for a help feature
  * and the wrong one for almost anything else.

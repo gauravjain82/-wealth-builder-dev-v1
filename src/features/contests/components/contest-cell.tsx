@@ -1,7 +1,7 @@
 /**
  * One standings cell: a percentage, its metric pills, or a blank.
  *
- * The blank is the part that matters. `AGENTS.md` and `UI_CONTRACT.md` both require
+ * The blank is the part that matters. `docs/contests/UI.md` §2.5 requires
  * that an ineligible cell renders visually empty and **never** shows the word
  * "Restricted" — it reads as a punishment rather than as "this tier is not for you",
  * and a Non-License tier blanks every licensed person by design. The accessible text

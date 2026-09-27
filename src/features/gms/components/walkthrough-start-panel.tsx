@@ -1,7 +1,7 @@
 /**
  * What a user sees before a walkthrough starts.
  *
- * `UI_CONTRACT.md` requires purpose, estimated effort, hard prerequisites, recommended
+ * `docs/gms/UI.md` §2.3 requires purpose, estimated effort, hard prerequisites, recommended
  * preparation, the automatically checked results, the real-data notice, and Start. Three
  * of those are easy to get subtly wrong, so they are handled explicitly:
  *
