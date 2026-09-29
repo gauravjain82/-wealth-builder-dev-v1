@@ -17,141 +17,41 @@
  * so `overflow: hidden` here cannot clip them.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { Modal } from '@/shared/components/ui/modal';
 
 import '../contests.css';
-import {
-  buildStandingsQuery,
-  useContests,
-  usePrefetchOtherStandings,
-  useStandings,
-} from '../hooks/use-contests';
-import type {
-  FilterDraft,
-  MetricProgress,
-  StandingRow,
-  StandingsQuery,
-  TierSummary,
-} from '../types';
+import { useContestBoard } from '../hooks/use-contest-board';
+import type { FilterDraft } from '../types';
+import { BoardDialogs, StandingsRegion } from './contest-board-parts';
 import { ContestFilters } from './contest-filters';
-import {
-  FlyerDialog,
-  HelpDialog,
-  ProfileDialog,
-  ProofDialog,
-  type ProofTarget,
-} from './contest-dialogs';
-import { ContestStandings } from './contest-standings';
+import { scopeLabel } from './scope-options';
 import { TierSelector } from './tier-selector';
-
-/**
- * Everyone the viewer may see, with no person chosen: dtez's initial view, kept within
- * the viewer's permissions (C20; `all` resolves through `authz.get_scope`, C10).
- */
-const DEFAULT_FILTERS: FilterDraft = {
-  personId: null,
-  personLabel: '',
-  scope: 'all',
-  net: false,
-  leaders: true,
-  agents: true,
-};
 
 interface ContestsCardProps {
   /** Rendered inside the host's own card chrome when false. Defaults to true. */
   withChrome?: boolean;
   /**
-   * Warm the other contests' standings once the first is shown, so a switch is served
-   * from cache. Off by default: `/home-v2` is every gated user's landing page, and a
-   * background standings request per contest on each visit is a cost paid mostly for
-   * switches nobody makes there (decision C24, `docs/contests/PHASES.md` §3).
+   * Warm the other contests' standings once the first is shown. Off by default, and
+   * off on `/home-v2` (decision C24); see `useContestBoard`.
    */
   prefetchOtherContests?: boolean;
 }
 
+/**
+ * The compact placement, on `/home-v2`. The standalone `/contests` page renders
+ * `ContestsBoard` over the same state (`useContestBoard`) instead.
+ */
 export function ContestsCard({
   withChrome = true,
   prefetchOtherContests = false,
 }: ContestsCardProps) {
-  const { data: contests, isLoading: loadingContests } = useContests();
-
-  const [contestId, setContestId] = useState<number | null>(null);
-  const [filters, setFilters] = useState<FilterDraft>(DEFAULT_FILTERS);
-  const [selectedTiers, setSelectedTiers] = useState<number[]>([]);
-  const [sortTier, setSortTier] = useState<number | null>(null);
-  const [direction, setDirection] = useState<'asc' | 'desc'>('desc');
-  const [pageSize, setPageSize] = useState(50);
+  const board = useContestBoard({ prefetchOtherContests });
+  const { contests, activeContestId, contest, filters, dialogs } = board;
+  const { data, isFetching } = board.standings;
 
   const [showFilters, setShowFilters] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const [flyerFor, setFlyerFor] = useState<number | null>(null);
-  const [proofTarget, setProofTarget] = useState<ProofTarget | null>(null);
-  const [profileTarget, setProfileTarget] =
-    useState<{ contestId: number; agentId: number; name: string } | null>(null);
-
-  // The selector prioritises active contests, which the backend already sorts for.
-  const activeContestId = contestId ?? contests?.[0]?.id ?? null;
-  const contest = contests?.find((item) => item.id === activeContestId) ?? null;
-
-  const query: StandingsQuery | null = useMemo(
-    () =>
-      activeContestId === null
-        ? null
-        : buildStandingsQuery({
-            filters,
-            contestId: activeContestId,
-            tierIds: selectedTiers,
-            sortTier,
-            direction,
-          }),
-    [activeContestId, filters, selectedTiers, sortTier, direction]
-  );
-
-  const { data, isLoading, isFetching, isError, error } = useStandings(query);
-
-  // Latched, so the prefetch does not stop and restart each time a tier toggle puts the
-  // visible standings back into loading.
-  const [firstStandingsShown, setFirstStandingsShown] = useState(false);
-  useEffect(() => {
-    if (data) setFirstStandingsShown(true);
-  }, [data]);
-  const contestIds = useMemo(() => contests?.map((item) => item.id) ?? [], [contests]);
-  usePrefetchOtherStandings({
-    enabled: prefetchOtherContests && firstStandingsShown,
-    contestIds,
-    activeContestId,
-    filters,
-    direction,
-  });
-
-  /** Toggling the sorted tier flips direction; a new tier starts descending. */
-  const handleSort = (tierId: number) => {
-    if (sortTier === tierId) {
-      setDirection((current) => (current === 'desc' ? 'asc' : 'desc'));
-    } else {
-      setSortTier(tierId);
-      setDirection('desc');
-    }
-  };
-
-  const openProof = (row: StandingRow, tier: TierSummary, metric: MetricProgress) => {
-    if (activeContestId === null) return;
-    setProofTarget({
-      contestId: activeContestId,
-      tierId: tier.id,
-      agentId: row.agent_id,
-      agentName: row.name || row.agency_code,
-      tierName: tier.name,
-      metric: metric.metric,
-    });
-  };
-
-  const openProfile = (agentId: number, name: string) => {
-    if (activeContestId === null) return;
-    setProfileTarget({ contestId: activeContestId, agentId, name });
-  };
 
   const body = (
     <div className="wb-ct">
@@ -161,13 +61,7 @@ export function ContestsCard({
             className="wb-ct-title"
             aria-label="Contest"
             value={activeContestId ?? ''}
-            onChange={(event) => {
-              // A switch keeps filters and direction and resets tiers and sort tier —
-              // the key `usePrefetchOtherStandings` warms. Change one, change both.
-              setContestId(Number(event.target.value));
-              setSelectedTiers([]);
-              setSortTier(null);
-            }}
+            onChange={(event) => board.switchContest(Number(event.target.value))}
           >
             {contests.map((item) => (
               <option key={item.id} value={item.id}>
@@ -184,7 +78,7 @@ export function ContestsCard({
             <button
               type="button"
               className="wb-ct-pill"
-              onClick={() => setFlyerFor(activeContestId)}
+              onClick={dialogs.openFlyer}
             >
               Flyer
             </button>
@@ -196,7 +90,11 @@ export function ContestsCard({
           >
             Filters
           </button>
-          <button type="button" className="wb-ct-pill" onClick={() => setShowHelp(true)}>
+          <button
+            type="button"
+            className="wb-ct-pill"
+            onClick={() => dialogs.setShowHelp(true)}
+          >
             Help
           </button>
         </div>
@@ -219,9 +117,9 @@ export function ContestsCard({
           {data.show_tier_overview ? (
             <TierSelector
               tiers={data.tiers}
-              selected={selectedTiers}
+              selected={board.selectedTiers}
               showCounts={data.show_tier_overview}
-              onChange={setSelectedTiers}
+              onChange={board.setSelectedTiers}
             />
           ) : null}
 
@@ -235,64 +133,20 @@ export function ContestsCard({
         </>
       ) : null}
 
-      <div
-        className="wb-ct-scroll"
-        tabIndex={0}
-        role="region"
-        aria-label="Contest standings"
-      >
-        {loadingContests || isLoading ? (
-          <p className="wb-ct-state">Loading standings…</p>
-        ) : isError ? (
-          <p className="wb-ct-state" role="alert">
-            {(error as Error)?.message ?? 'Standings could not be loaded.'}
-          </p>
-        ) : !contests?.length ? (
-          <p className="wb-ct-state">There are no contests running right now.</p>
-        ) : data ? (
-          <ContestStandings
-            rows={data.rows.slice(0, pageSize)}
-            // Every tier comes back for the cards (C18); only the selected are columns.
-            tiers={data.tiers.filter((tier) => tier.selected)}
-            sortTier={data.sort_tier}
-            direction={data.direction}
-            showNearQualifiers={data.show_near_qualifiers}
-            hasMore={data.rows.length > pageSize || Boolean(data.next_cursor)}
-            isFetchingMore={isFetching}
-            onSort={handleSort}
-            onOpenProof={openProof}
-            onOpenProfile={(row) => openProfile(row.agent_id, row.name || row.agency_code)}
-            onLoadMore={() => setPageSize((size) => size + 50)}
-          />
-        ) : null}
-      </div>
+      <StandingsRegion board={board} />
 
       <Modal open={showFilters} title="Filters" onClose={() => setShowFilters(false)}>
         <ContestFilters
           applied={filters}
           onApply={(draft) => {
-            setFilters(draft);
+            board.applyFilters(draft);
             setShowFilters(false);
           }}
           onClose={() => setShowFilters(false)}
         />
       </Modal>
 
-      <ProofDialog
-        target={proofTarget}
-        onClose={() => setProofTarget(null)}
-        onOpenAgent={(agentId, name) => {
-          setProofTarget(null);
-          openProfile(agentId, name);
-        }}
-      />
-      <ProfileDialog target={profileTarget} onClose={() => setProfileTarget(null)} />
-      <FlyerDialog
-        contestId={flyerFor}
-        contestName={contest?.name ?? ''}
-        onClose={() => setFlyerFor(null)}
-      />
-      <HelpDialog open={showHelp} onClose={() => setShowHelp(false)} />
+      <BoardDialogs board={board} />
     </div>
   );
 
@@ -310,20 +164,10 @@ export function ContestsCard({
 
 /** The applied-filter summary, which stays visible when the controls collapse. */
 function describeFilters(filters: FilterDraft): string {
-  const scope =
-    {
-      personal: 'Just this person',
-      base: 'Base shop',
-      smd_base: 'Base shop',
-      super_base: 'Super base',
-      super_team: 'Super team',
-      all: 'Everyone I can see',
-    }[filters.scope] ?? filters.scope;
-
   const extras = [
     filters.net ? 'direct reports only' : '',
     filters.leaders && filters.agents ? '' : filters.leaders ? 'leaders only' : 'agents only',
   ].filter(Boolean);
 
-  return [scope, ...extras].join(' · ');
+  return [scopeLabel(filters.scope), ...extras].join(' · ');
 }

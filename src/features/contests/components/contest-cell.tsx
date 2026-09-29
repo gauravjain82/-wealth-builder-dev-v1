@@ -19,6 +19,12 @@ interface ContestCellProps {
   evaluation: TierEvaluation | undefined;
   tierName: string;
   showNearQualifiers: boolean;
+  /**
+   * Decision C5's label for the single-hop measures. The standalone page shows no
+   * banner above the grid (parity phase 18), so the BR/BP/LIC pills carry it here, and
+   * the proof dialog states it in full.
+   */
+  teamCreditNote: string;
   onOpenProof: (metric: MetricProgress) => void;
 }
 
@@ -46,6 +52,7 @@ export function ContestCell({
   evaluation,
   tierName,
   showNearQualifiers,
+  teamCreditNote,
   onOpenProof,
 }: ContestCellProps) {
   if (!evaluation || !evaluation.eligible) {
@@ -77,7 +84,7 @@ export function ContestCell({
             title={
               metric.available
                 ? metric.single_hop_team
-                  ? `${metric.label} — counts direct reports only`
+                  ? `${metric.label} — ${teamCreditNote || 'counts direct reports only'}`
                   : metric.label
                 : metric.unavailable_reason
             }

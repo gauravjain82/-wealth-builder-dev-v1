@@ -157,6 +157,13 @@ export interface StandingsResponse {
   show_tier_overview: boolean;
   show_near_qualifiers: boolean;
   filters: ContestFilters;
+  /**
+   * How many people the Leaders / Agents filters call leaders — somebody names them as
+   * their leader — over the view's candidate map, not the rows. dtez's "N leaders
+   * identified" (parity phase 18). Absent from a backend older than that phase, and
+   * then rendered as `—`, never `0`.
+   */
+  leader_count?: number;
 }
 
 export interface ProofColumn {
@@ -208,6 +215,31 @@ export interface FlyerResponse {
   kind: 'image' | 'pdf';
   mime: string;
   original_name: string;
+}
+
+/** One match from the person search: a user id and dtez's `Name [CODE]` label. */
+export interface PersonOption {
+  id: number;
+  label: string;
+  agencyCode: string;
+  name: string;
+}
+
+/** The cell a proof dialog is opened for. */
+export interface ProofTarget {
+  contestId: number;
+  tierId: number;
+  agentId: number;
+  agentName: string;
+  tierName: string;
+  metric: ThresholdMetric;
+}
+
+/** The agent a profile dialog is opened for. */
+export interface ProfileTarget {
+  contestId: number;
+  agentId: number;
+  name: string;
 }
 
 /** Draft filter state. Nothing here reaches the server until Apply is pressed. */

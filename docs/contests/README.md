@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `08eea2c` — 2026-09-29 (§4 vocabulary rows only; the rest `7e3b7f1`, 2026-09-27) |
+| **Verified against** | commit `PHASE18` — 2026-09-29 (§2, §3 and §5 re-read for parity phase 18; §4 vocabulary `08eea2c`; the rest `7e3b7f1`, 2026-09-27) |
 
 > **Deployed but not open.** Migrations `wbreporting/0001`–`0003` are applied and the code shipped
 > 2026-09-26. Nobody has been granted `homev2:read` for contests, so no reader can reach it yet.
@@ -37,8 +37,10 @@ Because a contest is a promise, two properties matter more here than in a normal
 ## 2. Scope
 
 **In scope**
-- The embedded standings card, and the same card on a standalone route.
-- Draft filters (person, view, Net, Leaders, Agents) with explicit Apply.
+- The embedded standings card on `/home-v2`, and a standalone `/contests` page laid out as dtez's
+  (title and status line, contests as buttons, an always-visible filter bar) over the same state.
+- Draft filters (person, view, Net, Leaders, Agents; on the page also Upline and Leader) with
+  explicit Apply.
 - Tier overview cards doubling as tier toggles, with a three-state gesture.
 - Standings in two renderings — wide table and narrow per-agent cards — chosen by container width.
 - Four dialogs: proof, agent profile, flyer, Help.
@@ -62,12 +64,12 @@ Because a contest is a promise, two properties matter more here than in a normal
 |---|---|
 | Routes | 2 + 1 embedded card |
 | Pages | 2 (both thin wrappers) |
-| Components | 8 |
-| Hooks | 8 queries + 7 mutations in one bundle |
+| Components | 12 |
+| Hooks | 9 queries + 7 mutations in one bundle, plus the board-state hook |
 | Services | 1 |
-| Endpoints consumed | 13 |
-| LOC (ts/tsx) | 2,708 |
-| CSS | 699 lines, all under `wb-ct-` |
+| Endpoints consumed | 13 (`wbreporting`) + the `accounts/users/` person search |
+| LOC (ts/tsx) | 3,542 |
+| CSS | 1,018 lines, all under `wb-ct-` |
 | Doc tier | Full |
 
 ## 4. Domain vocabulary
@@ -95,7 +97,8 @@ Because a contest is a promise, two properties matter more here than in a normal
 
 **Upstream**
 - `src/shared/components/ui/modal` — all four dialogs portal through it.
-- `src/shared/components/user-autocomplete-dropdown` — the filter's person picker.
+- `src/shared/components/user-autocomplete-dropdown` — the card modal's person picker.
+- `/api/accounts/users/` — the standalone page's person search.
 
 **Downstream**
 - `src/features/home-v2/` — mounts `ContestsCard`, replacing a `CanvaVideoCard` placeholder.

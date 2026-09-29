@@ -23,6 +23,11 @@
  *   3. only `.wb-ct-scroll` scrolls, and it owns both axes — wide standings scroll
  *      horizontally *inside* the card, never at page level.
  *
+ * The contract is the Home v2 card's. The standalone page's host (`/contests`) is not
+ * height-bounded — the app shell's main area scrolls — so there the board grows with
+ * its content and the page scrolls, as dtez's does (measured in parity phase 18, the
+ * same before and after it). See "standalone page" below.
+ *
  * There is deliberately no `100vh`, no `vh` unit at all, and no fixed pixel height on
  * the root. Overlays render through the shared `Modal`, which portals to
  * `document.body`, so nothing a dialog does is clipped by `overflow: hidden` here.
@@ -522,11 +527,324 @@ select.wb-ct-title:focus-visible {
   border: 0;
 }
 
+/* --- standalone page (/contests): dtez's layout, parity phase 18 ---------- */
+
+/*
+ * `ContestsBoard`. `.wb-ct-page-body` holds the selector, the filter bar, the contest
+ * title row, the tier strip and `.wb-ct-scroll`, and is one more flex ancestor with
+ * `min-height: 0`, so a bounded host would still leave `.wb-ct-scroll` the single
+ * flexible row. `/contests` gives no bounded height, so in practice the board grows
+ * and the page scrolls, as on dtez: the controls scroll away above the grid, which on
+ * a phone is the only way the grid gets a screen. Nothing here makes the body a scroll
+ * container, which would also stop a sticky tier strip (parity phase 19) working.
+ */
+
+.wb-ct-page-head {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.wb-ct-page-title {
+  margin: 0;
+  color: #fbbf24;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.wb-ct-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.wb-ct-dot {
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border-radius: 50%;
+  background: #777;
+}
+
+.wb-ct-dot--ok {
+  background: #4fb875;
+}
+
+.wb-ct-dot--error {
+  background: #dc6262;
+}
+
+.wb-ct-dot--busy {
+  border: 2px solid #777;
+  border-top-color: #fff;
+  background: transparent;
+  animation: wb-ct-spin 0.8s linear infinite;
+}
+
+@keyframes wb-ct-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.wb-ct-help {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #8c741d;
+  background: transparent;
+  color: #fbbf24;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.wb-ct-page-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-ct-contests {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.875rem 0;
+}
+
+.wb-ct-contest,
+.wb-ct-button {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.375rem;
+  background: rgba(0, 0, 0, 0.35);
+  color: #f1f2ef;
+  font: inherit;
+  font-size: 0.9375rem;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+}
+
+.wb-ct-contest:hover,
+.wb-ct-button:hover:not(:disabled) {
+  border-color: rgba(245, 196, 67, 0.6);
+}
+
+.wb-ct-contest[aria-pressed='true'] {
+  border-color: #9d8120;
+  background: #403814;
+  color: #ffe376;
+}
+
+.wb-ct-contest:focus-visible,
+.wb-ct-button:focus-visible,
+.wb-ct-help:focus-visible,
+.wb-ct-flyer-button:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+.wb-ct-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.wb-ct-filterbar {
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.4375rem;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.wb-ct-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(14rem, 2fr) minmax(9rem, 1fr) repeat(4, auto);
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.wb-ct-filter-person,
+.wb-ct-filter-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.wb-ct-filter-person input,
+.wb-ct-filter-view select {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.375rem;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font: inherit;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.7rem;
+}
+
+.wb-ct-filter-person input[aria-invalid='true'] {
+  border-color: #dc6262;
+}
+
+.wb-ct-filter-check {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.25rem;
+  font-size: 0.75rem;
+  color: #f3f4f1;
+  white-space: nowrap;
+}
+
+.wb-ct-filter-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.wb-ct-filter-error {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: #fca5a5;
+}
+
+.wb-ct-filter-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.875rem;
+  margin: 0.625rem 0 0;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.wb-ct-filter-summary strong {
+  color: #fff;
+}
+
+.wb-ct-contest-info {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.wb-ct-contest-heading {
+  min-width: 0;
+}
+
+.wb-ct-contest-name {
+  margin: 0 0 0.3rem;
+  color: #fbbf24;
+  font-size: 1.3125rem;
+  font-weight: 700;
+}
+
+.wb-ct-contest-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.wb-ct-flyer-button {
+  flex: 0 0 auto;
+  width: 2.375rem;
+  height: 2.375rem;
+  padding: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.375rem;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fbbf24;
+  cursor: pointer;
+}
+
+.wb-ct-flyer-button svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* dtez's 900 px step: person and actions take whole rows, the rest pair up. */
+@container wb-ct-card (max-width: 56rem) {
+  .wb-ct-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wb-ct-filter-person,
+  .wb-ct-filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+/*
+ * A narrow card: two columns of contests and of filter controls, as dtez's phone
+ * layout. Every column is `minmax(0, 1fr)` and the labels wrap, because inside the app
+ * shell a 390 px phone leaves the card about 220 px.
+ */
+@container wb-ct-card (max-width: 34rem) {
+  .wb-ct-page-title {
+    font-size: 1.25rem;
+  }
+
+  .wb-ct-contests {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wb-ct-contest,
+  .wb-ct-button {
+    min-width: 0;
+    padding: 0.5rem 0.4rem;
+    font-size: 0.875rem;
+  }
+
+  .wb-ct-filterbar {
+    padding: 0.5rem;
+  }
+
+  .wb-ct-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wb-ct-filter-view {
+    grid-column: 1 / -1;
+  }
+
+  .wb-ct-filter-check {
+    white-space: normal;
+  }
+
+  .wb-ct-filter-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Respect a reduced-motion preference. Nothing here animates by default, so this
-   only has to neutralise the hover transitions. */
+   only has to neutralise the hover transitions and the busy dot. */
 @media (prefers-reduced-motion: reduce) {
   .wb-ct-tier {
     transition: none;
+  }
+
+  .wb-ct-dot--busy {
+    animation: none;
   }
 }
 

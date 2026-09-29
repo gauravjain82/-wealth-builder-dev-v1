@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `04cbcf3` — 2026-09-29 (§2, §3.1, §4, §6, §7 re-read for Phase 12; the rest `7e3b7f1`) |
+| **Verified against** | commit `PHASE18` — 2026-09-29 (§1, §2, §3.1–§3.2, §4, §5, §7, §8 re-read for parity phase 18; §6 `04cbcf3`; the rest `7e3b7f1`) |
 
 ## 1. Layering
 
@@ -20,28 +20,43 @@ deliberately shaped after `leaderboards` rather than diverging from it — same 
 
 | Layer | File | Owns |
 |---|---|---|
-| Types | `types/index.ts` (322) | the wire contract, mirroring `wbreporting/serializers_contests.py` |
-| Service | `services/contests-service.ts` (303) | 13 endpoints, `ContestError`, `standingsParams` |
-| Hooks | `hooks/use-contests.ts` | 7 queries + the access selector, 2 prefetches, `buildStandingsQuery`, 7 mutations, one shared invalidation |
-| Components | `components/` (8) | card, standings, cell, tier selector, filters, dialogs, settings, tier editor |
-| Pages | `pages/` (2) | thin wrappers — 28 and 17 lines |
+| Types | `types/index.ts` (356) | the wire contract, mirroring `wbreporting/serializers_contests.py` |
+| Service | `services/contests-service.ts` (334) | 13 `wbreporting` endpoints plus the `accounts/users/` person search, `ContestError`, `standingsParams` |
+| Hooks | `hooks/use-contests.ts` | 8 queries + the access selector, 2 prefetches, the person lookup, `buildStandingsQuery`, 7 mutations, one shared invalidation |
+| | `hooks/use-contest-board.ts` | the board's state — contest, applied filters, tiers, sort, dialogs — and the switch rule, for both placements |
+| Components | `components/` (12, plus `scope-options.ts`) | card, board, board parts, contest selector, filter bar, standings, cell, tier selector, filters modal, dialogs, settings, tier editor |
+| Pages | `pages/` (2) | thin wrappers — 30 and 17 lines |
 
-Both pages are almost empty on purpose: `/contests` renders the *same* `ContestsCard` the home page
-embeds, given a taller box. An expanded placement may show more, but it must not use different
-qualification rules, so there is one implementation and no second code path.
+Both pages are almost empty on purpose. `/contests` renders `ContestsBoard` and `/home-v2` embeds
+`ContestsCard`; both read `useContestBoard`, so an expanded placement may show more but cannot use
+different qualification rules. The two differ only in the rows they arrange around the shared
+standings region and dialogs (`contest-board-parts.tsx`).
 
 ## 2. Component map
 
 ```
-/home-v2 ─── ContestsCard ──┐
-                            │   (identical component, different box)
-/contests ── ContestsPage ──┘
-              └── ContestsCard
-                   ├── TierSelector        overview cards = tier toggles
-                   ├── ContestFilters      DRAFT state; Apply commits
-                   ├── ContestStandings    the only scrolling element
-                   │    └── ContestCell    a percentage, pills, or a blank
-                   └── 4 dialogs via shared Modal (portals to document.body)
+                useContestBoard   one state: contest, applied filters, tiers, sort, dialogs
+                 │                (switchContest resets tiers + sort, keeps filters + direction)
+/home-v2 ─── ContestsCard                     compact; unchanged by parity phase 18
+              ├── <select> of contests · Flyer / Filters / Help pills
+              ├── TierSelector
+              ├── applied-filter line · team-credit note
+              ├── ContestFilters (in a Modal)  DRAFT state; Apply commits
+              ├── StandingsRegion ──┐
+              └── BoardDialogs ─────┤  contest-board-parts.tsx, shared
+                                    │
+/contests ── ContestsPage           │
+              └── ContestsBoard     │          dtez's layout, parity phase 18
+                   ├── title · status line · ? Help
+                   ├── ContestSelector         contests as buttons
+                   ├── ContestFilterBar        DRAFT state; Apply / Enter commits;
+                   │                           Upline / Leader via useAgentProfile
+                   ├── contest title row       name · status · period · view · flyer icon
+                   ├── TierSelector            overview cards = tier toggles
+                   ├── StandingsRegion ─────────┤
+                   │    └── ContestStandings   the only scrolling element (on /home-v2)
+                   │         └── ContestCell   a percentage, pills, or a blank
+                   └── BoardDialogs ────────────┘  4 dialogs via shared Modal (portals to document.body)
                         ├── proof     ── useProof      (enabled on open)
                         ├── profile   ── useAgentProfile
                         ├── flyer     ── useFlyer
@@ -76,9 +91,10 @@ safe because the guard decides rendering, not permission: an ungranted caller ge
 redirect.
 
 1. `useContests()` lists readable contests for the selector; on `/contests` and `/home-v2` it finds
-   the guard's prefetch already in flight (same `contestListOptions`, same key).
-2. The card composes a `StandingsQuery` with **`buildStandingsQuery`** — contest, applied filters,
-   selected tiers, sort tier, direction. The default contest is `contests[0]`.
+   the guard's prefetch already in flight (same `contestListOptions`, same key). The backend sends
+   them in dtez's order (C26); the default contest is `contests[0]`.
+2. `useContestBoard` composes a `StandingsQuery` with **`buildStandingsQuery`** — contest, applied
+   filters, selected tiers, sort tier, direction.
 3. `useStandings(query)` puts **the whole query** in the key and fetches, forwarding the signal.
 4. The response carries `tiers`, `rows` of `evaluations`, the applied `filters`, `total_rows`,
    `next_cursor`, `near_percent` and display switches. The client renders; it aggregates nothing.
@@ -109,10 +125,20 @@ On `/home-v2` the card does **not** prefetch other contests (decision C24).
 
 ### 3.2 Filtering — draft until Apply
 
-`ContestFilters` owns local draft state and calls `onApply` only when the button is pressed
-(`components/contest-filters.tsx:4`). Picking a person from the autocomplete changes the draft, not
-the standings. Without this, every keystroke in the person picker would refetch a whole standings
-page.
+`ContestFilters` (the card's modal) and `ContestFilterBar` (the page's bar) each own local draft
+state and call `onApply` only on Apply, or Enter in the bar's search box. Picking a person changes
+the draft, not the standings. Without this, every keystroke in the person picker would refetch a
+whole standings page.
+
+The bar's search box asks `accounts/users/` for suggestions (`usePersonSearch`, debounced 300 ms,
+key `['contests', 'people', term]`). On Apply it resolves the typed text through the same key
+(`useFindPeople`, a `fetchQuery`), so an Enter before the suggestions arrive still finds the
+person, and an Enter after them costs no request. An empty box resolves to nobody. A person-based
+view with nobody is refused in the browser, with the error under the bar and the box focused.
+
+Upline and Leader read the applied person's profile (`useAgentProfile`) through the **first**
+contest rather than the shown one: the profile does not depend on the contest, so a switch does
+not refetch it. They apply the rest of the draft with the new person, as dtez does.
 
 ### 3.3 Tier selection — the three-state gesture
 
@@ -162,9 +188,10 @@ Keys are `['contests', <surface>, <input>]`, except access, which is the shared 
 |---|---|---|---|
 | `useContestAccess` | `['wbreporting', 'my-access']` (shared) | 5 min, `retry: false` | a `select` over `useWbReportingAccess` ([platform §4](../platform/ARCHITECTURE.md#4-server-state-and-caching)); the guard blocks on it |
 | `useContests` / `usePrefetchContests` | `[…, 'list']` | 60 s | the selector; one `contestListOptions` for both |
+| `usePersonSearch` / `useFindPeople` | `[…, 'people', term]` | 60 s | the page's person search; `enabled` on a non-empty term; the lookup on Apply reads the same entry |
 | `useStandings` / `usePrefetchOtherStandings` | `[…, 'standings', query]` | **30 s** | the whole query is the key; one `standingsOptions` for both |
 | `useProof` | `[…, 'proof', input]` | default | `enabled` on open |
-| `useAgentProfile` | `[…, 'profile', input]` | default, `retry: false` | `enabled` on open |
+| `useAgentProfile` | `[…, 'profile', input]` | default, `retry: false` | `enabled` on open; on `/contests` also for the applied person, for Upline / Leader |
 | `useFlyer` | `[…, 'flyer', contestId]` | **10 min** | under the server's 15-minute URL lifetime |
 | `useEditorOptions` | `[…, 'editor-options']` | 5 min | host facts |
 | `useEditableContests` | `[…, 'editable']` | default | carries the revisions |
@@ -187,12 +214,14 @@ because a rename or a hide must reach the reader surfaces too.
 
 | State | Owner | Lives in |
 |---|---|---|
-| Selected contest | `ContestsCard` | `useState` |
-| Applied filters | `ContestsCard` | `useState` |
-| **Draft** filters | `ContestFilters` | `useState` — never sent until Apply |
-| Selected tiers, sort tier, direction | `ContestsCard` | `useState` |
-| Cursor / accumulated rows | `ContestsCard` | `useState` |
-| Open dialog + its target | `ContestsCard` | `useState` |
+| Selected contest | `useContestBoard` | `useState` |
+| Applied filters | `useContestBoard` | `useState` |
+| **Draft** filters | `ContestFilters` / `ContestFilterBar` | `useState` — never sent until Apply |
+| Typed person text, the bar's error | `ContestFilterBar` | `useState` |
+| Selected tiers, sort tier, direction | `useContestBoard` | `useState` |
+| Cursor / accumulated rows | `useContestBoard` | `useState` |
+| Open dialog + its target | `useContestBoard` | `useState` |
+| Filters modal open | `ContestsCard` | `useState` |
 | Contest and tier drafts, `pending_delete` | `ContestSettings` | `useState` |
 
 Nothing is in the query string. Neither surface is deep-linkable to a filter state.
@@ -220,7 +249,11 @@ never what is permitted.
   one shared cache entry (`@shared/wbreporting-access`) through each module's own selector. Nothing
   else is shared.
 - **`shared/components/ui/modal`** — all four dialogs, because it portals to `document.body`.
-- **`shared/components/user-autocomplete-dropdown`** — the person filter.
+- **`shared/components/user-autocomplete-dropdown`** — the card modal's person filter. The page's bar
+  has its own search box (`contest-filter-bar.tsx`): the shared component renders its input in a
+  portal outside any form, so Enter cannot apply and the box cannot be focused from outside.
+- **`accounts/users/`** — the page's person search (`searchPeople`), the same query the shared
+  component sends: coded users, ten at a time.
 
 ## 8. Invariants and failure modes
 
@@ -229,12 +262,14 @@ never what is permitted.
 | `progress: null` is never rendered as `0` | the type is `number \| null`; the cell returns `''` | a zero read as a real score |
 | An ineligible cell is **blank**, never "Restricted" | server sends `progress: null` and empty `metrics` | a tier that is not for you reading as a punishment |
 | A draft filter never reaches the server | `ContestFilters` owns local state | a refetch per keystroke |
-| A prefetched key equals the key a switch produces | both built by `buildStandingsQuery`; the switch resets tiers and sort tier only | a switch that silently goes back to the network |
+| A prefetched key equals the key a switch produces | both built by `buildStandingsQuery`; `useContestBoard.switchContest` resets tiers and sort tier only | a switch that silently goes back to the network |
+| An empty person search selects nobody | `ContestFilterBar` resolves only non-empty text | dtez's bug: Personal with an empty box shows the first person in the list |
+| A person-based view is never sent without a person from the page | `ContestFilterBar` refuses it | the backend roots it at the viewer, under a summary saying nobody is selected |
 | No dates are sent for proof | `fetchProof` builds only three params | a client able to show a number the cell never claimed |
 | A save sends every revision | contest + per-tier `revision` | a silent overwrite of someone else's edit |
 | `replace_tiers` is explicit | the payload flag | a partial save deleting tiers it never sent |
 | A 409 reloads, never retries | the settings screen | the overwrite the revisions exist to prevent |
-| Only `.wb-ct-scroll` scrolls | three CSS rules | internal scrolling becoming page growth |
+| Only `.wb-ct-scroll` scrolls, on `/home-v2` | three CSS rules | internal scrolling becoming page growth. `/contests` has no bounded host, so there the page scrolls, as on dtez |
 | Dialogs portal out of the card | shared `Modal` | overlays clipped by `overflow: hidden` |
 | `TR`/`TP`/`TE` are never threshold inputs | not rendered; backend rejects them | a result component used as a requirement |
 

@@ -30,7 +30,9 @@ import {
   fetchFlyer,
   fetchProof,
   fetchStandings,
+  personLabel,
   removeFlyer,
+  searchPeople,
   saveContest,
   setContestHidden,
   setFlyerVisible,
@@ -188,6 +190,34 @@ export function usePrefetchOtherStandings(input: {
       }
     };
   }, [queryClient, enabled, idsKey, filters, direction]);
+}
+
+export { personLabel };
+
+function personSearchOptions(term: string) {
+  return queryOptions({
+    queryKey: [KEY, 'people', term],
+    queryFn: ({ signal }) => searchPeople(term, signal),
+    // People and their codes change rarely; a minute spares a re-search while typing back.
+    staleTime: 60 * 1000,
+  });
+}
+
+/** Suggestions for the person search, once there is something to search for. */
+export function usePersonSearch(term: string) {
+  const trimmed = term.trim();
+  return useQuery({ ...personSearchOptions(trimmed), enabled: trimmed.length > 0 });
+}
+
+/**
+ * Resolve typed text to people on Apply, from the suggestions' cache when it has them.
+ *
+ * dtez applies on Enter with whatever was typed, so Apply cannot wait for the debounced
+ * suggestions: it asks for the same entry, which is already there when they arrived.
+ */
+export function useFindPeople() {
+  const queryClient = useQueryClient();
+  return (term: string) => queryClient.fetchQuery(personSearchOptions(term.trim()));
 }
 
 /** The proof rows behind one cell, fetched only once its dialog opens. */

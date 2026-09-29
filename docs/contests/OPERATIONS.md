@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `04cbcf3` — 2026-09-29 (§1 and §6 C14 rows added 2026-09-29, parity phase 16; §4 latency check re-read; the rest `7e3b7f1`) |
+| **Verified against** | commit `PHASE18` — 2026-09-29 (§4 re-read for parity phase 18; §1 and §6 C14 rows parity phase 16; the rest `7e3b7f1`) |
 
 ## 1. Environment and configuration
 
@@ -92,12 +92,23 @@ Manual checks, ordered by what they protect:
    re-signed rather than dead.
 10. **`BR`/`BP`/`LIC` labelling** is present in the tier editor. This is the one that can produce a
     wrong prize decision.
+11. **The standalone page against dtez** (parity phase 18). Open `/contests` and
+    `dtez.com/wb_contests.php` side by side at 1440 and 390 px: title and status line, the contests
+    as buttons (two columns on a phone), the filter bar, the contest title row. On `/contests`,
+    choose Just this person with an empty search and press Apply: an error under the bar, the search
+    focused, and **no** request. dtez shows the first person in its list instead.
+12. **Upline and Leader.** Apply a person; both stay disabled until their profile arrives, then each
+    moves the person and re-applies. The profile endpoint is slow (UI.md §2.3).
+13. **Home v2 did not change.** Screenshot the card on `/home-v2` before and after any change to the
+    shared hook or parts (`use-contest-board.ts`, `contest-board-parts.tsx`); they must be
+    identical.
 
 ### Latency check
 
 `scripts/perf/contests-latency.mjs` opens `/contests` in the installed Chrome (through
 `playwright-core`; no browser download) and reports seconds to first standings, one contest switch,
-standings server time, and the full API waterfall. It is the measurement for phases 10–12 of the
+standings server time, and the full API waterfall. It switches by clicking the second contest
+button (parity phase 18), or through the `<select>` on a build that still has one. It is the measurement for phases 10–12 of the
 parity plan (`mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`).
 
 ```bash

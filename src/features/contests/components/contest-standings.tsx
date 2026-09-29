@@ -21,6 +21,8 @@ interface ContestStandingsProps {
   sortTier: number | null;
   direction: 'asc' | 'desc';
   showNearQualifiers: boolean;
+  /** The single-hop note (C5); the BR/BP/LIC pills carry it as their tooltip. */
+  teamCreditNote: string;
   hasMore: boolean;
   isFetchingMore: boolean;
   onSort: (tierId: number) => void;
@@ -35,6 +37,7 @@ export function ContestStandings({
   sortTier,
   direction,
   showNearQualifiers,
+  teamCreditNote,
   hasMore,
   isFetchingMore,
   onSort,
@@ -101,6 +104,7 @@ export function ContestStandings({
                       evaluation={row.evaluations[String(tier.id)]}
                       tierName={tier.name}
                       showNearQualifiers={showNearQualifiers}
+                      teamCreditNote={teamCreditNote}
                       onOpenProof={(metric) => onOpenProof(row, tier, metric)}
                     />
                   </td>
@@ -133,6 +137,7 @@ export function ContestStandings({
                   evaluation={row.evaluations[String(tier.id)]}
                   tierName={tier.name}
                   showNearQualifiers={showNearQualifiers}
+                  teamCreditNote={teamCreditNote}
                   onOpenProof={(metric) => onOpenProof(row, tier, metric)}
                 />
               </div>

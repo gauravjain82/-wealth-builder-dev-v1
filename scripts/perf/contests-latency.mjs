@@ -104,11 +104,15 @@ async function measureOnce() {
     const dwellMs = Math.max(0, Number(args.dwell) || 0) * 1000;
     if (dwellMs) await page.waitForTimeout(dwellMs);
 
+    // Since parity phase 18 the page's contests are a row of buttons; the Home v2 card
+    // keeps a <select>. Either way the switch goes to the second contest.
     let switchS = null;
+    const buttons = page.locator('[role="group"][aria-label="Contest"] button');
     const options = await page.$$eval('select[aria-label="Contest"] option', (items) => items.map((o) => o.value));
-    if (options.length > 1) {
+    if ((await buttons.count()) > 1 || options.length > 1) {
       const switchStarted = Date.now();
-      await page.selectOption('select[aria-label="Contest"]', options[1]);
+      if ((await buttons.count()) > 1) await buttons.nth(1).click();
+      else await page.selectOption('select[aria-label="Contest"]', options[1]);
       await page.waitForFunction(standingsSettled, null, { timeout: TIMEOUT_MS });
       switchS = (Date.now() - switchStarted) / 1000;
     }

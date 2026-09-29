@@ -15,18 +15,9 @@
 import { Modal } from '@/shared/components/ui/modal';
 
 import { useAgentProfile, useFlyer, useProof } from '../hooks/use-contests';
-import type { ProfileResponse, ProofResponse, ThresholdMetric } from '../types';
+import type { ProfileResponse, ProfileTarget, ProofResponse, ProofTarget } from '../types';
 
 /* --- proof ---------------------------------------------------------------- */
-
-export interface ProofTarget {
-  contestId: number;
-  tierId: number;
-  agentId: number;
-  agentName: string;
-  tierName: string;
-  metric: ThresholdMetric;
-}
 
 interface ProofDialogProps {
   target: ProofTarget | null;
@@ -167,7 +158,7 @@ function ProofBody({
 /* --- profile -------------------------------------------------------------- */
 
 interface ProfileDialogProps {
-  target: { contestId: number; agentId: number; name: string } | null;
+  target: ProfileTarget | null;
   onClose: () => void;
 }
 
