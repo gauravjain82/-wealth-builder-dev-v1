@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `04cbcf3` — 2026-09-29 (§4 latency check re-read; the rest `7e3b7f1`) |
+| **Verified against** | commit `04cbcf3` — 2026-09-29 (§1 and §6 C14 rows added 2026-09-29, parity phase 16; §4 latency check re-read; the rest `7e3b7f1`) |
 
 ## 1. Environment and configuration
 
@@ -23,6 +23,12 @@ No module-specific `VITE_` variables. Everything configurable is **backend state
 | Eligibility levels | `accounts.Level` | the level checkboxes. Adding a level needs **no release** |
 | `WB_MILESTONE_TIMESTAMPS_SINCE` | backend env | whether `mr`/`mp` can be measured at all |
 | `homev2:read`, `wbreporting:manage` | access console | who reads, who configures |
+
+**The settings screen is the only place contests are edited (backend decision C14).** dtez's
+configuration was imported for the last time on 2026-09-29 (backend `import_existing_contests`,
+parity phase 16). A contest or tier changed on dtez after that does not reach this page, and it
+is not meant to: make the change here. Backend `docs/wbreporting/OPERATIONS.md` §3 records the
+import.
 
 The editor renders from `EditorOptions` rather than hard-coded lists, which is why a new level or a
 changed flyer limit appears without a frontend deploy.
@@ -166,3 +172,4 @@ Rollback is revoking the grant. No deploy required.
 | Flyer link dead | the signed URL expired | `staleTime` is 10 min against a ~15 min lifetime; reopening re-signs |
 | A contest is invisible to readers | `contest_status = considered`, or hidden | considered contests are settings-only by design |
 | A filter state cannot be shared | nothing is in the query string | a known limitation |
+| A contest differs from dtez's page | expected since 2026-09-29 (C14): this screen is the editor, and dtez is no longer imported | edit it here; do not re-import |
