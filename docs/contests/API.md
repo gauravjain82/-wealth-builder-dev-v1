@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `66fba39` — 2026-09-29 (§3 `TierSummary` / `StandingRow` re-read for parity phase 19; the rest of §3 `08eea2c`; the rest `17121e6`) |
+| **Verified against** | commit `83119fc` + phase 20 working tree — 2026-09-29 (§3 `ProofResponse` / `ProfileResponse` re-read for parity phase 20; `TierSummary` / `StandingRow` `66fba39`; the rest of §3 `08eea2c`; the rest `17121e6`) |
 
 > Endpoints **consumed**, not exposed.
 
@@ -68,7 +68,7 @@ serializer carries no `revision`, so a save built from it could never satisfy th
 
 ## 3. Payload types
 
-`types/index.ts` (322 lines), mirroring `wbreporting/serializers_contests.py`. Its header states the
+`types/index.ts` (386 lines), mirroring `wbreporting/serializers_contests.py`. Its header states the
 two rules that a well-meaning edit would break:
 
 1. **`progress` is `number | null`, and `null` means there is no number** — an ineligible cell.
@@ -87,7 +87,8 @@ two rules that a well-meaning edit would break:
 | `MetricProgress` | `actual` is `0` for a metric with no source, which keeps `available: false` and its reason (C15) |
 | `StandingRow` | identity plus `evaluations` keyed by tier. Since parity phase 19, `leader_name` (name, else code, else `""`), and `level` and `leader_name` are **absent** when the display settings hide them, so `""` always means *none* ("No level", "Leader: -"). `agency_code` is still `""` when hidden. Backend `mlm_platform` `8deb2cd`, `caa7579`, coupled |
 | `StandingsResponse` | rows, tiers, cursor, `near_percent`, `team_credit_note`, display switches, echoed `filters`. **No `uncoded_member_count`** since Phase 11: the backend resolves scopes over coded users only (C22), so there is nothing to count. Leaderboards keeps its own field of that name, from a different endpoint |
-| `ProofResponse` | period, columns, rows, cards, formula, cursor |
+| `ProofResponse` | period, columns, rows, cards, formula, cursor. Since parity phase 20: `source_total` (the metric over **every** source row — a count, or net points — not only the page), `truncated` (the page is the first 1,000 rows), `detail_visibility` (`hidden` / `masked` / `full`, for the proof's subject), and rows in dtez's three shapes: recruits (`date`, `person`, `person_id`, `person_code`, `owner`, `owner_id`, `owner_code`), points per policy (`policy_number`, `client_name` — **absent** when hidden —, `first_date`, `last_date`, `first_advance`, `second_advance`, `other_advance`, `chargebacks` (negative), `net_points`), events (`date`, `event`, person and owner as for recruits, `reference`). **`sql` and `sql_params` exist only for `wbreporting:manage`**; the server omits both keys for everyone else, and sends `sql: ""` to a manager for a metric with no source query. The first three are optional in the type, for a backend older than phase 20. Backend `mlm_platform`, coupled |
+| `ProfileResponse` / `ProfilePathNode` | Since parity phase 20, `level` is **absent** when the display settings hide it — on the profile and on every path node — so `""` always means *none* ("No level"). Coupled with the backend, as `StandingRow.level` was in phase 19 |
 | `FilterDraft` / `StandingsQuery` | draft state vs what is actually queried |
 | `EditableContest` / `EditableTier` | carry **`revision`**; `pending_delete` is client-only |
 | `EditorOptions` | levels, metrics, statuses, period modes, flyer limits — **served, not hard-coded** |

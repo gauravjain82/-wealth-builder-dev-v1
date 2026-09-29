@@ -196,20 +196,40 @@ export interface ProofResponse {
   next_cursor: string | null;
   total_rows: number;
   team_credit_note: string;
+  /**
+   * The metric over every source row, not only this page: a count, or net points
+   * (parity phase 20, dtez's "BR source total"). Absent from an older backend.
+   */
+  source_total?: number | null;
+  /** More rows exist than this page holds; the page is the first 1,000. */
+  truncated?: boolean;
+  /** How much client and policy detail this viewer gets: `hidden`, `masked`, `full`. */
+  detail_visibility?: 'hidden' | 'masked' | 'full';
+  /**
+   * The developer panel's source SQL. **Present only for `wbreporting:manage`**; the
+   * server omits the key for everyone else. `""` when the metric has no source query.
+   */
+  sql?: string;
+  sql_params?: Record<string, unknown>;
 }
 
 export interface ProfilePathNode {
   agent_id: number;
   agency_code: string;
   name: string;
-  level: string;
+  /** Absent when the display settings hide levels (parity phase 20). */
+  level?: string;
 }
 
 export interface ProfileResponse {
   agent_id: number;
   agency_code: string;
   name: string;
-  level: string;
+  /**
+   * Absent when the display settings hide levels; `""` is a person with no level, which
+   * reads "No level" (parity phase 20, as phase 19 did for standings rows).
+   */
+  level?: string;
   is_active: boolean;
   is_licensed: boolean;
   recruiter: ProfilePathNode | null;
@@ -240,6 +260,8 @@ export interface ProofTarget {
   agentId: number;
   agentName: string;
   tierName: string;
+  /** The tier's period as the grid shows it, until the proof's own arrives. */
+  periodLabel: string;
   metric: ThresholdMetric;
 }
 

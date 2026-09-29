@@ -85,13 +85,13 @@ export function BoardDialogs({ board }: { board: ContestBoard }) {
   const { dialogs, contest } = board;
   return (
     <>
+      {/* A name in a proof opens the profile on top of it, as dtez's does; closing the
+          profile returns to the proof. The profile renders second, so its portal is
+          mounted after the proof's and sits above it. */}
       <ProofDialog
         target={dialogs.proofTarget}
         onClose={dialogs.closeProof}
-        onOpenAgent={(agentId, name) => {
-          dialogs.closeProof();
-          dialogs.openProfile(agentId, name);
-        }}
+        onOpenAgent={dialogs.openProfile}
       />
       <ProfileDialog target={dialogs.profileTarget} onClose={dialogs.closeProfile} />
       <FlyerDialog

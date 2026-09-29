@@ -128,6 +128,7 @@ export function useContestBoard({ prefetchOtherContests }: UseContestBoardOption
       agentId: row.agent_id,
       agentName: row.name || row.agency_code,
       tierName: tier.name,
+      periodLabel: tier.period_label,
       metric: metric.metric,
     });
   };

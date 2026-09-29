@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `2d8cbd8` — 2026-09-29 (§2 Phase 19 and §5 re-measured after the deploy; §1, §3 C28 `66fba39`; §2 Phase 18, §3 C10/C20/C25/C26 `8880009`; §2 Phase 17, §3 C7/C9/C15–C19 `08eea2c`; the rest `04cbcf3`) |
+| **Verified against** | commit `83119fc` + phase 20 working tree — 2026-09-29 (§1, §2 Phase 20, §3 C29–C30 for parity phase 20; §2 Phase 19 and §5 re-measured after the deploy `2d8cbd8`; §1, §3 C28 `66fba39`; §2 Phase 18, §3 C10/C20/C25/C26 `8880009`; §2 Phase 17, §3 C7/C9/C15–C19 `08eea2c`; the rest `04cbcf3`) |
 
 > Phase numbering and the `C` decision prefix come from `mlm_platform/WB_CONTESTS_PROGRESS.md`
 > (phases 0–9, decisions C1–C13) and **must not be renumbered** — the same number means the same
@@ -36,6 +36,7 @@
 | **17** | 2026-09-29 | Deployed 2026-09-29 (PR #14) | **dtez's scoring (C15–C20): whole-number %, best-% default order, cards over the whole contest, default view All; the editor accepts `C`/`BE`, hides "No level"** |
 | **18** | 2026-09-29 | Deployed 2026-09-29 (PR #14) | **`/contests` in dtez's layout: title and status line, contests as buttons, an always-visible filter bar with Upline / Leader and "N leaders identified", the contest title row; no banners above the grid; dtez's contest order (C26)** |
 | **19** | 2026-09-29 | Deployed 2026-09-29 (PR #14) | **`/contests`' tier cards, grid, cells and pills in dtez's look: goals line, hints, one grid that stacks per agent on a phone, a sticky tier strip, dtez's palette; Home v2 unchanged (C28)** |
+| **20** | 2026-09-29 | Code done; awaits the coupled backend deploy | **The four dialogs in dtez's look: proof with a source total and dtez's three table shapes (points per policy, C29), profile over proof, profile grid and path diagrams, rewritten help, "Flyer" title, an admin-only `{ }` SQL panel; Escape and backdrop close the top dialog (C30)** |
 
 **Migrations `0001`–`0003` are applied.** The feature is deployed and gated only by the absence of a
 `homev2:read` grant.
@@ -255,6 +256,62 @@ ours are in `Codes/wb-contests-parity-shots/phase-19/`.
 
 **Decisions.** C28.
 
+### Phase 20 — proof, profile, help and flyer dialogs (2026-09-29)
+
+**Goal.** The four dialogs read like dtez's and every click in the plan's Appendix C behaves as
+listed. The brief is `mlm_platform/docs/integrations/wb-contests/PHASE_20_KICKOFF.md`.
+
+**What shipped.**
+- `components/contest-dialogs.tsx`, rewritten from dtez's `proof`, `detailTable`, `openProfile`,
+  `pathMarkup` and `openFlyer` ([UI.md §2.6](UI.md#26-dialogs--componentscontest-dialogstsx)).
+  Proof: "*Agent* · BR" over the period; the C5 note; "BR source total: **N**", "· first 1,000
+  records shown", "Client and policy detail: …"; cards, goal, formula; the server's columns in one of
+  three shapes; names that open the profile on top; `{ }` and the developer panel when the response
+  has `sql`. Profile: dtez's seven-field grid and both paths as node diagrams. Help: dtez's text
+  rewritten for our page. Flyer: "*Contest* Flyer", the new-tab link kept.
+- `BoardDialogs` no longer closes the proof when a name in it is clicked.
+- **The shared `Modal`** (`src/shared/components/ui/modal/index.tsx`, used by five files): always
+  `role="dialog"`, `aria-modal`, `aria-labelledby`, focus moved in and returned, Tab kept inside the
+  top dialog; new optional `subtitle`, `headerActions`, `titleClassName`; and `dismissible` (off by
+  default) for Escape and backdrop, answered by the top dialog only (C30). Only the four contest
+  dialogs pass it. See `docs/platform/`.
+- `contests.css`: the dialogs carry dtez's palette on `.wb-ct-modal` (they portal outside both hosts).
+- Types: `ProofResponse.source_total`, `truncated`, `detail_visibility`, `sql`, `sql_params`;
+  `level` optional on `ProfileResponse` and `ProfilePathNode`; `ProofTarget.periodLabel`.
+- Backend, coupled (`mlm_platform`, `feature/wb-contests-parity`): every proof built in dtez's shapes
+  from the metric's own queryset, points per policy (C29), the new fields, the SQL for
+  `wbreporting:manage` only, `level` absent from the profile when hidden, and the proof and profile
+  reading only the chains they need (`reader_nodes`) instead of the viewer's whole closure.
+
+**Measured** (2026-09-29, production builds against the **deployed** API, before the backend deploy;
+shots in `Codes/wb-contests-parity-shots/phase-20/`).
+- dtez's dialogs, and ours before and after, at 1440 × 900 and 390 × 844.
+- Escape, backdrop and × each close the proof, profile and help (before: × only). The card's Filters
+  modal and the training schedule's meeting dialog, which are not `dismissible`, still ignore Escape
+  and backdrop and close on ×; both now take focus on open.
+- Proof and profile on the deployed backend, which still loads the viewer's whole closure: proof
+  7.6–10.1 s, profile 7.1–8.2 s (Kash, Connor Watts, Lakeicia Denson; BR, BP, LIC). The after
+  numbers wait on the backend deploy.
+- `/home-v2`'s card: the DOM, every element's box and every computed style identical before and
+  after at both widths (6,707 elements). `cmp` of the element shots differs, because production
+  numbers moved between runs and the background gradient renders unevenly; the screenshots look the
+  same.
+- `perf:contests`, median of 5, `--dwell 10`: first standings 2.92 s (phase 19: 2.87 → 3.01 s),
+  switch 0.08 s, 9 calls, one `wbreporting/my-access`.
+- `type-check` and `build` pass; `lint` 7 errors / 117 warnings, as on `main`. Backend
+  `test wbreporting`: 644 OK (632 + 12).
+
+**What the build learned.**
+- **dtez changed its recruits table after the brief was written.** `pr` / `tr` / `br` are now
+  Date · Agent · Agent Code · Recruited By · Recruited By Code; only licences, events and pins use
+  Date · Event · Person · Credited Through · Reference.
+- dtez's public proof API returned no licence, event or pin rows for any account tried, so those
+  rows' Event and Reference wording is ours ("Licence approved" / "Agent approval date", "Registered
+  for next big event" / "Associate tracker", "Mission Pin" / what dated it).
+- The profile's **path nodes** also carried `level` when hidden; they now omit it too.
+
+**Decisions.** C29, C30.
+
 ## 3. Decision log
 
 Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
@@ -284,6 +341,8 @@ Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
 | **C25** | **No remembered contest.** The default stays `contests[0]`; the last-viewed contest is not kept in `localStorage`. Taken 2026-09-29 (Phase 12) | Offered as optional by the brief, to take a returning viewer to one round trip. Not needed: access now runs alongside the list, so the path is already two round trips. And it would change which contest a reader lands on — a visible default that Phase 18's contest selector should own, not a speed phase | `mlm_platform/docs/integrations/wb-contests/PHASE_12_KICKOFF.md` §6.2. The default is now set by C26's order |
 | **C26** | **The contests come in dtez's order**, and the first is shown: active first, then the earliest qualifying start, contests with none (rolling) last, then name. Taken 2026-09-29 (parity phase 18) | C25 left the default to this phase's selector. dtez lists Italy, Los Cabos, Ed Mylett, Private Reception, Executive Package and opens Italy; ours sorted active-then-name and opened Ed Mylett. One sort key in the list view, so the card and the page agree | `mlm_platform` `wbreporting/views_contests.py` `ContestListView`, `test_contests_come_in_dtez_order`; dtez's `list` response, 2026-09-29 |
 | **C28** | **The Home v2 card keeps its own grid**; dtez's tier cards, grid, cells, pills and palette are on `/contests` only. Taken 2026-09-29 (parity phase 19), the brief's option (a), chosen by the user | The card lives in a `clamp(480px, 70vh, 760px)` slot and the plan says it "stays compact"; dtez's cell (a heading line, a tinted block, 260 px columns) is bigger. So the page's grid is separate components (`TierCards`, `ContestResults`) selected by `StandingsRegion`'s `variant`, and the card's `TierSelector`, `ContestStandings` and `ContestCell` are unchanged | `mlm_platform/docs/integrations/wb-contests/PHASE_19_KICKOFF.md` §4; `components/contest-board-parts.tsx` |
+| **C29** | **The points proof is one row per policy**, dtez's grain: Policy, Client, First / Last Date, First / Second / Other Advances, Chargebacks / Reversals, Net Points. Chosen by the user 2026-09-29 (parity phase 20), over keeping our per-entry (`pp`) and per-agent (`bp`) rows and only restyling | Parity with dtez's proof, and one shape for both points metrics. A backend change (the proof builders) and a coupled response change. A policy with points from several agents is masked by the most restrictive of their relationships | `mlm_platform/docs/integrations/wb-contests/PHASE_20_KICKOFF.md` §4; `mlm_platform` `wbreporting/services/contests/proof.py` `_policy_rows` |
+| **C30** | **Escape and a backdrop click are opt-in on the shared `Modal`** (`dismissible`), not its new default. Taken 2026-09-29 (parity phase 20) | The brief's trap 1: five files use `Modal`, among them a form (the training schedule's meeting dialog) and the card's draft filters, where a stray key or click would discard input. The contest dialogs opt in; the dialog semantics and focus handling apply to all | `mlm_platform/docs/integrations/wb-contests/PHASE_20_KICKOFF.md` §6.1; `src/shared/components/ui/modal/index.tsx` |
 
 ## 4. Deliberately not built
 

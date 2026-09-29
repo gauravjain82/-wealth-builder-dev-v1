@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `66fba39` — 2026-09-29 (§2 and §8 re-read for parity phase 19; §1, §3.1–§3.2, §4, §5, §7 `8880009`; §6 `04cbcf3`; the rest `7e3b7f1`) |
+| **Verified against** | commit `83119fc` + phase 20 working tree — 2026-09-29 (§3.4 and §8 re-read for parity phase 20; §2 `66fba39`; §1, §3.1–§3.2, §4, §5, §7 `8880009`; §6 `04cbcf3`; the rest `7e3b7f1`) |
 
 ## 1. Layering
 
@@ -167,6 +167,17 @@ carries the state.
 that could choose one could show a number the standings cell never claimed
 (`services/contests-service.ts:130`). The server resolves the period from the tier.
 
+4. The dialog renders the server's `columns` in one of dtez's three shapes (recruits, points per
+   policy, events; [UI.md §2.6](UI.md#26-dialogs--componentscontest-dialogstsx)). It adds no
+   arithmetic: `source_total` is computed by the server over **every** source row, so the summary
+   is the metric's value even when the table is the first 1,000 rows.
+5. A person in the table opens the profile **on top of** the proof (parity phase 20):
+   `BoardDialogs` passes `dialogs.openProfile` straight through and no longer closes the proof. The
+   profile's `Modal` mounts after the proof's, so its portal sits above it, and the shared `Modal`'s
+   stack sends Escape to the top dialog only.
+6. `{ }` appears only when the response carries `sql`, which the server includes for
+   `wbreporting:manage` holders only. Hiding the button is not the gate — the key's absence is.
+
 ### 3.5 Saving a contest
 
 1. `useEditableContests` supplies contests **with `revision` tokens** — from
@@ -277,6 +288,9 @@ never what is permitted.
 | On `/contests`, nothing between the tier strip and the app shell's scroller is a scroll container | `.wb-ct--page` and `.wb-ct--page .wb-ct-scroll` are `overflow: visible` (parity phase 19) | the phone's tier strip no longer sticking: `position: sticky` sticks to the nearest scroll container, even one that never scrolls |
 | A hidden identity field is absent, not blank | the backend omits `level` and `leader_name` when hidden; `ContestResults` shows a part only when present | "No level" or "Leader: -" shown for everyone when an admin hides the field |
 | Dialogs portal out of the card | shared `Modal` | overlays clipped by `overflow: hidden` |
+| Escape and a backdrop click close only the top dialog | the shared `Modal`'s open stack; the four contest dialogs pass `dismissible` | a profile over a proof closing both, or a form modal lost to a stray key (the card's Filters modal is not `dismissible`) |
+| The proof's SQL never reaches a reader | the backend omits `sql` / `sql_params` without `wbreporting:manage` (tested both ways in `mlm_platform`); the dialog shows `{ }` only when the key exists | dtez's leak: its proof endpoint returns its SQL to anyone |
+| The proof's source total is the pill's number | computed server-side over all rows by the metric's own rule; the dialog never sums a page | a truncated page's sum contradicting the grid |
 | `TR`/`TP`/`TE` are never threshold inputs | not rendered; backend rejects them | a result component used as a requirement |
 
 **The containment contract** (`contests.css:1-29`) is the one most easily broken by a well-meaning

@@ -9,7 +9,7 @@
 | **API prefix** | `/api/accounts/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `7e3b7f1` — 2026-09-27 (§6 `Modal` re-read at `83119fc` + contests parity phase 20, 2026-09-29) |
 
 ## 1. Routes and entry points
 
@@ -120,6 +120,16 @@ and dismissal in shared modals and tooltips.
 What it does not: there is no automated accessibility check in the toolchain, and the
 full-screen loaders are unannounced. Treat Radix-backed components as the accessible path
 and a hand-rolled overlay as needing its own focus management.
+
+**The shared `Modal`** (`shared/components/ui/modal/index.tsx`) is not Radix: it is a
+`createPortal` to `document.body`. Since contests parity phase 20 it is `role="dialog"` with
+`aria-modal` and `aria-labelledby` its title, moves focus into the panel on open (unless a child
+already took it, such as an `autoFocus` input), keeps Tab inside the top open modal, and returns
+focus to where it was on close. Before that it did none of these. **Escape and a backdrop click
+close it only with `dismissible`**, off by default so a form is not lost to a stray key; with two
+open, only the top one answers (decision C30, `docs/contests/PHASES.md`). Its users on that date:
+the contest dialogs (`dismissible`), the contest card's Filters, the leaderboard detail dialog and
+the training schedule's meeting dialog (not `dismissible`, so they close on × as before).
 
 ## 7. Styling and theming
 

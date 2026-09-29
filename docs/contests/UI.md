@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `66fba39` — 2026-09-29 (§2.1a, §2.2, §2.4, §2.5, §3, §5–§7 re-read for parity phase 19; §1, §2.1, §2.3 `8880009`; the rest `17121e6`) |
+| **Verified against** | commit `83119fc` + phase 20 working tree — 2026-09-29 (§2.6, §3, §4, §6, §7 re-read for parity phase 20; §2.1a, §2.2, §2.4, §2.5, §5 `66fba39`; §1, §2.1, §2.3 `8880009`; the rest `17121e6`) |
 
 ## 1. Routes and entry points
 
@@ -227,15 +227,36 @@ ineligible cell, so there is no number here to hide by accident.
 
 ### 2.6 Dialogs — `components/contest-dialogs.tsx`
 
-Four, all through the shared `Modal`, each opening immediately with a loading state and fetching its
-own data:
+Four, all through the shared `Modal`, laid out as dtez's (`wb_contests.php` `proof`, `detailTable`,
+`openProfile`, `pathMarkup`, `openFlyer`; parity phase 20). Each opens immediately with a loading
+state and fetches its own data. All four are `dismissible`: **Escape closes the top dialog and a
+click on its backdrop closes it**, as on dtez; × closes it too. They carry dtez's palette themselves
+(`.wb-ct-modal`), so they read the same in both placements and in the light theme.
 
-| Dialog | Shows |
+| Dialog | Title · subtitle | Body |
+|---|---|---|
+| Proof | "*Agent* · BR" · "2026-07-01 to 2026-12-31" (the tier's period label until the proof's own arrives) | the C5 note first (BR / BP / LIC); a summary, "BR source total: **N**" with "· first 1,000 records shown" when `truncated`, and "Client and policy detail: *visibility*"; the cards and Goal; the formula; the source table (below). `{ }` in the header opens the developer panel, only when the response has `sql` |
+| Profile | the name · "07VIR · SMD" ("No agent code", "No level"; the level part left out when hidden) | a two-column grid: Agency level, Status (Active / Inactive), License status (Licensed / Not licensed), Agent code, Recruiter "Name [CODE]", Assigned leader "Name [CODE]", Hierarchy record (the user id); then "Recruiting connection, agent to highest known upline" and "Reporting leader connection" as node diagrams — one box per person, name over code, joined by gold arrows — or "No hierarchy path found." |
+| Flyer | "*Contest* Flyer" | the image or PDF (short-lived signed URL), and an "Open … in a new tab" link |
+| Help | "How to Use Contest Results" | dtez's help rewritten for this page: Progress and qualification, Sorting and details, Views, Contest flyer. Our view names; "Direct reports only" where dtez says "Net" (C10; C27 open); whole-number rounding and sourceless requirements (C15, C20) |
+
+**The proof table** takes the server's `columns` and renders three shapes:
+
+| Metrics | Columns |
 |---|---|
-| Proof | period, requirement, actual, percent, cards, formula, source rows, Load more |
-| Profile | agent identity plus recruiting and leader paths |
-| Flyer | the image or PDF, via a short-lived signed URL |
-| Help | how to read the board |
+| `pr`, `br` | Date · Agent · Agent Code · Recruited By · Recruited By Code |
+| `pp`, `bp` | Policy · Client · First Date · Last Date · First Advances · Second Advances · Other Advances · Chargebacks / Reversals · Net Points — one row per policy; the point columns right-aligned whole numbers, chargebacks negative ("-100") |
+| `slic`, `lic`, `se`, `mp` | Date · Event · Person · Credited Through · Reference; the code under each name |
+
+A person (`person`, `owner`) is a button: it opens that person's **profile on top of the proof**;
+closing the profile returns to the proof. A missing client or policy (hidden by the privacy
+settings, so absent from the row) reads `—`. The table scrolls inside the dialog under a sticky gold
+header, as dtez's does.
+
+**The developer panel** ("Developer derivation") shows the source SQL, its parameters, the whole API
+JSON, and "Copy SQL + JSON" ("Copied" for 1.2 s; "Copy was blocked by this browser." when the
+clipboard refuses). The SQL exists only in responses to `wbreporting:manage` holders; for anyone else
+the key is absent and there is no `{ }` button. A new proof starts with the panel closed.
 
 ### 2.7 Settings — `components/contest-settings.tsx` + `tier-editor.tsx`
 
@@ -268,6 +289,9 @@ And it carries the `BR`/`BP`/`LIC` single-hop warning, at the moment somebody ty
 | No level / no leader | page: `level` or `leader_name` present and `""` | "No level" · "Leader: -". Absent (hidden by the display settings): the part is left out |
 | Requirement with no source | `metric.available: false` | a greyed `0/goal` pill with its reason; the tier averages it as 0 and cannot qualify (C15, amending C7) |
 | Listed with only blank cells | activity on a selected tier the agent is not eligible for | a row whose cells are all blank. Deliberate (C17) |
+| Proof loading / empty / unavailable | the proof dialog | "Loading proof records…" · "No source records were found." · "*Label* cannot be measured in this system." with the reason (C15), never a table of zeros |
+| Proof truncated | `truncated: true` | "· first 1,000 records shown" after the source total |
+| Profile over proof | a name in a proof | two dialogs; Escape or a backdrop click closes the profile first |
 | Team-credit note | any visible tier uses a single-hop measure | card: `team_credit_note` above the grid. Page: no banner; the note is the `BR`/`BP`/`LIC` pills' tooltip (both placements) and the proof dialog's first line |
 | **Person missing** | page: Apply (or Enter) with a person-based view and an empty box, or text nobody matches | an inline error under the bar ("Select a person before applying this view." / "No one matches …"), the box marked `aria-invalid` and focused; nothing is applied |
 | Upline / Leader disabled | no person applied, the profile not yet loaded, or no such link | the buttons greyed, with a title saying why |
@@ -291,6 +315,9 @@ And it carries the `BR`/`BP`/`LIC` single-hop warning, at the moment somebody ty
 - **Columns are the selected tiers; the cards are always every tier** (C18).
 - **Dialogs open immediately**, then load. They are `enabled`-gated so opening the card fetches none
   of them.
+- **Escape and a backdrop click close the top dialog only.** The card's Filters modal is not
+  `dismissible`: a stray key does not discard a draft.
+- **A name in a proof opens the profile over it**; the proof stays open underneath.
 - **A 409 offers Reload.** Do not retry a save.
 - **Send the whole tier collection with `replace_tiers`**, and mark removals `pending_delete` so
   intent is explicit in the payload rather than inferred from an absence.
@@ -329,7 +356,11 @@ No print styles. *Not applicable — unlike the Full Report, a contest board is 
 - The page's grid is `div`s with table roles (`table`, `row`, `columnheader` with `aria-sort`,
   `rowheader`, `cell`), so it reads as the card's `<table>` does. On a narrow board the header row
   is hidden, so there is no sort control there, as on dtez.
-- All four dialogs use the shared `Modal`, so focus entry, trapping and return are handled.
+- All four dialogs use the shared `Modal`, which since parity phase 20 is `role="dialog"` with
+  `aria-modal` and `aria-labelledby` its title, moves focus into the dialog, keeps Tab inside the top
+  one, and returns focus on close (to the proof's name button when a profile over it closes). Before
+  phase 20 this line claimed all of that and the `Modal` did none of it.
+- The `{ }` toggle is `aria-expanded`; path diagrams are ordered lists, their arrows `aria-hidden`.
 - `/contests` has a visible `<h1>`, "Wealth Builders Contests"; the contest name is its `<h2>`.
 - The contest buttons carry `aria-pressed` in a group labelled "Contest".
 - The filter bar's error is `role="alert"`, and the search box is `aria-invalid` and described by
@@ -341,7 +372,7 @@ but not verified with a screen reader.
 
 ## 7. Styling and theming
 
-One stylesheet, `contests.css`, 1,345 lines, **every selector under `wb-ct-`** (the one keyframe is
+One stylesheet, `contests.css`, 1,581 lines, **every selector under `wb-ct-`** (the one keyframe is
 `wb-ct-spin`). Nothing here is a global
 rule and nothing styles a shared component.
 
@@ -351,6 +382,12 @@ rule and nothing styles a shared component.
 own background and text colour, so the page no longer depends on the app theme's (the stylesheet
 assumes light text, which in the light theme read as white on grey). The Home v2 card keeps its own
 colours.
+
+**The dialogs carry the same palette** (parity phase 20) on `.wb-ct-modal`, because they portal to
+`document.body`, outside both hosts: panel `#171a18`, border `#4b514a`, gold titles, dtez's `#000b`
+backdrop (`.wb-ct-modal-backdrop`). The shared `Modal` is Tailwind utilities, the dark-theme ones at
+specificity (0,2,0); the overrides are written `div.wb-ct-modal.wb-ct-modal` (0,2,1) so they win in
+any stylesheet order. They reach no other feature's `Modal`.
 
 Read `contests.css:1-29` before changing any layout — the containment contract is stated there, and
 its three rules are summarised in
