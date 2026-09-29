@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `08eea2c` — 2026-09-29 (§3 payload types and error codes re-read for parity phase 17, and `TierSummary` / `StandingRow` for parity phase 19 against the working tree that changes them; the rest `17121e6`) |
+| **Verified against** | commit `66fba39` — 2026-09-29 (§3 `TierSummary` / `StandingRow` re-read for parity phase 19; the rest of §3 `08eea2c`; the rest `17121e6`) |
 
 > Endpoints **consumed**, not exposed.
 
