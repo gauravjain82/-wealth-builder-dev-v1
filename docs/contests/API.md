@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `66fba39` — 2026-09-29 (§3 `TierSummary` / `StandingRow` re-read for parity phase 19; the rest of §3 `08eea2c`; the rest `17121e6`) |
+| **Verified against** | commit `743afe1` — 2026-09-30 (parity phase 21 audit) |
 
 > Endpoints **consumed**, not exposed.
 
@@ -20,32 +20,36 @@ error shape, same guarded parse — so the two siblings cannot drift.
 
 | | |
 |---|---|
-| Base | `${VITE_API_BASE_URL}/api/wbreporting` (`:28`) |
-| Auth | `Authorization: Token <localStorage['wb.authToken']>` (`:44`) |
+| Base | `${VITE_API_BASE_URL}/api/wbreporting` (`:29-30`) |
+| Auth | `Authorization: Token <localStorage['wb.authToken']>` (`:48`) |
 | Cancellation | every read takes an `AbortSignal`, forwarded from React Query |
-| Errors | non-2xx → `ContestError` with `status` and the backend's `code` (`:32`) |
+| Errors | non-2xx → `ContestError` with `status` and the backend's `code` (`:33`) |
 | Reads | `getJson` |
-| Writes | `sendJson`, which returns `undefined` on 204 (`:186`) |
+| Writes | `sendJson`, which returns `undefined` on 204 (`:226`) |
 | **Uploads** | `FormData` with **no `Content-Type` header** |
 
 The upload rule is worth stating because getting it wrong fails unhelpfully: the browser must set the
 multipart boundary itself, and overriding it with `application/json` produces an opaque parser error
-(`:265`).
+(`:308`).
 
 ## 2. Endpoints consumed
 
-Thirteen. Five reads under `homev2:read`, eight writes under `wbreporting:manage`.
+From `contests-service.ts`: 12 `wbreporting` paths, 14 method + path pairs — five reads under
+`homev2:read`, and under `wbreporting:manage` two reads and seven writes — plus the
+`accounts/users/` person search. `my-access` is called by the shared access module, not by this
+one; it needs only authentication.
 
 ### Reads
 
 | Method | Path | Service function | Hook |
 |---|---|---|---|
-| GET | `/my-access/` | `fetchContestAccess` | `useContestAccess` |
+| GET | `/my-access/` | `fetchWbReportingAccess` (`@shared/wbreporting-access`) | `useContestAccess`, a selector over `useWbReportingAccess` |
 | GET | `/contest-board/` | `fetchContests` | `useContests` |
 | GET | `/contest-board/{id}/standings/` | `fetchStandings` | `useStandings` |
 | GET | `/contest-board/{id}/proof/` | `fetchProof` | `useProof` |
 | GET | `/contest-board/{id}/agents/{agentId}/` | `fetchAgentProfile` | `useAgentProfile` |
 | GET | `/contest-board/{id}/flyer/` | `fetchFlyer` | `useFlyer` |
+| GET | `/api/accounts/users/?has_agency_code=true&page_size=10&search=` (not under the prefix) | `searchPeople` (`:104-106`) | `usePersonSearch`, `useFindPeople` |
 
 ### Writes — settings
 
@@ -61,14 +65,14 @@ Thirteen. Five reads under `homev2:read`, eight writes under `wbreporting:manage
 
 **`/contest-settings/contests/` rather than Package 1's `contests/` CRUD** is deliberate: that
 serializer carries no `revision`, so a save built from it could never satisfy the concurrency check
-(`:198`).
+(`:237`).
 
 `my-access` is **the same endpoint** [leaderboards](../leaderboards/API.md#2-endpoints-consumed) and
 `admin/wb-pipeline` call. One payload, three consumers, three different flags.
 
 ## 3. Payload types
 
-`types/index.ts` (322 lines), mirroring `wbreporting/serializers_contests.py`. Its header states the
+`types/index.ts` (386 lines), mirroring `wbreporting/serializers_contests.py`. Its header states the
 two rules that a well-meaning edit would break:
 
 1. **`progress` is `number | null`, and `null` means there is no number** — an ineligible cell.
@@ -87,7 +91,8 @@ two rules that a well-meaning edit would break:
 | `MetricProgress` | `actual` is `0` for a metric with no source, which keeps `available: false` and its reason (C15) |
 | `StandingRow` | identity plus `evaluations` keyed by tier. Since parity phase 19, `leader_name` (name, else code, else `""`), and `level` and `leader_name` are **absent** when the display settings hide them, so `""` always means *none* ("No level", "Leader: -"). `agency_code` is still `""` when hidden. Backend `mlm_platform` `8deb2cd`, `caa7579`, coupled |
 | `StandingsResponse` | rows, tiers, cursor, `near_percent`, `team_credit_note`, display switches, echoed `filters`. **No `uncoded_member_count`** since Phase 11: the backend resolves scopes over coded users only (C22), so there is nothing to count. Leaderboards keeps its own field of that name, from a different endpoint |
-| `ProofResponse` | period, columns, rows, cards, formula, cursor |
+| `ProofResponse` | period, columns, rows, cards, formula, cursor. Since parity phase 20: `source_total` (the metric over **every** source row — a count, or net points — not only the page), `truncated` (the page is the first 1,000 rows), `detail_visibility` (`hidden` / `masked` / `full`, for the proof's subject), and rows in dtez's three shapes: recruits (`date`, `person`, `person_id`, `person_code`, `owner`, `owner_id`, `owner_code`), points per policy (`policy_number`, `client_name` — **absent** when hidden —, `first_date`, `last_date`, `first_advance`, `second_advance`, `other_advance`, `chargebacks` (negative), `net_points`), events (`date`, `event`, person and owner as for recruits, `reference`). **`sql` and `sql_params` exist only for `wbreporting:manage`**; the server omits both keys for everyone else, and sends `sql: ""` to a manager for a metric with no source query. The first three are optional in the type, for a backend older than phase 20. Backend `mlm_platform`, coupled; ⟦P20⟧deployed together with `206c8c8`⟦/P20⟧ |
+| `ProfileResponse` / `ProfilePathNode` | Since parity phase 20, `level` is **absent** when the display settings hide it — on the profile and on every path node — so `""` always means *none* ("No level"). Coupled with the backend, as `StandingRow.level` was in phase 19 |
 | `FilterDraft` / `StandingsQuery` | draft state vs what is actually queried |
 | `EditableContest` / `EditableTier` | carry **`revision`**; `pending_delete` is client-only |
 | `EditorOptions` | levels, metrics, statuses, period modes, flyer limits — **served, not hard-coded** |
@@ -99,7 +104,7 @@ display.
 
 ## 4. Query parameters
 
-`standingsParams` (`:95`) builds them, so the card, the sort and the pager cannot disagree.
+`standingsParams` (`:128`) builds them, so the card, the sort and the pager cannot disagree.
 
 | Parameter | Note |
 |---|---|
@@ -110,13 +115,15 @@ display.
 | `sort_tier` | omitted when null |
 | `cursor` | pagination |
 
-Proof takes `agent_id`, `tier_id`, `metric` and an optional `cursor` — **and no dates.** The server
+Proof takes `agent_id`, `tier_id`, `metric` and an optional `cursor` — **and no dates.** `fetchProof`
+accepts a cursor, but `useProof` never passes one and no dialog pages a proof: it shows the first
+page, up to 1,000 rows, flagged by `truncated`. The server
 resolves the period from the tier, because a browser-supplied window is not authoritative and a client
 that could choose one could show a number the standings cell never claimed.
 
 ## 5. Error codes and handling
 
-Nineteen stable codes (`types/index.ts:27`) — the largest vocabulary in the app.
+Eighteen stable codes (`types/index.ts:29-47`) — the largest vocabulary in the app.
 
 | Code | Meaning | Client behaviour |
 |---|---|---|
@@ -133,7 +140,7 @@ Nineteen stable codes (`types/index.ts:27`) — the largest vocabulary in the ap
 
 `edit_conflict` is the only code with a mandated client behaviour. Everything else is reported;
 this one must **reload**, because retrying is the silent overwrite the revisions exist to prevent
-(`:180`).
+(`:214`).
 
 ## 6. Backend ownership
 

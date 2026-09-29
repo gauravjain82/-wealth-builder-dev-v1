@@ -9,10 +9,12 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `66fba39` — 2026-09-29 (§3 counted for parity phase 19; §2 and §5 `8880009`; §4 vocabulary `08eea2c`; the rest `7e3b7f1`, 2026-09-27) |
+| **Verified against** | commit `743afe1` — 2026-09-30 (parity phase 21 audit) |
 
-> **Deployed but not open.** Migrations `wbreporting/0001`–`0003` are applied and the code shipped
-> 2026-09-26. Nobody has been granted `homev2:read` for contests, so no reader can reach it yet.
+> **Deployed but not open.** Migrations `wbreporting/0001`–`0003` are applied; the code first shipped
+> 2026-09-26, and dtez parity phases 11–19 were merged and deployed 2026-09-29 (frontend PR #14,
+> backend PR #68). ⟦P20⟧Parity phase 20 (`206c8c8`, the dialogs) is deployed with its coupled
+> backend.⟦/P20⟧ Nobody has been granted `homev2:read`, so no reader can reach it yet.
 > See [OPERATIONS.md §3](OPERATIONS.md#3-feature-flags-and-rollout).
 
 ## 1. Purpose
@@ -42,7 +44,8 @@ Because a contest is a promise, two properties matter more here than in a normal
 - Draft filters (person, view, Net, Leaders, Agents; on the page also Upline and Leader) with
   explicit Apply.
 - Tier overview cards doubling as tier toggles, with a three-state gesture.
-- Standings in two renderings — wide table and narrow per-agent cards — chosen by container width.
+- Standings chosen by container width: on the card a wide table or narrow per-agent cards; on the
+  page dtez's one grid, reflowing to one card per agent.
 - Four dialogs: proof, agent profile, flyer, Help.
 - The manager's settings screen: contests, tiers, thresholds, eligibility, periods, flyer
   upload/publish, hide, soft delete — all under optimistic concurrency.
@@ -53,7 +56,7 @@ Because a contest is a promise, two properties matter more here than in a normal
 - **Any client-side period arithmetic.** The proof endpoint is sent no dates at all; the server
   resolves the period from the tier.
 - **Leaderboards.** [leaderboards](../leaderboards/) is a sibling on the same API prefix and the
-  same grant. They share no cache.
+  same grant. They share only the `my-access` cache entry (`@shared/wbreporting-access`).
 - **The reporting pipeline** that produces the underlying numbers — `admin/wb-pipeline`.
 - **Contest CRUD via Package 1's `contests/` endpoints.** Deliberately not used: that serializer
   carries no `revision`, so a save built from it could not satisfy the concurrency check.
@@ -64,12 +67,12 @@ Because a contest is a promise, two properties matter more here than in a normal
 |---|---|
 | Routes | 2 + 1 embedded card |
 | Pages | 2 (both thin wrappers) |
-| Components | 14 |
-| Hooks | 9 queries + 7 mutations in one bundle, plus the board-state hook |
+| Components | 14 `.tsx`, plus 2 helpers (`contest-format.ts`, `scope-options.ts`) |
+| Hooks | 8 queries + the access selector, 2 prefetches, the person lookup and 7 mutations in one bundle, plus the board-state hook |
 | Services | 1 |
-| Endpoints consumed | 13 (`wbreporting`) + the `accounts/users/` person search |
-| LOC (ts/tsx) | 3,934 |
-| CSS | 1,345 lines, all under `wb-ct-` |
+| Endpoints consumed | 12 `wbreporting` paths (14 method + path pairs) + `my-access` through `@shared/wbreporting-access` + the `accounts/users/` person search |
+| LOC (ts/tsx) | 4,213 |
+| CSS | 1,583 lines, all under `wb-ct-` |
 | Doc tier | Full |
 
 ## 4. Domain vocabulary
@@ -96,16 +99,19 @@ Because a contest is a promise, two properties matter more here than in a normal
 ## 5. Dependencies
 
 **Upstream**
-- `src/shared/components/ui/modal` — all four dialogs portal through it.
+- `src/shared/components/ui/modal` — all four dialogs and the card's Filters portal through it.
+- `src/shared/wbreporting-access` — the one `my-access` query, which `useContestAccess` selects from.
 - `src/shared/components/user-autocomplete-dropdown` — the card modal's person picker.
 - `/api/accounts/users/` — the standalone page's person search.
 
 **Downstream**
-- `src/features/home-v2/` — mounts `ContestsCard`, replacing a `CanvaVideoCard` placeholder.
+- `src/features/home-v2/` — mounts `ContestsCard` as its own full-width section, in a
+  `clamp(480px, 70vh, 760px)` wrapper (`home-v2-page.tsx:109-130`). The "Event & Contests"
+  `CanvaVideoCard` above it stays.
 - `src/router/contests-route.tsx`, `contest-settings-route.tsx` — two guards, two different gates.
 - `src/hooks/use-role-based-menu.ts` — the menu entry, beside Home v2 and Leaderboards.
 
-**Backend** — `wbreporting`, 13 endpoints.
+**Backend** — `wbreporting`: 12 paths from this module, plus `my-access` from the shared access module.
 
 **External** — none. The flyer URL is signed by the backend.
 
@@ -115,17 +121,17 @@ Because a contest is a promise, two properties matter more here than in a normal
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Before any change. Holds the concurrency model and the containment contract. |
 | [UI.md](UI.md) | Changing a surface. The blank cell and the three-state tier gesture are here. |
-| [API.md](API.md) | The 13 endpoints, the 19 error codes, and what the server owns. |
+| [API.md](API.md) | The endpoints, the 18 error codes, and what the server owns. |
 | [OPERATIONS.md](OPERATIONS.md) | Rollout, or a contest that will not save. |
-| [PHASES.md](PHASES.md) | **Before changing thresholds, blanks or saves.** Decisions C1–C13, including one taken against the recommendation. |
+| [PHASES.md](PHASES.md) | **Before changing thresholds, blanks or saves.** Decisions C1–C30, including one taken against the recommendation and one still open (C27). |
 
 ## 7. Where to start reading
 
-1. `src/features/contests/types/index.ts` — 322 lines, and its header states the two rules that
+1. `src/features/contests/types/index.ts` — 386 lines, and its header states the two rules that
    matter: `progress: null` is not zero, and nothing here describes a result row.
-2. `services/contests-service.ts` — 13 endpoints, and the clearest statement of the concurrency
+2. `services/contests-service.ts` — every endpoint this module calls, and the clearest statement of the concurrency
    model.
-3. `contests.css:1-29` — **the containment contract.** Read it before touching any layout; three
+3. `contests.css:1-39` — **the containment contract.** Read it before touching any layout; three
    rules keep the card scrolling internally and removing any one fails silently.
 4. `components/contest-cell.tsx` — why an ineligible cell is blank rather than labelled.
 5. `components/contest-settings.tsx` — the manager surface, and how a 409 is handled.

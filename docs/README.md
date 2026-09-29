@@ -45,7 +45,7 @@ See [the standard §5](DOCUMENTATION_STANDARD.md#5-doc-tiers) for how a tier is 
 | [bpm](bpm/) | `/bpm/*` (8 children), `/bpm/pass/:token` | `bpm`, `matchup` | 11750 | Production | ✅ |
 | [builder-ai](builder-ai/) | `/builder-ai/*` (7 routes), `/team/builders/daily-six/:agencyCode` | `builderai` | 1781 | Production | ✅ |
 | [calendar-sync](calendar-sync/) | **none** — a section of `/settings` | `calendarsync`, `matchup` | 816 | Production | ✅ |
-| [contests](contests/) | `/contests`, `/admin/contest-settings`, embedded card | `wbreporting` | 2708 | **Gated** | ✅ |
+| [contests](contests/) | `/contests`, `/admin/contest-settings`, embedded card on `/home-v2` | `wbreporting` | 4213 | **Gated** — deployed through dtez parity phase 19; ⟦P20⟧phase 20 deployed⟦/P20⟧; `homev2:read` not granted | ✅ |
 | [events](events/) | `/events/*` (14), `/event/:shortcut/*` (4 public) | `events` | 11366 | Production | ✅ |
 | [gms](gms/) | `/admin/guidance` + an embeddable `HelpAction` | `gms` | 2007 | **Merged-not-deployed** | ✅ |
 | [leaderboards](leaderboards/) | `/leaderboards` | `wbreporting` | 2123 | Merged-not-deployed | ✅ **reference** |
@@ -77,7 +77,7 @@ Two files each: `README.md` plus the one carrying the substance.
 
 | Module | What it is | Why no doc set |
 |---|---|---|
-| `home-v2` | `/home-v2`, 135 LOC, one page | Pure composition. Mounts `VideoHero`, both `CanvaVideoCard` slots and `PerformanceTable` from `home/` plus `LeaderboardsCard` from [leaderboards](leaderboards/) — nothing of its own to document. Gated on `homev2:read`, same rollout as leaderboards; see [leaderboards/PHASES.md](leaderboards/PHASES.md) decision L7 for why `/home` was not replaced. |
+| `home-v2` | `/home-v2`, 141 LOC, one page | Pure composition. Mounts `VideoHero`, both `CanvaVideoCard` slots and `PerformanceTable` from `home/`, `LeaderboardPanel` from [leaderboards](leaderboards/), and `ContestsCard` from [contests](contests/) as its own full-width section in a `clamp(480px, 70vh, 760px)` wrapper — nothing of its own to document. Gated on `homev2:read`, same rollout as leaderboards; see [leaderboards/PHASES.md](leaderboards/PHASES.md) decision L7 for why `/home` was not replaced. |
 | `reports` | `/reports`, 18 LOC, one page | Stub. A placeholder page behind a live route. Promote to Lite when it does something. |
 | `showcase` | `/components`, 455 LOC | Internal component gallery, not a product surface. `src/features/showcase/pages/components-showcase.tsx` is its own documentation. |
 

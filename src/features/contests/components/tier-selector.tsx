@@ -1,7 +1,8 @@
 /**
  * Tier overview cards, which double as the tier toggles.
  *
- * The three-state gesture from `docs/contests/UI.md` §2.2, implemented exactly:
+ * The three-state gesture from `docs/contests/ARCHITECTURE.md` §3.3, implemented exactly
+ * (by `toggleTier`):
  *
  *   - nothing selected  → every visible tier is shown;
  *   - one or more selected → only those;

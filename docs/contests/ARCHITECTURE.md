@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `66fba39` — 2026-09-29 (§2 and §8 re-read for parity phase 19; §1, §3.1–§3.2, §4, §5, §7 `8880009`; §6 `04cbcf3`; the rest `7e3b7f1`) |
+| **Verified against** | commit `743afe1` — 2026-09-30 (parity phase 21 audit) |
 
 ## 1. Layering
 
@@ -20,12 +20,12 @@ deliberately shaped after `leaderboards` rather than diverging from it — same 
 
 | Layer | File | Owns |
 |---|---|---|
-| Types | `types/index.ts` (356) | the wire contract, mirroring `wbreporting/serializers_contests.py` |
-| Service | `services/contests-service.ts` (334) | 13 `wbreporting` endpoints plus the `accounts/users/` person search, `ContestError`, `standingsParams` |
+| Types | `types/index.ts` (386) | the wire contract, mirroring `wbreporting/serializers_contests.py` |
+| Service | `services/contests-service.ts` (334) | 12 `wbreporting` paths plus the `accounts/users/` person search, `ContestError`, `standingsParams`. `my-access` is not here: `@shared/wbreporting-access` owns it |
 | Hooks | `hooks/use-contests.ts` | 8 queries + the access selector, 2 prefetches, the person lookup, `buildStandingsQuery`, 7 mutations, one shared invalidation |
 | | `hooks/use-contest-board.ts` | the board's state — contest, applied filters, tiers, sort, dialogs — and the switch rule, for both placements |
-| Components | `components/` (12, plus `scope-options.ts`) | card, board, board parts, contest selector, filter bar, standings, cell, tier selector, filters modal, dialogs, settings, tier editor |
-| Pages | `pages/` (2) | thin wrappers — 30 and 17 lines |
+| Components | `components/` (14 `.tsx`, plus `contest-format.ts` and `scope-options.ts`) | card, board, board parts, contest selector, filter bar, tier cards, results grid, standings, cell, tier selector, filters modal, dialogs, settings, tier editor |
+| Pages | `pages/` (2) | thin wrappers — 31 and 17 lines |
 
 Both pages are almost empty on purpose. `/contests` renders `ContestsBoard` and `/home-v2` embeds
 `ContestsCard`; both read `useContestBoard`, so an expanded placement may show more but cannot use
@@ -59,12 +59,12 @@ standings region and dialogs (`contest-board-parts.tsx`).
                    │    └── ContestResults     dtez's one grid; one card per agent on a phone
                    │         └── ResultCell    "Tier: state · N%", tinted, pills; or a blank
                    └── BoardDialogs ────────────┘  4 dialogs via shared Modal (portals to document.body)
-
-contest-format.ts   formatPercent · formatAmount · pillTitle (C5 / C15) · toggleTier, for both
                         ├── proof     ── useProof      (enabled on open)
                         ├── profile   ── useAgentProfile
                         ├── flyer     ── useFlyer
                         └── Help
+
+contest-format.ts   formatPercent · formatAmount · pillTitle (C5 / C15) · toggleTier, for both
 
 /admin/contest-settings ── ContestSettingsPage
                             └── ContestSettings
@@ -146,7 +146,8 @@ not refetch it. They apply the rest of the draft with the new person, as dtez do
 
 ### 3.3 Tier selection — the three-state gesture
 
-Implemented exactly as specified (`components/tier-selector.tsx:4`):
+Implemented once, as `toggleTier` (`components/contest-format.ts:44-51`), which both `TierSelector`
+(card) and `TierCards` (page) call:
 
 - nothing selected → every visible tier is shown;
 - one or more selected → only those;
@@ -165,7 +166,18 @@ carries the state.
 
 **No dates is a deliberate boundary.** A browser-supplied window is not authoritative, and a client
 that could choose one could show a number the standings cell never claimed
-(`services/contests-service.ts:130`). The server resolves the period from the tier.
+(`services/contests-service.ts:162-168`). The server resolves the period from the tier.
+
+4. The dialog renders the server's `columns` in one of dtez's three shapes (recruits, points per
+   policy, events; [UI.md §2.6](UI.md#26-dialogs--componentscontest-dialogstsx)). It adds no
+   arithmetic: `source_total` is computed by the server over **every** source row, so the summary
+   is the metric's value even when the table is the first 1,000 rows.
+5. A person in the table opens the profile **on top of** the proof (parity phase 20):
+   `BoardDialogs` passes `dialogs.openProfile` straight through and no longer closes the proof. The
+   profile's `Modal` mounts after the proof's, so its portal sits above it, and the shared `Modal`'s
+   stack sends Escape to the top dialog only.
+6. `{ }` appears only when the response carries `sql`, which the server includes for
+   `wbreporting:manage` holders only. Hiding the button is not the gate — the key's absence is.
 
 ### 3.5 Saving a contest
 
@@ -234,10 +246,12 @@ Nothing is in the query string. Neither surface is deep-linkable to a filter sta
 
 | Capability | Read via | Gates |
 |---|---|---|
-| `can_view_contests` (`homev2:read`) | `useContestAccess`, a selector over the shared access query | `/contests`, the card, the menu entry |
+| `can_view_contests` (`homev2:read`, or `wbreporting:manage`) | `useContestAccess`, a selector over the shared access query | `/contests`, the card, the menu entry |
 | `can_manage` (`wbreporting:manage`) | same payload | `/admin/contest-settings` and every write |
 
-`can_view_contests` rides the **same `homev2:read` grant** as Home v2 and Leaderboards, because the
+`can_view_contests` rides the **same `homev2:read` grant** as Home v2 and Leaderboards — and is also
+true for a `wbreporting:manage` holder, so an operator can see what they configure
+(`mlm_platform` `wbreporting/views.py`, `MyAccessView`) — because the
 contest card lives on the page that gate already opens. Configuring a contest is a different job for
 a different person, so it takes `wbreporting:manage` — the gate that already owns every other
 reporting configuration model.
@@ -247,12 +261,15 @@ never what is permitted.
 
 ## 7. Integration points
 
-- **`wbreporting`** — 13 endpoints ([API.md](API.md)).
-- **`home-v2`** — mounts the card in place of a `CanvaVideoCard` placeholder. `/home` is untouched.
+- **`wbreporting`** — 12 paths from `contests-service.ts`, plus `my-access` ([API.md](API.md)).
+- **`home-v2`** — mounts the card as its own full-width section below the leaderboard, in a
+  `clamp(480px, 70vh, 760px)` wrapper (`home-v2-page.tsx:109-130`). The "Event & Contests"
+  `CanvaVideoCard` stays. `/home` is untouched.
 - **[leaderboards](../leaderboards/)** — same prefix and the same `my-access` payload, read from
   one shared cache entry (`@shared/wbreporting-access`) through each module's own selector. Nothing
   else is shared.
-- **`shared/components/ui/modal`** — all four dialogs, because it portals to `document.body`.
+- **`shared/components/ui/modal`** — all four dialogs and the card's Filters, because it portals to
+  `document.body`.
 - **`shared/components/user-autocomplete-dropdown`** — the card modal's person filter. The page's bar
   has its own search box (`contest-filter-bar.tsx`): the shared component renders its input in a
   portal outside any form, so Enter cannot apply and the box cannot be focused from outside.
@@ -265,7 +282,7 @@ never what is permitted.
 |---|---|---|
 | `progress: null` is never rendered as `0` | the type is `number \| null`; the cell returns `''` | a zero read as a real score |
 | An ineligible cell is **blank**, never "Restricted" | server sends `progress: null` and empty `metrics` | a tier that is not for you reading as a punishment |
-| A draft filter never reaches the server | `ContestFilters` owns local state | a refetch per keystroke |
+| A draft filter never reaches the server | `ContestFilters` and `ContestFilterBar` own local state | a refetch per keystroke |
 | A prefetched key equals the key a switch produces | both built by `buildStandingsQuery`; `useContestBoard.switchContest` resets tiers and sort tier only | a switch that silently goes back to the network |
 | An empty person search selects nobody | `ContestFilterBar` resolves only non-empty text | dtez's bug: Personal with an empty box shows the first person in the list |
 | A person-based view is never sent without a person from the page | `ContestFilterBar` refuses it | the backend roots it at the viewer, under a summary saying nobody is selected |
@@ -277,9 +294,12 @@ never what is permitted.
 | On `/contests`, nothing between the tier strip and the app shell's scroller is a scroll container | `.wb-ct--page` and `.wb-ct--page .wb-ct-scroll` are `overflow: visible` (parity phase 19) | the phone's tier strip no longer sticking: `position: sticky` sticks to the nearest scroll container, even one that never scrolls |
 | A hidden identity field is absent, not blank | the backend omits `level` and `leader_name` when hidden; `ContestResults` shows a part only when present | "No level" or "Leader: -" shown for everyone when an admin hides the field |
 | Dialogs portal out of the card | shared `Modal` | overlays clipped by `overflow: hidden` |
+| Escape and a backdrop click close only the top dialog | the shared `Modal`'s open stack; the four contest dialogs pass `dismissible` | a profile over a proof closing both, or a form modal lost to a stray key (the card's Filters modal is not `dismissible`) |
+| The proof's SQL never reaches a reader | the backend omits `sql` / `sql_params` without `wbreporting:manage` (tested both ways in `mlm_platform`); the dialog shows `{ }` only when the key exists | dtez's leak: its proof endpoint returns its SQL to anyone |
+| The proof's source total is the pill's number | computed server-side over all rows by the metric's own rule; the dialog never sums a page | a truncated page's sum contradicting the grid |
 | `TR`/`TP`/`TE` are never threshold inputs | not rendered; backend rejects them | a result component used as a requirement |
 
-**The containment contract** (`contests.css:1-29`) is the one most easily broken by a well-meaning
+**The containment contract** (`contests.css:1-39`) is the one most easily broken by a well-meaning
 edit, and it fails *silently*. The host owns the card's height — on `/home-v2` it arrives from a
 wrapper of `height: clamp(480px, 70vh, 760px)` that clips (`home-v2-page.tsx`). Three rules make that
 work and **all three are required**:
@@ -290,7 +310,9 @@ work and **all three are required**:
    "scrollable" panel stretches its parent instead;
 3. only `.wb-ct-scroll` scrolls, and it owns both axes.
 
-There is deliberately no `vh` unit anywhere and no fixed pixel height. Adding another `flex: 1`
+There is deliberately no `vh` unit on the card or the board and no fixed pixel height; the only two
+(`contests.css:580`, the proof table's `max-height: 60vh`, and `:761`, the flyer frame's
+`height: 70vh`) are inside the portalled dialogs. Adding another `flex: 1`
 child, or dropping a `min-height: 0`, turns internal scrolling into page growth with no error.
 
 **`/contests` sets rules 1 and 3 aside** (parity phase 19). Its host has no bounded height (measured
