@@ -14,10 +14,13 @@
  * the team-credit note (C5) is the BR/BP/LIC pills' tooltip and the proof dialog's
  * first line.
  *
- * Containment: the host gives the height and `.wb-ct-scroll` is the one flexible row,
- * as in the card. `/contests` gives no bounded height, though, so the board grows and
- * the page scrolls, as dtez's does: the controls scroll away above the grid
- * (`contests.css`, "standalone page").
+ * The tier cards and the grid are dtez's too (parity phase 19): `TierCards` and
+ * `ContestResults`, where the card keeps `TierSelector` and `ContestStandings`.
+ *
+ * Containment: `/contests` gives no bounded height, so the board grows and the page
+ * scrolls, as dtez's does: the controls scroll away above the grid. The page's root and
+ * `.wb-ct-scroll` are therefore not scroll containers here, which is what lets the tier
+ * strip stick on a phone (`contests.css`, "standalone page").
  */
 
 import { useEffect, useState } from 'react';
@@ -28,7 +31,7 @@ import { BoardDialogs, StandingsRegion } from './contest-board-parts';
 import { ContestFilterBar } from './contest-filter-bar';
 import { scopeLabel } from './scope-options';
 import { ContestSelector } from './contest-selector';
-import { TierSelector } from './tier-selector';
+import { TierCards } from './tier-cards';
 
 function plural(count: number, word: string): string {
   return `${count.toLocaleString()} ${word}${count === 1 ? '' : 's'}`;
@@ -130,15 +133,15 @@ export function ContestsBoard() {
         ) : null}
 
         {data?.show_tier_overview ? (
-          <TierSelector
+          <TierCards
             tiers={data.tiers}
             selected={board.selectedTiers}
-            showCounts={data.show_tier_overview}
+            showNearQualifiers={data.show_near_qualifiers}
             onChange={board.setSelectedTiers}
           />
         ) : null}
 
-        <StandingsRegion board={board} />
+        <StandingsRegion board={board} variant="page" />
       </div>
 
       <BoardDialogs board={board} />

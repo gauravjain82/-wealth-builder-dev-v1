@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `8880009` — 2026-09-29 (§1, §2 Phase 18, §3 C10/C20/C25/C26 re-read for parity phase 18; §2 Phase 17, §3 C7/C9/C15–C19 and §5 `08eea2c`; the rest `04cbcf3`) |
+| **Verified against** | commit `8880009` — 2026-09-29 (§1, §2 Phase 18, §3 C10/C20/C25/C26 re-read for parity phase 18, and §1, §2 Phase 19, §3 C28 and §5 for parity phase 19 against the working tree that adds them; §2 Phase 17, §3 C7/C9/C15–C19 `08eea2c`; the rest `04cbcf3`) |
 
 > Phase numbering and the `C` decision prefix come from `mlm_platform/WB_CONTESTS_PROGRESS.md`
 > (phases 0–9, decisions C1–C13) and **must not be renumbered** — the same number means the same
@@ -35,6 +35,7 @@
 | **12** | 2026-09-29 | **Shipped** | **Standings speed (frontend): one shared `my-access` query; contest list alongside the access check; other contests prefetched (C24, C25)** |
 | **17** | 2026-09-29 | On `feature/wb-contests-parity` | **dtez's scoring (C15–C20): whole-number %, best-% default order, cards over the whole contest, default view All; the editor accepts `C`/`BE`, hides "No level"** |
 | **18** | 2026-09-29 | On `feature/wb-contests-parity` | **`/contests` in dtez's layout: title and status line, contests as buttons, an always-visible filter bar with Upline / Leader and "N leaders identified", the contest title row; no banners above the grid; dtez's contest order (C26)** |
+| **19** | 2026-09-29 | On `feature/wb-contests-parity` | **`/contests`' tier cards, grid, cells and pills in dtez's look: goals line, hints, one grid that stacks per agent on a phone, a sticky tier strip, dtez's palette; Home v2 unchanged (C28)** |
 
 **Migrations `0001`–`0003` are applied.** The feature is deployed and gated only by the absence of a
 `homev2:read` grant.
@@ -199,6 +200,53 @@ warnings, as on `main`.
 
 **Decisions.** C26; C27, the Net label, is open (`PARITY_PLAN.md`, Open decisions).
 
+### Phase 19 — tier cards, grid, cells, pills and phone layout (2026-09-29)
+
+**Goal.** `/contests`' grid reads like dtez's; the Home v2 card stays as it was (C28). The brief is
+`mlm_platform/docs/integrations/wb-contests/PHASE_19_KICKOFF.md`.
+
+**What shipped.**
+- `TierCards` (`components/tier-cards.tsx`): name; "N qualified · N close · N in running"; period;
+  the goals line, dtez's `tierSummary` ("BR 30 · BP 120,000", "· Non-License"); "Reward: …"; the
+  hint ("Tap to show this tier" / "Tap to add" / "Selected · tap to remove"). dtez's auto-fit grid;
+  on a narrow board a sideways strip that sticks to the top of the page.
+- `ContestResults` (`components/contest-results.tsx`): dtez's one grid, `240px repeat(n,
+  minmax(260px, 1fr))`, reflowing to one card per agent on a narrow board. Header: name ↓/↑,
+  "N qualified · N close", period. Agent: name, "code · level", "Leader: X · Best N%". Cell:
+  "Tier: Qualified · 100%" / "Tier: Almost qualified · 89%" / "Tier: 59%", tinted whole; blank
+  when ineligible, with its screen-reader text. Pills "BR 15 / 30", green when met and yellow at the
+  near threshold, per metric; the C5 tooltip and the greyed sourceless pill (C15) kept.
+- `StandingsRegion` takes a `variant`; the page passes `page`. `contest-format.ts` holds the
+  formatting, the pill tooltip and the tier toggle both placements use.
+- dtez's palette as custom properties on the page's host (`.wb-ct-host--page`), which paints its own
+  background, so the page no longer depends on the app theme's.
+- On the page only, `.wb-ct` and `.wb-ct-scroll` are `overflow: visible`: both were scroll
+  containers that never scrolled, which stops `position: sticky` (ARCHITECTURE.md §8).
+- Backend fields, coupled (`mlm_platform` `8deb2cd`, `caa7579`): `leader_name` on rows, `non_license`
+  on tiers, and `level` / `leader_name` absent when hidden, so "No level" and "Leader: -" never
+  stand in for a hidden field.
+- `perf:contests` waits for `.wb-ct-results` too.
+
+**Measured.** `type-check` and `build` pass; `lint` is 7 errors / 117 warnings, as on `main`.
+Backend `test wbreporting`: 632 OK (627 + 5). dtez screenshots at 1440 × 900 and 390 × 844,
+Italy, default, with a tier selected and with `85ARG` in Base, are in
+`Codes/wb-contests-parity-shots/phase-19/`. **The page was not driven in a browser**: running the
+branch backend over production data, read-only as in phase 18, was not permitted in this session,
+so ours has no screenshots, and the Home v2 pixel check, the perf run and the parity re-run are
+outstanding (`PARITY_PLAN.md`, Phase 19 *Result*). The Home v2 card is unchanged by construction:
+its components render the same markup, and the stylesheet change is additions only, under new
+class names and `.wb-ct--page` / `.wb-ct-host--page`.
+
+**What the build learned.**
+- A hidden `level` was `""` on the wire, the same as a person with no level. dtez labels the latter
+  "No level", so the page could not tell them apart until the backend omitted the hidden one.
+- dtez's header row does not stick vertically either: its `.standings` is `overflow: auto`, which
+  makes it the sticky header's scroll container. Ours matches.
+- dtez's pill tones are per metric and are **not** gated by `show_near_qualifiers`; the cell's
+  "Almost qualified" is.
+
+**Decisions.** C28.
+
 ## 3. Decision log
 
 Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
@@ -227,6 +275,7 @@ Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
 | **C24** | The card prefetches the other contests' standings on **`/contests` only**, not on `/home-v2`. Taken 2026-09-29 (Phase 12) | `/home-v2` is the landing page for every gated user. Prefetching there costs one background standings request per other contest (four today, ~4 server queries each) on every home visit, paid mostly for switches nobody makes in the compact card. The contest list is still prefetched there, since the card always needs it | `components/contests-card.tsx` (`prefetchOtherContests`); `mlm_platform/docs/integrations/wb-contests/PHASE_12_KICKOFF.md` §6.3 |
 | **C25** | **No remembered contest.** The default stays `contests[0]`; the last-viewed contest is not kept in `localStorage`. Taken 2026-09-29 (Phase 12) | Offered as optional by the brief, to take a returning viewer to one round trip. Not needed: access now runs alongside the list, so the path is already two round trips. And it would change which contest a reader lands on — a visible default that Phase 18's contest selector should own, not a speed phase | `mlm_platform/docs/integrations/wb-contests/PHASE_12_KICKOFF.md` §6.2. The default is now set by C26's order |
 | **C26** | **The contests come in dtez's order**, and the first is shown: active first, then the earliest qualifying start, contests with none (rolling) last, then name. Taken 2026-09-29 (parity phase 18) | C25 left the default to this phase's selector. dtez lists Italy, Los Cabos, Ed Mylett, Private Reception, Executive Package and opens Italy; ours sorted active-then-name and opened Ed Mylett. One sort key in the list view, so the card and the page agree | `mlm_platform` `wbreporting/views_contests.py` `ContestListView`, `test_contests_come_in_dtez_order`; dtez's `list` response, 2026-09-29 |
+| **C28** | **The Home v2 card keeps its own grid**; dtez's tier cards, grid, cells, pills and palette are on `/contests` only. Taken 2026-09-29 (parity phase 19), the brief's option (a), chosen by the user | The card lives in a `clamp(480px, 70vh, 760px)` slot and the plan says it "stays compact"; dtez's cell (a heading line, a tinted block, 260 px columns) is bigger. So the page's grid is separate components (`TierCards`, `ContestResults`) selected by `StandingsRegion`'s `variant`, and the card's `TierSelector`, `ContestStandings` and `ContestCell` are unchanged | `mlm_platform/docs/integrations/wb-contests/PHASE_19_KICKOFF.md` §4; `components/contest-board-parts.tsx` |
 
 ## 4. Deliberately not built
 
@@ -273,5 +322,7 @@ Operational items first — the feature is built and deployed; what remains is m
    already *is* the cache key — so sharing a filtered board is a small change if anyone asks for it.
 6. ~~**Tier multi-select cannot add a second tier**~~ — fixed by parity Phase 17 (C18): the response
    now carries every tier, flagged `selected`, so the selector always shows them all.
-7. **Verify the sticky-column table with a screen reader.** The blank-cell accessible text was designed
-   carefully; the two-axis scroll region around it has not been checked.
+7. **Verify the sticky-column table and the page's grid with a screen reader.** The blank-cell
+   accessible text was designed carefully; the scroll regions around it have not been checked.
+8. **Drive parity phase 19's page in a browser** — screenshots at 1440 and 390 px, the Home v2
+   pixel check, `perf:contests` and the parity re-run (`PARITY_PLAN.md`, Phase 19 *Result*).

@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `8880009` — 2026-09-29 (§2, §3 and §5 re-read for parity phase 18; §4 vocabulary `08eea2c`; the rest `7e3b7f1`, 2026-09-27) |
+| **Verified against** | commit `8880009` — 2026-09-29 (§2, §3 and §5 re-read for parity phase 18, and §3 counted again for parity phase 19 on the working tree that changes them; §4 vocabulary `08eea2c`; the rest `7e3b7f1`, 2026-09-27) |
 
 > **Deployed but not open.** Migrations `wbreporting/0001`–`0003` are applied and the code shipped
 > 2026-09-26. Nobody has been granted `homev2:read` for contests, so no reader can reach it yet.
@@ -64,12 +64,12 @@ Because a contest is a promise, two properties matter more here than in a normal
 |---|---|
 | Routes | 2 + 1 embedded card |
 | Pages | 2 (both thin wrappers) |
-| Components | 12 |
+| Components | 14 |
 | Hooks | 9 queries + 7 mutations in one bundle, plus the board-state hook |
 | Services | 1 |
 | Endpoints consumed | 13 (`wbreporting`) + the `accounts/users/` person search |
-| LOC (ts/tsx) | 3,542 |
-| CSS | 1,018 lines, all under `wb-ct-` |
+| LOC (ts/tsx) | 3,934 |
+| CSS | 1,345 lines, all under `wb-ct-` |
 | Doc tier | Full |
 
 ## 4. Domain vocabulary

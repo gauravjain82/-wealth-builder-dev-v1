@@ -1,7 +1,8 @@
 /**
- * The two pieces the compact card and the standalone page render identically: the
- * standings region and the four dialogs. Each placement arranges its own rows around
- * them (`contests-card.tsx`, `contests-board.tsx`).
+ * The two pieces both placements render: the standings region and the four dialogs.
+ * Each placement arranges its own rows around them (`contests-card.tsx`,
+ * `contests-board.tsx`). The region's states are shared; its grid is not: the card
+ * keeps its compact table and cards, the page draws dtez's grid (parity phase 19).
  */
 
 import type { ContestBoard } from '../hooks/use-contest-board';
@@ -11,13 +12,24 @@ import {
   ProfileDialog,
   ProofDialog,
 } from './contest-dialogs';
+import { ContestResults } from './contest-results';
 import { ContestStandings } from './contest-standings';
 
 /**
  * `.wb-ct-scroll`, the card's single flexible row and the owner of both scroll axes
- * (the containment contract at the top of `contests.css`).
+ * (the containment contract at the top of `contests.css`). On the page it is neither:
+ * the page scrolls, and the grid scrolls sideways inside `.wb-ct-results`.
+ *
+ * `variant` picks the grid: `card` (default) is the Home v2 card's `ContestStandings`,
+ * `page` is dtez's `ContestResults`.
  */
-export function StandingsRegion({ board }: { board: ContestBoard }) {
+export function StandingsRegion({
+  board,
+  variant = 'card',
+}: {
+  board: ContestBoard;
+  variant?: 'card' | 'page';
+}) {
   const { contests, loadingContests, standings, pageSize, dialogs } = board;
   const { data, isLoading, isFetching, isError, error } = standings;
 
@@ -31,6 +43,22 @@ export function StandingsRegion({ board }: { board: ContestBoard }) {
         </p>
       ) : !contests?.length ? (
         <p className="wb-ct-state">There are no contests running right now.</p>
+      ) : data && variant === 'page' ? (
+        <ContestResults
+          rows={data.rows.slice(0, pageSize)}
+          tiers={data.tiers.filter((tier) => tier.selected)}
+          sortTier={data.sort_tier}
+          direction={data.direction}
+          showNearQualifiers={data.show_near_qualifiers}
+          nearPercent={data.near_percent}
+          teamCreditNote={data.team_credit_note}
+          hasMore={data.rows.length > pageSize || Boolean(data.next_cursor)}
+          isFetchingMore={isFetching}
+          onSort={board.sortBy}
+          onOpenProof={dialogs.openProof}
+          onOpenProfile={(row) => dialogs.openProfile(row.agent_id, row.name || row.agency_code)}
+          onLoadMore={board.loadMore}
+        />
       ) : data ? (
         <ContestStandings
           rows={data.rows.slice(0, pageSize)}

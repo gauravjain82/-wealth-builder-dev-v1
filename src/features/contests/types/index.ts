@@ -79,6 +79,8 @@ export interface TierSummary {
   single_hop_team: boolean;
   /** Whether the tier is in the current selection; every tier when none is chosen. */
   selected: boolean;
+  /** Only unlicensed people are eligible; the page's goals line ends "Non-License". */
+  non_license: boolean;
 }
 
 export interface ContestSummary {
@@ -128,7 +130,13 @@ export interface StandingRow {
   agent_id: number;
   agency_code: string;
   name: string;
-  level: string;
+  /** Absent when the display settings hide levels; `""` means the person has none. */
+  level?: string;
+  /**
+   * The assigned leader's name, or code. Absent when the display settings hide it;
+   * `""` when there is no coded leader, which the page shows as "Leader: -" (dtez).
+   */
+  leader_name?: string;
   is_active: boolean;
   best_percent: number | null;
   evaluations: Record<string, TierEvaluation>;

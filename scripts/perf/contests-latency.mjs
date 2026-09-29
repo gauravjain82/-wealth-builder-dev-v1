@@ -46,7 +46,7 @@ const LOADING_TEXT = ['Loading standings', 'Updating'];
 const TIMEOUT_MS = 120_000;
 
 const standingsSettled = () =>
-  document.querySelector('.wb-ct-table, .wb-ct-cards, .wb-ct-state') &&
+  document.querySelector('.wb-ct-results, .wb-ct-table, .wb-ct-cards, .wb-ct-state') &&
   !['Loading standings', 'Updating'].some((text) => document.body.innerText.includes(text));
 
 async function login() {

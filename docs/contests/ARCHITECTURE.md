@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `8880009` — 2026-09-29 (§1, §2, §3.1–§3.2, §4, §5, §7, §8 re-read for parity phase 18; §6 `04cbcf3`; the rest `7e3b7f1`) |
+| **Verified against** | commit `8880009` — 2026-09-29 (§1, §2, §3.1–§3.2, §4, §5, §7, §8 re-read for parity phase 18, and §2 and §8 for parity phase 19 against the working tree that changes them; §6 `04cbcf3`; the rest `7e3b7f1`) |
 
 ## 1. Layering
 
@@ -37,12 +37,14 @@ standings region and dialogs (`contest-board-parts.tsx`).
 ```
                 useContestBoard   one state: contest, applied filters, tiers, sort, dialogs
                  │                (switchContest resets tiers + sort, keeps filters + direction)
-/home-v2 ─── ContestsCard                     compact; unchanged by parity phase 18
+/home-v2 ─── ContestsCard                     compact; unchanged by parity phases 18 and 19
               ├── <select> of contests · Flyer / Filters / Help pills
               ├── TierSelector
               ├── applied-filter line · team-credit note
               ├── ContestFilters (in a Modal)  DRAFT state; Apply commits
-              ├── StandingsRegion ──┐
+              ├── StandingsRegion ──┐  variant "card"
+              │    └── ContestStandings   table + cards; the only scrolling element
+              │         └── ContestCell   a percentage, pills, or a blank
               └── BoardDialogs ─────┤  contest-board-parts.tsx, shared
                                     │
 /contests ── ContestsPage           │
@@ -52,11 +54,13 @@ standings region and dialogs (`contest-board-parts.tsx`).
                    ├── ContestFilterBar        DRAFT state; Apply / Enter commits;
                    │                           Upline / Leader via useAgentProfile
                    ├── contest title row       name · status · period · view · flyer icon
-                   ├── TierSelector            overview cards = tier toggles
-                   ├── StandingsRegion ─────────┤
-                   │    └── ContestStandings   the only scrolling element (on /home-v2)
-                   │         └── ContestCell   a percentage, pills, or a blank
+                   ├── TierCards               dtez's tier cards = tier toggles; sticky strip on a phone
+                   ├── StandingsRegion ─────────┤  variant "page", parity phase 19
+                   │    └── ContestResults     dtez's one grid; one card per agent on a phone
+                   │         └── ResultCell    "Tier: state · N%", tinted, pills; or a blank
                    └── BoardDialogs ────────────┘  4 dialogs via shared Modal (portals to document.body)
+
+contest-format.ts   formatPercent · formatAmount · pillTitle (C5 / C15) · toggleTier, for both
                         ├── proof     ── useProof      (enabled on open)
                         ├── profile   ── useAgentProfile
                         ├── flyer     ── useFlyer
@@ -270,13 +274,15 @@ never what is permitted.
 | `replace_tiers` is explicit | the payload flag | a partial save deleting tiers it never sent |
 | A 409 reloads, never retries | the settings screen | the overwrite the revisions exist to prevent |
 | Only `.wb-ct-scroll` scrolls, on `/home-v2` | three CSS rules | internal scrolling becoming page growth. `/contests` has no bounded host, so there the page scrolls, as on dtez |
+| On `/contests`, nothing between the tier strip and the app shell's scroller is a scroll container | `.wb-ct--page` and `.wb-ct--page .wb-ct-scroll` are `overflow: visible` (parity phase 19) | the phone's tier strip no longer sticking: `position: sticky` sticks to the nearest scroll container, even one that never scrolls |
+| A hidden identity field is absent, not blank | the backend omits `level` and `leader_name` when hidden; `ContestResults` shows a part only when present | "No level" or "Leader: -" shown for everyone when an admin hides the field |
 | Dialogs portal out of the card | shared `Modal` | overlays clipped by `overflow: hidden` |
 | `TR`/`TP`/`TE` are never threshold inputs | not rendered; backend rejects them | a result component used as a requirement |
 
 **The containment contract** (`contests.css:1-29`) is the one most easily broken by a well-meaning
 edit, and it fails *silently*. The host owns the card's height — on `/home-v2` it arrives from a
-sibling card's `aspect-ratio: 3 / 2` through grid `align-items: stretch`. Three rules make that work
-and **all three are required**:
+wrapper of `height: clamp(480px, 70vh, 760px)` that clips (`home-v2-page.tsx`). Three rules make that
+work and **all three are required**:
 
 1. the feature root takes `height: 100%` and `overflow: hidden`;
 2. `min-height: 0` appears on **every** flex ancestor between the root and the scroll owner — a flex
@@ -286,6 +292,12 @@ and **all three are required**:
 
 There is deliberately no `vh` unit anywhere and no fixed pixel height. Adding another `flex: 1`
 child, or dropping a `min-height: 0`, turns internal scrolling into page growth with no error.
+
+**`/contests` sets rules 1 and 3 aside** (parity phase 19). Its host has no bounded height (measured
+in phase 18), so `.wb-ct` clipping and `.wb-ct-scroll` scrolling did nothing there except make both
+scroll containers, which stopped anything sticking to the page. The page scopes both to `overflow:
+visible` under `.wb-ct--page`; the grid scrolls sideways inside `.wb-ct-results`, and on a phone the
+tier strip sticks to the top of the app shell's scrolling area. The card's rules are unchanged.
 
 **The threshold that can produce a wrong prize.** `BR`, `BP` and `LIC` count one hop of Leader with
 no base-shop boundary and read materially lower than the Production Tracker for the same agent. Both

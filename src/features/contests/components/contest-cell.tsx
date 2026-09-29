@@ -14,6 +14,7 @@
  */
 
 import type { MetricProgress, TierEvaluation } from '../types';
+import { formatAmount, formatPercent, pillTitle } from './contest-format';
 
 interface ContestCellProps {
   evaluation: TierEvaluation | undefined;
@@ -26,26 +27,6 @@ interface ContestCellProps {
    */
   teamCreditNote: string;
   onOpenProof: (metric: MetricProgress) => void;
-}
-
-/**
- * The server sends whole numbers (C20, as dtez shows them); it qualifies and sorts on the
- * exact value. `Math.round` only guards against a stale cached payload with decimals.
- */
-function formatPercent(value: number | null): string {
-  return value === null ? '' : `${Math.round(value)}%`;
-}
-
-/**
- * A metric amount for display: whole numbers with thousands separators. Points arrive
- * with cents (17385.53) but are read as a round score, so the decimals are dropped;
- * counts like recruits and licences are already integers.
- */
-function formatAmount(value: number | string | null | undefined): string {
-  if (value === null || value === undefined || value === '') return '0';
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return String(value);
-  return Math.round(numeric).toLocaleString('en-US');
 }
 
 export function ContestCell({
@@ -81,13 +62,7 @@ export function ContestCell({
             type="button"
             className={`wb-ct-pill${metric.available ? '' : ' wb-ct-pill--unavailable'}`}
             disabled={!metric.detail_available}
-            title={
-              metric.available
-                ? metric.single_hop_team
-                  ? `${metric.label} — ${teamCreditNote || 'counts direct reports only'}`
-                  : metric.label
-                : metric.unavailable_reason
-            }
+            title={pillTitle(metric, teamCreditNote)}
             onClick={() => onOpenProof(metric)}
           >
             <span className="wb-ct-pill__label">{metric.metric.toUpperCase()}</span>

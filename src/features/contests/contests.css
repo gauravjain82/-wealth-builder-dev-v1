@@ -7,10 +7,10 @@
  *
  * THE CONTAINMENT CONTRACT
  * ------------------------
- * The host owns the card's size. On `/home-v2` the contest card sits in a two-column
- * grid beside the "Recognition" card, whose `.carousel-card__image-container` has
- * `aspect-ratio: 3 / 2`; grid `align-items: stretch` hands that computed height to
- * this card. So the height arrives from the parent and is never guessed here.
+ * The host owns the card's size. On `/home-v2` the contest card is a full-width block
+ * inside a wrapper of `height: clamp(480px, 70vh, 760px)`, a flex column that clips
+ * (`home-v2-page.tsx`). So the height arrives from the parent and is never guessed
+ * here.
  *
  * Three rules make that work, and all three are required — removing any one of them
  * turns internal scrolling into page growth:
@@ -26,7 +26,10 @@
  * The contract is the Home v2 card's. The standalone page's host (`/contests`) is not
  * height-bounded — the app shell's main area scrolls — so there the board grows with
  * its content and the page scrolls, as dtez's does (measured in parity phase 18, the
- * same before and after it). See "standalone page" below.
+ * same before and after it). Since parity phase 19 the page also sets rules 1 and 3
+ * aside: `.wb-ct--page` and its `.wb-ct-scroll` are `overflow: visible`, so the tier
+ * strip can stick to the page on a phone. See "standalone page" and "tier cards and
+ * results grid" below.
  *
  * There is deliberately no `100vh`, no `vh` unit at all, and no fixed pixel height on
  * the root. Overlays render through the shared `Modal`, which portals to
@@ -536,7 +539,7 @@ select.wb-ct-title:focus-visible {
  * flexible row. `/contests` gives no bounded height, so in practice the board grows
  * and the page scrolls, as on dtez: the controls scroll away above the grid, which on
  * a phone is the only way the grid gets a screen. Nothing here makes the body a scroll
- * container, which would also stop a sticky tier strip (parity phase 19) working.
+ * container, which would also stop the sticky tier strip (parity phase 19) working.
  */
 
 .wb-ct-page-head {
@@ -833,6 +836,330 @@ select.wb-ct-title:focus-visible {
   .wb-ct-filter-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* --- standalone page: tier cards and results grid, parity phase 19 -------- */
+
+/*
+ * dtez's `render()` and its stylesheet, value for value, scoped to `/contests`. The
+ * Home v2 card keeps its own tier strip, table and cards above (decision recorded in
+ * `docs/contests/PHASES.md` §3, parity phase 19).
+ *
+ * The palette is dtez's, as custom properties on the page's host, so the board reads
+ * the same in the app's light theme: it paints its own background rather than
+ * inheriting the shell's, which in light mode left white text on grey.
+ *
+ * Containment on the page. `/contests` has no bounded height (measured in phase 18):
+ * the app shell's main area scrolls. Two ancestors of the grid were scroll containers
+ * that never scrolled — `.wb-ct` (`overflow: hidden`) and `.wb-ct-scroll`
+ * (`overflow: auto`) — and a sticky element sticks to its nearest scroll container, so
+ * nothing could stick to the page. Here, and only here, both are `overflow: visible`;
+ * the Home v2 card is bounded and its rules are load-bearing, so they stay. The grid
+ * scrolls sideways inside `.wb-ct-results`, as dtez's `.standings` does, which is also
+ * why its header row does not stick vertically on a wide screen — on dtez neither.
+ */
+
+.wb-ct-host--page {
+  --wb-ct-gold: #efc84a;
+  --wb-ct-panel: #171a18;
+  --wb-ct-ink: #0a0c0a;
+  --wb-ct-line: #373c36;
+  --wb-ct-muted: #a2a8a3;
+  --wb-ct-green: #4fb875;
+  --wb-ct-yellow: #d5af35;
+  --wb-ct-control: #101310;
+  --wb-ct-control-line: #424840;
+  border: 1px solid var(--wb-ct-line);
+  border-radius: 0.4375rem;
+  background: var(--wb-ct-panel);
+  color: #f4f5f2;
+}
+
+.wb-ct--page {
+  overflow: visible;
+}
+
+.wb-ct--page .wb-ct-scroll {
+  overflow: visible;
+}
+
+.wb-ct--page .wb-ct-contest-info {
+  border-bottom: 1px solid var(--wb-ct-line);
+}
+
+/* tier cards: dtez's auto-fit grid; a sideways, sticky strip on a narrow board */
+
+.wb-ct-tier-selector {
+  flex: 0 0 auto;
+}
+
+.wb-ct-tier-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 9px;
+  margin-top: 13px;
+}
+
+.wb-ct-tier-card {
+  width: 100%;
+  border: 1px solid var(--wb-ct-line);
+  border-radius: 6px;
+  background: var(--wb-ct-control);
+  color: #f1f2ef;
+  font: inherit;
+  padding: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wb-ct-tier-card:hover,
+.wb-ct-tier-card:focus-visible {
+  border-color: #8b762c;
+}
+
+.wb-ct-tier-card:focus-visible {
+  outline: 2px solid var(--wb-ct-gold);
+  outline-offset: 2px;
+}
+
+.wb-ct-tier-card[aria-pressed='true'] {
+  border-color: var(--wb-ct-gold);
+  background: #302b13;
+  box-shadow: inset 0 0 0 1px #8f7722;
+}
+
+.wb-ct-tier-card__name,
+.wb-ct-tier-line {
+  display: block;
+}
+
+.wb-ct-tier-card__name {
+  color: var(--wb-ct-gold);
+}
+
+.wb-ct-tier-line {
+  margin-top: 6px;
+  color: var(--wb-ct-muted);
+  font-size: 12px;
+}
+
+.wb-ct-tier-hint {
+  color: #d6c36e;
+}
+
+/* results grid: 240 px agent column, 260 px minimum per tier */
+
+.wb-ct-results {
+  min-width: 0;
+  margin-top: 18px;
+  overflow-x: auto;
+  font-size: 15px;
+}
+
+.wb-ct-results-grid {
+  min-width: calc(240px + var(--wb-ct-tier-count, 1) * 260px);
+}
+
+.wb-ct-results-head,
+.wb-ct-standing {
+  display: grid;
+  grid-template-columns: 240px repeat(var(--wb-ct-tier-count, 1), minmax(260px, 1fr));
+}
+
+.wb-ct-results-head > div {
+  padding: 10px;
+  border: 1px solid var(--wb-ct-line);
+  background: #252925;
+  color: var(--wb-ct-gold);
+  font-weight: 700;
+}
+
+.wb-ct-standing > div {
+  padding: 11px;
+  border: 1px solid #2b302a;
+  background: var(--wb-ct-ink);
+}
+
+/* The agent column stays put while the tiers scroll sideways, header cell included. */
+.wb-ct-results-head > div:first-child,
+.wb-ct-standing > .wb-ct-standing-agent {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+.wb-ct-tier-sort {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--wb-ct-gold);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wb-ct-tier-sort:hover,
+.wb-ct-tier-sort:focus-visible {
+  text-decoration: underline;
+}
+
+.wb-ct-agent-name {
+  display: block;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wb-ct-agent-name:hover,
+.wb-ct-agent-name:focus-visible {
+  text-decoration: underline;
+}
+
+.wb-ct-meta-line {
+  margin-top: 3px;
+  color: var(--wb-ct-muted);
+  font-size: 11px;
+}
+
+/* A tier result is tinted whole: qualified green, close yellow, each with dtez's bar. */
+.wb-ct-standing > .wb-ct-result--qualified {
+  border-color: #348352;
+  background: #12351f;
+  box-shadow: inset 4px 0 var(--wb-ct-green);
+}
+
+.wb-ct-standing > .wb-ct-result--near {
+  border-color: #8b7224;
+  background: #332b10;
+  box-shadow: inset 4px 0 var(--wb-ct-yellow);
+}
+
+/* Blank to the eye, never "Restricted" (UI.md §2.5); the cell's sr-only text says why. */
+.wb-ct-standing > .wb-ct-result--blank {
+  min-height: 46px;
+  background: #080a08;
+}
+
+.wb-ct-result-title {
+  margin: 0 0 7px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wb-ct-result-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.wb-ct-metric-pill {
+  border: 1px solid var(--wb-ct-control-line);
+  border-radius: 6px;
+  background: var(--wb-ct-control);
+  color: #f1f2ef;
+  font: inherit;
+  font-size: 11px;
+  padding: 5px 7px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-ct-metric-pill:focus-visible {
+  outline: 2px solid var(--wb-ct-gold);
+  outline-offset: 2px;
+}
+
+/* Per metric, as dtez: met at 100% of its goal, close at the near threshold. */
+.wb-ct-metric-pill--met {
+  border-color: var(--wb-ct-green);
+  color: #bdf2ce;
+}
+
+.wb-ct-metric-pill--near {
+  border-color: var(--wb-ct-yellow);
+  color: #ffe595;
+}
+
+/* A goal with no source counts as 0 (C15); its tooltip says why. */
+.wb-ct-metric-pill--unavailable {
+  border-style: dashed;
+  font-style: italic;
+}
+
+.wb-ct-metric-pill:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/*
+ * dtez's phone layout, at dtez's 760 px step measured as the board's width: 760 px less
+ * its 20 px page and 18 px panel padding each side is 684 px, 42.75rem. A container
+ * query, like the rest of this file, so the shell's sidebar is accounted for.
+ *
+ * The tier strip sticks to the top of the page while the agents scroll under it. The
+ * negative margin is the host's 1rem padding, so the strip's background runs edge to
+ * edge as dtez's does.
+ */
+@container wb-ct-card (max-width: 42.75rem) {
+  .wb-ct-tier-selector {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    margin-inline: -1rem;
+    padding: 8px 1rem;
+    border-bottom: 1px solid var(--wb-ct-line);
+    background: var(--wb-ct-panel);
+  }
+
+  .wb-ct-tier-overview {
+    display: flex;
+    margin-top: 0;
+    padding-bottom: 3px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+  }
+
+  .wb-ct-tier-card {
+    flex: 0 0 min(78cqw, 280px);
+    scroll-snap-align: start;
+  }
+
+  .wb-ct-results {
+    overflow: visible;
+  }
+
+  .wb-ct-results-grid {
+    min-width: 0;
+  }
+
+  .wb-ct-results-head {
+    display: none;
+  }
+
+  .wb-ct-standing {
+    grid-template-columns: 1fr;
+    margin-bottom: 12px;
+    border: 1px solid var(--wb-ct-line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .wb-ct-standing > .wb-ct-standing-agent {
+    position: static;
+  }
+
+  .wb-ct-result-title {
+    font-size: 14px;
   }
 }
 

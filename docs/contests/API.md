@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `08eea2c` — 2026-09-29 (§3 payload types and error codes re-read for parity phase 17; the rest `17121e6`) |
+| **Verified against** | commit `08eea2c` — 2026-09-29 (§3 payload types and error codes re-read for parity phase 17, and `TierSummary` / `StandingRow` for parity phase 19 against the working tree that changes them; the rest `17121e6`) |
 
 > Endpoints **consumed**, not exposed.
 
@@ -82,10 +82,10 @@ two rules that a well-meaning edit would break:
 | `ContestStatus` | three reader values derived from five stored ones |
 | `ThresholdMetric` | the eleven configurable metrics |
 | `TierRequirement` | carries `single_hop_team` and `available` |
-| `TierSummary` | every visible tier, with `selected`; counts over the whole contest, `in_running` the same on every tier (C18) |
+| `TierSummary` | every visible tier, with `selected`; counts over the whole contest, `in_running` the same on every tier (C18). `non_license` since parity phase 19, for the goals line |
 | `TierEvaluation` | `eligible`, `progress`, `qualified`, `near`, `unmeasured`, `metrics`. `unavailable` and `partially_measurable` were removed in parity phase 17 (C15) |
 | `MetricProgress` | `actual` is `0` for a metric with no source, which keeps `available: false` and its reason (C15) |
-| `StandingRow` | identity plus `evaluations` keyed by tier |
+| `StandingRow` | identity plus `evaluations` keyed by tier. Since parity phase 19, `leader_name` (name, else code, else `""`), and `level` and `leader_name` are **absent** when the display settings hide them, so `""` always means *none* ("No level", "Leader: -"). `agency_code` is still `""` when hidden. Backend `mlm_platform` `8deb2cd`, `caa7579`, coupled |
 | `StandingsResponse` | rows, tiers, cursor, `near_percent`, `team_credit_note`, display switches, echoed `filters`. **No `uncoded_member_count`** since Phase 11: the backend resolves scopes over coded users only (C22), so there is nothing to count. Leaderboards keeps its own field of that name, from a different endpoint |
 | `ProofResponse` | period, columns, rows, cards, formula, cursor |
 | `FilterDraft` / `StandingsQuery` | draft state vs what is actually queried |
