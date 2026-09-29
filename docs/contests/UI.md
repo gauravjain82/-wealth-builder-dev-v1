@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `206c8c8` — 2026-09-29 (§2.6, §3, §4, §6, §7 re-read for parity phase 20; §2.1a, §2.2, §2.4, §2.5, §5 `66fba39`; §1, §2.1, §2.3 `8880009`; the rest `17121e6`) |
+| **Verified against** | commit `743afe1` — 2026-09-30 (parity phase 21 audit) |
 
 ## 1. Routes and entry points
 
@@ -18,8 +18,10 @@
 | `/contests` | `ContestsRoute` (`can_view_contests`) | `ContestsPage` → `ContestsBoard` | `/home` |
 | `/admin/contest-settings` | `ContestSettingsRoute` (`can_manage`) | `ContestSettingsPage` → `ContestSettings` | **`/contests`** |
 
-**Embedded entry point.** `ContestsCard` is mounted by `src/features/home-v2/`, replacing a
-`<CanvaVideoCard title="Event & Contests">` placeholder. That is the primary placement; the route is
+**Embedded entry point.** `ContestsCard` is mounted by `src/features/home-v2/` as its own
+full-width "Contests" section below the leaderboard, in a clipping `clamp(480px, 70vh, 760px)`
+wrapper (`home-v2-page.tsx:109-130`). The `<CanvaVideoCard title="Event & Contests">` media card
+above it stays; the contest card does not replace it. That is the primary placement; the route is
 the optional one.
 
 The two denial targets differ deliberately: a reader who lands on the settings URL is returned to the
@@ -140,8 +142,10 @@ does not.
 
 **Upline and Leader** are disabled until a person is applied, and each stays disabled while that
 person's profile has no such link (Leader also when the person leads themselves, as on dtez). They
-read the profile endpoint, which loads the viewer's whole hierarchy, so the buttons can take
-seconds to enable (measured locally against production data: ~50 s; recorded for parity phase 20).
+read the profile endpoint, so the buttons can take seconds to enable: ~7–8 s on the production
+API in parity phase 20, when the endpoint still loaded the viewer's whole hierarchy (phase 18's
+~50 s was a local backend). ⟦P20⟧The coupled backend now reads only the chains it needs
+(`reader_nodes`)⟦/P20⟧; the time after that change is unmeasured.
 
 **The Net label is not a style choice.** The contest `net` filter keeps the selected person plus
 whoever reports directly to them. Package 2's *Net Base* is a different rule entirely, and reusing
@@ -268,11 +272,13 @@ input is not validation:
 
 - **`TR`, `TP`, `TE` are result components, never threshold inputs.** Not rendered at all; the
   backend rejects them if a hand-written request sends one.
-- **An unmeasurable metric cannot be required.** `BE` and `C` have no source in this deployment; the
-  input is disabled and says why.
-- **Eligibility levels come from the host's level table.** All ticked and none ticked are the same
-  instruction — "anyone" — because the backend stores the shorter encoding and both collapse to
-  empty.
+- **A metric with no source may be required.** `BE` and `C` have no source in this deployment; the
+  input stays enabled and its `title` says it counts as 0, so the tier cannot be qualified while it is required
+  (C15; `components/tier-editor.tsx:16-18`, `:214-216`).
+- **Eligibility levels come from the host's level table, without "No level"** (C19). The backend
+  stores the unticked levels as an exclusion, so people with no level are eligible for every tier
+  except a Non-License one. All ticked and none ticked are the same instruction — "anyone"
+  (`components/tier-editor.tsx:18-21`). The level checkboxes are disabled on a Non-License tier.
 
 And it carries the `BR`/`BP`/`LIC` single-hop warning, at the moment somebody types a threshold.
 
@@ -282,6 +288,7 @@ And it carries the `BR`/`BP`/`LIC` single-hop warning, at the moment somebody ty
 |---|---|---|
 | Loading | standings in flight | a loading state in the scroll area |
 | Empty | no rows for the filters | an empty body, not an error |
+| No contests | the contest list is empty | "There are no contests running right now." (`contest-board-parts.tsx:44-45`) |
 | **Blank cell** | `eligible: false` | a visually empty cell; meaning in the accessible text only |
 | Qualified / close cell | page: `qualified`, or `near` with `show_near_qualifiers` | the whole cell tinted green / yellow, and its heading says "Qualified" / "Almost qualified" |
 | Met / close pill | page: per metric, actual ≥ goal, or actual ÷ goal ≥ `near_percent` | a green / yellow pill border and text |
@@ -326,11 +333,12 @@ And it carries the `BR`/`BP`/`LIC` single-hop warning, at the moment somebody ty
 ## 5. Responsive and print behaviour
 
 **Container queries, not viewport breakpoints** — `@container wb-ct-card` at 34rem
-(`contests.css:1183`, `:1189`). The card can be narrow on a wide screen and wide on a narrow one, so
-viewport width is the wrong question. One viewport media query remains at 48rem (`:1204`) for the
-settings screen, and `prefers-reduced-motion` is honoured (`:1168`).
+(`contests.css:1421`, `:1427`). The card can be narrow on a wide screen and wide on a narrow one, so
+viewport width is the wrong question. Two viewport media queries remain: 48rem (`:1442`) for the
+settings screen, and 760px (`:765`), dtez's, which stacks the profile dialog's grid (the dialog
+portals to `document.body`, outside any container). `prefers-reduced-motion` is honoured (`:1406`).
 
-The standalone page adds three steps under the same container (`:787`, `:1112`, `:803`), after dtez's
+The standalone page adds three steps under the same container (`:1025`, `:1350`, `:1041`), after dtez's
 900 px and 760 px ones: at 56rem the filter bar pairs its controls with the person search and the
 actions on whole rows; at **42.75rem** — dtez's 760 px less its page and panel padding, 684 px — the
 tier cards become a sticky sideways strip (cards `min(78cqw, 280px)` wide) and the grid becomes one
@@ -358,21 +366,23 @@ No print styles. *Not applicable — unlike the Full Report, a contest board is 
   is hidden, so there is no sort control there, as on dtez.
 - All four dialogs use the shared `Modal`, which since parity phase 20 is `role="dialog"` with
   `aria-modal` and `aria-labelledby` its title, moves focus into the dialog, keeps Tab inside the top
-  one, and returns focus on close (to the proof's name button when a profile over it closes). Before
+  one, and returns focus on close (to the proof's name button when a profile over it closes);
+  `aria-labelledby` is set whenever a title is passed, which all four do. Before
   phase 20 this line claimed all of that and the `Modal` did none of it.
 - The `{ }` toggle is `aria-expanded`; path diagrams are ordered lists, their arrows `aria-hidden`.
 - `/contests` has a visible `<h1>`, "Wealth Builders Contests"; the contest name is its `<h2>`.
 - The contest buttons carry `aria-pressed` in a group labelled "Contest".
 - The filter bar's error is `role="alert"`, and the search box is `aria-invalid` and described by
   it while it shows.
-- Disabled threshold inputs say **why** they are disabled rather than just being inert.
+- A threshold for a metric with no source says in its `title` that it counts as 0 (C15); no threshold
+  input is disabled.
 
 Not covered: the sticky-column table and the page's grid are wide scroll regions, which is workable
 but not verified with a screen reader.
 
 ## 7. Styling and theming
 
-One stylesheet, `contests.css`, 1,581 lines, **every selector under `wb-ct-`** (the one keyframe is
+One stylesheet, `contests.css`, 1,583 lines, **every selector under `wb-ct-`** (the one keyframe is
 `wb-ct-spin`). Nothing here is a global
 rule and nothing styles a shared component.
 
@@ -389,6 +399,6 @@ backdrop (`.wb-ct-modal-backdrop`). The shared `Modal` is Tailwind utilities, th
 specificity (0,2,0); the overrides are written `div.wb-ct-modal.wb-ct-modal` (0,2,1) so they win in
 any stylesheet order. They reach no other feature's `Modal`.
 
-Read `contests.css:1-29` before changing any layout — the containment contract is stated there, and
+Read `contests.css:1-39` before changing any layout — the containment contract is stated there, and
 its three rules are summarised in
 [ARCHITECTURE.md §8](ARCHITECTURE.md#8-invariants-and-failure-modes).

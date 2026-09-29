@@ -3,7 +3,7 @@
  *
  * `ContestsBoard` reads the same state as the Home v2 card (`useContestBoard`), so it
  * uses the same qualification rules, APIs, filters and tier toggles; only the layout
- * differs. `docs/contests/UI.md` §2.1.
+ * differs. `docs/contests/UI.md` §2.1a.
  *
  * The height still comes from the host, not from the feature: this page supplies a
  * flex column that fills the routed area, and the board fills that. There is no `vh`

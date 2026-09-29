@@ -41,7 +41,7 @@ export function pillTitle(metric: MetricProgress, teamCreditNote: string): strin
 }
 
 /**
- * The three-state tier gesture (`docs/contests/UI.md` §2.2): pressing a tier adds it;
+ * The three-state tier gesture (`docs/contests/ARCHITECTURE.md` §3.3): pressing a tier adds it;
  * pressing a selected one removes it, and removing the last returns to "all", which is
  * the empty selection.
  */

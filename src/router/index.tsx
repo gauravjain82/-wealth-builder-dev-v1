@@ -303,9 +303,9 @@ const router = createBrowserRouter([
         element: <LeaderboardsRoute>{lazyLoad(LeaderboardsPage)}</LeaderboardsRoute>,
       },
       {
-        // The optional standalone route from docs/contests/UI.md §1. Same card, same rules,
-        // a taller box. Gated on can_view_contests, which reads the same homev2:read
-        // grant the Home v2 page does (decision C11).
+        // The optional standalone route from docs/contests/UI.md §1: ContestsBoard, dtez's
+        // layout over the card's state and rules (UI.md §2.1a). Gated on can_view_contests,
+        // which reads the same homev2:read grant the Home v2 page does (decision C11).
         path: 'contests',
         element: <ContestsRoute>{lazyLoad(ContestsPage)}</ContestsRoute>,
       },

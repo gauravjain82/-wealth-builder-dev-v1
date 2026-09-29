@@ -9,7 +9,7 @@
 | **API prefix** | `/api/accounts/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 (§6 `Modal` re-read at `206c8c8` for contests parity phase 20, 2026-09-29) |
+| **Verified against** | commit `7e3b7f1` — 2026-09-27 (§6 re-read at `743afe1`, 2026-09-30, parity phase 21 audit) |
 
 ## 1. Routes and entry points
 
@@ -114,8 +114,8 @@ that needs print handles it under its own class prefix.
 ## 6. Accessibility
 
 What the shell provides: semantic `<main>` and `<nav>` landmarks, `aria-label` on view
-switchers, Radix primitives (`@radix-ui/react-dialog`, `react-tooltip`) for focus trapping
-and dismissal in shared modals and tooltips.
+switchers, and Radix's tooltip (`@radix-ui/react-tooltip`). `@radix-ui/react-dialog` is a
+dependency, but no file imports it: the shared modals are the hand-rolled `Modal` below.
 
 What it does not: there is no automated accessibility check in the toolchain, and the
 full-screen loaders are unannounced. Treat Radix-backed components as the accessible path
@@ -127,9 +127,23 @@ and a hand-rolled overlay as needing its own focus management.
 already took it, such as an `autoFocus` input), keeps Tab inside the top open modal, and returns
 focus to where it was on close. Before that it did none of these. **Escape and a backdrop click
 close it only with `dismissible`**, off by default so a form is not lost to a stray key; with two
-open, only the top one answers (decision C30, `docs/contests/PHASES.md`). Its users on that date:
-the contest dialogs (`dismissible`), the contest card's Filters, the leaderboard detail dialog and
-the training schedule's meeting dialog (not `dismissible`, so they close on × as before).
+open, only the top one answers (decision C30, `docs/contests/PHASES.md`). It is widely used: 61
+feature files render it directly, and the two shared confirmation dialogs built on it
+(`ui/confirmation-dialog.tsx` `ConfirmationDialog`, `ConfirmDialog.tsx`) are used by 16, six of
+which do not render `Modal` themselves — 67 feature files in all,
+across bpm, team, matchup, events, admin, settings, builder-ai, leaderboards, contests and the
+training schedule. Only the four contest dialogs pass `dismissible`; the dialog semantics and focus
+handling apply to all of them. Two were driven with the keyboard in parity phase 20 (the contest
+card's Filters and the training schedule's meeting dialog); the rest were not.
+
+**Known issue — Tab inside a portalled popup** (keyboard only, not yet fixed). The Tab trap treats
+focus outside the panel as escaped and pulls it back to the modal's first control
+(`modal/index.tsx:88-90`). A popup that portals to `document.body` from inside a `Modal` is outside
+the panel, so pressing Tab in it jumps to the top of the modal: the shared `DatePicker`
+(`ui/date-picker/index.tsx:60`; e.g. `bpm/components/bpm-form-modal.tsx`), and by the same code
+path the `UserAutocompleteDropdown` search (`user-autocomplete-dropdown/index.tsx:289`) in the
+contest card's Filters. Mouse use is unaffected. The fix belongs in `Modal`, treating a portalled
+child as inside. Tracked in `docs/contests/PHASES.md` §5.
 
 ## 7. Styling and theming
 

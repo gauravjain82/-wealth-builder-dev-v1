@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `8880009` — 2026-09-29 (§4 re-read for parity phase 18; §1 and §6 C14 rows parity phase 16; the rest `7e3b7f1`) |
+| **Verified against** | commit `743afe1` — 2026-09-30 (parity phase 21 audit) |
 
 ## 1. Environment and configuration
 
@@ -21,7 +21,7 @@ No module-specific `VITE_` variables. Everything configurable is **backend state
 | `near_percent` | served in `EditorOptions` | what counts as "near" |
 | Flyer limits (`max_bytes`, `allowed_types`) | served in `EditorOptions` | upload validation |
 | Eligibility levels | `accounts.Level` | the level checkboxes. Adding a level needs **no release** |
-| `WB_MILESTONE_TIMESTAMPS_SINCE` | backend env | whether `mr`/`mp` can be measured at all |
+| `WB_MILESTONE_TIMESTAMPS_SINCE` | backend env | whether `mr` can be measured at all. `mp` is a daily column since backend parity phase 14 and no longer depends on it |
 | `homev2:read`, `wbreporting:manage` | access console | who reads, who configures |
 
 **The settings screen is the only place contests are edited (backend decision C14).** dtez's
@@ -35,15 +35,16 @@ changed flyer limit appears without a frontend deploy.
 
 ## 2. Build and run
 
-Standard ([platform OPERATIONS §2](../platform/OPERATIONS.md#2-build-and-run)). Two lazy chunks — the
-card path and the settings page. `contests.css` is imported by the components that need it, not
+Standard ([platform OPERATIONS §2](../platform/OPERATIONS.md#2-build-and-run)). Two lazy chunks of
+its own — `/contests` (`pages/contests-page.tsx`) and the settings page (`router/index.tsx:63-65`);
+the card is imported statically by `home-v2-page.tsx`, so it ships in the Home v2 chunk. `contests.css` is imported by the components that need it, not
 globally.
 
 Locally you need `homev2:read` on your own account to see anything, and `wbreporting:manage` for the
 settings screen. There is no dev bypass.
 
 **Testing the card properly means testing it in its slot.** Its height comes from the host — on
-`/home-v2` from a sibling card's `aspect-ratio: 3 / 2` via grid `align-items: stretch`. Checking it
+`/home-v2` from its wrapper's `height: clamp(480px, 70vh, 760px)` (`home-v2-page.tsx`). Checking it
 only on `/contests`, where the box is tall, will not catch a containment regression.
 
 ## 3. Feature flags and rollout
@@ -52,8 +53,8 @@ No client-side flags. Two capabilities, both from one `my-access` payload:
 
 | Capability | Grants | Without it |
 |---|---|---|
-| `can_view_contests` (`homev2:read`) | `/contests`, the card, the menu entry | `/contests` → `/home`; no menu entry |
-| `can_manage` (`wbreporting:manage`) | `/admin/contest-settings` and all eight writes | settings URL → `/contests` |
+| `can_view_contests` (`homev2:read`, or `wbreporting:manage`) | `/contests`, the card, the menu entry | `/contests` → `/home`; no menu entry |
+| `can_manage` (`wbreporting:manage`) | `/admin/contest-settings`, its two reads and all seven writes | settings URL → `/contests` |
 
 `can_view_contests` rides the **same `homev2:read` grant** as Home v2 and Leaderboards (decision C11):
 the contest card lives on the page that gate already opens, so a separate permission would have to be
@@ -73,13 +74,16 @@ chunks. `npm run lint` reports nothing in this module today.
 
 Manual checks, ordered by what they protect:
 
-1. **Containment, in the real slot.** Open `/home-v2` and confirm the card fills its grid row, that
+1. **Containment, in the real slot.** Open `/home-v2` and confirm the card fills its
+   `clamp(480px, 70vh, 760px)` wrapper, that
    only the standings area scrolls, and that **the page itself does not grow**. Then narrow the window
    and confirm horizontal scrolling stays inside the card.
 2. **A blank cell.** Find an ineligible cell — a licensed agent against a Non-License tier is the
    easy case — and confirm it is visually empty, says nothing like "Restricted", and still conveys its
    meaning to a screen reader.
-3. **Never zero.** Confirm an unmeasurable requirement shows no number rather than `0%`.
+3. **Never zero, and zero where it is.** An ineligible cell shows no number rather than `0%`. A
+   requirement with no source (`BE`, `C`) is a greyed `0/goal` pill and holds the tier below
+   qualified (C15).
 4. **Draft filters.** Type in the person picker and confirm **no** request fires until Apply.
 5. **The three-state tier gesture**, including toggling the last selected tier off to return to all.
 6. **Proof.** Open a cell's proof and confirm the period came from the server — the request should
@@ -98,10 +102,17 @@ Manual checks, ordered by what they protect:
     choose Just this person with an empty search and press Apply: an error under the bar, the search
     focused, and **no** request. dtez shows the first person in its list instead.
 12. **Upline and Leader.** Apply a person; both stay disabled until their profile arrives, then each
-    moves the person and re-applies. The profile endpoint is slow (UI.md §2.3).
+    moves the person and re-applies. The profile endpoint can take seconds (UI.md §2.3).
 13. **Home v2 did not change.** Screenshot the card on `/home-v2` before and after any change to the
     shared hook or parts (`use-contest-board.ts`, `contest-board-parts.tsx`); they must be
     identical.
+14. **Dialogs** (parity phase 20). Escape, a backdrop click and × each close the proof, profile,
+    flyer and Help; with a profile open over a proof, Escape closes the profile only. The card's
+    Filters modal ignores Escape and backdrop and closes on ×.
+15. **The SQL panel is a manager's only.** As a reader, a proof response has no `sql` key and the
+    dialog no `{ }` button; as a `wbreporting:manage` holder, both are there.
+16. **The phone layout of `/contests`** at 390 px: one card per agent, and the tier strip sticking
+    under the app header while the grid scrolls.
 
 ### Latency check
 
@@ -144,14 +155,18 @@ route guard redirects and the script says so. `WB_PERF_URL` points it at another
 ## 5. Deployment
 
 **Already deployed.** The code shipped 2026-09-26 and migrations `wbreporting/0001`–`0003` are
-applied. Verify with `showmigrations wbreporting` on the target environment rather than from any
+applied. dtez parity phases 11–19 were merged and deployed 2026-09-29 (frontend PR #14, backend
+PR #68), and the Phase 15 results rebuild was run on production the same day (17:24 UTC,
+2026-06-01 to 2026-09-29, 7,510 rows). ⟦P20⟧Parity phase 20 (`206c8c8`) is merged and deployed
+together with its backend half on `feature/wb-contests-parity`.⟦/P20⟧ The branch is coupled: the
+proof's new shapes and the SQL panel need the backend half, so the two sides deploy together. Verify with `showmigrations wbreporting` on the target environment rather than from any
 document — an earlier handover note claiming "four pending" was stale.
 
 What remains is operational, not a deploy:
 
 1. **Grant `homev2:read`** to the contest rollout group in the access console. Until then no reader
    can reach the feature.
-2. **Set `WB_MILESTONE_TIMESTAMPS_SINCE`** once `tracker/0050` is applied, or `mr`/`mp` report
+2. **Set `WB_MILESTONE_TIMESTAMPS_SINCE`** once `tracker/0050` is applied, or `mr` reports
    unavailable forever.
 3. **Confirm with the business that `BR`, `BP` and `LIC` are understood as direct-report measures**
    *before* any contest is configured against them (C5).
@@ -167,13 +182,12 @@ Rollback is revoking the grant. No deploy required.
 | `/contests` redirects to `/home` | no `homev2:read`, or `my-access` failing | `/api/wbreporting/my-access/`. A 500 and a denial look identical |
 | Settings URL bounces to `/contests` | no `wbreporting:manage` | the same payload's `can_manage` |
 | No menu entry but the URL works | the menu reads the same access query | `use-role-based-menu.ts` |
-| **The page grows instead of the card scrolling** | a `min-height: 0` was dropped, or a second `flex: 1` child added | `contests.css:1-29`. **This fails silently** |
+| **The page grows instead of the card scrolling** | a `min-height: 0` was dropped, or a second `flex: 1` child added | `contests.css:1-39`. **This fails silently** |
 | Overlays clipped | a dialog not using the shared `Modal` | the card sets `overflow: hidden`; dialogs must portal to `document.body` |
 | A cell is blank | the agent is ineligible for that tier | expected, and deliberate. Do not add a label |
 | A cell shows `0%` where it should be blank | `progress: null` was coalesced | `contest-cell.tsx` — `null` must return `''` |
-| A tier never says qualified | a requirement is unmeasurable | expected (C7): never qualified while anything is unmeasurable |
-| `mr`/`mp` always unavailable | `WB_MILESTONE_TIMESTAMPS_SINCE` unset | a deploy step, not a bug |
-| `BE` or `C` cannot be required | no source in this deployment | expected; the input says why |
+| A tier never says qualified | a required metric has no source (`BE`, `C`) | expected (C15, amending C7): it counts as 0, so the tier cannot qualify while it is required |
+| `mr` always unavailable | `WB_MILESTONE_TIMESTAMPS_SINCE` unset | a deploy step, not a bug |
 | Standings look lower than the Production Tracker | the tier uses `BR`, `BP` or `LIC` | expected (C5) — single-hop Leader, no base-shop boundary |
 | `slic` disagrees with Non-License status | they read **different columns** | expected (C1). A backend test asserts it |
 | A save 409s | somebody else saved first | reload. Never retry — that is the overwrite revisions prevent |

@@ -6,9 +6,9 @@
  * `Modal` renders with `createPortal` to `document.body`, which is the whole point:
  * the contest card sets `overflow: hidden` so its body can scroll internally, and a
  * dialog rendered inside that element would be clipped by it. Nothing here builds its
- * own overlay layer — `docs/contests/UI.md` §2.6 asks for host-native portals and the host has
- * one. All four are `dismissible`: Escape closes the top one, and a click on its
- * backdrop closes it, as on dtez.
+ * own overlay layer: the shared `Modal` already portals (`docs/contests/ARCHITECTURE.md`
+ * §8, "Dialogs portal out of the card"). All four are `dismissible`: Escape closes the
+ * top one, and a click on its backdrop closes it, as on dtez.
  *
  * Each dialog opens immediately with a loading state and fetches its own data; the
  * hooks are `enabled`-gated on being open, so opening the card does not fetch four

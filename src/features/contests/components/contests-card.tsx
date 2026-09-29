@@ -1,12 +1,11 @@
 /**
  * The contest card — the piece that owns containment.
  *
- * This component replaces the `<CanvaVideoCard title="Event & Contests">` placeholder
- * on `/home-v2`. The host decides how big it is: on that page it sits in a two-column
- * grid beside the "Recognition" card, whose `aspect-ratio: 3 / 2` sets the row height,
- * and grid `align-items: stretch` hands that height here. Nothing in this component or
- * its stylesheet sets a pixel height, a `vh` unit, or a content-driven minimum — see
- * the containment contract at the top of `contests.css`.
+ * On `/home-v2` this is a full-width block of its own, like the leaderboard. The host
+ * decides how big it is: `home-v2-page.tsx` wraps it in a clipping flex column of
+ * `height: clamp(480px, 70vh, 760px)`, and that height arrives here. Nothing in this
+ * component or its stylesheet sets a pixel height, a `vh` unit, or a content-driven
+ * minimum — see the containment contract at the top of `contests.css`.
  *
  * The consequence for anyone editing this file: the header, meta line, tier strip and
  * filter summary are fixed-size rows, and `.wb-ct-scroll` is the single flexible one.

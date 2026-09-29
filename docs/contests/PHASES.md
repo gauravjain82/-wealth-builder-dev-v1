@@ -9,37 +9,47 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `206c8c8` — 2026-09-29 (§1, §2 Phase 20, §3 C29–C30 for parity phase 20; §2 Phase 19 and §5 re-measured after the deploy `2d8cbd8`; §1, §3 C28 `66fba39`; §2 Phase 18, §3 C10/C20/C25/C26 `8880009`; §2 Phase 17, §3 C7/C9/C15–C19 `08eea2c`; the rest `04cbcf3`) |
+| **Verified against** | commit `743afe1` — 2026-09-30 (parity phase 21 audit) |
 
 > Phase numbering and the `C` decision prefix come from `mlm_platform/WB_CONTESTS_PROGRESS.md`
-> (phases 0–9, decisions C1–C13) and **must not be renumbered** — the same number means the same
-> thing in both repos. Phases 0–5 are backend; the frontend is phases 6 and 8.
+> (phases 0–9, decisions C1–C13) and, from phase 10, from the dtez parity plan,
+> `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (phases 10–21, decisions C14–C30). They **must not be renumbered** —
+> the same number means the same thing in both repos. Phases 0–5 are backend; the frontend is
+> phases 6 and 8, then parity phases 11, 12 and 17–20. Phases 13–16 are backend or data only.
 >
 > Decisions below were locked with the user on 2026-09-25 and each has been **re-verified against the
 > code** for this document. Where the code is the authority, it is cited.
 
 ## 1. Timeline
 
-4 commits in this repo, 2026-09-25 to 2026-09-26.
+11 commits touch `src/features/contests/`, 2026-09-25 to 2026-09-29; the first ten are on `main`,
+and `206c8c8` (parity phase 20) is on `feature/wb-contests-parity`. Status values are the
+standard's: **Gated** means live behind the unheld `homev2:read` grant.
 
 | Phase | Date | Status | Shipped |
 |---|---|---|---|
-| 0–5 | 2026-09 | Shipped (backend) | Analysis, schema, the progress formula, pure services, standings, read APIs, settings writes |
-| **6** | 2026-09-25 | **Shipped** | **Frontend: the card, standings, the cell, tier selector, draft filters, four dialogs, the standalone route** |
+| 0–5 | 2026-09 | Shipped | Backend: analysis, schema, the progress formula, pure services, standings, read APIs, settings writes |
+| **6** | 2026-09-25 | **Gated** | **Frontend: the card, standings, the cell, tier selector, draft filters, four dialogs, the standalone route** |
 | 7 | 2026-09-25 | Shipped | Runbook §9 and handoff feedback |
-| **8** | 2026-09-25 | **Shipped** | **The settings screen — closed the gap recorded after Phase 7** |
+| **8** | 2026-09-25 | **Gated** | **The settings screen — closed the gap recorded after Phase 7** |
 | 9 | 2026-09-26 | Shipped | Existing-contest data import; migrations applied |
-| — | 2026-09-26 | Shipped | Tier layout and overflow refinements in CSS |
-| 10 | 2026-09-29 | Shipped | Latency check, `npm run perf:contests` (`OPERATIONS.md` §4) |
-| **11** | 2026-09-29 | **Shipped** | **Standings speed (backend): coded-only scopes (C22); `uncoded_member_count` removed from the response and the card** |
-| **12** | 2026-09-29 | **Shipped** | **Standings speed (frontend): one shared `my-access` query; contest list alongside the access check; other contests prefetched (C24, C25)** |
-| **17** | 2026-09-29 | Deployed 2026-09-29 (PR #14) | **dtez's scoring (C15–C20): whole-number %, best-% default order, cards over the whole contest, default view All; the editor accepts `C`/`BE`, hides "No level"** |
-| **18** | 2026-09-29 | Deployed 2026-09-29 (PR #14) | **`/contests` in dtez's layout: title and status line, contests as buttons, an always-visible filter bar with Upline / Leader and "N leaders identified", the contest title row; no banners above the grid; dtez's contest order (C26)** |
-| **19** | 2026-09-29 | Deployed 2026-09-29 (PR #14) | **`/contests`' tier cards, grid, cells and pills in dtez's look: goals line, hints, one grid that stacks per agent on a phone, a sticky tier strip, dtez's palette; Home v2 unchanged (C28)** |
-| **20** | 2026-09-29 | Code done; awaits the coupled backend deploy | **The four dialogs in dtez's look: proof with a source total and dtez's three table shapes (points per policy, C29), profile over proof, profile grid and path diagrams, rewritten help, "Flyer" title, an admin-only `{ }` SQL panel; Escape and backdrop close the top dialog (C30)** |
+| — | 2026-09-26 | Gated | Tier layout and overflow refinements in CSS |
+| 10 | 2026-09-29 | Shipped | Baseline and parity harness: latency check `npm run perf:contests` (`OPERATIONS.md` §4); backend `wb_contest_parity` |
+| **11** | 2026-09-29 | **Gated** | **Standings speed (backend): coded-only scopes (C22); `uncoded_member_count` removed from the response and the card** |
+| **12** | 2026-09-29 | **Gated** | **Standings speed (frontend): one shared `my-access` query; contest list alongside the access check; other contests prefetched (C24, C25)** |
+| 13 | 2026-09-29 | Shipped | Backend: recruit eligibility and team-recruit crediting (C21). No frontend change |
+| 14 | 2026-09-29 | Shipped | Backend: event registration (`SE`) and Mission Pin (`MP`) sources; `mp` no longer gated on `WB_MILESTONE_TIMESTAMPS_SINCE`. No frontend change |
+| 15 | 2026-09-29 | Shipped | Backend: daily recalculation of every open contest window (C23); production results rebuilt. No frontend change |
+| 16 | 2026-09-29 | Shipped | Backend and ops: the last import of dtez's contest settings (C14); this repo's settings screen is the only editor |
+| **17** | 2026-09-29 | Gated | **dtez's scoring (C15–C20): whole-number %, best-% default order, cards over the whole contest, default view All; the editor accepts `C`/`BE`, hides "No level"** |
+| **18** | 2026-09-29 | Gated | **`/contests` in dtez's layout: title and status line, contests as buttons, an always-visible filter bar with Upline / Leader and "N leaders identified", the contest title row; no banners above the grid; dtez's contest order (C26)** |
+| **19** | 2026-09-29 | Gated | **`/contests`' tier cards, grid, cells and pills in dtez's look: goals line, hints, one grid that stacks per agent on a phone, a sticky tier strip, dtez's palette; Home v2 unchanged (C28)** |
+| **20** | 2026-09-29 | ⟦P20⟧Gated⟦/P20⟧ | **The four dialogs in dtez's look: proof with a source total and dtez's three table shapes (points per policy, C29), profile over proof, profile grid and path diagrams, rewritten help, "Flyer" title, an admin-only `{ }` SQL panel; Escape and backdrop close the top dialog (C30)** |
+| 21 | 2026-09-30 | In progress | Documentation audit, the coupled deploy of phase 20, the final latency and parity run; the `homev2:read` grant, which the user has chosen not to make yet |
 
-**Migrations `0001`–`0003` are applied.** The feature is deployed and gated only by the absence of a
-`homev2:read` grant.
+**Migrations `0001`–`0003` are applied.** Parity phases 11–19 were merged and deployed 2026-09-29
+(frontend PR #14, backend PR #68); ⟦P20⟧phase 20 is deployed with its coupled backend⟦/P20⟧. The
+feature is gated only by the absence of a `homev2:read` grant.
 
 ## 2. Phases
 
@@ -60,7 +70,9 @@ standalone route behind `ContestsRoute`, with a menu entry beside Home v2 and Le
   two-column grid; the Recognition card beside it sets the row height through
   `.carousel-card__image-container { aspect-ratio: 3 / 2 }`, and grid `align-items: stretch` hands that
   height to the contest card. No viewport unit and no magic number — which is why the containment
-  contract in `contests.css:1-29` exists and why all three of its rules are required.
+  contract at the top of `contests.css` exists and why all three of its rules are required. *(Superseded:
+  the card later became a full-width block in a `clamp(480px, 70vh, 760px)` wrapper; the containment
+  contract still holds, only the source of the height changed. Recorded in parity phase 21.)*
 - **Narrow versus wide is a *container* query, not a viewport breakpoint.** The card can be narrow on
   a wide screen (two columns) and wide on a narrow one.
 - **All four overlays go through the shared `Modal`**, which already portals to `document.body`, so
@@ -80,6 +92,14 @@ remove, hide and soft delete. All under optimistic concurrency.
 reached the agent reading standings but **not the manager typing `BR >= 50`** — which is the moment it
 matters, because a contest threshold is a promise about a prize
 (`components/tier-editor.tsx:4`).
+
+### Phase 10 — baseline and parity harness (2026-09-29)
+
+Made every later phase measurable: `npm run perf:contests` (`scripts/perf/contests-latency.mjs`,
+[OPERATIONS.md §4](OPERATIONS.md#4-tests-and-checks)) here, and the read-only
+`wb_contest_parity` in the backend. Baseline: first standings 7.48 s, a contest switch 4.17 s,
+13 API calls before first standings. It also found stored results older than 45 days going stale
+(C23). Source: `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`, Phase 10.
 
 ### Phase 11 — standings speed (2026-09-29)
 
@@ -136,6 +156,23 @@ The first-standings target (< 1 s) waits on the Phase 11 deploy: ~3.9 s of the 5
 backend's standings request.
 
 **Decisions.** C24, C25.
+
+### Phases 13–16 — backend and data (2026-09-29)
+
+No code in this repo; each is recorded for what it changed under the screen. Source:
+`mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`, Phases 13–16.
+
+- **13 — recruits.** `PR`/`TR`/`BR` count a recruit as dtez does, and team recruits credit the
+  **recruiter's** leader (C21). The shared team-credit note (C5) was not reworded, so the `BR`
+  tooltip and this module's "one hop of Leader" wording are unchanged by request.
+- **14 — `SE` and `MP`.** Both from dtez's sources; `mp` became a daily column, measurable for any
+  period with its own proof page, so it no longer waits on `WB_MILESTONE_TIMESTAMPS_SINCE`
+  ([API.md §6](API.md#6-backend-ownership)). The screen needed no change.
+- **15 — rebuild.** A daily Celery task recalculates every open contest window (C23). The
+  production rebuild ran 2026-09-29 17:24 UTC over 2026-06-01 to 2026-09-29, 7,510 rows.
+- **16 — settings.** The last import of dtez's contests and tiers (Italy tiers 2–4, backend
+  `b7c77bf`). Since then the settings screen here is the only editor (C14;
+  [OPERATIONS.md §1](OPERATIONS.md#1-environment-and-configuration)).
 
 ### Phase 17 — dtez's scoring rules (2026-09-29)
 
@@ -270,7 +307,9 @@ listed. The brief is `mlm_platform/docs/integrations/wb-contests/PHASE_20_KICKOF
   has `sql`. Profile: dtez's seven-field grid and both paths as node diagrams. Help: dtez's text
   rewritten for our page. Flyer: "*Contest* Flyer", the new-tab link kept.
 - `BoardDialogs` no longer closes the proof when a name in it is clicked.
-- **The shared `Modal`** (`src/shared/components/ui/modal/index.tsx`, used by five files): always
+- **The shared `Modal`** (`src/shared/components/ui/modal/index.tsx`; rendered directly by 61
+  feature files and by the two shared confirmation dialogs, `ConfirmationDialog` and
+  `ConfirmDialog`, used by 16 files, six of them not already counted — 67 feature files in all): always
   `role="dialog"`, `aria-modal`, `aria-labelledby`, focus moved in and returned, Tab kept inside the
   top dialog; new optional `subtitle`, `headerActions`, `titleClassName`; and `dismissible` (off by
   default) for Escape and backdrop, answered by the top dialog only (C30). Only the four contest
@@ -312,6 +351,22 @@ shots in `Codes/wb-contests-parity-shots/phase-20/`).
 
 **Decisions.** C29, C30.
 
+### Phase 21 — docs, verification, coupled deploy, grant (in progress, 2026-09-30)
+
+**Goal.** No doc in either repo describes the old behaviour; phase 20 deployed with its backend;
+the final latency and parity run. The brief is
+`mlm_platform/docs/integrations/wb-contests/PHASE_21_KICKOFF.md`.
+
+**Done here so far.** The six contest docs, `docs/README.md` and `docs/platform/UI.md` re-read
+against `743afe1`. Corrected: the Home v2 card is its own section and the "Event & Contests" media
+card stays; the counts in [README.md §3](README.md#3-at-a-glance); `my-access` is the shared
+module's; 18 error codes; the editor accepts `BE`/`C` (C15); only `mr` waits on
+`WB_MILESTONE_TIMESTAMPS_SINCE`; the shared `Modal` has 67 feature users, not five. Code comments
+citing the wrong doc section were repointed; no behaviour changed.
+
+**Open.** The grant is the user's call and has not been made. The post-deploy measurements of
+phase 20 are listed in §5.
+
 ## 3. Decision log
 
 Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
@@ -330,19 +385,23 @@ Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
 | C11 | `homev2:read` for reads, `wbreporting:manage` for writes | The card lives on the page `homev2:read` already opens, so a separate read permission would be granted to exactly the same people. Configuring is a different job | `router/contests-route.tsx:10` |
 | C12 | Inactive people are included | The same accepted divergence as leaderboards' L1 — fidelity to the delivered spec | `StandingRow.is_active` is carried, not filtered |
 | C13 | 50 / 200 page sizes; `considered` contests are settings-only | A considered contest is a draft; readers should not see a promise that has not been made | `WB_CONTESTS_PROGRESS.md` |
+| **C14** | **This repo's settings screen is the single editor of contest settings**; one final import from dtez (parity phase 16), then no sync either way. Approved 2026-09-29 | Until one editor was chosen the two drifted (Italy had 4 tiers on dtez, 1 here). A contest differing from dtez's page afterwards is expected, not drift | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C14); `OPERATIONS.md` §1 |
 | **C15** | A requirement with no source counts as **0**, as on dtez. Approved 2026-09-29 | The tier averages lower and cannot qualify while it is required; the pill keeps its reason. The editor accepts `C`/`BE` | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (C15) |
 | **C16** | With no tier chosen, order by **best %**, then name. Approved 2026-09-29 | dtez's default. No header shows an arrow then (`sort_tier: null`) | PARITY_PLAN (C16) |
 | **C17** | List anyone with **activity** on a selected tier, eligible or not. Approved 2026-09-29 | dtez's rule; a row can be all blank cells | PARITY_PLAN (C17) |
 | **C18** | **"In running" is everyone listed**, the same on every card; cards never narrow with a selection. Approved 2026-09-29 | dtez's `tierTotals`. `TierSummary.selected` tells columns from cards | PARITY_PLAN (C18) |
 | **C19** | Level eligibility is **dtez's `tierAllowed`**. Approved 2026-09-29 | People with no level pass any restriction. The editor hides "No level" and stores exclusions (both decided 2026-09-29) | PARITY_PLAN (C19); `components/tier-editor.tsx` |
 | **C20** | Default view **All** (permission-limited, C10 stays); **whole-number** percentages. Approved 2026-09-29 | dtez's initial state and `Math.round` | PARITY_PLAN (C20); `hooks/use-contest-board.ts` `DEFAULT_FILTERS` |
+| **C21** | Team recruits credit the **recruiter's** leader, as dtez does, not the recruit's. Approved 2026-09-29 | Needed for `TR`/`BR` parity. Done in `wbreporting` only (backend phase 13); the team-credit note text, `gms` and this module's wording were left unchanged on request, so "one hop of Leader" (C5) now understates how team recruits are credited | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C21) |
 | **C22** | Scope walks load **only users with an agency code**, so an uncoded user in a recruiting chain ends the walk there. Approved 2026-09-29 | The dtez reference does the same, and an uncoded user can never have a result row (D2). Loading them cost ~200,000 rows per request. Consequence here: the "without an agent code" count is gone — it was the only thing that needed the full hierarchy | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C22) |
+| **C23** | Recalculate **every open contest window** daily, not only the trailing 45 days. Approved 2026-09-29 | Stored results older than 45 days went stale when a ledger entry was back-dated (found in phase 10). A daily Celery task over the union of open windows; the 10-minute two-day run stays. Backend only | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C23) |
 | **C24** | The card prefetches the other contests' standings on **`/contests` only**, not on `/home-v2`. Taken 2026-09-29 (Phase 12) | `/home-v2` is the landing page for every gated user. Prefetching there costs one background standings request per other contest (four today, ~4 server queries each) on every home visit, paid mostly for switches nobody makes in the compact card. The contest list is still prefetched there, since the card always needs it | `components/contests-card.tsx` (`prefetchOtherContests`); `mlm_platform/docs/integrations/wb-contests/PHASE_12_KICKOFF.md` §6.3 |
 | **C25** | **No remembered contest.** The default stays `contests[0]`; the last-viewed contest is not kept in `localStorage`. Taken 2026-09-29 (Phase 12) | Offered as optional by the brief, to take a returning viewer to one round trip. Not needed: access now runs alongside the list, so the path is already two round trips. And it would change which contest a reader lands on — a visible default that Phase 18's contest selector should own, not a speed phase | `mlm_platform/docs/integrations/wb-contests/PHASE_12_KICKOFF.md` §6.2. The default is now set by C26's order |
 | **C26** | **The contests come in dtez's order**, and the first is shown: active first, then the earliest qualifying start, contests with none (rolling) last, then name. Taken 2026-09-29 (parity phase 18) | C25 left the default to this phase's selector. dtez lists Italy, Los Cabos, Ed Mylett, Private Reception, Executive Package and opens Italy; ours sorted active-then-name and opened Ed Mylett. One sort key in the list view, so the card and the page agree | `mlm_platform` `wbreporting/views_contests.py` `ContestListView`, `test_contests_come_in_dtez_order`; dtez's `list` response, 2026-09-29 |
+| **C27** | **Open.** Label the `net` checkbox "Net", as dtez does? Recommended: no — keep "Direct reports only" (C10), since Package 2's *Net Base* is a different rule and dtez's own help calls it "the narrower ownership view". Asked in parity phase 18 | Until answered, both placements and the Help text say "Direct reports only" | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C27) |
 | **C28** | **The Home v2 card keeps its own grid**; dtez's tier cards, grid, cells, pills and palette are on `/contests` only. Taken 2026-09-29 (parity phase 19), the brief's option (a), chosen by the user | The card lives in a `clamp(480px, 70vh, 760px)` slot and the plan says it "stays compact"; dtez's cell (a heading line, a tinted block, 260 px columns) is bigger. So the page's grid is separate components (`TierCards`, `ContestResults`) selected by `StandingsRegion`'s `variant`, and the card's `TierSelector`, `ContestStandings` and `ContestCell` are unchanged | `mlm_platform/docs/integrations/wb-contests/PHASE_19_KICKOFF.md` §4; `components/contest-board-parts.tsx` |
 | **C29** | **The points proof is one row per policy**, dtez's grain: Policy, Client, First / Last Date, First / Second / Other Advances, Chargebacks / Reversals, Net Points. Chosen by the user 2026-09-29 (parity phase 20), over keeping our per-entry (`pp`) and per-agent (`bp`) rows and only restyling | Parity with dtez's proof, and one shape for both points metrics. A backend change (the proof builders) and a coupled response change. A policy with points from several agents is masked by the most restrictive of their relationships | `mlm_platform/docs/integrations/wb-contests/PHASE_20_KICKOFF.md` §4; `mlm_platform` `wbreporting/services/contests/proof.py` `_policy_rows` |
-| **C30** | **Escape and a backdrop click are opt-in on the shared `Modal`** (`dismissible`), not its new default. Taken 2026-09-29 (parity phase 20) | The brief's trap 1: five files use `Modal`, among them a form (the training schedule's meeting dialog) and the card's draft filters, where a stray key or click would discard input. The contest dialogs opt in; the dialog semantics and focus handling apply to all | `mlm_platform/docs/integrations/wb-contests/PHASE_20_KICKOFF.md` §6.1; `src/shared/components/ui/modal/index.tsx` |
+| **C30** | **Escape and a backdrop click are opt-in on the shared `Modal`** (`dismissible`), not its new default. Taken 2026-09-29 (parity phase 20) | The brief's trap 1: `Modal` is shared — 61 feature files render it directly and six more only through the two confirmation dialogs, 67 in all (the brief counted five, the direct `ui/modal` imports) — among them forms (the training schedule's meeting dialog, bpm's and prospect's forms) and the card's draft filters, where a stray key or click would discard input. The contest dialogs opt in; the dialog semantics and focus handling apply to all | `mlm_platform/docs/integrations/wb-contests/PHASE_20_KICKOFF.md` §6.1; `src/shared/components/ui/modal/index.tsx` |
 
 ## 4. Deliberately not built
 
@@ -368,12 +427,8 @@ Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
 
 Operational items first — the feature is built and deployed; what remains is mostly not code.
 
-> **Planned: phases 10–21, dtez parity and speed.** Match the reference page at
-> `dtez.com/wb_contests.php` in layout, metric definitions and scoring, and cut first
-> standings from ~8 s to under 1 s. Tracked in the backend repo at
-> `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`; decisions C14–C23 are approved,
-> and phases 11–18 are on `feature/wb-contests-parity`.
-> Every phase there lists the docs in both repos it must update in the same commit.
+The dtez parity work (phases 10–21) is recorded in §1–§3. Only phase 21 remains, and what it
+still owes is below.
 
 1. **Grant `homev2:read`** to the contest rollout group. Until then the feature is invisible, and this
    is the only thing between deployed and live.
@@ -381,8 +436,8 @@ Operational items first — the feature is built and deployed; what remains is m
    before any contest is configured against them (C5). The highest-consequence open item in this
    module: it can produce a wrong prize decision, and no amount of labelling substitutes for the
    conversation.
-3. **Set `WB_MILESTONE_TIMESTAMPS_SINCE`** once `tracker/0050` is applied, or `mr`/`mp` report
-   unavailable forever (C6).
+3. **Set `WB_MILESTONE_TIMESTAMPS_SINCE`** once `tracker/0050` is applied, or `mr` reports
+   unavailable forever (C6). `mp` no longer depends on it (backend phase 14).
 4. **Confirm whether `CEO` and `EVC` levels are used**; if so add them to `accounts.Level` above `SMD`
    (C9). An operator action.
 5. **Consider deep-linkable filter state.** The query model is fully serializable — `StandingsQuery`
@@ -393,3 +448,19 @@ Operational items first — the feature is built and deployed; what remains is m
    accessible text was designed carefully; the scroll regions around it have not been checked.
 8. **The page's grid overflows a 1440 px screen by 14 px** with the sidebar collapsed (more when
    expanded), because dtez's column minimums assume no sidebar. Decide whether to keep them.
+9. **Phase 20's post-deploy half is unmeasured:** dtez's proof shapes and per-policy points (C29)
+   on production data, the `{ }` SQL panel for a manager and its absence for a reader,
+   profile-over-proof from a proof row, and the proof and profile times after `reader_nodes`.
+   Also compare the proof's source total with the pill after the Phase 15 rebuild.
+10. **The shared `Modal`'s Tab trap fights portalled popups** (keyboard only, not yet fixed).
+    When focus is in a popup that portals to `document.body` from inside a `Modal` — the shared
+    `DatePicker` (e.g. `bpm/components/bpm-form-modal.tsx`), and by the same code path the
+    `UserAutocompleteDropdown` search in the card's Filters modal — Tab finds focus outside the
+    panel and pulls it back to the modal's first control (`modal/index.tsx:88-90`). Mouse use is
+    unaffected. Fix in the `Modal` (treat a portalled child as inside) rather than per caller.
+11. **C27, the Net label, is open.**
+12. **C21's wording.** The team-credit note and "one hop of Leader" (C5) predate C21's
+    recruiter's-leader crediting; rewording was left out on request.
+13. **Phase 15's remaining checks**: `wb_contest_parity` over each open window after the rebuild,
+    and one scheduled open-window run's duration on production.
+14. **The final latency and parity run** (phase 21), including first standings < 1 s.

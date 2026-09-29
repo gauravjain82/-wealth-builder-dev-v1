@@ -31,9 +31,11 @@
  * strip can stick to the page on a phone. See "standalone page" and "tier cards and
  * results grid" below.
  *
- * There is deliberately no `100vh`, no `vh` unit at all, and no fixed pixel height on
- * the root. Overlays render through the shared `Modal`, which portals to
- * `document.body`, so nothing a dialog does is clipped by `overflow: hidden` here.
+ * There is deliberately no `100vh`, no `vh` unit on the card or the board, and no fixed
+ * pixel height on the root. The only two `vh` rules are inside the portalled dialogs
+ * (the proof table and the flyer frame), which are sized against the viewport.
+ * Overlays render through the shared `Modal`, which portals to `document.body`, so
+ * nothing a dialog does is clipped by `overflow: hidden` here.
  */
 
 .wb-ct {
