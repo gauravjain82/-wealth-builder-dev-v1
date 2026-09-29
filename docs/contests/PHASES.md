@@ -239,7 +239,8 @@ ours are in `Codes/wb-contests-parity-shots/phase-19/`.
   the same 9 calls and one `wbreporting/my-access`; a switch sends no standings request.
 - `type-check` and `build` pass; `lint` is 7 errors / 117 warnings, as on `main`. Backend
   `test wbreporting`: 632 OK (627 + 5).
-- Open: `wb_contest_standings_parity` on the production shell.
+- `wb_contest_standings_parity --contest 14 --contest 15 --contest 18` on production, after the
+  deploy: **14/14 match** dtez's formula (Italy 594 rows, Los Cabos 570, Private Reception 289).
 
 **What the build learned.**
 - A hidden `level` was `""` on the wire, the same as a person with no level. dtez labels the latter
@@ -331,7 +332,5 @@ Operational items first — the feature is built and deployed; what remains is m
    now carries every tier, flagged `selected`, so the selector always shows them all.
 7. **Verify the sticky-column table and the page's grid with a screen reader.** The blank-cell
    accessible text was designed carefully; the scroll regions around it have not been checked.
-8. **Run `wb_contest_standings_parity`** on the production shell after parity phase 19's deploy
-   (`PARITY_PLAN.md`, Phase 19 *Result*); the browser checks are done.
-9. **The page's grid overflows a 1440 px screen by 14 px** with the sidebar collapsed (more when
+8. **The page's grid overflows a 1440 px screen by 14 px** with the sidebar collapsed (more when
    expanded), because dtez's column minimums assume no sidebar. Decide whether to keep them.
