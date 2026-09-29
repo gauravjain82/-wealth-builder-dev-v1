@@ -144,8 +144,10 @@ this one must **reload**, because retrying is the silent overwrite the revisions
 - **The period for any proof request.** No dates cross the wire.
 - **Eligibility semantics** — Non-License via `LicensingTracker.is_licensed`, level rules, and the
   fact that all-levels and no-levels collapse to the same "anyone".
-- **Measurability.** Which metrics this deployment can measure, per tier period; `mr`/`mp` are
-  computed at read time and gated on `WB_MILESTONE_TIMESTAMPS_SINCE`.
+- **Measurability.** Which metrics this deployment can measure, per tier period; `mr` is
+  computed at read time and gated on `WB_MILESTONE_TIMESTAMPS_SINCE`. `mp` is a daily column
+  since backend parity phase 14, measurable for any period, with its own proof page — the
+  screen needs no change, because it renders availability and proof rows from the response.
 - **The qualified rule**: never `qualified` while any requirement is unmeasurable (C7).
 - **Optimistic concurrency.** Revisions are issued and checked server-side; a tier edit bumps the
   contest's revision too.
