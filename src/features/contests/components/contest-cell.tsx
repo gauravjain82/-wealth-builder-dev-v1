@@ -22,9 +22,12 @@ interface ContestCellProps {
   onOpenProof: (metric: MetricProgress) => void;
 }
 
-/** Percentages are rounded for display only; the server sorts on the exact value. */
+/**
+ * The server sends whole numbers (C20, as dtez shows them); it qualifies and sorts on the
+ * exact value. `Math.round` only guards against a stale cached payload with decimals.
+ */
 function formatPercent(value: number | null): string {
-  return value === null ? '' : `${Number.isInteger(value) ? value : value.toFixed(1)}%`;
+  return value === null ? '' : `${Math.round(value)}%`;
 }
 
 /**
@@ -54,14 +57,6 @@ export function ContestCell({
     );
   }
 
-  if (evaluation.unavailable) {
-    return (
-      <span className="wb-ct-pill wb-ct-pill--unavailable" role="note">
-        Cannot be measured
-      </span>
-    );
-  }
-
   const tone = evaluation.qualified
     ? 'wb-ct-cell--qualified'
     : evaluation.near && showNearQualifiers
@@ -72,12 +67,6 @@ export function ContestCell({
     <div className={`wb-ct-cell ${tone}`.trim()}>
       <span className="wb-ct-percent">{formatPercent(evaluation.progress)}</span>
       {evaluation.qualified ? <span className="wb-ct-sr-only">Qualified</span> : null}
-      {evaluation.partially_measurable ? (
-        <span className="wb-ct-tier-period">
-          {evaluation.unmeasured.length} of {evaluation.metrics.length} requirements
-          cannot be measured
-        </span>
-      ) : null}
       <div className="wb-ct-pills">
         {evaluation.metrics.map((metric) => (
           <button
@@ -95,14 +84,11 @@ export function ContestCell({
             onClick={() => onOpenProof(metric)}
           >
             <span className="wb-ct-pill__label">{metric.metric.toUpperCase()}</span>
-            {metric.available ? (
-              <span className="wb-ct-pill__value">
-                <span className="wb-ct-pill__actual">{formatAmount(metric.actual)}</span>
-                <span className="wb-ct-pill__req">/{formatAmount(metric.requirement)}</span>
-              </span>
-            ) : (
-              <span className="wb-ct-pill__value">n/a</span>
-            )}
+            {/* A sourceless metric counts as 0 (C15); its title says why. */}
+            <span className="wb-ct-pill__value">
+              <span className="wb-ct-pill__actual">{formatAmount(metric.actual)}</span>
+              <span className="wb-ct-pill__req">/{formatAmount(metric.requirement)}</span>
+            </span>
           </button>
         ))}
       </div>

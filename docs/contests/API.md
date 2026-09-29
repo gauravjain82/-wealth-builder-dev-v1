@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `17121e6` — 2026-09-29 |
+| **Verified against** | commit `17121e6` — 2026-09-29 (§3 re-read for parity phase 17, working tree after `9f3c3c8`) |
 
 > Endpoints **consumed**, not exposed.
 
@@ -71,8 +71,8 @@ serializer carries no `revision`, so a save built from it could never satisfy th
 `types/index.ts` (322 lines), mirroring `wbreporting/serializers_contests.py`. Its header states the
 two rules that a well-meaning edit would break:
 
-1. **`progress` is `number | null`, and `null` means there is no number** — an ineligible cell, or a
-   tier nothing could be measured for. Never coalesce it to `0`; a zero reads as a real score.
+1. **`progress` is `number | null`, and `null` means there is no number** — an ineligible cell.
+   Never coalesce it to `0`; a zero reads as a real score. Every number is a whole percentage (C20).
 2. **Nothing here describes a daily result row.** Django prepares the standings; the browser receives
    *evaluations*.
 
@@ -82,16 +82,17 @@ two rules that a well-meaning edit would break:
 | `ContestStatus` | three reader values derived from five stored ones |
 | `ThresholdMetric` | the eleven configurable metrics |
 | `TierRequirement` | carries `single_hop_team` and `available` |
-| `TierEvaluation` | `eligible`, `progress`, `qualified`, `near`, `unavailable`, `partially_measurable`, `unmeasured`, `metrics` |
-| `MetricProgress` | `actual: number \| null` — never a substituted zero |
+| `TierSummary` | every visible tier, with `selected`; counts over the whole contest, `in_running` the same on every tier (C18) |
+| `TierEvaluation` | `eligible`, `progress`, `qualified`, `near`, `unmeasured`, `metrics`. `unavailable` and `partially_measurable` were removed in parity phase 17 (C15) |
+| `MetricProgress` | `actual` is `0` for a metric with no source, which keeps `available: false` and its reason (C15) |
 | `StandingRow` | identity plus `evaluations` keyed by tier |
 | `StandingsResponse` | rows, tiers, cursor, `near_percent`, `team_credit_note`, display switches, echoed `filters`. **No `uncoded_member_count`** since Phase 11: the backend resolves scopes over coded users only (C22), so there is nothing to count. Leaderboards keeps its own field of that name, from a different endpoint |
 | `ProofResponse` | period, columns, rows, cards, formula, cursor |
 | `FilterDraft` / `StandingsQuery` | draft state vs what is actually queried |
 | `EditableContest` / `EditableTier` | carry **`revision`**; `pending_delete` is client-only |
 | `EditorOptions` | levels, metrics, statuses, period modes, flyer limits — **served, not hard-coded** |
-| `LevelOption.synthetic` | true only for `NON` — "no level assigned", not a real row |
-| `MetricOption.measurable` | false for metrics this deployment has no source for |
+| `LevelOption.synthetic` | always false since parity phase 17: `NON` is no longer offered (C19) |
+| `MetricOption.measurable` | false for metrics this deployment has no source for; the input stays enabled and says it counts as 0 (C15) |
 
 `TierEvaluation.metrics` is **empty** for an ineligible cell: there is deliberately no number to
 display.
@@ -127,7 +128,6 @@ Nineteen stable codes (`types/index.ts:27`) — the largest vocabulary in the ap
 | `person_required` | a scope needing a person got none | " |
 | **`edit_conflict`** | **409 — somebody else saved first** | **the one a caller must *handle*: reload, never retry** |
 | `invalid_tier_threshold`, `invalid_level_rule`, `invalid_tier_order` | tier validation | shown against the field |
-| `tier_metric_unavailable` | required an unmeasurable metric | the editor disables it, but the server is the gate |
 | `flyer_file_required`, `flyer_size_invalid`, `flyer_type_invalid` | upload validation | shown on the upload control; limits come from `EditorOptions.flyer` |
 | `storage_failed` | the file store failed | retryable |
 

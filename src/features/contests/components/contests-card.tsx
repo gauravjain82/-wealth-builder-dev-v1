@@ -46,10 +46,14 @@ import {
 import { ContestStandings } from './contest-standings';
 import { TierSelector } from './tier-selector';
 
+/**
+ * Everyone the viewer may see, with no person chosen: dtez's initial view, kept within
+ * the viewer's permissions (C20; `all` resolves through `authz.get_scope`, C10).
+ */
 const DEFAULT_FILTERS: FilterDraft = {
   personId: null,
   personLabel: '',
-  scope: 'base',
+  scope: 'all',
   net: false,
   leaders: true,
   agents: true,
@@ -248,7 +252,8 @@ export function ContestsCard({
         ) : data ? (
           <ContestStandings
             rows={data.rows.slice(0, pageSize)}
-            tiers={data.tiers}
+            // Every tier comes back for the cards (C18); only the selected are columns.
+            tiers={data.tiers.filter((tier) => tier.selected)}
             sortTier={data.sort_tier}
             direction={data.direction}
             showNearQualifiers={data.show_near_qualifiers}

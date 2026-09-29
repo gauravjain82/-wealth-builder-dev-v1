@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `17121e6` — 2026-09-29 |
+| **Verified against** | commit `17121e6` — 2026-09-29 (§2.2–§2.5, §3 and §4 re-read for parity phase 17, working tree after `9f3c3c8`) |
 
 ## 1. Routes and entry points
 
@@ -47,8 +47,11 @@ turns internal scrolling into page growth, silently.
 
 ### 2.2 Tier overview — `components/tier-selector.tsx`
 
-Tier cards showing name, period, reward and — when `show_tier_overview` — the qualified / near /
-in-running counts. **The cards are also the toggles**, with the three-state gesture in
+Tier cards showing name, period, reward and — when `show_tier_overview` — the qualified / close /
+in-running counts. The response carries **every** tier, with `selected` flags, and the counts are
+for the whole contest: "in running" is everyone listed, the same on every card, and a selection does
+not change them (C18). A tier that requires a metric with no source says "no source, counts as 0"
+(C15). **The cards are also the toggles**, with the three-state gesture in
 [ARCHITECTURE.md §3.3](ARCHITECTURE.md#33-tier-selection--the-three-state-gesture).
 
 On a narrow card the row becomes a horizontally scrollable, snap-friendly strip — **inside the card,
@@ -59,7 +62,7 @@ never at page level**.
 | Control | Values |
 |---|---|
 | Person | autocomplete (`UserAutocompleteDropdown`) |
-| View | Just this person · Base shop · Super base · Super team · All |
+| View | Just this person · Base shop · Super base · Super team · All. **Defaults to All** with no person, still limited to what the viewer may see (C20) |
 | **Net** | labelled **"Direct reports only"** |
 | Leaders | include leaders |
 | Agents | include agents |
@@ -80,8 +83,13 @@ width. Keeping both mounted is what makes sort and focus state identical between
 | Wide | a table with a sticky header **and** a sticky agent column, scrolling on both axes inside the element |
 | Narrow | one card per agent, tier results stacked under the identity line |
 
-Sorting is by tier: clicking a tier header sorts on it. Percentages are **rounded for display only** —
-the server sorts on the exact value.
+With no tier header chosen, rows are ordered by **best %** — the highest score over the tiers open to
+the agent, never below 0 — then name, and no header shows an arrow (C16). Clicking a tier header
+sorts on it. Only the **selected** tiers are columns. Percentages arrive as **whole numbers** (C20);
+the server qualifies and sorts on the exact value.
+
+A row appears for anyone with activity on a selected tier, **even if every one of its cells is
+blank** (C17, as on dtez).
 
 ### 2.5 The cell — `components/contest-cell.tsx`
 
@@ -89,9 +97,12 @@ The most consequential 111 lines in the module. A cell is one of three things:
 
 | Cell | When |
 |---|---|
-| A percentage, with metric pills | eligible and measurable |
+| A whole-number percentage, with metric pills | eligible |
 | **Blank** | **ineligible** |
-| Partial, with an unmeasured count | some requirements unmeasurable |
+
+A requirement with no source (`BE`, `C`) is a pill reading `0/goal`, greyed, with the reason as its
+title. It counts as 0 in the percentage, so the tier cannot be qualified (C15). There is no
+"cannot be measured" state any more.
 
 **The blank is the point.** An ineligible cell renders visually empty and **never** shows the word
 "Restricted" — it reads as a punishment rather than as "this tier is not for you", and a Non-License
@@ -138,9 +149,8 @@ And it carries the `BR`/`BP`/`LIC` single-hop warning, at the moment somebody ty
 | Loading | standings in flight | a loading state in the scroll area |
 | Empty | no rows for the filters | an empty body, not an error |
 | **Blank cell** | `eligible: false` | a visually empty cell; meaning in the accessible text only |
-| Partially measurable | some requirements unmeasurable | progress over the measurable subset plus an explicit unmeasured count |
-| Wholly unmeasurable | no requirement measurable | `progress: null` — no number |
-| Never qualified while unmeasurable | `unavailable` | the tier cannot read as qualified. Deliberate (C7) |
+| Requirement with no source | `metric.available: false` | a greyed `0/goal` pill with its reason; the tier averages it as 0 and cannot qualify (C15, amending C7) |
+| Listed with only blank cells | activity on a selected tier the agent is not eligible for | a row whose cells are all blank. Deliberate (C17) |
 | Team-credit note | any visible tier uses a single-hop measure | `team_credit_note` shown |
 | Applied filters | always, under the tier selector | the filter summary only. Until Phase 11 it also said "N without an agent code are not in these results"; scopes now hold coded users only (C22), so the count is gone from the response and the line |
 | Error | non-2xx | the backend's `detail` |
@@ -155,7 +165,8 @@ And it carries the `BR`/`BP`/`LIC` single-hop warning, at the moment somebody ty
 - **An ineligible cell is blank and unlabelled.** Never reintroduce "Restricted".
 - **`null` progress is never `0`.**
 - **Toggling the last selected tier off returns to all tiers.**
-- **Sort is server-side on exact values**; display rounding is cosmetic.
+- **Sort is server-side on exact values**; display rounding is cosmetic. No sort tier means best %.
+- **Columns are the selected tiers; the cards are always every tier** (C18).
 - **Dialogs open immediately**, then load. They are `enabled`-gated so opening the card fetches none
   of them.
 - **A 409 offers Reload.** Do not retry a save.

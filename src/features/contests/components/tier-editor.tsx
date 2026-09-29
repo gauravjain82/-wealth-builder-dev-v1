@@ -13,11 +13,12 @@
  *
  * - `TR`, `TP` and `TE` are result components, never threshold inputs. They are not
  *   rendered at all, and the backend rejects them if a hand-written request sends one.
- * - a metric this deployment cannot measure (`BE`, `C`) cannot be made a requirement;
- *   the input is disabled and says why.
- * - eligibility levels come from the host's level table. All ticked and none ticked
- *   are the same instruction — "anyone" — because the backend stores the shorter of
- *   the two encodings and both collapse to empty.
+ * - a metric with no source here (`BE`, `C`) may be required, and counts as 0 (decision
+ *   C15, as on dtez), so the tier cannot be qualified while it is; the input says so.
+ * - eligibility levels come from the host's level table, without "No level" (C19). The
+ *   backend stores the unticked levels as an exclusion, so people with no level are
+ *   eligible for every tier except a Non-License one. All ticked and none ticked are
+ *   the same instruction — "anyone".
  */
 
 import type { EditableTier, LevelOption, MetricOption, ThresholdMetric } from '../types';
@@ -110,7 +111,9 @@ export function TierEditor({
           </div>
           {selectedLevels.length === 0 || selectedLevels.length === levels.length ? (
             <small>Anyone is eligible.</small>
-          ) : null}
+          ) : tier.non_license ? null : (
+            <small>People with no level are eligible too.</small>
+          )}
         </div>
 
         <label className="wb-ct-check wb-ct-field">
@@ -206,12 +209,11 @@ export function TierEditor({
               min={0}
               max={metric.maximum}
               step={1}
-              disabled={!metric.measurable}
-              placeholder={metric.measurable ? '—' : 'n/a'}
+              placeholder="—"
               title={
                 metric.measurable
                   ? `${metric.label}, up to ${metric.maximum.toLocaleString()}`
-                  : `${metric.label} cannot be measured in this system.`
+                  : `${metric.label} has no source in this system: it counts as 0, so a tier requiring it cannot be qualified.`
               }
               value={tier.thresholds[metric.metric] ?? ''}
               onChange={(event) =>

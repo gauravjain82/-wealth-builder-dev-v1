@@ -78,8 +78,11 @@ Because a contest is a promise, two properties matter more here than in a normal
 | **Tier** | One prize level within a contest: its own requirements, period override, reward and eligibility rules. |
 | **Threshold** | A required value for one metric in one tier. Eleven metrics are configurable. |
 | **Evaluation** | The server's verdict for one agent against one tier: eligible, progress, qualified, near. |
-| **Progress** | Percentage toward a tier. **`null` means there is no number** — never render it as `0`. |
-| **Eligible** | Whether this tier applies to this agent at all. An ineligible cell renders **blank**. |
+| **Progress** | Percentage toward a tier, a whole number (C20). **`null` means there is no number** — never render it as `0`. |
+| **Best %** | An agent's highest score over the tiers open to them, never below 0; the default order (C16). |
+| **In running** | Everyone listed for the contest — the same number on every tier card (C18). |
+| **No source** | A requirement this host cannot measure (`BE`, `C`). Counts as 0, so the tier cannot be qualified (C15). |
+| **Eligible** | Whether this tier applies to this agent at all — dtez's rule (C19): Non-License first, then the level lists by code or name. People with no level pass any restriction. An ineligible cell renders **blank**. |
 | **Non-License tier** | A tier for unlicensed agents. It blanks every licensed person by design. |
 | **Near** | Within `near_percent` of qualifying. |
 | **Single-hop team measure** | `BR`, `BP`, `LIC` — one hop of Leader, no base-shop boundary. Reads lower than the Production Tracker. |

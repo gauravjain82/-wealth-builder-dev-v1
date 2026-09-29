@@ -41,7 +41,6 @@ export type ContestErrorCode =
   | 'invalid_tier_threshold'
   | 'invalid_level_rule'
   | 'invalid_tier_order'
-  | 'tier_metric_unavailable'
   | 'flyer_file_required'
   | 'flyer_size_invalid'
   | 'flyer_type_invalid'
@@ -59,7 +58,7 @@ export interface TierRequirement {
   value: number;
   /** True for `br`/`bp`/`lic` — the single-hop Leader measures that must be labelled. */
   single_hop_team: boolean;
-  /** False when this deployment cannot measure the metric over this tier's period. */
+  /** False when the metric has no source over this tier's period; it counts as 0 (C15). */
   available: boolean;
 }
 
@@ -73,10 +72,13 @@ export interface TierSummary {
   requirements: TierRequirement[];
   qualified: number;
   near: number;
+  /** Everyone listed for the contest — the same on every card (C18). */
   in_running: number;
-  /** Requirement keys that could not be measured over this tier's period. */
+  /** Requirement keys with no source over this tier's period, scored as 0 (C15). */
   unmeasured: string[];
   single_hop_team: boolean;
+  /** Whether the tier is in the current selection; every tier when none is chosen. */
+  selected: boolean;
 }
 
 export interface ContestSummary {
@@ -98,8 +100,9 @@ export interface MetricProgress {
   metric: ThresholdMetric;
   label: string;
   requirement: number;
-  /** `null` when the metric could not be measured — never a substituted zero. */
+  /** `0` for a metric with no source (C15). */
   actual: number | null;
+  /** A whole number (C20). */
   percent: number | null;
   met: boolean;
   available: boolean;
@@ -111,12 +114,11 @@ export interface MetricProgress {
 export interface TierEvaluation {
   tier_id: number;
   eligible: boolean;
-  /** `null` for an ineligible cell (render blank) or a wholly unmeasurable tier. */
+  /** A whole number (C20); `null` only for an ineligible cell, which renders blank. */
   progress: number | null;
   qualified: boolean;
   near: boolean;
-  unavailable: boolean;
-  partially_measurable: boolean;
+  /** Requirement keys with no source, scored as 0 (C15). */
   unmeasured: string[];
   /** Empty for an ineligible cell: there is deliberately no number to display. */
   metrics: MetricProgress[];

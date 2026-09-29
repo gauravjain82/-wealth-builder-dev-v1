@@ -57,8 +57,8 @@ export function TierSelector({ tiers, selected, showCounts, onChange }: TierSele
             {tier.reward ? <div className="wb-ct-tier-period">{tier.reward}</div> : null}
             {tier.unmeasured.length ? (
               <div className="wb-ct-tier-period">
-                {tier.unmeasured.map((key) => key.toUpperCase()).join(', ')} cannot be
-                measured
+                {tier.unmeasured.map((key) => key.toUpperCase()).join(', ')}: no source,
+                counts as 0
               </div>
             ) : null}
           </button>
