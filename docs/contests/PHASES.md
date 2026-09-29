@@ -120,7 +120,7 @@ Operational items first — the feature is built and deployed; what remains is m
 > **Planned: phases 10–21, dtez parity and speed.** Match the reference page at
 > `dtez.com/wb_contests.php` in layout, metric definitions and scoring, and cut first
 > standings from ~8 s to under 1 s. Tracked in the backend repo at
-> `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`, with open decisions C14–C22.
+> `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`, with open decisions C14–C23.
 > Every phase there lists the docs in both repos it must update in the same commit.
 
 1. **Grant `homev2:read`** to the contest rollout group. Until then the feature is invisible, and this

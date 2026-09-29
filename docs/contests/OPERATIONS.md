@@ -87,6 +87,24 @@ Manual checks, ordered by what they protect:
 10. **`BR`/`BP`/`LIC` labelling** is present in the tier editor. This is the one that can produce a
     wrong prize decision.
 
+### Latency check
+
+`scripts/perf/contests-latency.mjs` opens `/contests` in the installed Chrome (through
+`playwright-core`; no browser download) and reports seconds to first standings, one contest switch,
+standings server time, and the full API waterfall. It is the measurement for phases 10–12 of the
+parity plan (`mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`).
+
+```bash
+npm run dev                              # in another terminal
+npm run perf:contests -- --login         # once: a window opens; sign in yourself
+npm run perf:contests                    # median of 3 headless runs
+npm run perf:contests -- --runs 5 --json
+```
+
+The script never handles credentials. The session is kept in a Chrome profile outside the repo
+(`<os tmp>/wb-perf-chrome-profile`, or `WB_PERF_PROFILE`). The account needs `homev2:read`, or the
+route guard redirects and the script says so. `WB_PERF_URL` points it at another origin.
+
 ## 5. Deployment
 
 **Already deployed.** The code shipped 2026-09-26 and migrations `wbreporting/0001`–`0003` are
