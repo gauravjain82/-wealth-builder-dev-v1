@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `PHASE18` — 2026-09-29 (§4 re-read for parity phase 18; §1 and §6 C14 rows parity phase 16; the rest `7e3b7f1`) |
+| **Verified against** | commit `8880009` — 2026-09-29 (§4 re-read for parity phase 18; §1 and §6 C14 rows parity phase 16; the rest `7e3b7f1`) |
 
 ## 1. Environment and configuration
 

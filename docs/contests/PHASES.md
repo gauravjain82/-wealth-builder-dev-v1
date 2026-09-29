@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `PHASE18` — 2026-09-29 (§1, §2 Phase 18, §3 C10/C20/C25/C26 re-read for parity phase 18; §2 Phase 17, §3 C7/C9/C15–C19 and §5 `08eea2c`; the rest `04cbcf3`) |
+| **Verified against** | commit `8880009` — 2026-09-29 (§1, §2 Phase 18, §3 C10/C20/C25/C26 re-read for parity phase 18; §2 Phase 17, §3 C7/C9/C15–C19 and §5 `08eea2c`; the rest `04cbcf3`) |
 
 > Phase numbering and the `C` decision prefix come from `mlm_platform/WB_CONTESTS_PROGRESS.md`
 > (phases 0–9, decisions C1–C13) and **must not be renumbered** — the same number means the same

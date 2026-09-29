@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `PHASE18` — 2026-09-29 (§1, §2, §3.1–§3.2, §4, §5, §7, §8 re-read for parity phase 18; §6 `04cbcf3`; the rest `7e3b7f1`) |
+| **Verified against** | commit `8880009` — 2026-09-29 (§1, §2, §3.1–§3.2, §4, §5, §7, §8 re-read for parity phase 18; §6 `04cbcf3`; the rest `7e3b7f1`) |
 
 ## 1. Layering
 
