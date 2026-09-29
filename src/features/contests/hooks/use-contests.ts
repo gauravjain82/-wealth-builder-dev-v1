@@ -9,66 +9,215 @@
  *
  * Proof, profile and flyer are `enabled`-gated on the dialog being open, so opening
  * the card does not fetch four dialogs' worth of data nobody asked for.
+ *
+ * The list and standings options are built once (`contestListOptions`,
+ * `standingsOptions`) and shared by the hooks and the prefetches, so a prefetch always
+ * lands in the entry the card will read — `docs/contests/ARCHITECTURE.md` §4.
  */
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { useWbReportingAccess, type WbReportingAccess } from '@shared/wbreporting-access';
 
 import {
   createContest,
   deleteContest,
   fetchAgentProfile,
-  fetchContestAccess,
   fetchContests,
   fetchEditableContests,
   fetchEditorOptions,
   fetchFlyer,
   fetchProof,
   fetchStandings,
+  personLabel,
   removeFlyer,
+  searchPeople,
   saveContest,
   setContestHidden,
   setFlyerVisible,
   uploadFlyer,
 } from '../services/contests-service';
-import type { StandingsQuery, ThresholdMetric } from '../types';
+import type {
+  ContestAccess,
+  FilterDraft,
+  SortDirection,
+  StandingsQuery,
+  ThresholdMetric,
+} from '../types';
 
 const KEY = 'contests';
+
+/** How many other contests' standings are prefetched at once. Each is ~4 server queries. */
+const PREFETCH_CONCURRENCY = 2;
+
+const selectContestAccess = (access: WbReportingAccess): ContestAccess => ({
+  can_view_contests: access.can_view_contests,
+  can_view_leaderboards: access.can_view_leaderboards,
+  can_manage: access.can_manage,
+});
 
 /**
  * Whether the current user may see the contest surfaces.
  *
- * Long `staleTime`: an access-console grant does not change while somebody is looking
- * at a page, and the route guard blocks rendering until it resolves, so re-fetching
- * costs a visible loader for no benefit.
+ * A selector over the shared `my-access` query (`@shared/wbreporting-access`), which
+ * owns the key, the long `staleTime` and `retry: false`.
  */
 export function useContestAccess() {
-  return useQuery({
-    queryKey: [KEY, 'my-access'],
-    queryFn: ({ signal }) => fetchContestAccess(signal),
-    staleTime: 5 * 60 * 1000,
-    retry: false,
+  return useWbReportingAccess(selectContestAccess);
+}
+
+const contestListOptions = queryOptions({
+  queryKey: [KEY, 'list'],
+  queryFn: ({ signal }) => fetchContests(signal),
+  staleTime: 60 * 1000,
+});
+
+function standingsOptions(query: StandingsQuery) {
+  return queryOptions({
+    queryKey: [KEY, 'standings', query],
+    queryFn: ({ signal }) => fetchStandings(query, signal),
+    // Standings move only when the pipeline rebuilds, which is at most daily; a
+    // short window avoids refetching the whole page on every tier toggle round-trip.
+    staleTime: 30 * 1000,
   });
+}
+
+/**
+ * The one place a standings query is composed.
+ *
+ * The card calls it for what it shows and the prefetch calls it for what a contest
+ * switch will show, so the two cannot drift: a key that differs by one field is a
+ * silent cache miss, and the switch goes back to the network.
+ */
+export function buildStandingsQuery(input: {
+  filters: FilterDraft;
+  contestId: number;
+  tierIds: number[];
+  sortTier: number | null;
+  direction: SortDirection;
+}): StandingsQuery {
+  return {
+    ...input.filters,
+    contestId: input.contestId,
+    tierIds: input.tierIds,
+    sortTier: input.sortTier,
+    direction: input.direction,
+  };
 }
 
 /** Readable contests for the selector. */
 export function useContests() {
-  return useQuery({
-    queryKey: [KEY, 'list'],
-    queryFn: ({ signal }) => fetchContests(signal),
-    staleTime: 60 * 1000,
-  });
+  return useQuery(contestListOptions);
+}
+
+/**
+ * Start the contest list alongside the route's access check instead of after it.
+ *
+ * The guard renders nothing until access resolves, so the card's `useContests()`
+ * would otherwise start one round trip late. The same options mean the card finds
+ * this request in flight rather than sending its own. Safe for an ungranted caller:
+ * the backend answers 403 and the guard redirects.
+ */
+export function usePrefetchContests() {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    void queryClient.prefetchQuery(contestListOptions);
+  }, [queryClient]);
 }
 
 /** One prepared page of standings. */
 export function useStandings(query: StandingsQuery | null) {
   return useQuery({
-    queryKey: [KEY, 'standings', query],
-    queryFn: ({ signal }) => fetchStandings(query as StandingsQuery, signal),
+    ...standingsOptions(query as StandingsQuery),
     enabled: query !== null,
-    // Standings move only when the pipeline rebuilds, which is at most daily; a
-    // short window avoids refetching the whole page on every tier toggle round-trip.
-    staleTime: 30 * 1000,
   });
+}
+
+/**
+ * Warm the cache for a switch to any other contest, a couple at a time.
+ *
+ * Each key is exactly what the card composes after a switch: the applied filters and
+ * direction carried over, tiers and sort tier reset (`buildStandingsQuery`). When the
+ * filters or direction change, the old prefetches are for keys nobody will read, so
+ * the effect starts over for the new ones and cancels any old one still in flight
+ * that nothing is showing. A contest switch alone does not restart it: the contest
+ * shown when it started is skipped, and every other entry is already warm or on its way.
+ */
+export function usePrefetchOtherStandings(input: {
+  enabled: boolean;
+  contestIds: number[];
+  activeContestId: number | null;
+  filters: FilterDraft;
+  direction: SortDirection;
+}) {
+  const queryClient = useQueryClient();
+  const { enabled, filters, direction } = input;
+  const idsKey = input.contestIds.join(',');
+  const activeContestId = useRef(input.activeContestId);
+  activeContestId.current = input.activeContestId;
+
+  useEffect(() => {
+    if (!enabled) return;
+    const pending = idsKey
+      .split(',')
+      .map(Number)
+      .filter((id) => id && id !== activeContestId.current)
+      .map((contestId) =>
+        standingsOptions(
+          buildStandingsQuery({ filters, contestId, tierIds: [], sortTier: null, direction })
+        )
+      );
+    let stopped = false;
+    const started: Array<ReturnType<typeof standingsOptions>> = [];
+
+    const worker = async () => {
+      for (let next = pending.shift(); next && !stopped; next = pending.shift()) {
+        started.push(next);
+        // prefetchQuery never throws, and is a no-op while the entry is fresh.
+        await queryClient.prefetchQuery(next);
+      }
+    };
+    for (let i = 0; i < PREFETCH_CONCURRENCY; i += 1) void worker();
+
+    return () => {
+      stopped = true;
+      for (const options of started) {
+        const query = queryClient.getQueryCache().find({ queryKey: options.queryKey, exact: true });
+        if (query?.state.fetchStatus === 'fetching' && query.getObserversCount() === 0) {
+          void queryClient.cancelQueries({ queryKey: options.queryKey, exact: true });
+        }
+      }
+    };
+  }, [queryClient, enabled, idsKey, filters, direction]);
+}
+
+export { personLabel };
+
+function personSearchOptions(term: string) {
+  return queryOptions({
+    queryKey: [KEY, 'people', term],
+    queryFn: ({ signal }) => searchPeople(term, signal),
+    // People and their codes change rarely; a minute spares a re-search while typing back.
+    staleTime: 60 * 1000,
+  });
+}
+
+/** Suggestions for the person search, once there is something to search for. */
+export function usePersonSearch(term: string) {
+  const trimmed = term.trim();
+  return useQuery({ ...personSearchOptions(trimmed), enabled: trimmed.length > 0 });
+}
+
+/**
+ * Resolve typed text to people on Apply, from the suggestions' cache when it has them.
+ *
+ * dtez applies on Enter with whatever was typed, so Apply cannot wait for the debounced
+ * suggestions: it asks for the same entry, which is already there when they arrived.
+ */
+export function useFindPeople() {
+  const queryClient = useQueryClient();
+  return (term: string) => queryClient.fetchQuery(personSearchOptions(term.trim()));
 }
 
 /** The proof rows behind one cell, fetched only once its dialog opens. */

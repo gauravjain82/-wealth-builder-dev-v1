@@ -13,12 +13,12 @@
  */
 
 import type {
-  ContestAccess,
   ContestErrorCode,
   ContestSummary,
   EditableContest,
   EditorOptions,
   FlyerResponse,
+  PersonOption,
   ProfileResponse,
   ProofResponse,
   StandingsQuery,
@@ -79,11 +79,6 @@ async function getJson<T>(path: string, params: URLSearchParams, signal?: AbortS
   return (await response.json()) as T;
 }
 
-/** Capability flags driving the route guard and the menu entry. */
-export function fetchContestAccess(signal?: AbortSignal): Promise<ContestAccess> {
-  return getJson<ContestAccess>('/my-access/', new URLSearchParams(), signal);
-}
-
 /** Readable contests for the card's selector, active ones first. */
 export async function fetchContests(signal?: AbortSignal): Promise<ContestSummary[]> {
   const body = await getJson<{ results: ContestSummary[] }>(
@@ -92,6 +87,41 @@ export async function fetchContests(signal?: AbortSignal): Promise<ContestSummar
     signal
   );
   return body.results;
+}
+
+/** dtez's person label, `Name [CODE]`, which the search box shows and matches on. */
+export function personLabel(name: string, agencyCode: string): string {
+  const shown = name.trim() || agencyCode;
+  return agencyCode ? `${shown} [${agencyCode}]` : shown;
+}
+
+/**
+ * Coded people matching a partial name or agent code, for the person search.
+ *
+ * The same `accounts/users/` search the shared `UserAutocompleteDropdown` uses, coded
+ * users only: contest scopes hold nobody else (C22).
+ */
+export async function searchPeople(term: string, signal?: AbortSignal): Promise<PersonOption[]> {
+  const params = new URLSearchParams({ has_agency_code: 'true', page_size: '10', search: term });
+  const response = await fetch(`${API_BASE_URL}/api/accounts/users/?${params}`, {
+    headers: getAuthHeaders(),
+    signal,
+  });
+  if (!response.ok) throw await describeFailure(response);
+  const body = (await response.json()) as {
+    results: Array<{
+      id: number;
+      full_name?: string;
+      first_name?: string;
+      last_name?: string;
+      agency_code?: string;
+    }>;
+  };
+  return body.results.map((user) => {
+    const name = user.full_name || `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+    const agencyCode = user.agency_code ?? '';
+    return { id: user.id, name, agencyCode, label: personLabel(name, agencyCode) };
+  });
 }
 
 /** Query parameters for one standings request. */

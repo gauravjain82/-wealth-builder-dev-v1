@@ -11,12 +11,13 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useWbReportingAccess, type WbReportingAccess } from '@shared/wbreporting-access';
+
 import {
   fetchDateRanges,
   fetchDisplaySettings,
   fetchFullReport,
   fetchLeaderboard,
-  fetchLeaderboardAccess,
   fetchLeaderboardCard,
   fetchLeaderboardDetail,
   fetchLeaderboardGoals,
@@ -24,7 +25,12 @@ import {
   saveDisplaySettings,
   saveLeaderboardGoals,
 } from '../services/leaderboards-service';
-import type { LeaderboardDateRange, LeaderboardSelection, Scope } from '../types';
+import type {
+  LeaderboardAccess,
+  LeaderboardDateRange,
+  LeaderboardSelection,
+  Scope,
+} from '../types';
 
 const KEY = 'leaderboards';
 
@@ -39,19 +45,22 @@ function selectionKey(selection: LeaderboardSelection) {
   };
 }
 
+const selectLeaderboardAccess = (access: WbReportingAccess): LeaderboardAccess => ({
+  can_view: access.can_view,
+  can_manage: access.can_manage,
+  can_view_leaderboards: access.can_view_leaderboards,
+});
+
 /**
  * Whether the current user may see the leaderboards and the Home v2 page.
  *
- * Long `staleTime`: an access-console grant is not something that changes while
- * somebody is looking at a page, and the route guard blocks rendering until it
- * resolves, so re-fetching it costs a visible loader for no benefit.
+ * A selector over the shared `my-access` query (`@shared/wbreporting-access`), which
+ * owns the key and the long `staleTime`. It is outside `['leaderboards']`, so the
+ * settings mutations' wholesale invalidation no longer refetches access — a settings
+ * save does not change a grant.
  */
 export function useLeaderboardAccess() {
-  return useQuery({
-    queryKey: [KEY, 'my-access'],
-    queryFn: ({ signal }) => fetchLeaderboardAccess(signal),
-    staleTime: 5 * 60 * 1000,
-  });
+  return useWbReportingAccess(selectLeaderboardAccess);
 }
 
 /** The compact card payload for the home page. */

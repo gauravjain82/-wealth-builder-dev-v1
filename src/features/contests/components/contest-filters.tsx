@@ -17,20 +17,13 @@ import { useEffect, useState } from 'react';
 import { UserAutocompleteDropdown } from '@/shared/components/user-autocomplete-dropdown';
 
 import type { ContestScope, FilterDraft } from '../types';
+import { SCOPE_OPTIONS } from './scope-options';
 
 interface ContestFiltersProps {
   applied: FilterDraft;
   onApply: (draft: FilterDraft) => void;
   onClose: () => void;
 }
-
-const SCOPE_OPTIONS: Array<{ value: ContestScope; label: string }> = [
-  { value: 'personal', label: 'Just this person' },
-  { value: 'base', label: 'Base shop' },
-  { value: 'super_base', label: 'Super base' },
-  { value: 'super_team', label: 'Super team' },
-  { value: 'all', label: 'Everyone I can see' },
-];
 
 export function ContestFilters({ applied, onApply, onClose }: ContestFiltersProps) {
   const [draft, setDraft] = useState<FilterDraft>(applied);

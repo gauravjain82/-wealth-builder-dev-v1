@@ -11,7 +11,6 @@
 import type {
   DetailResponse,
   FullReportResponse,
-  LeaderboardAccess,
   LeaderboardCardResponse,
   LeaderboardDateRange,
   LeaderboardDisplaySettings,
@@ -91,11 +90,6 @@ export function selectionParams(selection: LeaderboardSelection): URLSearchParam
     params.set('range', selection.rangeKey);
   }
   return params;
-}
-
-/** Capability flags driving the route guard and the menu entry. */
-export function fetchLeaderboardAccess(signal?: AbortSignal): Promise<LeaderboardAccess> {
-  return getJson<LeaderboardAccess>('/my-access/', new URLSearchParams(), signal);
 }
 
 /** The compact card payload: one metric, a short preview, no proof rows. */

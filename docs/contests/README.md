@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `66fba39` — 2026-09-29 (§3 counted for parity phase 19; §2 and §5 `8880009`; §4 vocabulary `08eea2c`; the rest `7e3b7f1`, 2026-09-27) |
 
 > **Deployed but not open.** Migrations `wbreporting/0001`–`0003` are applied and the code shipped
 > 2026-09-26. Nobody has been granted `homev2:read` for contests, so no reader can reach it yet.
@@ -37,8 +37,10 @@ Because a contest is a promise, two properties matter more here than in a normal
 ## 2. Scope
 
 **In scope**
-- The embedded standings card, and the same card on a standalone route.
-- Draft filters (person, view, Net, Leaders, Agents) with explicit Apply.
+- The embedded standings card on `/home-v2`, and a standalone `/contests` page laid out as dtez's
+  (title and status line, contests as buttons, an always-visible filter bar) over the same state.
+- Draft filters (person, view, Net, Leaders, Agents; on the page also Upline and Leader) with
+  explicit Apply.
 - Tier overview cards doubling as tier toggles, with a three-state gesture.
 - Standings in two renderings — wide table and narrow per-agent cards — chosen by container width.
 - Four dialogs: proof, agent profile, flyer, Help.
@@ -62,12 +64,12 @@ Because a contest is a promise, two properties matter more here than in a normal
 |---|---|
 | Routes | 2 + 1 embedded card |
 | Pages | 2 (both thin wrappers) |
-| Components | 8 |
-| Hooks | 8 queries + 7 mutations in one bundle |
+| Components | 14 |
+| Hooks | 9 queries + 7 mutations in one bundle, plus the board-state hook |
 | Services | 1 |
-| Endpoints consumed | 13 |
-| LOC (ts/tsx) | 2,708 |
-| CSS | 699 lines, all under `wb-ct-` |
+| Endpoints consumed | 13 (`wbreporting`) + the `accounts/users/` person search |
+| LOC (ts/tsx) | 3,934 |
+| CSS | 1,345 lines, all under `wb-ct-` |
 | Doc tier | Full |
 
 ## 4. Domain vocabulary
@@ -78,8 +80,11 @@ Because a contest is a promise, two properties matter more here than in a normal
 | **Tier** | One prize level within a contest: its own requirements, period override, reward and eligibility rules. |
 | **Threshold** | A required value for one metric in one tier. Eleven metrics are configurable. |
 | **Evaluation** | The server's verdict for one agent against one tier: eligible, progress, qualified, near. |
-| **Progress** | Percentage toward a tier. **`null` means there is no number** — never render it as `0`. |
-| **Eligible** | Whether this tier applies to this agent at all. An ineligible cell renders **blank**. |
+| **Progress** | Percentage toward a tier, a whole number (C20). **`null` means there is no number** — never render it as `0`. |
+| **Best %** | An agent's highest score over the tiers open to them, never below 0; the default order (C16). |
+| **In running** | Everyone listed for the contest — the same number on every tier card (C18). |
+| **No source** | A requirement this host cannot measure (`BE`, `C`). Counts as 0, so the tier cannot be qualified (C15). |
+| **Eligible** | Whether this tier applies to this agent at all — dtez's rule (C19): Non-License first, then the level lists by code or name. People with no level pass any restriction. An ineligible cell renders **blank**. |
 | **Non-License tier** | A tier for unlicensed agents. It blanks every licensed person by design. |
 | **Near** | Within `near_percent` of qualifying. |
 | **Single-hop team measure** | `BR`, `BP`, `LIC` — one hop of Leader, no base-shop boundary. Reads lower than the Production Tracker. |
@@ -92,7 +97,8 @@ Because a contest is a promise, two properties matter more here than in a normal
 
 **Upstream**
 - `src/shared/components/ui/modal` — all four dialogs portal through it.
-- `src/shared/components/user-autocomplete-dropdown` — the filter's person picker.
+- `src/shared/components/user-autocomplete-dropdown` — the card modal's person picker.
+- `/api/accounts/users/` — the standalone page's person search.
 
 **Downstream**
 - `src/features/home-v2/` — mounts `ContestsCard`, replacing a `CanvaVideoCard` placeholder.

@@ -9,7 +9,7 @@
 | **API prefix** | `/api/accounts/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `04cbcf3` — 2026-09-29 (§1, §2 route guards, §3.3, §4 re-read; the rest `7e3b7f1`) |
 
 ## 1. Layering
 
@@ -79,7 +79,14 @@ route → page → components
 
 The eight capability guards all follow one shape: call the module's `my-access` hook, show a
 loader while it resolves, `<Navigate to="/home" replace />` on error or denial. See
-`router/leaderboards-route.tsx:22` for the canonical version.
+`router/leaderboards-route.tsx:22` for the canonical version. The four `wbreporting` guards
+(`LeaderboardsRoute`, `ContestsRoute`, `ContestSettingsRoute`, `WbPipelineRoute`) read one
+shared cache entry — §4.
+
+A guard may **start** a request its page will need, because it decides rendering, not
+permission (§6): `ContestsRoute` starts the contest list alongside its access check, and
+`PrefetchContests` does the same outside `LeaderboardsRoute` for `/home-v2`
+(`router/contests-route.tsx`). An ungranted caller gets a 403 and is redirected.
 
 ## 3. Primary flows
 
@@ -115,8 +122,9 @@ The canonical implementation is
 `useRoleBasedMenu` (`src/hooks/use-role-based-menu.ts`) takes the plan from `useAuth`,
 calls `getMenuForUser` to filter `config/menu.ts` by plan and role, then injects entries for
 each capability the backend reports — Builder AI, misalignments, products, the reporting
-pipeline, leaderboards, contest settings, guidance. Seven `my-access` queries run on every
-authenticated page load; their long `staleTime` is what keeps that cheap.
+pipeline, leaderboards, contest settings, guidance. Five `my-access` endpoints are read on
+every authenticated page load (`builderai`, `misalignments`, `tracker/products`, `gms`,
+`wbreporting`), one request each; their long `staleTime` is what keeps that cheap.
 
 ## 4. Server state and caching
 
@@ -136,6 +144,30 @@ forwarding React Query's `signal` to `fetch` is what actually cancels it.
 `src/features/leaderboards/hooks/use-leaderboards.ts:31` is the reference.
 
 Devtools mount in dev only (`provider.tsx:28`).
+
+### Shared: `['wbreporting', 'my-access']`
+
+`GET /api/wbreporting/my-access/` returns four flags (`can_view`, `can_manage`,
+`can_view_leaderboards`, `can_view_contests`) that the shell menu, the pipeline screen,
+leaderboards, Home v2 and contests all read. It has **one** cache entry, owned by
+`src/shared/wbreporting-access/` (types, service, hook — the platform layering inside one
+shell-level module, so no feature imports another's internals):
+
+| | |
+|---|---|
+| Hook | `useWbReportingAccess(select?)` |
+| Key | `WB_REPORTING_ACCESS_KEY` = `['wbreporting', 'my-access']` |
+| `staleTime` | 5 min — a grant does not change mid-session, and every guard blocks on it |
+| `retry` | `false` — a denial is an answer |
+
+`usePipelineAccess`, `useLeaderboardAccess` and `useContestAccess` keep their names and
+return shapes and are **selectors** over it (React Query `select`, defined at module scope).
+Until Phase 12 of the contests parity plan they were three queries under three module keys;
+React Query cannot deduplicate across keys, and Chrome holds back an identical in-flight GET
+until the first completes, so a `/contests` load paid for the same answer three times **in
+series** ([contests PHASES §2](../contests/PHASES.md#2-phases)). An invalidation of access
+must use the shared key; the old module keys match nothing. Other modules' `my-access`
+endpoints (`gms`, `builderai`, …) are different URLs and keep their own hooks.
 
 ## 5. Local and URL state
 
@@ -207,6 +239,7 @@ measured at commit `7e3b7f1` — to serve a carousel and a video URL.
 | Every service sends `Authorization: Token` | each service's own `getAuthHeaders` | 401 on one surface while the rest of the app works |
 | A selection change cancels the request it supersedes | selection in the query key + `signal` forwarded to `fetch` | an old response overwriting a newer one after a filter change |
 | A guard's decision is never the only check | the backend re-checks every request | nothing — this is why it is safe |
+| One cache entry per endpoint answer | `wbreporting` access has one key, read through selectors | the same request sent once per module key, serialised by the browser |
 | The route table is the single source of truth for what exists | one `router/index.tsx` | a reachable page with no menu entry, or the reverse |
 
 **The known structural weakness.** There is no shared HTTP client. `API_BASE_URL`,

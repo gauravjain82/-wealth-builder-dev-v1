@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `8880009` — 2026-09-29 (§4 re-read for parity phase 18; §1 and §6 C14 rows parity phase 16; the rest `7e3b7f1`) |
 
 ## 1. Environment and configuration
 
@@ -23,6 +23,12 @@ No module-specific `VITE_` variables. Everything configurable is **backend state
 | Eligibility levels | `accounts.Level` | the level checkboxes. Adding a level needs **no release** |
 | `WB_MILESTONE_TIMESTAMPS_SINCE` | backend env | whether `mr`/`mp` can be measured at all |
 | `homev2:read`, `wbreporting:manage` | access console | who reads, who configures |
+
+**The settings screen is the only place contests are edited (backend decision C14).** dtez's
+configuration was imported for the last time on 2026-09-29 (backend `import_existing_contests`,
+parity phase 16). A contest or tier changed on dtez after that does not reach this page, and it
+is not meant to: make the change here. Backend `docs/wbreporting/OPERATIONS.md` §3 records the
+import.
 
 The editor renders from `EditorOptions` rather than hard-coded lists, which is why a new level or a
 changed flyer limit appears without a frontend deploy.
@@ -86,6 +92,54 @@ Manual checks, ordered by what they protect:
    re-signed rather than dead.
 10. **`BR`/`BP`/`LIC` labelling** is present in the tier editor. This is the one that can produce a
     wrong prize decision.
+11. **The standalone page against dtez** (parity phase 18). Open `/contests` and
+    `dtez.com/wb_contests.php` side by side at 1440 and 390 px: title and status line, the contests
+    as buttons (two columns on a phone), the filter bar, the contest title row. On `/contests`,
+    choose Just this person with an empty search and press Apply: an error under the bar, the search
+    focused, and **no** request. dtez shows the first person in its list instead.
+12. **Upline and Leader.** Apply a person; both stay disabled until their profile arrives, then each
+    moves the person and re-applies. The profile endpoint is slow (UI.md §2.3).
+13. **Home v2 did not change.** Screenshot the card on `/home-v2` before and after any change to the
+    shared hook or parts (`use-contest-board.ts`, `contest-board-parts.tsx`); they must be
+    identical.
+
+### Latency check
+
+`scripts/perf/contests-latency.mjs` opens `/contests` in the installed Chrome (through
+`playwright-core`; no browser download) and reports seconds to first standings, one contest switch,
+standings server time, and the full API waterfall. It switches by clicking the second contest
+button (parity phase 18), or through the `<select>` on a build that still has one. It is the measurement for phases 10–12 of the
+parity plan (`mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`).
+
+```bash
+npm run dev                              # in another terminal
+npm run perf:contests -- --login         # once: a window opens; sign in yourself
+npm run perf:contests                    # median of 3 headless runs
+npm run perf:contests -- --runs 5 --json
+npm run perf:contests -- --dwell 10      # wait 10 s on the first contest before switching
+```
+
+**Measure a production build, not the dev server.** `src/main.tsx` wraps the app in
+`React.StrictMode`, which runs effects twice in development, so dev-server request counts are
+inflated. Serve the build on port 3000:
+
+```bash
+npm run build && npx vite preview --port 3000 --strictPort
+WB_PERF_URL=http://localhost:3000 npm run perf:contests
+```
+
+Port 3000, not Vite's preview default of 4173: the signed-in session is `localStorage`, which is
+per origin **including the port**, so a session saved against the dev server carries over only to
+the same port — and 3000 is the origin the production API's CORS is known to accept.
+
+**`--dwell`** (default 0) waits on the first contest before switching. With no dwell the switch fires
+the instant the first standings appear, while the other contests' prefetches
+([ARCHITECTURE §3.1a](ARCHITECTURE.md#31a-switching-contest)) are still in flight, so it measures a
+prefetch joined mid-request, not a switch served from cache. Report both.
+
+The script never handles credentials. The session is kept in a Chrome profile outside the repo
+(`<os tmp>/wb-perf-chrome-profile`, or `WB_PERF_PROFILE`). The account needs `homev2:read`, or the
+route guard redirects and the script says so. `WB_PERF_URL` points it at another origin.
 
 ## 5. Deployment
 
@@ -129,3 +183,4 @@ Rollback is revoking the grant. No deploy required.
 | Flyer link dead | the signed URL expired | `staleTime` is 10 min against a ~15 min lifetime; reopening re-signs |
 | A contest is invisible to readers | `contest_status = considered`, or hidden | considered contests are settings-only by design |
 | A filter state cannot be shared | nothing is in the query string | a known limitation |
+| A contest differs from dtez's page | expected since 2026-09-29 (C14): this screen is the editor, and dtez is no longer imported | edit it here; do not re-import |

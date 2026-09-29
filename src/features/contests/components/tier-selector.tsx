@@ -16,6 +16,7 @@
  */
 
 import type { TierSummary } from '../types';
+import { toggleTier } from './contest-format';
 
 interface TierSelectorProps {
   tiers: TierSummary[];
@@ -27,13 +28,6 @@ interface TierSelectorProps {
 export function TierSelector({ tiers, selected, showCounts, onChange }: TierSelectorProps) {
   if (!tiers.length) return null;
 
-  const toggle = (tierId: number) => {
-    const isSelected = selected.includes(tierId);
-    // Deselecting the last one returns to "all", which is the empty selection.
-    const next = isSelected ? selected.filter((id) => id !== tierId) : [...selected, tierId];
-    onChange(next);
-  };
-
   return (
     <div className="wb-ct-tiers" role="group" aria-label="Contest tiers">
       {tiers.map((tier) => {
@@ -44,7 +38,7 @@ export function TierSelector({ tiers, selected, showCounts, onChange }: TierSele
             type="button"
             className="wb-ct-tier"
             aria-pressed={isSelected}
-            onClick={() => toggle(tier.id)}
+            onClick={() => onChange(toggleTier(selected, tier.id))}
           >
             <div className="wb-ct-tier-name">{tier.name}</div>
             {showCounts ? (
@@ -57,8 +51,8 @@ export function TierSelector({ tiers, selected, showCounts, onChange }: TierSele
             {tier.reward ? <div className="wb-ct-tier-period">{tier.reward}</div> : null}
             {tier.unmeasured.length ? (
               <div className="wb-ct-tier-period">
-                {tier.unmeasured.map((key) => key.toUpperCase()).join(', ')} cannot be
-                measured
+                {tier.unmeasured.map((key) => key.toUpperCase()).join(', ')}: no source,
+                counts as 0
               </div>
             ) : null}
           </button>

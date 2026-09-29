@@ -7,7 +7,6 @@
 import type {
   CapabilityReport,
   EnqueuedJob,
-  PipelineAccess,
   PipelineJobName,
   PipelineRunStatus,
   PipelineRunsResponse,
@@ -54,11 +53,6 @@ async function postJson<T>(path: string, body?: unknown): Promise<T> {
   });
   if (!response.ok) throw new Error(await describeFailure(response));
   return (await response.json()) as T;
-}
-
-/** Capability flags driving the menu entry and route guard. */
-export function fetchPipelineAccess(): Promise<PipelineAccess> {
-  return getJson('/my-access/');
 }
 
 export function fetchPipelineStatus(): Promise<PipelineStatus> {

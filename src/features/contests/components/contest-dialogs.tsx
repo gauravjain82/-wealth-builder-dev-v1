@@ -15,18 +15,9 @@
 import { Modal } from '@/shared/components/ui/modal';
 
 import { useAgentProfile, useFlyer, useProof } from '../hooks/use-contests';
-import type { ProfileResponse, ProofResponse, ThresholdMetric } from '../types';
+import type { ProfileResponse, ProfileTarget, ProofResponse, ProofTarget } from '../types';
 
 /* --- proof ---------------------------------------------------------------- */
-
-export interface ProofTarget {
-  contestId: number;
-  tierId: number;
-  agentId: number;
-  agentName: string;
-  tierName: string;
-  metric: ThresholdMetric;
-}
 
 interface ProofDialogProps {
   target: ProofTarget | null;
@@ -167,7 +158,7 @@ function ProofBody({
 /* --- profile -------------------------------------------------------------- */
 
 interface ProfileDialogProps {
-  target: { contestId: number; agentId: number; name: string } | null;
+  target: ProfileTarget | null;
   onClose: () => void;
 }
 
@@ -270,9 +261,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
           make up for falling short on another.
         </p>
         <p>
-          <strong>Qualifying</strong> needs every requirement met. A tier can show 100%
-          progress without being qualified, because the cap can hide a shortfall
-          elsewhere.
+          <strong>Qualifying</strong> needs every requirement met. Percentages are rounded
+          to whole numbers, so a tier at 99.6% shows 100% and is still not qualified.
         </p>
         <p>
           <strong>A blank cell</strong> means that tier is not open to you — for example
@@ -280,18 +270,21 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
         </p>
         <p>
           <strong>Tier cards</strong> are toggles. With none selected you see them all;
-          selecting some shows only those; turning the last one off returns to all.
+          selecting some shows only those; turning the last one off returns to all. The
+          counts on the cards are for the whole contest: &ldquo;in running&rdquo; is
+          everyone listed, the same on every card.
         </p>
         <p>
-          <strong>Sorting</strong> uses the exact value, and people who are not eligible
-          for the sorted tier always come last, in either direction.
+          <strong>Sorting</strong>: with no tier chosen, people are ordered by their best
+          percentage across the tiers open to them, then by name. Choosing a tier sorts
+          by its exact value, and people it is not open to always come last.
         </p>
         <p>
           <strong>Filters</strong> do nothing until you press Apply.
         </p>
         <p>
-          Some requirements cannot be measured in this system. They are shown as
-          unavailable rather than as zero, because zero would claim nobody reached them.
+          Some requirements have no data source in this system yet. They count as 0, so a
+          tier that requires one cannot be qualified until it has a source.
         </p>
       </div>
     </Modal>

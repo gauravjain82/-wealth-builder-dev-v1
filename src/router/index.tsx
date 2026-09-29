@@ -7,7 +7,7 @@ import { MisalignmentsRoute } from './misalignments-route';
 import { WbPipelineRoute } from './wb-pipeline-route';
 import { ContestSettingsRoute } from './contest-settings-route';
 import { GuidanceRoute } from './guidance-route';
-import { ContestsRoute } from './contests-route';
+import { ContestsRoute, PrefetchContests } from './contests-route';
 import { LeaderboardsRoute } from './leaderboards-route';
 import { ProductsRoute } from './products-route';
 import { PublicRoute } from './public-route';
@@ -291,7 +291,11 @@ const router = createBrowserRouter([
         // The next home page. Behind homev2:read — a named rollout list, not a
         // role — while `/home` stays exactly as it is.
         path: 'home-v2',
-        element: <LeaderboardsRoute>{lazyLoad(HomeV2Page)}</LeaderboardsRoute>,
+        element: (
+          <PrefetchContests>
+            <LeaderboardsRoute>{lazyLoad(HomeV2Page)}</LeaderboardsRoute>
+          </PrefetchContests>
+        ),
       },
       {
         // Expanded leaderboard and Full Report; same homev2:read gate.

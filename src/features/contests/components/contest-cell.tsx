@@ -14,35 +14,26 @@
  */
 
 import type { MetricProgress, TierEvaluation } from '../types';
+import { formatAmount, formatPercent, pillTitle } from './contest-format';
 
 interface ContestCellProps {
   evaluation: TierEvaluation | undefined;
   tierName: string;
   showNearQualifiers: boolean;
+  /**
+   * Decision C5's label for the single-hop measures. The standalone page shows no
+   * banner above the grid (parity phase 18), so the BR/BP/LIC pills carry it here, and
+   * the proof dialog states it in full.
+   */
+  teamCreditNote: string;
   onOpenProof: (metric: MetricProgress) => void;
-}
-
-/** Percentages are rounded for display only; the server sorts on the exact value. */
-function formatPercent(value: number | null): string {
-  return value === null ? '' : `${Number.isInteger(value) ? value : value.toFixed(1)}%`;
-}
-
-/**
- * A metric amount for display: whole numbers with thousands separators. Points arrive
- * with cents (17385.53) but are read as a round score, so the decimals are dropped;
- * counts like recruits and licences are already integers.
- */
-function formatAmount(value: number | string | null | undefined): string {
-  if (value === null || value === undefined || value === '') return '0';
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return String(value);
-  return Math.round(numeric).toLocaleString('en-US');
 }
 
 export function ContestCell({
   evaluation,
   tierName,
   showNearQualifiers,
+  teamCreditNote,
   onOpenProof,
 }: ContestCellProps) {
   if (!evaluation || !evaluation.eligible) {
@@ -51,14 +42,6 @@ export function ContestCell({
         <span className="wb-ct-blank" aria-hidden="true" />
         <span className="wb-ct-sr-only">Not eligible for {tierName}</span>
       </>
-    );
-  }
-
-  if (evaluation.unavailable) {
-    return (
-      <span className="wb-ct-pill wb-ct-pill--unavailable" role="note">
-        Cannot be measured
-      </span>
     );
   }
 
@@ -72,12 +55,6 @@ export function ContestCell({
     <div className={`wb-ct-cell ${tone}`.trim()}>
       <span className="wb-ct-percent">{formatPercent(evaluation.progress)}</span>
       {evaluation.qualified ? <span className="wb-ct-sr-only">Qualified</span> : null}
-      {evaluation.partially_measurable ? (
-        <span className="wb-ct-tier-period">
-          {evaluation.unmeasured.length} of {evaluation.metrics.length} requirements
-          cannot be measured
-        </span>
-      ) : null}
       <div className="wb-ct-pills">
         {evaluation.metrics.map((metric) => (
           <button
@@ -85,24 +62,15 @@ export function ContestCell({
             type="button"
             className={`wb-ct-pill${metric.available ? '' : ' wb-ct-pill--unavailable'}`}
             disabled={!metric.detail_available}
-            title={
-              metric.available
-                ? metric.single_hop_team
-                  ? `${metric.label} — counts direct reports only`
-                  : metric.label
-                : metric.unavailable_reason
-            }
+            title={pillTitle(metric, teamCreditNote)}
             onClick={() => onOpenProof(metric)}
           >
             <span className="wb-ct-pill__label">{metric.metric.toUpperCase()}</span>
-            {metric.available ? (
-              <span className="wb-ct-pill__value">
-                <span className="wb-ct-pill__actual">{formatAmount(metric.actual)}</span>
-                <span className="wb-ct-pill__req">/{formatAmount(metric.requirement)}</span>
-              </span>
-            ) : (
-              <span className="wb-ct-pill__value">n/a</span>
-            )}
+            {/* A sourceless metric counts as 0 (C15); its title says why. */}
+            <span className="wb-ct-pill__value">
+              <span className="wb-ct-pill__actual">{formatAmount(metric.actual)}</span>
+              <span className="wb-ct-pill__req">/{formatAmount(metric.requirement)}</span>
+            </span>
           </button>
         ))}
       </div>

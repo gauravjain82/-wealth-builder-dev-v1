@@ -37,10 +37,15 @@ import type {
 } from '../types';
 import { TierEditor } from './tier-editor';
 
-/** Expand the two stored level columns back into a ticked set. */
+/**
+ * Expand the two stored level columns back into a ticked set. `NON` is not an option
+ * (C19), so a stored `NON` — Italy's imported Builder tier — ticks nothing away.
+ */
 function selectedLevelsFor(tier: EditableTier, levels: LevelOption[]): string[] {
   const codes = levels.map((level) => level.code);
-  const only = tier.only_levels ? tier.only_levels.split(',').filter(Boolean) : [];
+  const only = tier.only_levels
+    ? tier.only_levels.split(',').filter((code) => codes.includes(code))
+    : [];
   const restricted = tier.restricted_levels
     ? tier.restricted_levels.split(',').filter(Boolean)
     : [];
@@ -49,7 +54,7 @@ function selectedLevelsFor(tier: EditableTier, levels: LevelOption[]): string[] 
   return codes;
 }
 
-/** A brand-new tier: everyone except NON, per the data contract's default. */
+/** A brand-new tier: anyone. Under C19 the contract's "everyone except NON" blocks nobody. */
 function blankTier(order: number): EditableTier {
   return {
     tier_order: order,
@@ -59,7 +64,7 @@ function blankTier(order: number): EditableTier {
     non_license: false,
     is_hidden: false,
     only_levels: '',
-    restricted_levels: 'NON',
+    restricted_levels: '',
     tier_period_mode: 'inherit',
     tier_start: null,
     tier_end: null,

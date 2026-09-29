@@ -47,6 +47,7 @@ npm run type-check   # tsc --noEmit
 npm run lint         # eslint, --max-warnings 0
 npm run build        # tsc && vite build → build/
 npm run preview      # serve the built output
+npm run perf:contests  # contests page latency, see docs/contests/OPERATIONS.md §4
 ```
 
 `npm run build` type-checks first, so a type error fails the build.

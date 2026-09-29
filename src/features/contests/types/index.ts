@@ -11,6 +11,8 @@
  *   browser receives evaluations and renders them.
  */
 
+import type { WbReportingAccess } from '@shared/wbreporting-access';
+
 /** Hierarchy scopes the contest views accept. Note: `net` is a *filter*, not a scope. */
 export type ContestScope = 'all' | 'personal' | 'base' | 'smd_base' | 'super_base' | 'super_team';
 
@@ -39,18 +41,16 @@ export type ContestErrorCode =
   | 'invalid_tier_threshold'
   | 'invalid_level_rule'
   | 'invalid_tier_order'
-  | 'tier_metric_unavailable'
   | 'flyer_file_required'
   | 'flyer_size_invalid'
   | 'flyer_type_invalid'
   | 'storage_failed';
 
-/** Capability flags from `/api/wbreporting/my-access/`. */
-export interface ContestAccess {
-  can_view_contests: boolean;
-  can_view_leaderboards: boolean;
-  can_manage: boolean;
-}
+/** Contests' view of the shared `/api/wbreporting/my-access/` payload. */
+export type ContestAccess = Pick<
+  WbReportingAccess,
+  'can_view_contests' | 'can_view_leaderboards' | 'can_manage'
+>;
 
 export interface TierRequirement {
   metric: ThresholdMetric;
@@ -58,7 +58,7 @@ export interface TierRequirement {
   value: number;
   /** True for `br`/`bp`/`lic` — the single-hop Leader measures that must be labelled. */
   single_hop_team: boolean;
-  /** False when this deployment cannot measure the metric over this tier's period. */
+  /** False when the metric has no source over this tier's period; it counts as 0 (C15). */
   available: boolean;
 }
 
@@ -72,10 +72,15 @@ export interface TierSummary {
   requirements: TierRequirement[];
   qualified: number;
   near: number;
+  /** Everyone listed for the contest — the same on every card (C18). */
   in_running: number;
-  /** Requirement keys that could not be measured over this tier's period. */
+  /** Requirement keys with no source over this tier's period, scored as 0 (C15). */
   unmeasured: string[];
   single_hop_team: boolean;
+  /** Whether the tier is in the current selection; every tier when none is chosen. */
+  selected: boolean;
+  /** Only unlicensed people are eligible; the page's goals line ends "Non-License". */
+  non_license: boolean;
 }
 
 export interface ContestSummary {
@@ -97,8 +102,9 @@ export interface MetricProgress {
   metric: ThresholdMetric;
   label: string;
   requirement: number;
-  /** `null` when the metric could not be measured — never a substituted zero. */
+  /** `0` for a metric with no source (C15). */
   actual: number | null;
+  /** A whole number (C20). */
   percent: number | null;
   met: boolean;
   available: boolean;
@@ -110,12 +116,11 @@ export interface MetricProgress {
 export interface TierEvaluation {
   tier_id: number;
   eligible: boolean;
-  /** `null` for an ineligible cell (render blank) or a wholly unmeasurable tier. */
+  /** A whole number (C20); `null` only for an ineligible cell, which renders blank. */
   progress: number | null;
   qualified: boolean;
   near: boolean;
-  unavailable: boolean;
-  partially_measurable: boolean;
+  /** Requirement keys with no source, scored as 0 (C15). */
   unmeasured: string[];
   /** Empty for an ineligible cell: there is deliberately no number to display. */
   metrics: MetricProgress[];
@@ -125,7 +130,13 @@ export interface StandingRow {
   agent_id: number;
   agency_code: string;
   name: string;
-  level: string;
+  /** Absent when the display settings hide levels; `""` means the person has none. */
+  level?: string;
+  /**
+   * The assigned leader's name, or code. Absent when the display settings hide it;
+   * `""` when there is no coded leader, which the page shows as "Leader: -" (dtez).
+   */
+  leader_name?: string;
   is_active: boolean;
   best_percent: number | null;
   evaluations: Record<string, TierEvaluation>;
@@ -148,13 +159,19 @@ export interface StandingsResponse {
   direction: SortDirection;
   next_cursor: string | null;
   total_rows: number;
-  uncoded_member_count: number;
   near_percent: number;
   /** Non-empty when any visible tier uses a single-hop Leader measure. */
   team_credit_note: string;
   show_tier_overview: boolean;
   show_near_qualifiers: boolean;
   filters: ContestFilters;
+  /**
+   * How many people the Leaders / Agents filters call leaders — somebody names them as
+   * their leader — over the view's candidate map, not the rows. dtez's "N leaders
+   * identified" (parity phase 18). Absent from a backend older than that phase, and
+   * then rendered as `—`, never `0`.
+   */
+  leader_count?: number;
 }
 
 export interface ProofColumn {
@@ -206,6 +223,31 @@ export interface FlyerResponse {
   kind: 'image' | 'pdf';
   mime: string;
   original_name: string;
+}
+
+/** One match from the person search: a user id and dtez's `Name [CODE]` label. */
+export interface PersonOption {
+  id: number;
+  label: string;
+  agencyCode: string;
+  name: string;
+}
+
+/** The cell a proof dialog is opened for. */
+export interface ProofTarget {
+  contestId: number;
+  tierId: number;
+  agentId: number;
+  agentName: string;
+  tierName: string;
+  metric: ThresholdMetric;
+}
+
+/** The agent a profile dialog is opened for. */
+export interface ProfileTarget {
+  contestId: number;
+  agentId: number;
+  name: string;
 }
 
 /** Draft filter state. Nothing here reaches the server until Apply is pressed. */
