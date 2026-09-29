@@ -13,7 +13,6 @@
  */
 
 import type {
-  ContestAccess,
   ContestErrorCode,
   ContestSummary,
   EditableContest,
@@ -77,11 +76,6 @@ async function getJson<T>(path: string, params: URLSearchParams, signal?: AbortS
   });
   if (!response.ok) throw await describeFailure(response);
   return (await response.json()) as T;
-}
-
-/** Capability flags driving the route guard and the menu entry. */
-export function fetchContestAccess(signal?: AbortSignal): Promise<ContestAccess> {
-  return getJson<ContestAccess>('/my-access/', new URLSearchParams(), signal);
 }
 
 /** Readable contests for the card's selector, active ones first. */

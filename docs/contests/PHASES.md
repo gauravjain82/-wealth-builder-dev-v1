@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `17121e6` — 2026-09-29 |
+| **Verified against** | commit `04cbcf3` — 2026-09-29 |
 
 > Phase numbering and the `C` decision prefix come from `mlm_platform/WB_CONTESTS_PROGRESS.md`
 > (phases 0–9, decisions C1–C13) and **must not be renumbered** — the same number means the same
@@ -32,6 +32,7 @@
 | — | 2026-09-26 | Shipped | Tier layout and overflow refinements in CSS |
 | 10 | 2026-09-29 | Shipped | Latency check, `npm run perf:contests` (`OPERATIONS.md` §4) |
 | **11** | 2026-09-29 | **Shipped** | **Standings speed (backend): coded-only scopes (C22); `uncoded_member_count` removed from the response and the card** |
+| **12** | 2026-09-29 | **Shipped** | **Standings speed (frontend): one shared `my-access` query; contest list alongside the access check; other contests prefetched (C24, C25)** |
 
 **Migrations `0001`–`0003` are applied.** The feature is deployed and gated only by the absence of a
 `homev2:read` grant.
@@ -89,6 +90,49 @@ renders, but the backend alone would leave the card reading an absent field.
 
 **Decisions.** C22.
 
+### Phase 12 — standings speed, frontend request path (2026-09-29)
+
+**Goal.** Fewer requests, no waterfall, and a contest switch served from cache. The brief is
+`mlm_platform/docs/integrations/wb-contests/PHASE_12_KICKOFF.md`.
+
+**What was wrong, measured.** On a production build a `/contests` load sent
+`/api/wbreporting/my-access/` three times — under `['wb-pipeline', …]`, `['leaderboards', …]` and
+`['contests', …]` — and Chrome ran the three **one after another**, because it holds back an
+identical in-flight GET until the first completes: 0.3 s, 0.6 s, 0.9 s against a stub, ~0.9 s of
+the live critical path. Then the contest list, then standings: five round trips in series before
+the first row. `users/me` was fetched **once**; the Phase 10 count of two was `StrictMode` on the
+dev server.
+
+**What shipped.**
+
+- `src/shared/wbreporting-access/` — one query over `['wbreporting', 'my-access']`, full payload,
+  5 min, `retry: false`. `usePipelineAccess`, `useLeaderboardAccess` and `useContestAccess` are
+  selectors over it, same names and shapes ([platform ARCHITECTURE §4](../platform/ARCHITECTURE.md#4-server-state-and-caching)).
+  Their three `fetch…Access` service functions were removed. `retry` for the pipeline and
+  leaderboards guards went from the global 1 to `false` with it.
+- `ContestsRoute` starts the contest list with the access check (`usePrefetchContests`), and
+  `PrefetchContests` does the same for `/home-v2` outside `LeaderboardsRoute`.
+- `buildStandingsQuery` composes every standings key; `usePrefetchOtherStandings` warms the key a
+  switch produces for every other contest, two at a time, on `/contests` only
+  ([ARCHITECTURE §3.1a](ARCHITECTURE.md#31a-switching-contest)).
+- `perf:contests` gained `--dwell` ([OPERATIONS §4](OPERATIONS.md#4-tests-and-checks)).
+
+**Result, live API (pre-Phase-11 backend), production build, median of 3.**
+
+| | Before | After |
+|---|---|---|
+| First standings | 6.70 s | 5.74 s |
+| Switch, no dwell | 3.98 s | 4.23 s — joins the prefetch still in flight |
+| Switch, 10 s dwell | 4.03 s | **0.05 s** |
+| API calls before first standings | 11 | 9 |
+| `wbreporting/my-access` / `users/me` | 3 / 1 | 1 / 1 |
+| Round trips in series to first standings | 5 | 2 |
+
+The first-standings target (< 1 s) waits on the Phase 11 deploy: ~3.9 s of the 5.7 s is the old
+backend's standings request.
+
+**Decisions.** C24, C25.
+
 ## 3. Decision log
 
 Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
@@ -108,6 +152,8 @@ Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
 | C12 | Inactive people are included | The same accepted divergence as leaderboards' L1 — fidelity to the delivered spec | `StandingRow.is_active` is carried, not filtered |
 | C13 | 50 / 200 page sizes; `considered` contests are settings-only | A considered contest is a draft; readers should not see a promise that has not been made | `WB_CONTESTS_PROGRESS.md` |
 | **C22** | Scope walks load **only users with an agency code**, so an uncoded user in a recruiting chain ends the walk there. Approved 2026-09-29 | The dtez reference does the same, and an uncoded user can never have a result row (D2). Loading them cost ~200,000 rows per request. Consequence here: the "without an agent code" count is gone — it was the only thing that needed the full hierarchy | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C22) |
+| **C24** | The card prefetches the other contests' standings on **`/contests` only**, not on `/home-v2`. Taken 2026-09-29 (Phase 12) | `/home-v2` is the landing page for every gated user. Prefetching there costs one background standings request per other contest (four today, ~4 server queries each) on every home visit, paid mostly for switches nobody makes in the compact card. The contest list is still prefetched there, since the card always needs it | `components/contests-card.tsx` (`prefetchOtherContests`); `mlm_platform/docs/integrations/wb-contests/PHASE_12_KICKOFF.md` §6.3 |
+| **C25** | **No remembered contest.** The default stays `contests[0]`; the last-viewed contest is not kept in `localStorage`. Taken 2026-09-29 (Phase 12) | Offered as optional by the brief, to take a returning viewer to one round trip. Not needed: access now runs alongside the list, so the path is already two round trips. And it would change which contest a reader lands on — a visible default that Phase 18's contest selector should own, not a speed phase | `mlm_platform/docs/integrations/wb-contests/PHASE_12_KICKOFF.md` §6.2 |
 
 ## 4. Deliberately not built
 
@@ -151,5 +197,9 @@ Operational items first — the feature is built and deployed; what remains is m
    (C9). An operator action.
 5. **Consider deep-linkable filter state.** The query model is fully serializable — `StandingsQuery`
    already *is* the cache key — so sharing a filtered board is a small change if anyone asks for it.
-6. **Verify the sticky-column table with a screen reader.** The blank-cell accessible text was designed
+6. **Tier multi-select cannot add a second tier** (found in Phase 12, same before and after it).
+   On contest 14, selecting one tier returns a response whose `tiers` holds only that tier, so the
+   selector shows one card and there is nothing to add. Turning it off returns to all. For parity
+   Phase 19, which specifies multi-select.
+7. **Verify the sticky-column table with a screen reader.** The blank-cell accessible text was designed
    carefully; the two-axis scroll region around it has not been checked.

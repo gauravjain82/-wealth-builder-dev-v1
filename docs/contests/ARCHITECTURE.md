@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `04cbcf3` — 2026-09-29 (§2, §3.1, §4, §6, §7 re-read for Phase 12; the rest `7e3b7f1`) |
 
 ## 1. Layering
 
@@ -22,7 +22,7 @@ deliberately shaped after `leaderboards` rather than diverging from it — same 
 |---|---|---|
 | Types | `types/index.ts` (322) | the wire contract, mirroring `wbreporting/serializers_contests.py` |
 | Service | `services/contests-service.ts` (303) | 13 endpoints, `ContestError`, `standingsParams` |
-| Hooks | `hooks/use-contests.ts` (194) | 8 queries, 7 mutations, one shared invalidation |
+| Hooks | `hooks/use-contests.ts` | 7 queries + the access selector, 2 prefetches, `buildStandingsQuery`, 7 mutations, one shared invalidation |
 | Components | `components/` (8) | card, standings, cell, tier selector, filters, dialogs, settings, tier editor |
 | Pages | `pages/` (2) | thin wrappers — 28 and 17 lines |
 
@@ -54,17 +54,58 @@ qualification rules, so there is one implementation and no second code path.
 
 Guards: `ContestsRoute` on `can_view_contests`, `ContestSettingsRoute` on `can_manage`. A reader who
 opens the settings URL is sent back to `/contests` rather than to a 403 they can do nothing about.
+`/home-v2` sits behind `LeaderboardsRoute`, wrapped in `PrefetchContests` (`router/contests-route.tsx`)
+so the contest list starts before that guard resolves.
 
 ## 3. Primary flows
 
 ### 3.1 Reading standings
 
-1. `useContests()` lists readable contests for the selector.
-2. The card composes a `StandingsQuery` — contest, applied filters, selected tiers, sort tier,
-   direction, cursor.
+Request order on `/contests` (Phase 12):
+
+```
+t0 ─┬─ my-access  (shared key; ContestsRoute blocks on it)
+    └─ contest list (usePrefetchContests in ContestsRoute — not after the guard)
+         └─ standings for contests[0]  (the card, once the list and the page chunk are in)
+              └─ other contests' standings, two at a time  (usePrefetchOtherStandings)
+```
+
+Two round trips on the critical path to first standings — list, then standings — with the access
+check alongside the list, not ahead of it. The list goes out before the guard has decided, which is
+safe because the guard decides rendering, not permission: an ungranted caller gets a 403 and a
+redirect.
+
+1. `useContests()` lists readable contests for the selector; on `/contests` and `/home-v2` it finds
+   the guard's prefetch already in flight (same `contestListOptions`, same key).
+2. The card composes a `StandingsQuery` with **`buildStandingsQuery`** — contest, applied filters,
+   selected tiers, sort tier, direction. The default contest is `contests[0]`.
 3. `useStandings(query)` puts **the whole query** in the key and fetches, forwarding the signal.
 4. The response carries `tiers`, `rows` of `evaluations`, the applied `filters`, `total_rows`,
    `next_cursor`, `near_percent` and display switches. The client renders; it aggregates nothing.
+
+### 3.1a Switching contest
+
+A switch sets the contest, **keeps** the applied filters and direction, and **resets** the selected
+tiers to `[]` and the sort tier to `null`. So the key a switch produces is exactly
+
+```
+buildStandingsQuery({ filters, contestId: other, tierIds: [], sortTier: null, direction })
+```
+
+On `/contests` (`prefetchOtherContests`), once the first standings have been shown,
+`usePrefetchOtherStandings` warms that key for every other contest in the list, two at a time
+(`PREFETCH_CONCURRENCY`), through the same `standingsOptions` and with the signal forwarded. A switch
+is then served from cache; one made before its prefetch has finished joins the request in flight
+rather than sending a second. The card and the prefetch both call `buildStandingsQuery`, and the
+switch handler carries a comment tying the two together: a key that differs by one field is a
+silent cache miss.
+
+When the applied filters or the direction change, the prefetch starts over for the new keys and
+cancels any old one still in flight that nothing is observing. A switch alone does not restart it.
+The latch that enables it (`firstStandingsShown`) stays on after the first success, so a tier toggle
+does not stop and restart the prefetch.
+
+On `/home-v2` the card does **not** prefetch other contests (decision C24).
 
 ### 3.2 Filtering — draft until Apply
 
@@ -115,13 +156,13 @@ Two rules here are load-bearing:
 
 ## 4. Server state and caching
 
-Keys are `['contests', <surface>, <input>]`.
+Keys are `['contests', <surface>, <input>]`, except access, which is the shared shell entry.
 
 | Hook | Key | staleTime | Notes |
 |---|---|---|---|
-| `useContestAccess` | `[…, 'my-access']` | 5 min, `retry: false` | the guard blocks on it |
-| `useContests` | `[…, 'list']` | 60 s | the selector |
-| `useStandings` | `[…, 'standings', query]` | **30 s** | the whole query is the key |
+| `useContestAccess` | `['wbreporting', 'my-access']` (shared) | 5 min, `retry: false` | a `select` over `useWbReportingAccess` ([platform §4](../platform/ARCHITECTURE.md#4-server-state-and-caching)); the guard blocks on it |
+| `useContests` / `usePrefetchContests` | `[…, 'list']` | 60 s | the selector; one `contestListOptions` for both |
+| `useStandings` / `usePrefetchOtherStandings` | `[…, 'standings', query]` | **30 s** | the whole query is the key; one `standingsOptions` for both |
 | `useProof` | `[…, 'proof', input]` | default | `enabled` on open |
 | `useAgentProfile` | `[…, 'profile', input]` | default, `retry: false` | `enabled` on open |
 | `useFlyer` | `[…, 'flyer', contestId]` | **10 min** | under the server's 15-minute URL lifetime |
@@ -135,6 +176,9 @@ Three of those numbers encode a reason:
 - **Flyer 10 min** — deliberately under the signed URL's 15-minute lifetime, so a dialog reopened
   later re-signs rather than rendering a dead link.
 - **`retry: false`** on access and profile — a denial is an answer, not a transient failure.
+
+A prefetched standings entry is fresh for the same 30 s. A switch made later still renders the cached
+page at once and refreshes it in the background ("Updating…").
 
 All seven settings mutations share one invalidation covering `editable`, `list` **and** `standings`,
 because a rename or a hide must reach the reader surfaces too.
@@ -157,7 +201,7 @@ Nothing is in the query string. Neither surface is deep-linkable to a filter sta
 
 | Capability | Read via | Gates |
 |---|---|---|
-| `can_view_contests` (`homev2:read`) | `useContestAccess` | `/contests`, the card, the menu entry |
+| `can_view_contests` (`homev2:read`) | `useContestAccess`, a selector over the shared access query | `/contests`, the card, the menu entry |
 | `can_manage` (`wbreporting:manage`) | same payload | `/admin/contest-settings` and every write |
 
 `can_view_contests` rides the **same `homev2:read` grant** as Home v2 and Leaderboards, because the
@@ -172,8 +216,9 @@ never what is permitted.
 
 - **`wbreporting`** — 13 endpoints ([API.md](API.md)).
 - **`home-v2`** — mounts the card in place of a `CanvaVideoCard` placeholder. `/home` is untouched.
-- **[leaderboards](../leaderboards/)** — same prefix, same `my-access` payload, separate hooks and
-  separate cache. The two modules do not share state.
+- **[leaderboards](../leaderboards/)** — same prefix and the same `my-access` payload, read from
+  one shared cache entry (`@shared/wbreporting-access`) through each module's own selector. Nothing
+  else is shared.
 - **`shared/components/ui/modal`** — all four dialogs, because it portals to `document.body`.
 - **`shared/components/user-autocomplete-dropdown`** — the person filter.
 
@@ -184,6 +229,7 @@ never what is permitted.
 | `progress: null` is never rendered as `0` | the type is `number \| null`; the cell returns `''` | a zero read as a real score |
 | An ineligible cell is **blank**, never "Restricted" | server sends `progress: null` and empty `metrics` | a tier that is not for you reading as a punishment |
 | A draft filter never reaches the server | `ContestFilters` owns local state | a refetch per keystroke |
+| A prefetched key equals the key a switch produces | both built by `buildStandingsQuery`; the switch resets tiers and sort tier only | a switch that silently goes back to the network |
 | No dates are sent for proof | `fetchProof` builds only three params | a client able to show a number the cell never claimed |
 | A save sends every revision | contest + per-tier `revision` | a silent overwrite of someone else's edit |
 | `replace_tiers` is explicit | the payload flag | a partial save deleting tiers it never sent |

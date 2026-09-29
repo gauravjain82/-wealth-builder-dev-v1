@@ -7,6 +7,8 @@
  * nullable — an absent key means "not permitted", and there is nothing to render.
  */
 
+import type { WbReportingAccess } from '@shared/wbreporting-access';
+
 /** Hierarchy scopes a leaderboard can be computed over. */
 export type Scope = 'personal' | 'net_base' | 'smd_base' | 'super_base' | 'super_team';
 
@@ -169,12 +171,11 @@ export interface DetailResponse {
   };
 }
 
-/** Capability flags from `/api/wbreporting/my-access/`. */
-export interface LeaderboardAccess {
-  can_view: boolean;
-  can_manage: boolean;
-  can_view_leaderboards: boolean;
-}
+/** Leaderboards' view of the shared `/api/wbreporting/my-access/` payload. */
+export type LeaderboardAccess = Pick<
+  WbReportingAccess,
+  'can_view' | 'can_manage' | 'can_view_leaderboards'
+>;
 
 /** The selection that drives every request, shared across card, panel and route. */
 export interface LeaderboardSelection {

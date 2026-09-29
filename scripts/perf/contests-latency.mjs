@@ -15,6 +15,11 @@
  *   npm run perf:contests -- --login      # once: sign in with an account holding homev2:read
  *   npm run perf:contests                 # measure (3 runs, median reported)
  *   npm run perf:contests -- --runs 5 --json
+ *   npm run perf:contests -- --dwell 10     # wait 10 s on the first contest before switching
+ *
+ * `--dwell` (default 0) is for the contest-switch prefetch (parity Phase 12): with no dwell
+ * the switch fires the instant the first standings appear, so it measures a prefetch still
+ * in flight, not a switch served from cache.
  *
  * Environment:
  *   WB_PERF_URL      app origin (default http://localhost:3000, the dev server's port in vite.config.ts)
@@ -31,6 +36,7 @@ const { values: args } = parseArgs({
     login: { type: 'boolean', default: false },
     runs: { type: 'string', default: '3' },
     json: { type: 'boolean', default: false },
+    dwell: { type: 'string', default: '0' },
   },
 });
 
@@ -95,6 +101,9 @@ async function measureOnce() {
     await page.waitForFunction(standingsSettled, null, { timeout: TIMEOUT_MS });
     const firstStandingsS = (Date.now() - started) / 1000;
 
+    const dwellMs = Math.max(0, Number(args.dwell) || 0) * 1000;
+    if (dwellMs) await page.waitForTimeout(dwellMs);
+
     let switchS = null;
     const options = await page.$$eval('select[aria-label="Contest"] option', (items) => items.map((o) => o.value));
     if (options.length > 1) {
@@ -138,7 +147,8 @@ if (args.login) {
   if (args.json) {
     console.log(JSON.stringify({ summary, lastRun: results.at(-1).calls }, null, 1));
   } else {
-    console.log(`Contests latency — ${BASE}, median of ${runs} run(s)`);
+    const dwell = Number(args.dwell) || 0;
+    console.log(`Contests latency — ${BASE}, median of ${runs} run(s)${dwell ? `, ${dwell} s dwell before the switch` : ''}`);
     console.log(`  first standings visible   ${summary.firstStandingsS?.toFixed(2)} s`);
     console.log(`  contest switch            ${summary.contestSwitchS?.toFixed(2) ?? 'n/a'} s`);
     console.log(`  standings server time     ${summary.standingsServerMs} ms`);

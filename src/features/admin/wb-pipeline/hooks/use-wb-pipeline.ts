@@ -2,8 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useWbReportingAccess, type WbReportingAccess } from '@shared/wbreporting-access';
+
 import {
-  fetchPipelineAccess,
   fetchPipelineRuns,
   fetchPipelineStatus,
   rebuildMonthly,
@@ -11,6 +12,7 @@ import {
   runCapabilityCheck,
 } from '../services/wb-pipeline-service';
 import type {
+  PipelineAccess,
   PipelineJobName,
   PipelineRunStatus,
   RebuildMonthlyRequest,
@@ -19,13 +21,19 @@ import type {
 
 const KEY = 'wb-pipeline';
 
-/** Whether the current user may view, and whether they may trigger jobs. */
+const selectPipelineAccess = (access: WbReportingAccess): PipelineAccess => ({
+  can_view: access.can_view,
+  can_manage: access.can_manage,
+});
+
+/**
+ * Whether the current user may view, and whether they may trigger jobs.
+ *
+ * A selector over the shared `my-access` query (`@shared/wbreporting-access`), which
+ * owns the cache policy.
+ */
 export function usePipelineAccess() {
-  return useQuery({
-    queryKey: [KEY, 'my-access'],
-    queryFn: fetchPipelineAccess,
-    staleTime: 5 * 60 * 1000,
-  });
+  return useWbReportingAccess(selectPipelineAccess);
 }
 
 /**

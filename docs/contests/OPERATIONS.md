@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `04cbcf3` — 2026-09-29 (§4 latency check re-read; the rest `7e3b7f1`) |
 
 ## 1. Environment and configuration
 
@@ -99,7 +99,26 @@ npm run dev                              # in another terminal
 npm run perf:contests -- --login         # once: a window opens; sign in yourself
 npm run perf:contests                    # median of 3 headless runs
 npm run perf:contests -- --runs 5 --json
+npm run perf:contests -- --dwell 10      # wait 10 s on the first contest before switching
 ```
+
+**Measure a production build, not the dev server.** `src/main.tsx` wraps the app in
+`React.StrictMode`, which runs effects twice in development, so dev-server request counts are
+inflated. Serve the build on port 3000:
+
+```bash
+npm run build && npx vite preview --port 3000 --strictPort
+WB_PERF_URL=http://localhost:3000 npm run perf:contests
+```
+
+Port 3000, not Vite's preview default of 4173: the signed-in session is `localStorage`, which is
+per origin **including the port**, so a session saved against the dev server carries over only to
+the same port — and 3000 is the origin the production API's CORS is known to accept.
+
+**`--dwell`** (default 0) waits on the first contest before switching. With no dwell the switch fires
+the instant the first standings appear, while the other contests' prefetches
+([ARCHITECTURE §3.1a](ARCHITECTURE.md#31a-switching-contest)) are still in flight, so it measures a
+prefetch joined mid-request, not a switch served from cache. Report both.
 
 The script never handles credentials. The session is kept in a Chrome profile outside the repo
 (`<os tmp>/wb-perf-chrome-profile`, or `WB_PERF_PROFILE`). The account needs `homev2:read`, or the

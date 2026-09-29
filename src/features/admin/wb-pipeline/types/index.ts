@@ -5,6 +5,8 @@
  * `{ok, data, meta}` envelope, so responses are read directly.
  */
 
+import type { WbReportingAccess } from '@shared/wbreporting-access';
+
 /** Terminal and in-flight states a pipeline run can be in. */
 export type PipelineRunStatus =
   | 'queued'
@@ -71,11 +73,8 @@ export interface CapabilityReport {
   missing_owned_tables: string[];
 }
 
-/** What the current user may do, from `my-access/`. */
-export interface PipelineAccess {
-  can_view: boolean;
-  can_manage: boolean;
-}
+/** What the current user may do: the pipeline's view of the shared `my-access/` payload. */
+export type PipelineAccess = Pick<WbReportingAccess, 'can_view' | 'can_manage'>;
 
 /** Acknowledgement of a queued job. */
 export interface EnqueuedJob {

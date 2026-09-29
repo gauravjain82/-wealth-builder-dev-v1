@@ -9,6 +9,9 @@
  * The height still comes from the host, not from the feature: this page supplies a
  * flex column that fills the routed area, and the card fills that. There is no `vh`
  * unit here either.
+ *
+ * Only here does the card warm the other contests' standings: switching contests is
+ * what this page is for (decision C24).
  */
 
 import { ContestsCard } from '../components/contests-card';
@@ -21,7 +24,7 @@ export default function ContestsPage() {
         className="wb-ct-host min-h-0 flex-1 rounded-xl border border-white/10 bg-black/20 p-4"
         style={{ containerName: 'wb-ct-card', containerType: 'inline-size' }}
       >
-        <ContestsCard withChrome={false} />
+        <ContestsCard withChrome={false} prefetchOtherContests />
       </div>
     </div>
   );

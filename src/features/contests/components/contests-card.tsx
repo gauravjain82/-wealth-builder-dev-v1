@@ -17,12 +17,17 @@
  * so `overflow: hidden` here cannot clip them.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Modal } from '@/shared/components/ui/modal';
 
 import '../contests.css';
-import { useContests, useStandings } from '../hooks/use-contests';
+import {
+  buildStandingsQuery,
+  useContests,
+  usePrefetchOtherStandings,
+  useStandings,
+} from '../hooks/use-contests';
 import type {
   FilterDraft,
   MetricProgress,
@@ -53,9 +58,19 @@ const DEFAULT_FILTERS: FilterDraft = {
 interface ContestsCardProps {
   /** Rendered inside the host's own card chrome when false. Defaults to true. */
   withChrome?: boolean;
+  /**
+   * Warm the other contests' standings once the first is shown, so a switch is served
+   * from cache. Off by default: `/home-v2` is every gated user's landing page, and a
+   * background standings request per contest on each visit is a cost paid mostly for
+   * switches nobody makes there (decision C24, `docs/contests/PHASES.md` §3).
+   */
+  prefetchOtherContests?: boolean;
 }
 
-export function ContestsCard({ withChrome = true }: ContestsCardProps) {
+export function ContestsCard({
+  withChrome = true,
+  prefetchOtherContests = false,
+}: ContestsCardProps) {
   const { data: contests, isLoading: loadingContests } = useContests();
 
   const [contestId, setContestId] = useState<number | null>(null);
@@ -80,17 +95,32 @@ export function ContestsCard({ withChrome = true }: ContestsCardProps) {
     () =>
       activeContestId === null
         ? null
-        : {
-            ...filters,
+        : buildStandingsQuery({
+            filters,
             contestId: activeContestId,
             tierIds: selectedTiers,
             sortTier,
             direction,
-          },
+          }),
     [activeContestId, filters, selectedTiers, sortTier, direction]
   );
 
   const { data, isLoading, isFetching, isError, error } = useStandings(query);
+
+  // Latched, so the prefetch does not stop and restart each time a tier toggle puts the
+  // visible standings back into loading.
+  const [firstStandingsShown, setFirstStandingsShown] = useState(false);
+  useEffect(() => {
+    if (data) setFirstStandingsShown(true);
+  }, [data]);
+  const contestIds = useMemo(() => contests?.map((item) => item.id) ?? [], [contests]);
+  usePrefetchOtherStandings({
+    enabled: prefetchOtherContests && firstStandingsShown,
+    contestIds,
+    activeContestId,
+    filters,
+    direction,
+  });
 
   /** Toggling the sorted tier flips direction; a new tier starts descending. */
   const handleSort = (tierId: number) => {
@@ -128,6 +158,8 @@ export function ContestsCard({ withChrome = true }: ContestsCardProps) {
             aria-label="Contest"
             value={activeContestId ?? ''}
             onChange={(event) => {
+              // A switch keeps filters and direction and resets tiers and sort tier —
+              // the key `usePrefetchOtherStandings` warms. Change one, change both.
               setContestId(Number(event.target.value));
               setSelectedTiers([]);
               setSortTier(null);

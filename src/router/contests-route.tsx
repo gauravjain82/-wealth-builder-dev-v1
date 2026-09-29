@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { ReactNode } from 'react';
 
-import { useContestAccess } from '@/features/contests';
+import { useContestAccess, usePrefetchContests } from '@/features/contests';
 
 interface ContestsRouteProps {
   children: ReactNode;
@@ -17,10 +17,13 @@ interface ContestsRouteProps {
  * the contest card lives on the page that gate already opens.
  *
  * The backend enforces the same gate on every endpoint independently; this guard only
- * decides whether to render.
+ * decides whether to render — which is also why it starts the contest list alongside
+ * the access check instead of after it: an unauthorised caller gets a 403 and sees
+ * nothing.
  */
 export function ContestsRoute({ children }: ContestsRouteProps) {
   const { data, isLoading, isError } = useContestAccess();
+  usePrefetchContests();
 
   if (isLoading) {
     return (
@@ -34,5 +37,15 @@ export function ContestsRoute({ children }: ContestsRouteProps) {
     return <Navigate to="/home" replace />;
   }
 
+  return <>{children}</>;
+}
+
+/**
+ * Starts the contest list for a page whose guard is not `ContestsRoute` — `/home-v2`,
+ * behind `LeaderboardsRoute`, which `/leaderboards` shares and which has no use for
+ * the list. Wrap it outside the guard so the list runs in parallel with the check.
+ */
+export function PrefetchContests({ children }: { children: ReactNode }) {
+  usePrefetchContests();
   return <>{children}</>;
 }

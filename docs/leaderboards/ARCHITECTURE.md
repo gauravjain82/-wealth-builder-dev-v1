@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Merged-not-deployed |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `04cbcf3` — 2026-09-29 (§4, §6, §7 re-read for contests parity Phase 12; the rest `7e3b7f1`) |
 
 ## 1. Layering
 
@@ -117,7 +117,7 @@ a stable, order-independent object (`hooks/use-leaderboards.ts:31`).
 
 | Hook | Query key | staleTime | Notes |
 |---|---|---|---|
-| `useLeaderboardAccess` | `[…, 'my-access']` | 5 min | Long, because the route guard blocks rendering on it and a grant does not change mid-session |
+| `useLeaderboardAccess` | `['wbreporting', 'my-access']` (shared) | 5 min, `retry: false` | A `select` over `useWbReportingAccess` ([platform §4](../platform/ARCHITECTURE.md#4-server-state-and-caching)); same name and return shape as before. Long, because the route guard blocks rendering on it and a grant does not change mid-session |
 | `useLeaderboardCard` | `[…, 'card', selection]` | 60 s | |
 | `useLeaderboard` | `[…, 'board', selection]` | 60 s | `enabled` so a hidden view does not fetch |
 | `useFullReport` | `[…, 'full', month, scope]` | 60 s | Month, not selection — the report has its own period model |
@@ -127,7 +127,9 @@ a stable, order-independent object (`hooks/use-leaderboards.ts:31`).
 | `useDateRanges` | `[…, 'date-ranges']` | default | |
 
 All three mutations (`useSaveLeaderboardGoals`, `useSaveDisplaySettings`,
-`useSaveDateRange`) invalidate `['leaderboards']` wholesale.
+`useSaveDateRange`) invalidate `['leaderboards']` wholesale. Access is outside that prefix
+since the shared key, so a settings save no longer refetches it — correctly, since a save
+does not change a grant.
 
 **Cancellation.** Two mechanisms, and both are needed. The selection lives *in the key*, so
 a superseded response is irrelevant rather than merely stale — React Query will not write it
@@ -157,7 +159,7 @@ see [PHASES.md §5](PHASES.md#5-outstanding).
 
 | Capability | Read via | Gates |
 |---|---|---|
-| `can_view_leaderboards` (`homev2:read`) | `useLeaderboardAccess` | the `/leaderboards` and `/home-v2` routes, and their menu entries |
+| `can_view_leaderboards` (`homev2:read`) | `useLeaderboardAccess`, a selector over the shared access query | the `/leaderboards` and `/home-v2` routes, and their menu entries |
 | `can_manage` (`wbreporting:manage`) | same payload | whether the Settings tab is offered (`pages/leaderboards-page.tsx:62`) |
 
 `homev2:read` is granted per user in the backend access console. **No plan and no role grants
@@ -175,8 +177,9 @@ thing to get wrong (decision L6).
 - **`wbreporting`** — eight endpoints, all in [API.md](API.md).
 - **`home-v2`** — imports `LeaderboardsCard` from this module's `index.ts`. Its `onExpand`
   navigates to `/leaderboards?metric=…`, which is why the page reads the query string.
-- **`contests`** — independent module, same API prefix, same grant, its own hook. They do
-  not share cache entries.
+- **`contests`** — independent module, same API prefix, same grant, its own hook. The one
+  cache entry they share is the `wbreporting` access payload (`@shared/wbreporting-access`),
+  which the shell menu and the pipeline screen read too.
 - **The reporting pipeline** — produces the tables these endpoints read. Its schedule being
   off is why every current answer has `source: daily_fallback` (decision L8).
 - **`index.ts`** exports exactly five components, one hook and three types. That narrow

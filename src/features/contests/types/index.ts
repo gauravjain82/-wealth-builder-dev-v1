@@ -11,6 +11,8 @@
  *   browser receives evaluations and renders them.
  */
 
+import type { WbReportingAccess } from '@shared/wbreporting-access';
+
 /** Hierarchy scopes the contest views accept. Note: `net` is a *filter*, not a scope. */
 export type ContestScope = 'all' | 'personal' | 'base' | 'smd_base' | 'super_base' | 'super_team';
 
@@ -45,12 +47,11 @@ export type ContestErrorCode =
   | 'flyer_type_invalid'
   | 'storage_failed';
 
-/** Capability flags from `/api/wbreporting/my-access/`. */
-export interface ContestAccess {
-  can_view_contests: boolean;
-  can_view_leaderboards: boolean;
-  can_manage: boolean;
-}
+/** Contests' view of the shared `/api/wbreporting/my-access/` payload. */
+export type ContestAccess = Pick<
+  WbReportingAccess,
+  'can_view_contests' | 'can_view_leaderboards' | 'can_manage'
+>;
 
 export interface TierRequirement {
   metric: ThresholdMetric;
