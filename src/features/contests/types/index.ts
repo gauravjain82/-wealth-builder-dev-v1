@@ -148,7 +148,6 @@ export interface StandingsResponse {
   direction: SortDirection;
   next_cursor: string | null;
   total_rows: number;
-  uncoded_member_count: number;
   near_percent: number;
   /** Non-empty when any visible tier uses a single-hop Leader measure. */
   team_credit_note: string;

@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `17121e6` — 2026-09-29 |
 
 > Endpoints **consumed**, not exposed.
 
@@ -85,7 +85,7 @@ two rules that a well-meaning edit would break:
 | `TierEvaluation` | `eligible`, `progress`, `qualified`, `near`, `unavailable`, `partially_measurable`, `unmeasured`, `metrics` |
 | `MetricProgress` | `actual: number \| null` — never a substituted zero |
 | `StandingRow` | identity plus `evaluations` keyed by tier |
-| `StandingsResponse` | rows, tiers, cursor, `near_percent`, `team_credit_note`, display switches, echoed `filters` |
+| `StandingsResponse` | rows, tiers, cursor, `near_percent`, `team_credit_note`, display switches, echoed `filters`. **No `uncoded_member_count`** since Phase 11: the backend resolves scopes over coded users only (C22), so there is nothing to count. Leaderboards keeps its own field of that name, from a different endpoint |
 | `ProofResponse` | period, columns, rows, cards, formula, cursor |
 | `FilterDraft` / `StandingsQuery` | draft state vs what is actually queried |
 | `EditableContest` / `EditableTier` | carry **`revision`**; `pending_delete` is client-only |

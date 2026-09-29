@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `17121e6` — 2026-09-29 |
 
 ## 1. Routes and entry points
 
@@ -141,8 +141,8 @@ And it carries the `BR`/`BP`/`LIC` single-hop warning, at the moment somebody ty
 | Partially measurable | some requirements unmeasurable | progress over the measurable subset plus an explicit unmeasured count |
 | Wholly unmeasurable | no requirement measurable | `progress: null` — no number |
 | Never qualified while unmeasurable | `unavailable` | the tier cannot read as qualified. Deliberate (C7) |
-| Uncoded members | `uncoded_member_count > 0` | stated — they contribute nothing |
 | Team-credit note | any visible tier uses a single-hop measure | `team_credit_note` shown |
+| Applied filters | always, under the tier selector | the filter summary only. Until Phase 11 it also said "N without an agent code are not in these results"; scopes now hold coded users only (C22), so the count is gone from the response and the line |
 | Error | non-2xx | the backend's `detail` |
 | Denied | guard false | redirect: reader → `/home`, settings → `/contests` |
 | **Edit conflict** | 409 `edit_conflict` | an explicit message and **Reload** — never an automatic retry |

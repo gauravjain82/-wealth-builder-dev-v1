@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `17121e6` — 2026-09-29 |
 
 > Phase numbering and the `C` decision prefix come from `mlm_platform/WB_CONTESTS_PROGRESS.md`
 > (phases 0–9, decisions C1–C13) and **must not be renumbered** — the same number means the same
@@ -30,6 +30,8 @@
 | **8** | 2026-09-25 | **Shipped** | **The settings screen — closed the gap recorded after Phase 7** |
 | 9 | 2026-09-26 | Shipped | Existing-contest data import; migrations applied |
 | — | 2026-09-26 | Shipped | Tier layout and overflow refinements in CSS |
+| 10 | 2026-09-29 | Shipped | Latency check, `npm run perf:contests` (`OPERATIONS.md` §4) |
+| **11** | 2026-09-29 | **Shipped** | **Standings speed (backend): coded-only scopes (C22); `uncoded_member_count` removed from the response and the card** |
 
 **Migrations `0001`–`0003` are applied.** The feature is deployed and gated only by the absence of a
 `homev2:read` grant.
@@ -74,6 +76,19 @@ reached the agent reading standings but **not the manager typing `BR >= 50`** �
 matters, because a contest threshold is a promise about a prize
 (`components/tier-editor.tsx:4`).
 
+### Phase 11 — standings speed (2026-09-29)
+
+**Goal.** Standings under 300 ms server time. The work is in the backend
+(`mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`, Phase 11); every request used to load
+the viewer's whole hierarchy, ~200,000 users, to score ~1,100 agents with results.
+
+**What changed here.** `uncoded_member_count` left `StandingsResponse` (`types/index.ts`) and the
+applied-filters line in `contests-card.tsx` lost its "N without an agent code" suffix. Nothing else in
+the response changed. Coupled with the backend branch of the same name: this side alone still
+renders, but the backend alone would leave the card reading an absent field.
+
+**Decisions.** C22.
+
 ## 3. Decision log
 
 Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
@@ -92,6 +107,7 @@ Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
 | C11 | `homev2:read` for reads, `wbreporting:manage` for writes | The card lives on the page `homev2:read` already opens, so a separate read permission would be granted to exactly the same people. Configuring is a different job | `router/contests-route.tsx:10` |
 | C12 | Inactive people are included | The same accepted divergence as leaderboards' L1 — fidelity to the delivered spec | `StandingRow.is_active` is carried, not filtered |
 | C13 | 50 / 200 page sizes; `considered` contests are settings-only | A considered contest is a draft; readers should not see a promise that has not been made | `WB_CONTESTS_PROGRESS.md` |
+| **C22** | Scope walks load **only users with an agency code**, so an uncoded user in a recruiting chain ends the walk there. Approved 2026-09-29 | The dtez reference does the same, and an uncoded user can never have a result row (D2). Loading them cost ~200,000 rows per request. Consequence here: the "without an agent code" count is gone — it was the only thing that needed the full hierarchy | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C22) |
 
 ## 4. Deliberately not built
 

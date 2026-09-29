@@ -189,12 +189,7 @@ export function ContestsCard({ withChrome = true }: ContestsCardProps) {
             />
           ) : null}
 
-          <p className="wb-ct-applied">
-            {describeFilters(filters)}
-            {data.uncoded_member_count > 0
-              ? ` · ${data.uncoded_member_count} without an agent code are not in these results`
-              : ''}
-          </p>
+          <p className="wb-ct-applied">{describeFilters(filters)}</p>
 
           {/* Decision C5: BR/BP/LIC count one hop of Leader, so any view using them
               says so rather than letting the number be read as a base-shop figure. */}
