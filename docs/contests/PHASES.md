@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `66fba39` — 2026-09-29 (§1, §2 Phase 19, §3 C28 and §5 for parity phase 19; §2 Phase 18, §3 C10/C20/C25/C26 `8880009`; §2 Phase 17, §3 C7/C9/C15–C19 `08eea2c`; the rest `04cbcf3`) |
+| **Verified against** | commit `2d8cbd8` — 2026-09-29 (§2 Phase 19 and §5 re-measured after the deploy; §1, §3 C28 `66fba39`; §2 Phase 18, §3 C10/C20/C25/C26 `8880009`; §2 Phase 17, §3 C7/C9/C15–C19 `08eea2c`; the rest `04cbcf3`) |
 
 > Phase numbering and the `C` decision prefix come from `mlm_platform/WB_CONTESTS_PROGRESS.md`
 > (phases 0–9, decisions C1–C13) and **must not be renumbered** — the same number means the same
@@ -33,9 +33,9 @@
 | 10 | 2026-09-29 | Shipped | Latency check, `npm run perf:contests` (`OPERATIONS.md` §4) |
 | **11** | 2026-09-29 | **Shipped** | **Standings speed (backend): coded-only scopes (C22); `uncoded_member_count` removed from the response and the card** |
 | **12** | 2026-09-29 | **Shipped** | **Standings speed (frontend): one shared `my-access` query; contest list alongside the access check; other contests prefetched (C24, C25)** |
-| **17** | 2026-09-29 | On `feature/wb-contests-parity` | **dtez's scoring (C15–C20): whole-number %, best-% default order, cards over the whole contest, default view All; the editor accepts `C`/`BE`, hides "No level"** |
-| **18** | 2026-09-29 | On `feature/wb-contests-parity` | **`/contests` in dtez's layout: title and status line, contests as buttons, an always-visible filter bar with Upline / Leader and "N leaders identified", the contest title row; no banners above the grid; dtez's contest order (C26)** |
-| **19** | 2026-09-29 | On `feature/wb-contests-parity` | **`/contests`' tier cards, grid, cells and pills in dtez's look: goals line, hints, one grid that stacks per agent on a phone, a sticky tier strip, dtez's palette; Home v2 unchanged (C28)** |
+| **17** | 2026-09-29 | Deployed 2026-09-29 (PR #14) | **dtez's scoring (C15–C20): whole-number %, best-% default order, cards over the whole contest, default view All; the editor accepts `C`/`BE`, hides "No level"** |
+| **18** | 2026-09-29 | Deployed 2026-09-29 (PR #14) | **`/contests` in dtez's layout: title and status line, contests as buttons, an always-visible filter bar with Upline / Leader and "N leaders identified", the contest title row; no banners above the grid; dtez's contest order (C26)** |
+| **19** | 2026-09-29 | Deployed 2026-09-29 (PR #14) | **`/contests`' tier cards, grid, cells and pills in dtez's look: goals line, hints, one grid that stacks per agent on a phone, a sticky tier strip, dtez's palette; Home v2 unchanged (C28)** |
 
 **Migrations `0001`–`0003` are applied.** The feature is deployed and gated only by the absence of a
 `homev2:read` grant.
@@ -227,15 +227,19 @@ warnings, as on `main`.
   stand in for a hidden field.
 - `perf:contests` waits for `.wb-ct-results` too.
 
-**Measured.** `type-check` and `build` pass; `lint` is 7 errors / 117 warnings, as on `main`.
-Backend `test wbreporting`: 632 OK (627 + 5). dtez screenshots at 1440 × 900 and 390 × 844,
-Italy, default, with a tier selected and with `85ARG` in Base, are in
-`Codes/wb-contests-parity-shots/phase-19/`. **The page was not driven in a browser**: running the
-branch backend over production data, read-only as in phase 18, was not permitted in this session,
-so ours has no screenshots, and the Home v2 pixel check, the perf run and the parity re-run are
-outstanding (`PARITY_PLAN.md`, Phase 19 *Result*). The Home v2 card is unchanged by construction:
-its components render the same markup, and the stylesheet change is additions only, under new
-class names and `.wb-ct--page` / `.wb-ct-host--page`.
+**Measured** (after the deploy, 2026-09-29; merged in frontend PR #14 and backend PR #68). Driven
+against the deployed API with production builds of `main` and of `8880009`; screenshots of dtez and
+ours are in `Codes/wb-contests-parity-shots/phase-19/`.
+- The page matches dtez's layout at 1440 × 900 and 390 × 844: tier cards with goals and hints,
+  `240px repeat(4, 260px)` grid, tinted cells, per-metric pills; on a phone one card per agent and
+  the tier strip sticking under the app header while the grid scrolls. `85ARG` in Base lists 30.
+- `/home-v2`'s card: pixel-identical at 1440; at 390, 302 pixels of background gradient in its bottom
+  11 px differ, with the DOM, boxes and computed styles of every element identical (C28 holds).
+- `perf:contests`, median of 5 with a 10 s dwell: first standings 2.87 s before, 3.01 s after, with
+  the same 9 calls and one `wbreporting/my-access`; a switch sends no standings request.
+- `type-check` and `build` pass; `lint` is 7 errors / 117 warnings, as on `main`. Backend
+  `test wbreporting`: 632 OK (627 + 5).
+- Open: `wb_contest_standings_parity` on the production shell.
 
 **What the build learned.**
 - A hidden `level` was `""` on the wire, the same as a person with no level. dtez labels the latter
@@ -244,6 +248,9 @@ class names and `.wb-ct--page` / `.wb-ct-host--page`.
   makes it the sticky header's scroll container. Ours matches.
 - dtez's pill tones are per metric and are **not** gated by `show_near_qualifiers`; the cell's
   "Almost qualified" is.
+- **At 1440 the grid is 14 px wider than the board** (1,280 against 1,266, sidebar collapsed), so it
+  scrolls sideways with the scrollbar at the bottom of the rows; with the sidebar expanded, ~200 px
+  more. dtez's minimums fit its page, which has no sidebar. Left as dtez's rule; for Phase 21.
 
 **Decisions.** C28.
 
@@ -324,5 +331,7 @@ Operational items first — the feature is built and deployed; what remains is m
    now carries every tier, flagged `selected`, so the selector always shows them all.
 7. **Verify the sticky-column table and the page's grid with a screen reader.** The blank-cell
    accessible text was designed carefully; the scroll regions around it have not been checked.
-8. **Drive parity phase 19's page in a browser** — screenshots at 1440 and 390 px, the Home v2
-   pixel check, `perf:contests` and the parity re-run (`PARITY_PLAN.md`, Phase 19 *Result*).
+8. **Run `wb_contest_standings_parity`** on the production shell after parity phase 19's deploy
+   (`PARITY_PLAN.md`, Phase 19 *Result*); the browser checks are done.
+9. **The page's grid overflows a 1440 px screen by 14 px** with the sidebar collapsed (more when
+   expanded), because dtez's column minimums assume no sidebar. Decide whether to keep them.
