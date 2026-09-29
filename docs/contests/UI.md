@@ -123,8 +123,8 @@ seconds to enable (measured locally against production data: ~50 s; recorded for
 **The Net label is not a style choice.** The contest `net` filter keeps the selected person plus
 whoever reports directly to them. Package 2's *Net Base* is a different rule entirely, and reusing
 that name here would be read as that rule (decision C10). Do not relabel it "Net" or "Net Base".
-dtez labels it "Net"; whether parity of the label outranks C10 is an open question
-([PHASES.md §3](PHASES.md#3-decision-log), C10).
+dtez labels it "Net"; whether parity of the label outranks C10 is an open question,
+C27 ([PHASES.md §3](PHASES.md#3-decision-log), under C10).
 
 ### 2.4 Standings — `components/contest-standings.tsx`
 

@@ -197,7 +197,7 @@ warnings, as on `main`.
 - The shared `UserAutocompleteDropdown` cannot serve the bar: its input sits in a portal outside
   any form, so Enter cannot apply and the input cannot be focused from outside.
 
-**Decisions.** C26; the Net label question under C10 is open.
+**Decisions.** C26; C27, the Net label, is open (`PARITY_PLAN.md`, Open decisions).
 
 ## 3. Decision log
 
@@ -213,7 +213,7 @@ Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
 | **C7** | **Never `qualified` while any requirement is unmeasurable.** Show progress over the measurable subset with an explicit count of what could not be measured | Declaring someone qualified on partial data is a prize promise made on a guess. **Amended by C15** (2026-09-29): an unsourced requirement now counts as 0, as on dtez | `TierEvaluation.unmeasured` |
 | **C8** | **Taken against the recommendation.** An integer `revision` column, not a round-tripped `updated_at` | Cost: a fourth migration and a save hook on both models. In exchange it matches the client's `types.ts`, which already carried `revision`, and an integer is unambiguous where a timestamp's precision is not | `types/index.ts:262`; `services/contests-service.ts:180` |
 | C9 | `accounts.Level` is the single source of truth, **and levels the data contract names but this host lacks are created there** rather than special-cased in contest code | One level table, no contest-specific level logic. `NON` is the one synthetic value (`level_id IS NULL`). **Amended by C19** (2026-09-29): `NON` excludes nobody and is not offered | `EditorOptions.levels` |
-| **C10** | `scope=all` resolves through `authz.get_scope`; `net` is shown and **its label must not say "Net Base"** | The contest `net` filter keeps the selected person plus direct reports. Package 2's Net Base is a different rule, and reusing the name would be read as that rule. Labelled **"Direct reports only"**. **Open question (parity phase 18):** dtez labels the box "Net" and its summary "View: Super Team Net". Does parity of the label outrank this decision? Until answered, both placements keep "Direct reports only" | `components/contest-filters.tsx:9`, `components/contest-filter-bar.tsx`; `mlm_platform/docs/integrations/wb-contests/PHASE_18_KICKOFF.md` §4 |
+| **C10** | `scope=all` resolves through `authz.get_scope`; `net` is shown and **its label must not say "Net Base"** | The contest `net` filter keeps the selected person plus direct reports. Package 2's Net Base is a different rule, and reusing the name would be read as that rule. Labelled **"Direct reports only"**. **Open question, C27 (parity phase 18):** dtez labels the box "Net" and its summary "View: Super Team Net". Does parity of the label outrank this decision? Until answered, both placements keep "Direct reports only" | `components/contest-filters.tsx:9`, `components/contest-filter-bar.tsx`; `mlm_platform/docs/integrations/wb-contests/PHASE_18_KICKOFF.md` §4 |
 | C11 | `homev2:read` for reads, `wbreporting:manage` for writes | The card lives on the page `homev2:read` already opens, so a separate read permission would be granted to exactly the same people. Configuring is a different job | `router/contests-route.tsx:10` |
 | C12 | Inactive people are included | The same accepted divergence as leaderboards' L1 — fidelity to the delivered spec | `StandingRow.is_active` is carried, not filtered |
 | C13 | 50 / 200 page sizes; `considered` contests are settings-only | A considered contest is a draft; readers should not see a promise that has not been made | `WB_CONTESTS_PROGRESS.md` |
