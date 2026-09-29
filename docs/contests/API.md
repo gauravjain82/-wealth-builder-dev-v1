@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `83119fc` + phase 20 working tree — 2026-09-29 (§3 `ProofResponse` / `ProfileResponse` re-read for parity phase 20; `TierSummary` / `StandingRow` `66fba39`; the rest of §3 `08eea2c`; the rest `17121e6`) |
+| **Verified against** | commit `206c8c8` — 2026-09-29 (§3 `ProofResponse` / `ProfileResponse` re-read for parity phase 20; `TierSummary` / `StandingRow` `66fba39`; the rest of §3 `08eea2c`; the rest `17121e6`) |
 
 > Endpoints **consumed**, not exposed.
 

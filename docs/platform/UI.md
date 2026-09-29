@@ -9,7 +9,7 @@
 | **API prefix** | `/api/accounts/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 (§6 `Modal` re-read at `83119fc` + contests parity phase 20, 2026-09-29) |
+| **Verified against** | commit `7e3b7f1` — 2026-09-27 (§6 `Modal` re-read at `206c8c8` for contests parity phase 20, 2026-09-29) |
 
 ## 1. Routes and entry points
 

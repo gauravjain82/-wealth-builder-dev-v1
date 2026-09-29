@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `83119fc` + phase 20 working tree — 2026-09-29 (§2.6, §3, §4, §6, §7 re-read for parity phase 20; §2.1a, §2.2, §2.4, §2.5, §5 `66fba39`; §1, §2.1, §2.3 `8880009`; the rest `17121e6`) |
+| **Verified against** | commit `206c8c8` — 2026-09-29 (§2.6, §3, §4, §6, §7 re-read for parity phase 20; §2.1a, §2.2, §2.4, §2.5, §5 `66fba39`; §1, §2.1, §2.3 `8880009`; the rest `17121e6`) |
 
 ## 1. Routes and entry points
 

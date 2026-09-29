@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `83119fc` + phase 20 working tree — 2026-09-29 (§3.4 and §8 re-read for parity phase 20; §2 `66fba39`; §1, §3.1–§3.2, §4, §5, §7 `8880009`; §6 `04cbcf3`; the rest `7e3b7f1`) |
+| **Verified against** | commit `206c8c8` — 2026-09-29 (§3.4 and §8 re-read for parity phase 20; §2 `66fba39`; §1, §3.1–§3.2, §4, §5, §7 `8880009`; §6 `04cbcf3`; the rest `7e3b7f1`) |
 
 ## 1. Layering
 
