@@ -9,7 +9,7 @@
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `08eea2c` — 2026-09-29 (§4 vocabulary rows only; the rest `7e3b7f1`, 2026-09-27) |
 
 > **Deployed but not open.** Migrations `wbreporting/0001`–`0003` are applied and the code shipped
 > 2026-09-26. Nobody has been granted `homev2:read` for contests, so no reader can reach it yet.
