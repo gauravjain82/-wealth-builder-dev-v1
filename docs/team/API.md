@@ -65,7 +65,7 @@ legitimately has no licensing row before they start licensing.
 | GET | `/api/tracker/builders/enrollment/` |
 | GET | `/api/tracker/builders/paces/` |
 | GET | `/api/tracker/builders/leaderboard/activity/` |
-| GET | `/api/tracker/builders/leaderboard/results/` |
+| GET | `/api/tracker/builders/leaderboard/results/` — top 20 **key players** by score for the current month, the same list for every viewer (T9) |
 
 ### `accounts`
 

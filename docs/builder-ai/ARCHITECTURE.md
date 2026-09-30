@@ -145,11 +145,14 @@ navigation decides how much to show.
 ## 7. Integration points
 
 - **`builderai` backend** — 12 endpoints ([API.md](API.md)).
-- **`tracker`, indirectly** — the backend reads `tracker/services/builder_results.py`,
-  and `BuilderMonthlyCompletion`. This module duplicates none of that, by decision B1. It does
+- **`tracker`, indirectly** — the backend reads `builder_month_metrics` from
+  `tracker/services/builder_results.py`. `BuilderMonthlyCompletion` and the results leaderboard
+  belong to [team](../team/)'s Builders product, which ranks key players (B10). This module duplicates none of that, by decision B1. It does
   **not** read `is_key_player` (B9).
 - **`team`** — carries the `is_key_player` flag, which is **no longer** builder enrolment (B9). A
-  user becomes a builder here, by accepting an invitation or self-adding.
+  user becomes a builder here, by accepting an invitation or self-adding. Team → Builders is a
+  **separate product** whose roster and results leaderboard use `is_key_player` (B10) — the same
+  person can be a builder there and not here.
 - **`use-role-based-menu.ts`** — the only consumer of this module's hooks outside it.
 
 ## 8. Invariants and failure modes
