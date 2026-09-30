@@ -121,8 +121,11 @@ be** [builder-ai](../builder-ai/)'s enrolment signal and is not any more: that m
 made an active `BuilderMembership` the sole definition of a builder, and `builderai` reads
 `is_key_player` nowhere.
 
-What the flag means now is a tracker / org-chart marker owned by this module. Treat any new code
-that reads it as builder membership as a bug.
+What the flag means now is **this module's own definition of a builder** — the Team → Builders
+roster (`builders-page.tsx`, `is_key_player: 'true'`) and, since 2026-09-30, the results leaderboard
+both rank it (T9). It is not [builder-ai](../builder-ai/) membership: treat any new code that
+reads it as `BuilderMembership`, or that makes one set the other, as a bug. The two products are
+separate.
 
 ### 3.5 Production import
 
@@ -193,7 +196,7 @@ access. The Daily Six page is public by design so a code can be shared.
 | A missing tracker record is not an error | `fetchOptionalTrackerJson` | a profile modal that fails for anyone not yet licensing |
 | Columns live outside the page | `*-columns.tsx` per tracker | a 4,000-line page file |
 | Every tracker renders through one table | `shared/components/tracker-table` | seven tables that behave differently |
-| `is_key_player` is a tracker flag, not builder enrolment | `builderai` reads it nowhere (its B9) | one checkbox here silently changing another module's dashboards |
+| `is_key_player` is this module's builder, not BuilderAI enrolment | `builderai` reads it nowhere (its B9); the tracker results leaderboard reads it and not `BuilderMembership` (T9) | one checkbox here silently changing another module's dashboards, or a BuilderAI invite changing this module's leaderboard |
 | An agency code is required to appear in reporting | backend | someone who works and shows nothing |
 
 **The cross-feature import, from the other side.** `admin/access-control/pages/level-permissions-page`

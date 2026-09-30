@@ -88,8 +88,9 @@ Ships with any frontend deploy; all three backend apps are in production. No cou
 
 One cross-module note: this module writes `is_key_player`, which **used to be**
 [builder-ai](../builder-ai/)'s enrolment signal and is not any more (its decision B9). The flag is
-now a tracker / org-chart concept only, and `builderai` reads it nowhere. Do not reintroduce a
-dependency on it.
+this module's own builder definition — it drives the Team → Builders roster and results
+leaderboard (PHASES T9) — and `builderai` reads it nowhere. Do not reintroduce a dependency in
+either direction.
 
 ## 6. Troubleshooting
 
@@ -103,7 +104,8 @@ dependency on it.
 | Gross and net look identical | they were once conflated on the KPI cards | they are separate server figures |
 | Production totals differ from expectation | projected scope may be on | the toolbar's projected switch |
 | Mission ring says ineligible | server-side rules, revised three times | the verdict's reason; do not re-derive in the client |
-| A builder does not appear in Builder AI | `is_key_player` not set, or no agency code | the Associate Tracker toggle, then the code |
+| A builder does not appear on the Team → Builders results leaderboard | `is_key_player` not set, user inactive, or outside the top 20 by score | the Associate Tracker **Builder** toggle; the response is cached per month |
+| A builder does not appear in Builder AI | no active `BuilderMembership` — `is_key_player` does **not** enrol anyone (builder-ai B9) | invite them or self-add in Builder AI |
 | Someone produces but shows nothing in reporting | no agency code | assign it — `admin`'s invite-agents or the prospect modal |
 | Org chart blank or unlaid-out | `dagre` layout failed, or the root did not resolve | `/api/accounts/users/org-chart/root/` and `/api/network/hierarchy/my_links/` |
 | Date range ignored on Associate Tracker | it is not threaded into the filters object | known, and deliberately left standing — `bpm` fixed the same bug in its Associate Invites |

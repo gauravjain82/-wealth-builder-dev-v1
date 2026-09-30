@@ -91,7 +91,10 @@ verdict rather than deriving it.
 ### 2.6 Builders — `builders/` (1,891 LOC)
 
 Builder activity, results and paces, with a Daily Six submission page. The public
-`/team/builders/daily-six/:agencyCode` view shares this area.
+`/team/builders/daily-six/:agencyCode` view shares this area. "Builder" here means a **key
+player** (`is_key_player`) — the roster and the results leaderboard both use it. This is a
+separate product from [builder-ai](../builder-ai/): someone can rank here and be absent there
+(PHASES T9).
 
 ### 2.7 Licensing tracker — `licensing-tracker/` (1,473 LOC)
 

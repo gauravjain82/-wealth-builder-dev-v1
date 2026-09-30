@@ -93,7 +93,7 @@ actually spend their day in.
 | **Agency code** | The identifier tying a person into every reporting table. Without one they contribute nothing. |
 | **Team scope** | The filter selecting which slice of the downline a tracker shows. |
 | **Segment** | A named subset of the team, with per-user visibility from `/api/accounts/users/segments/`. |
-| **Builder / Key Player** | `AssociateTracker.is_key_player` — a tracker / org-chart flag. It no longer enrols anyone in [builder-ai](../builder-ai/), which reads an active `BuilderMembership` instead (its B9). |
+| **Builder / Key Player** | `AssociateTracker.is_key_player` — this module's builder: the Team → Builders roster and results leaderboard rank it (T9). It does not enrol anyone in [builder-ai](../builder-ai/), a separate product that reads an active `BuilderMembership` instead (its B9). |
 | **Daily Six** | Six daily activities a builder submits. Also a public per-agency-code page. |
 | **4x4 mission** | The mission tracked by the Mission Tracker. Its API key is literally `4X4`. |
 | **Mission ring** | The award for completing the mission. Has eligibility rules and requires proof. |
