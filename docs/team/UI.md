@@ -44,7 +44,7 @@ The largest sub-area, because a prospect has the most done *to* them before they
 |---|---|
 | `add-prospect-modal` | create a prospect. The recruiter field auto-populates from the current user |
 | `call-log-modal` | record contact attempts |
-| `add-agency-code-modal` | assign the agency code — with phone-number validation |
+| `add-agency-code-modal` | assign the agency code — with phone-number validation. On success the caller opens `ShareWelcomeVideosModal` from [welcome-videos](../welcome-videos/) |
 | `add-production-modal` | enter production against them |
 | `prospect-details-modal` | **read-only** person view. Promoted to a shared component and reused by `bpm` |
 | `prospect-tracker-list-modal` | list drill-down |

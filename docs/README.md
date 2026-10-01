@@ -73,6 +73,7 @@ Two files each: `README.md` plus the one carrying the substance.
 | [terminated-users](terminated-users/) | `/terminated-users` | `accounts` | 529 | Production | `API.md` | ✅ |
 | [training-center](training-center/) | `/training-center` | `content` | 792 | Production | `API.md` | ✅ |
 | [training-schedule](training-schedule/) | `/training-schedule` | — | 599 | Production | `UI.md` | ✅ |
+| [welcome-videos](welcome-videos/) | `/welcome-videos`, `/welcome-videos/:videoKey`, a card on `/home` | `notifications` | ~483 | **Not yet merged** — branch `feature/wb-welcome-videos`, coupled to the `mlm_platform` branch of the same name | `UI.md` | ✅ |
 
 ### Indexed
 

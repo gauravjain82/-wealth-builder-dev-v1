@@ -34,6 +34,7 @@ from this module.
 | `CarouselCard` | an image strip — contest or recognition | content + `use-carousel-images` |
 | `LeaderboardCard` | top SMD/MD by metric | `/api/tracker/policies/top_base_team_leaders/` |
 | `PerformanceTable` | the viewer's own figures | `/api/tracker/trackers/associate/` |
+| `WelcomeVideosHomeCard` | new agents only (`!isPaid`): a link to `/welcome-videos` | none — static; owned by [welcome-videos](../welcome-videos/) |
 
 Each component has its own CSS file beside it (`video-hero.css`, `carousel-card.css`,
 `leaderboard-card.css`, `performance-table.css`) — a per-component convention this module uses and most

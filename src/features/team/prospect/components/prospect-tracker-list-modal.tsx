@@ -10,6 +10,7 @@ import {
 } from '@/features/team/prospect/services/prospect-service';
 import { buildProspectColumns } from '@/features/team/prospect/prospect-columns';
 import { AddAgencyCodeModal } from '@/features/team/prospect/components/add-agency-code-modal';
+import { ShareWelcomeVideosModal } from '@/features/welcome-videos';
 import {
   AddProductionModal,
   type AddProductionFormData,
@@ -243,6 +244,7 @@ export function ProspectTrackerListModal({
   const [rows, setRows] = useState<Prospect[]>([]);
   const [activeCallLogProspect, setActiveCallLogProspect] = useState<Prospect | null>(null);
   const [addAgencyCodeFor, setAddAgencyCodeFor] = useState<Prospect | null>(null);
+  const [shareVideosFor, setShareVideosFor] = useState<{ name: string; justActivated: boolean } | null>(null);
   const [addProductionFor, setAddProductionFor] = useState<Prospect | null>(null);
   const [savingCallLog, setSavingCallLog] = useState(false);
   const [savingProduction, setSavingProduction] = useState(false);
@@ -859,6 +861,7 @@ export function ProspectTrackerListModal({
       setActiveCallLogProspect(null);
       setAddAgencyCodeFor(null);
       addToast({ type: 'success', message: 'Agency code added successfully.' });
+      setShareVideosFor({ name: addAgencyCodeFor.full_name?.trim() || 'New agent', justActivated: true });
     } catch (err) {
       addToast({
         type: 'error',
@@ -1100,6 +1103,9 @@ export function ProspectTrackerListModal({
           onSave={handleSaveCallLog}
           onInvite={handleInviteProspect}
           onAddAgencyCode={handleAddAgencyCode}
+          onShareWelcomeVideos={(prospect) =>
+            setShareVideosFor({ name: prospect.full_name?.trim() || 'Agent', justActivated: false })
+          }
           onRequestTrainer={(prospect) => handleQuickActionLog(prospect, 'Requested trainer')}
           onAddAppointment={(prospect) => handleQuickActionLog(prospect, 'Added appointment')}
           onAddProduction={async (prospect) => {
@@ -1112,6 +1118,12 @@ export function ProspectTrackerListModal({
           saving={savingCallLog}
           onClose={() => setAddAgencyCodeFor(null)}
           onSubmit={handleSubmitAddAgencyCode}
+        />
+
+        <ShareWelcomeVideosModal
+          recipientName={shareVideosFor?.name ?? null}
+          justActivated={shareVideosFor?.justActivated}
+          onClose={() => setShareVideosFor(null)}
         />
 
         <AddProductionModal
