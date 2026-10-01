@@ -74,7 +74,9 @@ different question from the default, not a filter on it.
 New agents through onboarding, with reset actions for training and the big event. Carries the
 **Builder / Key Player checkbox** (`is_key_player`), which is a **tracker / org-chart flag and no
 longer builder enrolment** — see [builder-ai](../builder-ai/PHASES.md#3-decision-log) decision B9.
-Also `associate-hot-recruits-modal`.
+Also `associate-hot-recruits-modal`. A read-only, unsortable **Training date** column shows
+`training_date`, set by the backend at BPM check-in (uncommitted, `feature/bpm-updates-oct`; see
+[bpm](../bpm/ARCHITECTURE.md#7-integration-points)).
 
 ### 2.4 Org chart — `org-chart/` (2,300 LOC)
 

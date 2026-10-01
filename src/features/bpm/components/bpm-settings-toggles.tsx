@@ -75,6 +75,49 @@ const MESSAGING_TOGGLES: ToggleRow[] = [
   },
 ];
 
+/** Longest window either box accepts: one week, as the server enforces. */
+const MAX_WINDOW_HOURS = 168;
+
+interface HoursInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  /** What the server holds — restored on an invalid entry, and skips a no-op save. */
+  saved: number;
+  disabled: boolean;
+  onCommit: (hours: number) => void;
+  ariaLabel: string;
+  suffix: string;
+}
+
+/** A 0–168 hours box that saves on blur, with its unit after it. */
+function HoursInput({ value, onChange, saved, disabled, onCommit, ariaLabel, suffix }: HoursInputProps) {
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        type="number"
+        min={0}
+        max={MAX_WINDOW_HOURS}
+        className="w-20"
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={() => {
+          const parsed = Number(value);
+          if (value.trim() === '' || !Number.isFinite(parsed) || parsed < 0 || parsed > MAX_WINDOW_HOURS) {
+            onChange(String(saved));
+            return;
+          }
+          const rounded = Math.round(parsed);
+          if (rounded === saved) return;
+          onCommit(rounded);
+        }}
+        aria-label={ariaLabel}
+      />
+      <span className="text-sm text-slate-600 dark:text-white/70">{suffix}</span>
+    </div>
+  );
+}
+
 interface BpmSettingsTogglesProps {
   settings: BPMSettings;
   /** Called with the server's answer after every successful save. */
@@ -84,13 +127,18 @@ interface BpmSettingsTogglesProps {
 export function BpmSettingsToggles({ settings, onSaved }: BpmSettingsTogglesProps) {
   const addToast = useToastStore((state) => state.addToast);
   const [saving, setSaving] = useState<string | null>(null);
-  // The hours box is free text while it is being typed, so it needs local
-  // state; every other control is driven straight off the server's answer.
+  // The hours boxes are free text while they are being typed, so they need
+  // local state; every other control is driven straight off the server's answer.
   const [hours, setHours] = useState(String(settings.checkin_window_hours));
+  const [closeHours, setCloseHours] = useState(String(settings.checkin_close_hours ?? 4));
 
   useEffect(() => {
     setHours(String(settings.checkin_window_hours));
   }, [settings.checkin_window_hours]);
+
+  useEffect(() => {
+    setCloseHours(String(settings.checkin_close_hours ?? 4));
+  }, [settings.checkin_close_hours]);
 
   const save = async (patch: BPMSettingsPayload, field: string) => {
     setSaving(field);
@@ -137,7 +185,7 @@ export function BpmSettingsToggles({ settings, onSaved }: BpmSettingsTogglesProp
     <div>
       <div className="mb-5">
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
-          Check-in window
+          Check-in window for Guests and Associates
         </h3>
         <div className="flex items-start gap-3">
           <Checkbox
@@ -149,35 +197,34 @@ export function BpmSettingsToggles({ settings, onSaved }: BpmSettingsTogglesProp
             }
           />
           <div className="min-w-0 flex-1">
-            <Label htmlFor="bpm-setting-checkin-window">Hold check-in until shortly before the BPM</Label>
+            <Label htmlFor="bpm-setting-checkin-window">
+              Hold check-in until shortly before and after the BPM
+            </Label>
             <p className="mb-2 text-xs text-slate-500 dark:text-white/60">
-              Stops somebody checking people into next week&apos;s date by mistake. The window
-              only opens — it never closes again, so a name typed wrong at the door can still
-              be fixed the next morning.
+              Check-in opens {settings.checkin_window_hours} hours before the BPM starts and
+              closes {settings.checkin_close_hours ?? 4} hours after it ends. Once it has
+              closed, only BPM managers can check people in. Undoing a check-in is always
+              available, so a mistake made at the door can still be fixed.
             </p>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min={0}
-                max={168}
-                className="w-24"
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <HoursInput
                 value={hours}
+                onChange={setHours}
+                saved={settings.checkin_window_hours}
                 disabled={!settings.checkin_window_enabled || saving === 'checkin_window_hours'}
-                onChange={(e) => setHours(e.target.value)}
-                onBlur={() => {
-                  const parsed = Number(hours);
-                  if (!Number.isFinite(parsed) || parsed < 0) {
-                    setHours(String(settings.checkin_window_hours));
-                    return;
-                  }
-                  if (parsed === settings.checkin_window_hours) return;
-                  void save({ checkin_window_hours: Math.round(parsed) }, 'checkin_window_hours');
-                }}
-                aria-label="Hours before the BPM that check-in opens"
+                onCommit={(next) => void save({ checkin_window_hours: next }, 'checkin_window_hours')}
+                ariaLabel="Hours before the BPM starts that check-in opens"
+                suffix="hours before the BPM starts"
               />
-              <span className="text-sm text-slate-600 dark:text-white/70">
-                hours before the BPM starts
-              </span>
+              <HoursInput
+                value={closeHours}
+                onChange={setCloseHours}
+                saved={settings.checkin_close_hours ?? 4}
+                disabled={!settings.checkin_window_enabled || saving === 'checkin_close_hours'}
+                onCommit={(next) => void save({ checkin_close_hours: next }, 'checkin_close_hours')}
+                ariaLabel="Hours after the BPM completes that check-in closes"
+                suffix="hours after the BPM completes"
+              />
             </div>
           </div>
         </div>

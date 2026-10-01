@@ -43,10 +43,11 @@ const MENU_ITEMS = {
   BPM_ADD_GUEST: { label: 'Add Guest', icon: '👤', path: '/bpm/add-guest' } as MenuItem,
   BPM_VIEW_INVITES: { label: 'Guest Invites', icon: '📬', path: '/bpm/view-invites' } as MenuItem,
   BPM_ASSOCIATE_INVITES: { label: 'Associate Invites', icon: '📇', path: '/bpm/associate-invites' } as MenuItem,
-  BPM_ASSOCIATE_CHECKIN: { label: 'Associate Check-In', icon: '✅', path: '/bpm/associate-checkin' } as MenuItem,
   BPM_GUEST_CHECKIN: { label: 'Guest Check-In', icon: '✔️', path: '/bpm/guest-checkin' } as MenuItem,
+  BPM_ASSOCIATE_CHECKIN: { label: 'Associate Check-In', icon: '✅', path: '/bpm/associate-checkin' } as MenuItem,
   BPM_SCHEDULE: { label: 'BPM Schedule', icon: '📅', path: '/bpm/schedule' } as MenuItem,
-  // Last sub-link. Gated per-user by bpm_settings:manage, checked in the page.
+  // Last sub-link. Gated per-user by bpm_settings:manage: getMenuForUser drops it
+  // unless the caller reports `canManageBpmSettings`, and the page re-checks.
   BPM_SETTINGS: { label: 'BPM Settings', icon: '⚙️', path: '/bpm/settings' } as MenuItem,
 
 
@@ -190,8 +191,8 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_INVITES,
-        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
         MENU_ITEMS.BPM_SETTINGS,
       ],
@@ -235,8 +236,8 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_INVITES,
-        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
         MENU_ITEMS.BPM_SETTINGS,
       ],
@@ -286,8 +287,8 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_INVITES,
-        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
         MENU_ITEMS.BPM_SETTINGS,
       ],
@@ -337,8 +338,8 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_INVITES,
-        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
         MENU_ITEMS.BPM_SETTINGS,
       ],
@@ -400,8 +401,8 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_INVITES,
-        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
         MENU_ITEMS.BPM_SETTINGS,
       ],
@@ -462,8 +463,8 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_INVITES,
-        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
         MENU_ITEMS.BPM_SETTINGS,
       ],
@@ -539,8 +540,8 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ADD_GUEST,
         MENU_ITEMS.BPM_VIEW_INVITES,
         MENU_ITEMS.BPM_ASSOCIATE_INVITES,
-        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_GUEST_CHECKIN,
+        MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
         MENU_ITEMS.BPM_SETTINGS,
       ],
@@ -657,7 +658,10 @@ export function getMenuForUser(
   canManageReporting: boolean = false,
   // gms:author. A limited rollout like the others: no role holds it, so the entry
   // stays hidden until someone is named in the access console.
-  canAuthorGuidance: boolean = false
+  canAuthorGuidance: boolean = false,
+  // bpm_settings:manage (Admin and the BPM managers named in BPM Settings). Every
+  // plan lists the BPM Settings link; it is removed here for everybody else.
+  canManageBpmSettings: boolean = false
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -741,6 +745,10 @@ export function getMenuForUser(
       (entry) => !menuItems.some((item) => item.label === entry.label)
     );
     menuItems = [...cloneMenuItems(newEntries), ...menuItems];
+  }
+
+  if (!canManageBpmSettings) {
+    menuItems = removeMenuItemByPath(menuItems, MENU_ITEMS.BPM_SETTINGS.path as string);
   }
 
   if (normalizedPlan === Plan.NewAgent && !hasPromotionAccess) {

@@ -8,6 +8,7 @@ import { BPMFormModal } from '../components/bpm-form-modal';
 import { AttachmentsModal } from '../components/event-attachments';
 import { useAttachmentsDownloadAllowed } from '../context/bpm-config-context';
 import { OccurrenceRowActions } from '../components/occurrence-row-actions';
+import { BpmTitleLink } from '../components/bpm-title-link';
 import { StatusBadge } from '../components/status-control';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
 import type {
@@ -264,7 +265,15 @@ export default function BpmOverviewPage() {
                 {upcoming.map((occurrence) => (
                   <tr key={occurrence.id}>
                     <td>
-                      <div className="matchup-cell-main">{occurrence.event_name}</div>
+                      <div className="matchup-cell-main">
+                        {/* The name opens the flyer; the paperclip is gone. */}
+                        <BpmTitleLink
+                          hasAttachments={occurrence.has_attachments}
+                          onOpen={() => void openAttachments(occurrence)}
+                        >
+                          {occurrence.event_name}
+                        </BpmTitleLink>
+                      </div>
                       {occurrence.location_detail ? (
                         <small>{occurrence.location_detail.label}</small>
                       ) : null}
@@ -284,8 +293,6 @@ export default function BpmOverviewPage() {
                         occurrences={[occurrence]}
                         selected={occurrence}
                         onSelect={() => undefined}
-                        hasAttachments={occurrence.has_attachments}
-                        onOpenAttachments={(row) => void openAttachments(row)}
                         disabled={busy}
                       />
                     </td>

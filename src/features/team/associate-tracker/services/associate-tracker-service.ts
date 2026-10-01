@@ -35,6 +35,11 @@ export interface AssociateTrackerRecord {
   is_net_licensed: boolean;
   is_key_player: boolean;
   is_training: boolean;
+  /**
+   * The date this associate was checked in at a BPM, set by the backend at
+   * check-in. Date-only (`YYYY-MM-DD`); null or absent until then.
+   */
+  training_date?: string | null;
   why: string;
   goal: string;
   big_event_2nd: boolean;

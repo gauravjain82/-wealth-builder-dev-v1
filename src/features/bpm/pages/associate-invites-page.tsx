@@ -30,18 +30,50 @@ import type { BPMAssociateInviteRow } from '../types';
  *
  * The rows are associates, not invite rows: the server sends the caller's
  * scoped team with the date's invite state joined on, so somebody nobody has
- * worked yet appears with both boxes unticked rather than being missing. That
+ * worked yet appears with every box unticked rather than being missing. That
  * is what makes this a working list rather than a report.
  *
- * Everything below the two checkboxes is the Associate Tracker's surface,
+ * Everything below the checkboxes is the Associate Tracker's surface,
  * inherited rather than rebuilt: `TrackerTable` for sticky columns and server
  * sort/filter, `TrackerTeamScopeFilter` for BaseShop / SuperBase / SuperTeam,
  * `TrackerNotesModal` for the history. The list spans a whole downline, so
  * sorting, filtering and paging are all server-side — sorting a page of 15 in
  * the browser would silently sort the wrong set.
+ *
+ * **All locations.** An associate invite is to the *date* (D21), so in
+ * All-locations mode one row per associate spans every location: a flag reads
+ * true if it is set at any of them, and an edit goes to the location the invite
+ * is stored on (`invite_occurrence`) — or, when there is none yet, to the date's
+ * first location, which then becomes where it is stored.
  */
 
 type SortDirection = 'asc' | 'desc';
+
+/**
+ * The four per-date boxes. A chain, not four independent flags: C needs
+ * Invited, Z needs C, and the server clears everything downstream of a box that
+ * is unticked — so a save can change more boxes than the one clicked.
+ */
+type InviteFlagField = 'invited' | 'called' | 'confirmed' | 'zoom';
+
+/** The box each flag depends on, when it has one. */
+const FLAG_PREREQUISITE: Partial<Record<InviteFlagField, InviteFlagField>> = {
+  confirmed: 'invited',
+  zoom: 'confirmed',
+};
+
+/** What unticking a box also unticks — the server's rule, mirrored optimistically. */
+const FLAG_DEPENDENTS: Partial<Record<InviteFlagField, InviteFlagField[]>> = {
+  invited: ['confirmed', 'zoom'],
+  confirmed: ['zoom'],
+};
+
+const FLAG_LABELS: Record<InviteFlagField, string> = {
+  invited: 'Invited',
+  called: 'Called',
+  confirmed: 'Confirmed',
+  zoom: 'Confirmed for Zoom',
+};
 
 /** Column key → the `?sort=` name the backend's sort_field_map knows. */
 const SORT_KEY_MAP: Record<string, string> = {
@@ -80,7 +112,12 @@ function toBackendFilters(filters: Record<string, string>): Record<string, strin
 export default function AssociateInvitesPage() {
   const addToast = useToastStore((state) => state.addToast);
   // Sticky: the BPM/date chosen here follows the user to the other sub-tools.
-  const { occurrence } = useBpmSelection();
+  const { occurrence, allLocations, scopeIds, scopeOccurrences } = useBpmSelection();
+  // The scope as a value: a refetch of the same occurrences must not reload the
+  // list, and a response or save for a scope since left must not land on this one.
+  const scopeKey = scopeIds.join(',');
+  const scopeKeyRef = useRef(scopeKey);
+  scopeKeyRef.current = scopeKey;
 
   const [rows, setRows] = useState<BPMAssociateInviteRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -100,8 +137,11 @@ export default function AssociateInvitesPage() {
   const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
   const [teamScope, setTeamScope] = useState<TrackerTeamScope>('baseshop');
   const [teamScopeUserId, setTeamScopeUserId] = useState<string | null>(null);
-  // Keyed `${userId}:${field}` so two boxes on one row can save independently.
-  const [savingKeys, setSavingKeys] = useState<Set<string>>(new Set());
+  // Users with a flag save in flight. Per row, not per box: the boxes cascade
+  // (un-inviting clears C and Z, un-confirming clears Z) and every save writes
+  // all four back, so a second tick on the same row while one is saving could
+  // be overwritten by the first response.
+  const [savingUserIds, setSavingUserIds] = useState<Set<number>>(new Set());
 
   const [notesOpenFor, setNotesOpenFor] = useState<BPMAssociateInviteRow | null>(null);
   const [notes, setNotes] = useState<TrackerNote[]>([]);
@@ -114,18 +154,21 @@ export default function AssociateInvitesPage() {
 
   const load = useCallback(
     async (page: number, isInitial: boolean) => {
-      if (!occurrence) {
+      if (!scopeKey) {
+        latestRequestRef.current += 1;
         setRows([]);
         setTotalCount(0);
         setHasMore(false);
         return;
       }
+      const ids = scopeKey.split(',').map(Number);
       const requestId = ++latestRequestRef.current;
       if (isInitial) setLoading(true);
       else setLoadingMore(true);
       try {
         const data = await bpmService.associateInvites({
-          occurrence: occurrence.id,
+          // Exactly one of the two: several ids read the date across locations.
+          ...(ids.length > 1 ? { occurrences: ids } : { occurrence: ids[0] }),
           page,
           page_size: PAGE_SIZE,
           sort: toSortParam(sortState),
@@ -161,8 +204,17 @@ export default function AssociateInvitesPage() {
         }
       }
     },
-    [addToast, dateRange, filters, occurrence, sortState, teamScope, teamScopeUserId],
+    [addToast, dateRange, filters, scopeKey, sortState, teamScope, teamScopeUserId],
   );
+
+  // A new scope starts from page one with nothing on screen: the last scope's
+  // rows carry its flags, and appending its next page to this one would mix them.
+  useEffect(() => {
+    setRows([]);
+    setTotalCount(0);
+    setHasMore(false);
+    setNextPage(1);
+  }, [scopeKey]);
 
   useEffect(() => {
     void load(1, true);
@@ -197,54 +249,74 @@ export default function AssociateInvitesPage() {
    * that lies is worse than one that flickers.
    */
   const setFlag = useCallback(
-    async (row: BPMAssociateInviteRow, field: 'invited' | 'called', value: boolean) => {
-      if (!occurrence) return;
-      const savingKey = `${row.user_id}:${field}`;
-      const previous = row[field];
-      setSavingKeys((keys) => new Set(keys).add(savingKey));
-      setRows((current) =>
-        current.map((entry) =>
-          entry.user_id === row.user_id ? { ...entry, [field]: value } : entry,
-        ),
-      );
+    async (row: BPMAssociateInviteRow, field: InviteFlagField, value: boolean) => {
+      // Where the invite is stored, else the date's first location (D21). Outside
+      // All-locations mode both are the selected occurrence.
+      const occurrenceId = row.invite_occurrence ?? scopeIds[0];
+      if (occurrenceId === undefined) return;
+      const scopeAtSave = scopeKeyRef.current;
+      // A response that lands after the scope changed belongs to rows no longer shown.
+      const patchRow = (patch: (entry: BPMAssociateInviteRow) => BPMAssociateInviteRow) => {
+        if (scopeKeyRef.current !== scopeAtSave) return;
+        setRows((current) =>
+          current.map((entry) => (entry.user_id === row.user_id ? patch(entry) : entry)),
+        );
+      };
+      // Every box this save may touch, so a failure restores all of them.
+      const touched: InviteFlagField[] = [field, ...(value ? [] : FLAG_DEPENDENTS[field] ?? [])];
+      const previous = Object.fromEntries(touched.map((key) => [key, row[key]]));
+      const optimistic = Object.fromEntries(touched.map((key) => [key, key === field ? value : false]));
+      setSavingUserIds((ids) => new Set(ids).add(row.user_id));
+      patchRow((entry) => ({ ...entry, ...optimistic }));
       try {
         const state = await bpmService.setAssociateInviteFlags({
-          occurrence_id: occurrence.id,
+          occurrence_id: occurrenceId,
           user_id: row.user_id,
           [field]: value,
+          // Unioned flags need a unioned untick, or a flag set at a second
+          // location could never be cleared from here.
+          ...(scopeIds.length > 1 ? { scope_occurrence_ids: scopeIds } : {}),
         });
-        setRows((current) =>
-          current.map((entry) =>
-            entry.user_id === row.user_id
-              ? {
-                  ...entry,
-                  invited: state.invited,
-                  called: state.called,
-                  invited_by: state.invited_by,
-                  invited_by_name: state.invited_by_name,
-                }
-              : entry,
-          ),
-        );
+        patchRow((entry) => ({
+          ...entry,
+          invited: state.invited,
+          called: state.called,
+          confirmed: state.confirmed,
+          zoom: state.zoom,
+          invited_by: state.invited_by,
+          invited_by_name: state.invited_by_name,
+          // The first write creates the invite where it was sent; the next edit
+          // must go to the same place, not start a second one elsewhere.
+          ...(state.invite_occurrence !== undefined
+            ? {
+                // The server resolved the union's holder — trust it.
+                invite_occurrence: state.invite_occurrence,
+                invite_occurrence_label: state.invite_occurrence_label ?? null,
+              }
+            : entry.invite_occurrence === null
+            ? {
+                invite_occurrence: occurrenceId,
+                invite_occurrence_label:
+                  scopeOccurrences.find((item) => item.id === occurrenceId)?.location_detail
+                    ?.label ?? null,
+              }
+            : {}),
+        }));
       } catch (error) {
-        setRows((current) =>
-          current.map((entry) =>
-            entry.user_id === row.user_id ? { ...entry, [field]: previous } : entry,
-          ),
-        );
+        patchRow((entry) => ({ ...entry, ...previous }));
         addToast({
           type: 'error',
           message: error instanceof Error ? error.message : 'Failed to update invite',
         });
       } finally {
-        setSavingKeys((keys) => {
-          const next = new Set(keys);
-          next.delete(savingKey);
+        setSavingUserIds((ids) => {
+          const next = new Set(ids);
+          next.delete(row.user_id);
           return next;
         });
       }
     },
-    [addToast, occurrence],
+    [addToast, scopeIds, scopeOccurrences],
   );
 
   const openNotes = useCallback(
@@ -315,7 +387,43 @@ export default function AssociateInvitesPage() {
           <InviteCheckbox
             row={row}
             field="invited"
-            saving={savingKeys.has(`${row.user_id}:invited`)}
+            saving={savingUserIds.has(row.user_id)}
+            onChange={setFlag}
+          />
+        ),
+      },
+      {
+        key: 'confirmed',
+        label: 'Confirmed',
+        header: <abbr title="Confirmed" className="no-underline">C</abbr>,
+        width: 56,
+        align: 'center',
+        // Not sortable: the list is sorted server-side, and `sort_field_map`
+        // only knows invited / called.
+        sortable: false,
+        value: (row) => (row.confirmed ? 'Yes' : 'No'),
+        render: (row) => (
+          <InviteCheckbox
+            row={row}
+            field="confirmed"
+            saving={savingUserIds.has(row.user_id)}
+            onChange={setFlag}
+          />
+        ),
+      },
+      {
+        key: 'zoom',
+        label: 'Confirmed for Zoom',
+        header: <abbr title="Confirmed for Zoom" className="no-underline">Z</abbr>,
+        width: 56,
+        align: 'center',
+        sortable: false,
+        value: (row) => (row.zoom ? 'Yes' : 'No'),
+        render: (row) => (
+          <InviteCheckbox
+            row={row}
+            field="zoom"
+            saving={savingUserIds.has(row.user_id)}
             onChange={setFlag}
           />
         ),
@@ -331,11 +439,25 @@ export default function AssociateInvitesPage() {
           <InviteCheckbox
             row={row}
             field="called"
-            saving={savingKeys.has(`${row.user_id}:called`)}
+            saving={savingUserIds.has(row.user_id)}
             onChange={setFlag}
           />
         ),
       },
+      // Only in All-locations mode: which location the date's invite is stored
+      // on. Not sortable — the list is sorted server-side on known keys only.
+      ...(allLocations
+        ? [
+            {
+              key: 'invite_location',
+              label: 'Location',
+              width: 150,
+              sortable: false,
+              value: (row: BPMAssociateInviteRow) => row.invite_occurrence_label || '',
+              render: (row: BPMAssociateInviteRow) => row.invite_occurrence_label || '—',
+            },
+          ]
+        : []),
       {
         key: 'user_name',
         label: 'Name',
@@ -411,7 +533,7 @@ export default function AssociateInvitesPage() {
         ),
       },
     ],
-    [openNotes, savingKeys, setFlag],
+    [allLocations, openNotes, savingUserIds, setFlag],
   );
 
   return (
@@ -458,9 +580,10 @@ export default function AssociateInvitesPage() {
               emptyMessage="No associates in this scope."
               loading={loading}
               resizable
-              // The two checkboxes and the name stay put while the rest scrolls:
+              // The checkboxes and the name stay put while the rest scrolls:
               // this is worked by ticking down a column against a name.
-              stickyFirstNColumns={3}
+              // In All-locations mode the Location column sits before the name.
+              stickyFirstNColumns={allLocations ? 6 : 5}
               serverSort={sortState}
               onServerSortChange={setSortState}
               serverFilters={filters}
@@ -485,7 +608,13 @@ export default function AssociateInvitesPage() {
   );
 }
 
-/** One invite checkbox, disabled while its own save is in flight. */
+/**
+ * One invite checkbox, disabled while its own save is in flight.
+ *
+ * A box whose prerequisite is unticked (C without Invited, Z without C) shows
+ * unticked and disabled whatever the row says — the server has cleared it, and
+ * would refuse to set it.
+ */
 function InviteCheckbox({
   row,
   field,
@@ -493,18 +622,20 @@ function InviteCheckbox({
   onChange,
 }: {
   row: BPMAssociateInviteRow;
-  field: 'invited' | 'called';
+  field: InviteFlagField;
   saving: boolean;
-  onChange: (row: BPMAssociateInviteRow, field: 'invited' | 'called', value: boolean) => void;
+  onChange: (row: BPMAssociateInviteRow, field: InviteFlagField, value: boolean) => void;
 }) {
-  const checked = row[field];
+  const prerequisite = FLAG_PREREQUISITE[field];
+  const blocked = prerequisite ? !row[prerequisite] : false;
   return (
     <input
       type="checkbox"
-      className="h-4 w-4 cursor-pointer accent-emerald-500"
-      checked={checked}
-      disabled={saving}
-      aria-label={`${field === 'invited' ? 'Invited' : 'Called'} — ${row.name || `user ${row.user_id}`}`}
+      className="h-4 w-4 cursor-pointer accent-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+      checked={!blocked && row[field]}
+      disabled={saving || blocked}
+      title={blocked && prerequisite ? `Tick ${FLAG_LABELS[prerequisite]} first` : FLAG_LABELS[field]}
+      aria-label={`${FLAG_LABELS[field]} — ${row.name || `user ${row.user_id}`}`}
       onChange={(event) => onChange(row, field, event.target.checked)}
     />
   );

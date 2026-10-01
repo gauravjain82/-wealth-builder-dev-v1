@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Button, LoadingState, Modal, QrCode, Text } from '@shared/components';
+import { useState } from 'react';
+import { Button, Modal, Select, Text } from '@shared/components';
+import { formatOccurrenceTime } from '../services/bpm-service';
 import { BpmQrScanPanel } from './bpm-qr-scan-panel';
-import { bpmService } from '../services/bpm-service';
-import type { BPMQrScanResult, BPMQrToken } from '../types';
+import { BpmEventCodeDisplay } from './bpm-event-code-display';
+import type { BPMOccurrence, BPMQrScanResult } from '../types';
 
 interface BpmQrModalProps {
   open: boolean;
@@ -12,105 +13,122 @@ interface BpmQrModalProps {
    * no date to display a code for and only scanning is offered.
    */
   occurrenceId?: number | null;
+  /**
+   * The locations the page's lists span — its `scopeOccurrences`. With two or
+   * more (All-locations mode) the dialog asks which one the scanner and the
+   * event code are for, defaulting to `occurrenceId`'s (D24). Passed in rather
+   * than read from the selection context, because the header mounts this dialog
+   * outside the BPM provider.
+   */
+  locations?: BPMOccurrence[];
+  /**
+   * Makes the location choice the page's own: the dialog then shows
+   * `occurrenceId`'s location and reports a change here instead of keeping it.
+   * The check-in pages pass their sticky `useScopeLocation` setter, so the QR
+   * lands where "Check in at" / "Add to location" already points.
+   */
+  onLocationChange?: (occurrenceId: number) => void;
   /** Called after a scan recorded an attendance, so the page can reload its list. */
   onCheckedIn?: (result: BPMQrScanResult) => void;
 }
 
 /**
- * BPM's one QR surface: this date's event code, and the scanner.
+ * BPM's one QR entry point: the scanner, and the way to this date's event code.
  *
- * Both halves live in one modal because a host at a door needs both within a
- * second of each other — put the code on the room's screen, then scan the people
- * whose phones will not. Two buttons on the page would have been two things to
- * find.
+ * Both start here because a host at a door needs both within a second of each
+ * other — put the code on the room's screen, then scan the people whose phones
+ * will not. Showing the code *replaces* this dialog with a full-screen poster
+ * (`BpmEventCodeDisplay`) rather than sitting under the scanner: a screen showing
+ * the code to a room has no use for a camera box, and the brief asked for the
+ * code to be the only thing to look at.
  *
- * With no `occurrenceId` (the profile menu) the event-code half is simply absent
- * rather than disabled: there is no date to show a code *for*, and a greyed
- * square would invite a click that can never work.
+ * With no `occurrenceId` (the profile menu) the event-code option is simply
+ * absent rather than disabled: there is no date to show a code *for*, and a
+ * greyed button would invite a click that can never work.
  *
- * Fetched on open, like everything in a `Modal` — its children unmount on close
- * (§6.6), so a code is re-read rather than remembered.
+ * A code, and an identity scan, belong to one location, so when the page spans
+ * several the dialog asks which (D24) instead of guessing. The choice is kept
+ * while the page is open — a greeter stays at one door — and falls back to
+ * `occurrenceId`'s location, then the first, when it is no longer in scope.
  */
 export function BpmQrModal({
   open,
   onClose,
   occurrenceId = null,
+  locations,
+  onLocationChange,
   onCheckedIn,
 }: BpmQrModalProps) {
-  const [code, setCode] = useState<BPMQrToken | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showCode, setShowCode] = useState(false);
+  const [presenting, setPresenting] = useState(false);
+  const [chosenId, setChosenId] = useState<number | null>(null);
 
-  const load = useCallback(async (id: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      setCode(await bpmService.occurrenceQr(id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load this BPM’s QR code');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const choices = locations && locations.length > 1 ? locations : null;
+  const chosen = choices
+    ? ((onLocationChange ? undefined : choices.find((row) => row.id === chosenId)) ??
+      choices.find((row) => row.id === occurrenceId) ??
+      choices[0])
+    : (locations?.find((row) => row.id === occurrenceId) ?? null);
+  const targetId = choices ? chosen?.id ?? null : occurrenceId;
 
-  useEffect(() => {
-    if (open && showCode && occurrenceId) void load(occurrenceId);
-  }, [open, showCode, occurrenceId, load]);
+  if (open && presenting && targetId) {
+    return (
+      <BpmEventCodeDisplay
+        occurrenceId={targetId}
+        occurrence={chosen}
+        onClose={() => {
+          setPresenting(false);
+          onClose();
+        }}
+      />
+    );
+  }
 
   return (
     <Modal open={open} onClose={onClose} title="QR check-in" contentClassName="max-w-[560px]">
       <div className="space-y-5">
+        {choices ? (
+          <label className="grid gap-1.5">
+            <span className="text-xs font-semibold text-slate-700 dark:text-white/80">Location</span>
+            <Select
+              variant="surface"
+              value={chosen?.id ?? ''}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                if (onLocationChange) onLocationChange(next);
+                else setChosenId(next);
+              }}
+            >
+              {choices.map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.location_detail?.label || `Location ${row.location ?? row.id}`} ·{' '}
+                  {formatOccurrenceTime(row.start_at, {
+                    weekday: undefined,
+                    month: undefined,
+                    day: undefined,
+                  })}
+                </option>
+              ))}
+            </Select>
+          </label>
+        ) : null}
+
         <section>
-          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
-            Scan a code
-          </h4>
-          <BpmQrScanPanel occurrenceId={occurrenceId} onCheckedIn={onCheckedIn} />
+          <BpmQrScanPanel occurrenceId={targetId} onCheckedIn={onCheckedIn} />
           <Text variant="muted" className="mt-2 text-xs">
-            Scan an associate’s personal code to check them in, or the event code on a
-            screen to check yourself in. Guests do not have codes yet, so take their names
-            on the check-in list.
+            Scan an associate’s personal code to check them in, a guest’s pass to check
+            the guest in, or the event code on a screen to check yourself in.
           </Text>
         </section>
 
-        {occurrenceId ? (
+        {targetId ? (
           <section className="border-t border-slate-200 pt-4 dark:border-white/10">
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
-              This BPM’s code
-            </h4>
-            {!showCode ? (
-              <>
-                <Button type="button" variant="outline" onClick={() => setShowCode(true)}>
-                  Show event code
-                </Button>
-                <Text variant="muted" className="mt-2 text-xs">
-                  Put this on the screen in the room and associates can check themselves in
-                  by scanning it.
-                </Text>
-              </>
-            ) : loading ? (
-              <LoadingState />
-            ) : error ? (
-              <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 dark:border-red-500/30 dark:bg-red-500/10">
-                <Text className="text-sm font-medium">{error}</Text>
-              </div>
-            ) : code ? (
-              <div className="flex flex-col items-center gap-3">
-                <QrCode
-                  value={code.token}
-                  size={260}
-                  alt="Event check-in QR code"
-                  fallbackText="QR code unavailable — check people in from the list."
-                />
-                <p className="text-center text-sm font-semibold text-slate-900 dark:text-white">
-                  {code.label}
-                </p>
-                <Text variant="muted" className="max-w-sm text-center text-xs">
-                  Scanning this stops working once the BPM has finished. Anyone missed after
-                  that is checked in from the list on this page.
-                </Text>
-              </div>
-            ) : null}
+            <Button type="button" variant="outline" onClick={() => setPresenting(true)}>
+              Show event code
+            </Button>
+            <Text variant="muted" className="mt-2 text-xs">
+              Opens this date’s code full screen. Put it on the screen in the room and
+              associates can check themselves in by scanning it.
+            </Text>
           </section>
         ) : null}
       </div>

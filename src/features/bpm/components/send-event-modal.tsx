@@ -14,8 +14,11 @@ import type {
 interface SendEventModalProps {
   open: boolean;
   onClose: () => void;
-  occurrenceId: number | null;
-  /** The guests the sender ticked. Never derived here — see below. */
+  /**
+   * The guests the sender ticked. Never derived here — see below. Each is sent
+   * on its own `guest.occurrence`, so a list spanning several locations of a
+   * date needs no occurrence from the page.
+   */
   guests: BPMGuest[];
   /** Reload the list so the contact badges reflect what was just sent. */
   onSent?: () => void;
@@ -39,6 +42,24 @@ const STATUS_LABEL: Record<BPMSendReport['outcomes'][number]['status'], string> 
   failed: 'Failed',
 };
 
+/** Sum the per-location reports into the one result the sender reads. */
+function mergeReports(reports: BPMSendReport[]): BPMSendReport {
+  const counts: BPMSendReport['counts'] = {};
+  for (const report of reports) {
+    for (const [status, count] of Object.entries(report.counts) as [
+      keyof BPMSendReport['counts'],
+      number | undefined,
+    ][]) {
+      counts[status] = (counts[status] ?? 0) + (count ?? 0);
+    }
+  }
+  return {
+    stage: reports[0]?.stage ?? '',
+    counts,
+    outcomes: reports.flatMap((report) => report.outcomes),
+  };
+}
+
 /**
  * Send this BPM date's details to the guests the sender ticked.
  *
@@ -59,6 +80,12 @@ const STATUS_LABEL: Record<BPMSendReport['outcomes'][number]['status'], string> 
  * is reachable today; the server still falls back to an assignment when one
  * exists. Picking at send time is also closer to the act — a host chasing people
  * chooses what to say to them.
+ *
+ * **One send per location.** The endpoint is per occurrence, and a list in
+ * All-locations mode spans several, so the guests are split by
+ * `guest.occurrence` and sent once each — every guest gets their own location's
+ * details. The reports are merged into one view; a location whose send failed
+ * is named above it rather than failing the ones that went.
  *
  * Everything is fetched on open, because `Modal` unmounts its children.
  */
@@ -104,7 +131,6 @@ function PassHint({
 export function SendEventModal({
   open,
   onClose,
-  occurrenceId,
   guests,
   onSent,
 }: SendEventModalProps) {
@@ -124,11 +150,14 @@ export function SendEventModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<BPMSendReport | null>(null);
+  // Locations whose send was refused, beside a report of the ones that went.
+  const [failures, setFailures] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     setReport(null);
+    setFailures([]);
     // Default to whatever the business has actually switched on, so the common
     // case is one click.
     setChannels(emailAllowed ? ['email'] : smsAllowed ? ['sms'] : []);
@@ -188,23 +217,69 @@ export function SendEventModal({
     [emailTemplates, emailTemplateId],
   );
 
+  /** The recipients split by the location each is on, in list order. */
+  const byOccurrence = useMemo(() => {
+    const groups = new Map<number, BPMGuest[]>();
+    for (const guest of guests) {
+      const group = groups.get(guest.occurrence);
+      if (group) group.push(guest);
+      else groups.set(guest.occurrence, [guest]);
+    }
+    return [...groups.entries()];
+  }, [guests]);
+
+  /** Guest id → location label, shown on the report only when it spans several. */
+  const locationByGuest = useMemo(
+    () =>
+      byOccurrence.length > 1
+        ? new Map(guests.map((guest) => [guest.id, guest.occurrence_label || '']))
+        : null,
+    [byOccurrence.length, guests],
+  );
+
   const send = async () => {
-    if (!occurrenceId || channels.length === 0) return;
+    if (byOccurrence.length === 0 || channels.length === 0) return;
     setBusy(true);
     setError(null);
+    setFailures([]);
+    const payload = {
+      channels,
+      email_template_id: channels.includes('email') ? Number(emailTemplateId) || null : null,
+      sms_template_id: channels.includes('sms') ? Number(smsTemplateId) || null : null,
+    };
     try {
-      const result = await bpmService.sendEventToGuests(occurrenceId, {
-          guest_ids: guests.map((guest) => guest.id),
-          channels,
-          email_template_id: channels.includes('email')
-            ? Number(emailTemplateId) || null
-            : null,
-          sms_template_id: channels.includes('sms') ? Number(smsTemplateId) || null : null,
+      const results = await Promise.allSettled(
+        byOccurrence.map(([occurrenceId, group]) =>
+          bpmService.sendEventToGuests(occurrenceId, {
+            ...payload,
+            guest_ids: group.map((guest) => guest.id),
+          }),
+        ),
+      );
+      const reports: BPMSendReport[] = [];
+      const refused: string[] = [];
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          reports.push(result.value);
+          return;
+        }
+        const [, group] = byOccurrence[index];
+        const message = result.reason instanceof Error ? result.reason.message : 'Send failed';
+        refused.push(
+          byOccurrence.length > 1
+            ? `${group[0].occurrence_label || 'One location'} (${group.length} guest${
+                group.length === 1 ? '' : 's'
+              }): ${message}`
+            : message,
+        );
       });
-      setReport(result);
+      if (reports.length === 0) {
+        setError(refused.join(' · '));
+        return;
+      }
+      setFailures(refused);
+      setReport(mergeReports(reports));
       onSent?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Send failed');
     } finally {
       setBusy(false);
     }
@@ -223,6 +298,20 @@ export function SendEventModal({
         <LoadingState />
       ) : report ? (
         <div className="space-y-3">
+          {failures.length > 0 ? (
+            <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 dark:border-red-500/30 dark:bg-red-500/10">
+              <p className="text-sm font-medium text-slate-900 dark:text-white">
+                Not sent to every location
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {failures.map((failure) => (
+                  <li key={failure} className="text-xs text-slate-700 dark:text-white/80">
+                    {failure}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             {Object.entries(report.counts).map(([status, count]) => (
               <span
@@ -241,7 +330,14 @@ export function SendEventModal({
                     key={`${outcome.guest_id}-${outcome.channel}-${index}`}
                     className="border-t border-slate-100 first:border-t-0 dark:border-white/10"
                   >
-                    <td className="px-3 py-2">{outcome.name}</td>
+                    <td className="px-3 py-2">
+                      {outcome.name}
+                      {locationByGuest?.get(outcome.guest_id) ? (
+                        <span className="block text-[11px] text-slate-500 dark:text-white/60">
+                          {locationByGuest.get(outcome.guest_id)}
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="px-3 py-2 text-xs uppercase text-slate-500 dark:text-white/60">
                       {outcome.channel}
                     </td>

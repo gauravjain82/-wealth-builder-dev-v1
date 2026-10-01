@@ -13,6 +13,20 @@ function asYesNo(value: boolean): string {
   return value ? 'Yes' : 'No';
 }
 
+/**
+ * A date-only value as a local date, the way the Name cell shows the AMA date.
+ * `YYYY-MM-DD` is parsed as local midnight: `new Date('2026-10-01')` is UTC and
+ * renders as the day before anywhere west of Greenwich.
+ */
+function formatTrackerDate(value?: string | null): string {
+  if (!value) return '—';
+  const dateOnly = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const parsed = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString();
+}
+
 const FRONTEND_BASE_URL = (import.meta.env.VITE_FRONTEND_BASE_URL || window.location.origin).replace(/\/$/, '');
 const ADD_GOALS_URL = `${FRONTEND_BASE_URL}/add-goals`;
 
@@ -694,6 +708,21 @@ export function buildAssociateColumns(
       searchable: false,
       value: (row) => asYesNo(row.is_training),
       render: (row) => renderCheckbox(row, 'is_training', options),
+    },
+    {
+      // Read-only: set by the backend when the associate checks in at a BPM.
+      // Not sortable — this table sorts server-side, and the tracker's
+      // `sort_field_map` does not list `training_date`.
+      key: 'training_date',
+      label: 'Training date',
+      width: 140,
+      align: 'center',
+      sortable: false,
+      searchable: false,
+      value: (row) => row.training_date ?? '',
+      render: (row) => (
+        <span className="text-xs text-white/80">{formatTrackerDate(row.training_date)}</span>
+      ),
     },
     {
       key: 'big_event_2nd',

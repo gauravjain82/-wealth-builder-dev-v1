@@ -17,6 +17,43 @@ interface CheckinCameraScannerProps {
 }
 
 const POLL_MS = 300;
+
+const PORTRAIT_QUERY = '(orientation: portrait)';
+
+/**
+ * Viewfinder shape per orientation. Portrait is taller than wide, the way a
+ * phone camera frames a badge held up in front of it; landscape is wider. The
+ * height cap keeps the whole box — and the list or buttons under it — on screen,
+ * and the width is derived from it so the cap never distorts the ratio.
+ */
+const VIEWFINDER = {
+  portrait: { ratio: 3 / 4, maxHeightVh: 60 },
+  landscape: { ratio: 4 / 3, maxHeightVh: 70 },
+} as const;
+
+const isPortraitNow = () =>
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia(PORTRAIT_QUERY).matches
+    : false;
+
+/** Tracks the viewport's orientation, following rotation. */
+function usePortrait(): boolean {
+  const [portrait, setPortrait] = useState(isPortraitNow);
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return undefined;
+    const query = window.matchMedia(PORTRAIT_QUERY);
+    const onChange = () => setPortrait(query.matches);
+    onChange();
+    // Safari before 14 has only the older addListener / removeListener pair.
+    if (typeof query.addEventListener !== 'function') {
+      query.addListener(onChange);
+      return () => query.removeListener(onChange);
+    }
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+  return portrait;
+}
 // Ignore a repeat of the same code for this long so one badge isn't submitted
 // dozens of times while it sits in front of the lens.
 const REPEAT_GRACE_MS = 3000;
@@ -45,6 +82,7 @@ export function CheckinCameraScanner({
   const pausedRef = useRef(paused);
   const onDetectedRef = useRef(onDetected);
   const [error, setError] = useState<string | null>(null);
+  const portrait = usePortrait();
 
   pausedRef.current = paused;
   onDetectedRef.current = onDetected;
@@ -160,12 +198,24 @@ export function CheckinCameraScanner({
     );
   }
 
+  const shape = portrait ? VIEWFINDER.portrait : VIEWFINDER.landscape;
+
   return (
-    <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-black dark:border-white/10">
+    <div
+      className="relative mx-auto overflow-hidden rounded-lg border border-slate-200 bg-black dark:border-white/10"
+      style={{
+        aspectRatio: String(shape.ratio),
+        width: `min(100%, ${shape.maxHeightVh * shape.ratio}vh)`,
+      }}
+    >
       {/* muted + playsInline are required for autoplay on mobile Safari/Chrome. */}
-      <video ref={videoRef} muted playsInline className="h-56 w-full object-cover" />
+      <video ref={videoRef} muted playsInline className="absolute inset-0 h-full w-full object-cover" />
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="h-32 w-32 rounded-lg border-2 border-white/70" />
+        {/* The target square scales with the box: 60% of its shorter side. */}
+        <div
+          className="aspect-square rounded-lg border-2 border-white/70"
+          style={portrait ? { width: '60%' } : { height: '60%' }}
+        />
       </div>
     </div>
   );

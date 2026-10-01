@@ -12,11 +12,13 @@ import {
   type UserAutocompleteOption,
 } from '@shared/components';
 import { useToastStore } from '@/store';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import { AppointmentFormModal } from '@/features/matchup/components/appointment-form-modal';
 import { matchupService } from '@/features/matchup/services/matchup-service';
 import type { AppointmentDetail, AppointmentListItem, AppointmentType } from '@/features/matchup/types';
 import { bpmService, findStepOneTypeId, formatOccurrenceTime } from '../services/bpm-service';
 import type { BPMGuest, BPMInterestGroup, BPMInterestOption, BPMOccurrence } from '../types';
+import { blueCardAppointmentValues } from './blue-card-appointment';
 
 interface FollowUpGuestModalProps {
   open: boolean;
@@ -54,10 +56,39 @@ function groupOptions(options: BPMInterestOption[]): GroupedOptions[] {
   }).filter((section) => section.options.length > 0);
 }
 
-/** "Tuesday BPM · Tue 14 Oct, 7:00 PM", for the appointment's auto-note. */
-function eventDetails(occurrence: BPMOccurrence | null | undefined): string {
-  if (!occurrence) return 'a BPM';
-  return `${occurrence.event_name} · ${formatOccurrenceTime(occurrence.start_at)}`;
+interface Collector {
+  id: number | null;
+  label: string;
+}
+
+/**
+ * The last "Collected by" somebody picked on this device.
+ *
+ * One person at a door often types in a stack of cards somebody else took, and
+ * re-picking that person on every card is the chore this saves. localStorage,
+ * not the server: it is a per-device convenience, and losing it only means the
+ * picker falls back to the logged-in user.
+ */
+const LAST_COLLECTOR_KEY = 'wb.bpm.lastCollectedBy';
+
+function readLastCollector(): Collector | null {
+  try {
+    const raw = localStorage.getItem(LAST_COLLECTOR_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<Collector> | null;
+    if (typeof parsed?.id !== 'number' || typeof parsed.label !== 'string') return null;
+    return { id: parsed.id, label: parsed.label };
+  } catch {
+    return null;
+  }
+}
+
+function writeLastCollector(collector: Collector) {
+  try {
+    localStorage.setItem(LAST_COLLECTOR_KEY, JSON.stringify(collector));
+  } catch {
+    // Private mode or blocked storage: the next card defaults to the user.
+  }
 }
 
 export function FollowUpGuestModal({
@@ -71,13 +102,20 @@ export function FollowUpGuestModal({
   onSaved,
 }: FollowUpGuestModalProps) {
   const addToast = useToastStore((state) => state.addToast);
+  const { user } = useAuth();
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState('');
   const [referralNote, setReferralNote] = useState('');
-  const [collectedBy, setCollectedBy] = useState<{ id: number | null; label: string }>({
-    id: null,
-    label: '',
-  });
+  const [collectedBy, setCollectedBy] = useState<Collector>({ id: null, label: '' });
+
+  // The logged-in user as a collector, or null before auth resolves. The auth
+  // user's id is a string; the picker's are numbers.
+  const userId = user ? Number(user.id) : NaN;
+  const userLabel = user ? user.fullName || user.name || user.displayName || user.email : '';
+  const self = useMemo<Collector | null>(
+    () => (Number.isFinite(userId) ? { id: userId, label: userLabel } : null),
+    [userId, userLabel],
+  );
   const [appointmentId, setAppointmentId] = useState<number | null>(null);
   const stepOneTypeId = useMemo(() => findStepOneTypeId(appointmentTypes), [appointmentTypes]);
   const [linkedAppointment, setLinkedAppointment] = useState<AppointmentListItem | AppointmentDetail | null>(null);
@@ -93,14 +131,21 @@ export function FollowUpGuestModal({
     setChecked(new Set(guest?.followup?.interests ?? []));
     setNotes('');
     setReferralNote(guest?.followup?.referral_note ?? '');
-    setCollectedBy({
-      id: guest?.followup?.collected_by ?? null,
-      label: guest?.followup?.collected_by_name ?? '',
-    });
+    // Saved value > the last pick on this device > the logged-in user. A
+    // followup row can exist with nobody on it (a row-level appointment link
+    // creates one), so "saved" means a saved *collector*, not a saved row.
+    const saved = guest?.followup?.collected_by;
+    setCollectedBy(
+      saved
+        ? { id: saved, label: guest?.followup?.collected_by_name ?? '' }
+        : readLastCollector() ?? self ?? { id: null, label: '' },
+    );
     setAppointmentId(guest?.followup?.appointment ?? null);
     setLinkedAppointment(guest?.followup?.appointment_detail ?? null);
     setApptModalOpen(false);
-  }, [open, guest]);
+    // `self` is memoised on id and name, so it only changes when auth first
+    // resolves — never mid-edit, where it would overwrite a pick.
+  }, [open, guest, self]);
 
   const toggle = (slug: string) => {
     setChecked((prev) => {
@@ -198,25 +243,8 @@ export function FollowUpGuestModal({
     }
   };
 
-  /**
-   * Prefill for the 1-on-1 booked off this card (D3).
-   *
-   * `trainee` is the **inviter**, not the logged-in user: the person who brought
-   * the guest is who the follow-up belongs to, even when somebody else is at the
-   * keyboard taking the card at the door.
-   */
   const appointmentInitialValues = useMemo(
-    () => ({
-      kind: 'REQUEST_TRAINER' as const,
-      contact: guest?.prospect ?? null,
-      contactLabel: guest?.prospect_detail?.name ?? '',
-      trainee: guest?.inviter ?? null,
-      traineeLabel: guest?.inviter_name ?? '',
-      // Looked up by slug, because ids differ per environment and renaming the
-      // type in admin must not silently stop the box being ticked.
-      types: stepOneTypeId ? [stepOneTypeId] : [],
-      notes: `Blue Card follow up from ${eventDetails(occurrence)}`,
-    }),
+    () => blueCardAppointmentValues(guest, occurrence, stepOneTypeId),
     [guest, occurrence, stepOneTypeId],
   );
 
@@ -243,7 +271,12 @@ export function FollowUpGuestModal({
               buttonText="SELECT"
               disabled={saving}
               fetchOptions={searchCollectors}
-              onSelect={(option) => setCollectedBy({ id: option.id, label: option.label })}
+              onSelect={(option) => {
+                const picked = { id: option.id, label: option.label };
+                setCollectedBy(picked);
+                // Remembered for the next card without a collector of its own.
+                writeLastCollector(picked);
+              }}
             />
           </FormRow>
 

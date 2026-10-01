@@ -74,9 +74,19 @@ export function MyQrCodeModal({ open, onClose }: MyQrCodeModalProps) {
               alt="My check-in QR code"
               fallbackText="QR code unavailable — ask to be checked in by name."
             />
-            <p className="text-center text-base font-semibold text-slate-900 dark:text-white">
-              {code.label}
-            </p>
+            {/* Big enough for the host to confirm who they are scanning from
+                across the table; the agency code is how two people with the
+                same name are told apart. Older payloads carry only `label`. */}
+            <div className="text-center">
+              <p className="text-2xl font-bold leading-tight text-slate-900 dark:text-white">
+                {code.name || code.label}
+              </p>
+              {code.name && code.agency_code ? (
+                <p className="mt-1 text-lg font-medium text-slate-600 dark:text-white/70">
+                  {code.agency_code}
+                </p>
+              ) : null}
+            </div>
             <Text variant="muted" className="max-w-sm text-center text-xs">
               Show this at a BPM and the host scans it to check you in. It is the same code
               every time, so you can screenshot it.

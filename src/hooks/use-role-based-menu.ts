@@ -8,6 +8,7 @@ import { useLeaderboardAccess } from '../features/leaderboards';
 import { roleToPlan } from '../core/constants/roles';
 import { getMenuForUser, type MenuItem } from '../config/menu';
 import { useGmsAccess } from '@/features/gms';
+import { useBpmCapabilities } from '@/features/bpm/hooks/use-bpm-capabilities';
 
 /**
  * Hook to get plan-based menu structure
@@ -40,6 +41,10 @@ export function useRoleBasedMenu(): MenuItem[] {
   // Guidance authoring is its own per-user grant (gms:author), reported by gms.
   const { data: gmsAccess } = useGmsAccess();
   const canAuthorGuidance = Boolean(gmsAccess?.gms_enabled && gmsAccess?.can_author);
+  // BPM Settings is for Admin and the named BPM managers (bpm_settings:manage).
+  // Hidden while capabilities load, so it never flashes in and out.
+  const { data: bpmCapabilities } = useBpmCapabilities();
+  const canManageBpmSettings = Boolean(bpmCapabilities?.can_manage_settings);
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
@@ -55,7 +60,8 @@ export function useRoleBasedMenu(): MenuItem[] {
         canAccessReportingPipeline,
         canAccessLeaderboards,
         canManageReporting,
-        canAuthorGuidance
+        canAuthorGuidance,
+        canManageBpmSettings
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -68,7 +74,8 @@ export function useRoleBasedMenu(): MenuItem[] {
       canAccessReportingPipeline,
       canAccessLeaderboards,
       canManageReporting,
-      canAuthorGuidance
+      canAuthorGuidance,
+      canManageBpmSettings
     );
   }, [
     user?.hasPromotionAccess,
@@ -81,5 +88,6 @@ export function useRoleBasedMenu(): MenuItem[] {
     canAccessLeaderboards,
     canManageReporting,
     canAuthorGuidance,
+    canManageBpmSettings,
   ]);
 }

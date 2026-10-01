@@ -1,25 +1,30 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Input, LoadingState, Select } from '@shared/components';
 import { useToastStore } from '@/store';
+import { AppointmentFormModal } from '@/features/matchup/components/appointment-form-modal';
 import { matchupService } from '@/features/matchup/services/matchup-service';
-import type { AppointmentType } from '@/features/matchup/types';
+import type { AppointmentType, CreateAppointmentPayload } from '@/features/matchup/types';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMOccurrencePicker } from '../components/bpm-occurrence-picker';
 import { useBpmSelection } from '../context/bpm-selection-context';
-import { CheckinStatCards } from '../components/checkin-stat-cards';
+import { useScopeLocation } from '../hooks/use-scope-location';
+import { ScopeLocationSelect } from '../components/scope-location-select';
+import { CheckinStatCards, type CheckinCountCard } from '../components/checkin-stat-cards';
 import { CheckinWindowNotice } from '../components/checkin-window-notice';
+import { canCheckInNow } from '../components/checkin-window';
 import { BpmQrModal } from '../components/bpm-qr-modal';
 import { GuestCheckinTable } from '../components/guest-checkin-table';
-import { GuestPassModal } from '../components/guest-pass-modal';
 import { AddGuestModal } from '../components/add-guest-modal';
 import { FollowUpGuestModal } from '../components/follow-up-guest-modal';
+import { blueCardAppointmentValues } from '../components/blue-card-appointment';
 import { InterestOptionsAdminModal } from '../components/interest-options-admin-modal';
-import { bpmService } from '../services/bpm-service';
+import { bpmService, findStepOneTypeId } from '../services/bpm-service';
 import type {
   BPMCapabilities,
   BPMGuest,
   BPMInterestOption,
+  BPMOccurrence,
   CheckinDimension,
   GuestCheckinOutcomeField,
   ProspectSearchHit,
@@ -40,39 +45,116 @@ const FILTERS: { key: GuestFilter; label: string; match: (g: BPMGuest) => boolea
   { key: 'not_checked_in', label: 'Not Checked In', match: (g) => !g.checked_in_at },
 ];
 
-/** The three upline selects, and which field on a guest row each one reads. */
-const UPLINE_FILTERS = [
-  { key: 'smd', label: 'SMD', field: 'smd_name' },
-  { key: 'md', label: 'MD', field: 'md_name' },
-  { key: 'leader', label: 'Leader', field: 'leader_name' },
+/** Attended on Zoom, falling back to the invite-time expectation until it is set. */
+function attendsOnZoom(guest: BPMGuest): boolean {
+  return guest.attended_zoom ?? guest.zoom;
+}
+
+/**
+ * How the guest is attending — a second pill group, independent of the first.
+ *
+ * The two combine rather than replace each other: "Checked In" + "Zoom" is the
+ * question a host asks when the room count and the call count disagree.
+ */
+type ZoomFilter = 'all' | 'live' | 'zoom';
+
+const ZOOM_FILTERS: { key: ZoomFilter; label: string; match: (g: BPMGuest) => boolean }[] = [
+  { key: 'all', label: 'All', match: () => true },
+  { key: 'live', label: 'Live', match: (g) => !attendsOnZoom(g) },
+  { key: 'zoom', label: 'Zoom', match: (g) => attendsOnZoom(g) },
+];
+
+/**
+ * The person selects — the three uplines, then the inviter — and which field on
+ * a guest row each one reads. The inviter sits beside Leader because that is
+ * the level below it: the person who actually brought the guest.
+ */
+const PERSON_FILTERS = [
+  { key: 'smd', label: 'SMD', field: 'smd_name', allLocationsOnly: false },
+  { key: 'md', label: 'MD', field: 'md_name', allLocationsOnly: false },
+  { key: 'leader', label: 'Leader', field: 'leader_name', allLocationsOnly: false },
+  { key: 'inviter', label: 'Inviter', field: 'inviter_name', allLocationsOnly: false },
+  // Not a person, but it narrows the same way and belongs in the same row. Only
+  // offered when the list spans a date's locations — otherwise it has one value.
+  { key: 'location', label: 'Location', field: 'occurrence_label', allLocationsOnly: true },
 ] as const;
 
-type UplineFilterKey = (typeof UPLINE_FILTERS)[number]['key'];
+type PersonFilterKey = (typeof PERSON_FILTERS)[number]['key'];
+
+const NO_PERSON_FILTER: Record<PersonFilterKey, string> = {
+  smd: '',
+  md: '',
+  leader: '',
+  inviter: '',
+  location: '',
+};
+
+/**
+ * The plain counters before the rankings, counted from the guest list itself.
+ *
+ * Not from the stats payload: its guest `totals` count distinct *inviters*
+ * (they answer "how many people brought somebody"), which is the wrong number
+ * for "Guests Invited". A guest on two locations' lists counts once (D22), by
+ * prospect; a row without a prospect counts on its own.
+ */
+function guestCountCards(guests: BPMGuest[]): CheckinCountCard[] {
+  const people = new Map<string, boolean>();
+  for (const guest of guests) {
+    const key = guest.prospect !== null ? `p${guest.prospect}` : `g${guest.id}`;
+    people.set(key, Boolean(people.get(key)) || Boolean(guest.checked_in_at));
+  }
+  const invited = people.size;
+  const checkedIn = [...people.values()].filter(Boolean).length;
+  const ratio = invited ? Math.round((checkedIn / invited) * 100) : 0;
+  return [
+    { key: 'invited', label: 'Guests Invited', value: invited, colorKey: 'guests_invited' },
+    { key: 'checked_in', label: 'Guests Checked In', value: checkedIn, colorKey: 'guests_checked_in' },
+    { key: 'ratio', label: 'Attendance Ratio', value: `${ratio}%`, colorKey: 'guests_ratio' },
+  ];
+}
 
 /** Which rankings Guest Check-In shows, in card order. */
 const GUEST_DIMENSIONS: CheckinDimension[] = ['inviter', 'leader', 'md', 'smd'];
 
+/** Pill styling shared by both groups. */
+function pillClass(active: boolean): string {
+  return `rounded-full border px-3 py-1 text-xs font-medium transition ${
+    active
+      ? 'border-amber-400 bg-amber-400/15 text-amber-600 dark:text-amber-300'
+      : 'border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
+  }`;
+}
+
 export default function GuestCheckinPage() {
   const addToast = useToastStore((state) => state.addToast);
   // Sticky: the BPM/date chosen here follows the user to the other sub-tools.
-  const { occurrence } = useBpmSelection();
+  // In All-locations mode `occurrence` is the date's first location — the anchor
+  // — and the list covers `scopeOccurrences`. A row acts on its own
+  // `guest.occurrence`; a *new* guest lands on the chosen `addLocation`.
+  const { occurrence, allLocations, scopeOccurrences, scopeIds } = useBpmSelection();
+  const {
+    choices: locationChoices,
+    location: addLocation,
+    setLocationId: setAddLocationId,
+  } = useScopeLocation();
+  // Compared by value: the ids array is rebuilt whenever the occurrence list
+  // refreshes, and that alone must not reload the guests.
+  const scopeKey = scopeIds.join(',');
   const [guests, setGuests] = useState<BPMGuest[]>([]);
+  const countCards = useMemo(() => guestCountCards(guests), [guests]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState<GuestFilter>('all');
-  const [uplineFilter, setUplineFilter] = useState<Record<UplineFilterKey, string>>({
-    smd: '',
-    md: '',
-    leader: '',
-  });
+  const [zoomFilter, setZoomFilter] = useState<ZoomFilter>('all');
+  const [personFilter, setPersonFilter] = useState<Record<PersonFilterKey, string>>(NO_PERSON_FILTER);
   const [search, setSearch] = useState('');
-  // QR sits beside the search because that is where somebody stands when a
-  // person arrives: find them, or scan them.
+  // QR sits on the date picker, beside the date its code belongs to.
   const [qrOpen, setQrOpen] = useState(false);
   const [followUpTarget, setFollowUpTarget] = useState<BPMGuest | null>(null);
-  // The guest whose door pass is on screen. Null means the modal is closed, so
-  // there is no second boolean to keep in step with it.
-  const [passTarget, setPassTarget] = useState<BPMGuest | null>(null);
+  // The guest a row-level "Schedule appointment" is booking for. Null means the
+  // form is closed, so there is no second boolean to keep in step with it.
+  const [appointmentTarget, setAppointmentTarget] = useState<BPMGuest | null>(null);
+  const [savingAppointment, setSavingAppointment] = useState(false);
   const [addGuestOpen, setAddGuestOpen] = useState(false);
   const [interestOptions, setInterestOptions] = useState<BPMInterestOption[]>([]);
   // The interest list only drives the Blue Card, which lives on this page as of
@@ -83,12 +165,36 @@ export default function GuestCheckinPage() {
   const [prospectHits, setProspectHits] = useState<ProspectSearchHit[]>([]);
   const [associateHits, setAssociateHits] = useState<ProspectSearchHit[]>([]);
   const [prospectSearching, setProspectSearching] = useState(false);
-  // Bumped on every check-in so the leaderboards re-fetch. They are read while
+  // Bumped on every row change so the leaderboards re-fetch. They are read while
   // the room fills up, so a card that lags the list is worse than a slow one.
+  // The cards refetch on their own; the table is never blanked for them.
   const [statsVersion, setStatsVersion] = useState(0);
-  // Server-derived: the window opens N hours before start and never closes, so
-  // everything else on this page keeps working — only checking in is held back.
-  const checkinOpen = occurrence?.checkin_open ?? true;
+  // Server-derived: the window opens N hours before start and closes N hours
+  // after the end. Before it opens nobody may check in; after it closes only a
+  // holder of `can_checkin_after_close` (BPM managers) may. Everything else on
+  // this page keeps working either way — only checking *in* is held back, and
+  // undo never is.
+  //
+  // The window belongs to each location, so it is judged per row, against the
+  // row's own occurrence — and, for adding somebody new, against the location
+  // they are being added to.
+  const canCheckinAfterClose = capabilities?.can_checkin_after_close;
+  const occurrenceById = useMemo(
+    () => new Map(scopeOccurrences.map((row) => [row.id, row] as const)),
+    [scopeOccurrences],
+  );
+  /** The occurrence a row belongs to; the anchor only if it is somehow not in scope. */
+  const occurrenceOf = useCallback(
+    (guest: BPMGuest | null): BPMOccurrence | null =>
+      guest ? (occurrenceById.get(guest.occurrence) ?? occurrence) : occurrence,
+    [occurrenceById, occurrence],
+  );
+  const canCheckInGuest = useCallback(
+    (guest: BPMGuest) => canCheckInNow(occurrenceById.get(guest.occurrence) ?? null, canCheckinAfterClose),
+    [occurrenceById, canCheckinAfterClose],
+  );
+  const addCheckinOpen = canCheckInNow(addLocation, canCheckinAfterClose);
+  const stepOneTypeId = useMemo(() => findStepOneTypeId(appointmentTypes), [appointmentTypes]);
 
   const loadInterestOptions = useCallback(async () => {
     try {
@@ -104,38 +210,80 @@ export default function GuestCheckinPage() {
     bpmService.capabilities().then(setCapabilities).catch(() => setCapabilities(null));
   }, [loadInterestOptions]);
 
+  // Only the latest request may write the list: switching dates (or between one
+  // location and all of them) while a slow load is in flight must not paint the
+  // old scope's guests over the new one.
+  const loadRequest = useRef(0);
+
+  /**
+   * Fetch the whole list.
+   *
+   * `quiet` keeps the table on screen while it refetches — for quick-add, the
+   * Add Guest modal and QR scans, which may add rows this page has never seen.
+   * The loading state is for the first load and a change of date only: a door
+   * list that blanks on every action loses the operator's place in it.
+   */
   const load = useCallback(
-    async (occurrenceId: number) => {
-      setLoading(true);
+    async (occurrenceIds: number[], { quiet = false }: { quiet?: boolean } = {}) => {
+      const request = ++loadRequest.current;
+      if (!quiet) setLoading(true);
       try {
-        setGuests(await bpmService.guests(occurrenceId));
+        const rows = await bpmService.guestsForScope(occurrenceIds);
+        if (request !== loadRequest.current) return;
+        setGuests(rows);
         setStatsVersion((version) => version + 1);
       } catch (error) {
+        if (request !== loadRequest.current) return;
         addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to load guests' });
       } finally {
-        setLoading(false);
+        if (request === loadRequest.current) setLoading(false);
       }
     },
     [addToast],
   );
 
   useEffect(() => {
-    if (occurrence) void load(occurrence.id);
-    else setGuests([]);
-  }, [occurrence, load]);
+    // A name picked for the last scope need not exist in this one, and a select
+    // holding a value it has no option for would silently show nobody.
+    setPersonFilter(NO_PERSON_FILTER);
+    if (scopeKey) {
+      void load(scopeKey.split(',').map(Number));
+    } else {
+      // Nothing selected: retire any load still in flight so it cannot land.
+      loadRequest.current += 1;
+      setLoading(false);
+      setGuests([]);
+    }
+  }, [scopeKey, load]);
+
+  /** Quietly refetch the current scope — after an add or a scan. */
+  const reload = useCallback(() => {
+    if (scopeKey) void load(scopeKey.split(',').map(Number), { quiet: true });
+  }, [scopeKey, load]);
+
+  /**
+   * Put one server-returned guest back into the list in place.
+   *
+   * Every row action's endpoint returns the updated guest, so this is all a row
+   * change needs — no refetch, no loading swap. The stats cards refetch in the
+   * background, since most of these move a number on them.
+   */
+  const patchGuest = useCallback((updated: BPMGuest) => {
+    setGuests((prev) => prev.map((guest) => (guest.id === updated.id ? updated : guest)));
+    setStatsVersion((version) => version + 1);
+  }, []);
 
   const toggleCheckIn = async (guest: BPMGuest) => {
     if (!occurrence) return;
     setBusy(true);
     try {
       if (guest.checked_in_at) {
-        await bpmService.undoCheckInGuest(guest.occurrence, guest.id);
+        patchGuest(await bpmService.undoCheckInGuest(guest.occurrence, guest.id));
         addToast({ type: 'success', message: 'Check-in undone.' });
       } else {
-        await bpmService.checkInGuest(guest.occurrence, guest.id);
+        patchGuest(await bpmService.checkInGuest(guest.occurrence, guest.id));
         addToast({ type: 'success', message: `${guest.prospect_detail?.name || 'Guest'} checked in.` });
       }
-      await load(occurrence.id);
     } catch (error) {
       addToast({ type: 'error', message: error instanceof Error ? error.message : 'Check-in failed' });
     } finally {
@@ -147,10 +295,23 @@ export default function GuestCheckinPage() {
     if (!occurrence) return;
     setBusy(true);
     try {
-      await bpmService.setGuestFlags(guest.occurrence, { guest_id: guest.id, [field]: value });
-      await load(occurrence.id);
+      patchGuest(await bpmService.setGuestFlags(guest.occurrence, { guest_id: guest.id, [field]: value }));
     } catch (error) {
       addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to update outcome' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Z: what actually happened on the night. Writes `attended_zoom`, never the
+  // invite-time `zoom`, which stays Guest Invites' answer.
+  const setGuestZoom = async (guest: BPMGuest, value: boolean) => {
+    if (!occurrence) return;
+    setBusy(true);
+    try {
+      patchGuest(await bpmService.setGuestFlags(guest.occurrence, { guest_id: guest.id, attended_zoom: value }));
+    } catch (error) {
+      addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to update Zoom' });
     } finally {
       setBusy(false);
     }
@@ -159,8 +320,64 @@ export default function GuestCheckinPage() {
   // The save endpoint returns the full updated guest, so patch it into the list
   // in place — including the Scheduled Appointment flag the save may have set,
   // which is what turns the row's outline green.
-  const handleFollowUpSaved = (updated: BPMGuest) =>
-    setGuests((prev) => prev.map((guest) => (guest.id === updated.id ? updated : guest)));
+  const handleFollowUpSaved = patchGuest;
+
+  /**
+   * Row-level "Schedule appointment": the blue card's booking, without the card.
+   *
+   * Same form, same prefill as the button inside the card, and the new
+   * appointment is linked to the guest's followup at once — the link is what
+   * fills the Blue card button and ticks Scheduled Appointment.
+   *
+   * A failed *create* is rethrown so the form shows it beside Save and stays
+   * open. A failed *link* is not: the appointment exists by then, and leaving
+   * the form open would invite a second one.
+   */
+  const scheduleAppointment = async (payload: CreateAppointmentPayload) => {
+    const guest = appointmentTarget;
+    if (!guest) return;
+    setSavingAppointment(true);
+    try {
+      const created = await matchupService.createAppointment(payload);
+      // The save is a whole-card write: send the card's current answers back
+      // with the link, so linking an appointment never blanks a blue card that
+      // was already filled in.
+      const card = guest.followup;
+      try {
+        patchGuest(
+          await bpmService.saveGuestFollowup(guest.occurrence, {
+            guest_id: guest.id,
+            ...(card
+              ? {
+                  spouse_name: card.spouse_name,
+                  interests: card.interests,
+                  referral_note: card.referral_note,
+                  collected_by: card.collected_by,
+                }
+              : {}),
+            appointment_id: created.id,
+          }),
+        );
+        addToast({ type: 'success', message: 'Appointment created and linked.' });
+      } catch (error) {
+        addToast({
+          type: 'error',
+          message: `Appointment created, but linking it to the blue card failed: ${
+            error instanceof Error ? error.message : 'unknown error'
+          }`,
+        });
+      }
+      setAppointmentTarget(null);
+    } finally {
+      setSavingAppointment(false);
+    }
+  };
+
+  const appointmentInitialValues = useMemo(
+    // The row's own date and location name the auto-note, not the anchor's.
+    () => blueCardAppointmentValues(appointmentTarget, occurrenceOf(appointmentTarget), stepOneTypeId),
+    [appointmentTarget, occurrenceOf, stepOneTypeId],
+  );
 
   // Second search tier: a company-wide (not downline-scoped) prospect lookup so a
   // walk-in already in the system is found regardless of team. The single result
@@ -194,21 +411,24 @@ export default function GuestCheckinPage() {
   }, [search, occurrence, guests]);
 
   // Tier 2 action: add an existing prospect as a guest and check them in at once.
+  // In All-locations mode they land on the chosen "Add to location".
   const quickAddProspect = async (prospect: ProspectSearchHit) => {
-    if (!occurrence) return;
+    const target = addLocation;
+    if (!target) return;
     setBusy(true);
     try {
       const name = prospect.name || `${prospect.first_name} ${prospect.last_name}`.trim();
-      const guest = await bpmService.addGuest(occurrence.id, {
+      const guest = await bpmService.addGuest(target.id, {
         guest_name: name,
         prospect: prospect.id,
         inviter: prospect.recruited_by,
         notes: '',
       });
-      await bpmService.checkInGuest(occurrence.id, guest.id);
+      await bpmService.checkInGuest(target.id, guest.id);
       addToast({ type: 'success', message: `${name || 'Guest'} added and checked in.` });
       setSearch('');
-      await load(occurrence.id);
+      // A new row, so the list is refetched — quietly, without the loading swap.
+      if (scopeKey) await load(scopeKey.split(',').map(Number), { quiet: true });
     } catch (error) {
       addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add guest' });
     } finally {
@@ -220,9 +440,8 @@ export default function GuestCheckinPage() {
     if (!occurrence) return;
     setBusy(true);
     try {
-      await bpmService.addGuestNote(guest.occurrence, { guest_id: guest.id, text });
+      patchGuest(await bpmService.addGuestNote(guest.occurrence, { guest_id: guest.id, text }));
       addToast({ type: 'success', message: 'Note added.' });
-      await load(occurrence.id);
     } catch (error) {
       addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add note' });
     } finally {
@@ -233,29 +452,43 @@ export default function GuestCheckinPage() {
   const totalInvites = guests.length;
   const totalCheckedIn = useMemo(() => guests.filter((g) => g.checked_in_at).length, [guests]);
 
-  const filterCounts = useMemo(
-    () => Object.fromEntries(FILTERS.map((f) => [f.key, guests.filter(f.match).length])) as Record<GuestFilter, number>,
-    [guests],
-  );
+  const activeFilter = FILTERS.find((f) => f.key === filter) ?? FILTERS[0];
+  const activeZoomFilter = ZOOM_FILTERS.find((f) => f.key === zoomFilter) ?? ZOOM_FILTERS[0];
 
-  /** Distinct SMD / MD / Leader names present in the loaded list, for the selects. */
-  const uplineOptions = useMemo(() => {
-    const options = {} as Record<UplineFilterKey, string[]>;
-    for (const { key, field } of UPLINE_FILTERS) {
+  // Each group's counts are taken with the *other* group applied, so the pills
+  // in a row always add up to the one selected beside them.
+  const filterCounts = useMemo(() => {
+    const pool = guests.filter(activeZoomFilter.match);
+    return Object.fromEntries(FILTERS.map((f) => [f.key, pool.filter(f.match).length])) as Record<GuestFilter, number>;
+  }, [guests, activeZoomFilter]);
+
+  const zoomFilterCounts = useMemo(() => {
+    const pool = guests.filter(activeFilter.match);
+    return Object.fromEntries(ZOOM_FILTERS.map((f) => [f.key, pool.filter(f.match).length])) as Record<
+      ZoomFilter,
+      number
+    >;
+  }, [guests, activeFilter]);
+
+  /** Distinct SMD / MD / Leader / Inviter names present in the loaded list, for the selects. */
+  const personOptions = useMemo(() => {
+    const options = {} as Record<PersonFilterKey, string[]>;
+    for (const { key, field } of PERSON_FILTERS) {
+      // Distinct labels: filtering is by label, the same thing the column shows.
       options[key] = [...new Set(guests.map((g) => g[field]).filter((name): name is string => Boolean(name)))].sort();
     }
     return options;
   }, [guests]);
 
   const visibleGuests = useMemo(() => {
-    const activeFilter = FILTERS.find((f) => f.key === filter) ?? FILTERS[0];
     const term = search.trim().toLowerCase();
     return guests.filter((g) => {
       if (!activeFilter.match(g)) return false;
-      // The three upline selects narrow cumulatively — picking an SMD and then
-      // a Leader under them is the normal way a leader finds their own people.
-      for (const { key, field } of UPLINE_FILTERS) {
-        const wanted = uplineFilter[key];
+      if (!activeZoomFilter.match(g)) return false;
+      // The person selects narrow cumulatively — picking an SMD and then a
+      // Leader under them is the normal way a leader finds their own people.
+      for (const { key, field } of PERSON_FILTERS) {
+        const wanted = personFilter[key];
         if (wanted && g[field] !== wanted) return false;
       }
       if (!term) return true;
@@ -265,7 +498,7 @@ export default function GuestCheckinPage() {
         .toLowerCase();
       return haystack.includes(term);
     });
-  }, [guests, filter, search, uplineFilter]);
+  }, [guests, activeFilter, activeZoomFilter, search, personFilter]);
 
   return (
     <BPMPageShell
@@ -280,16 +513,39 @@ export default function GuestCheckinPage() {
       }
     >
       <BPMCard className="mb-4">
-        <BPMOccurrencePicker allowPast />
+        <BPMOccurrencePicker
+          allowPast
+          dateAction={
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="whitespace-nowrap"
+              disabled={!occurrence}
+              onClick={() => setQrOpen(true)}
+            >
+              QR
+            </Button>
+          }
+        />
       </BPMCard>
 
       {occurrence ? (
         <>
-          <CheckinWindowNotice occurrence={occurrence} />
+          {/* The anchor's window stands for the date's. In All-locations mode the
+              locations share the date but each has its own window, so a
+              location starting at another hour can be open while this says
+              otherwise — the per-row buttons are judged on their own
+              occurrence, so this is only the headline, not the gate. */}
+          <CheckinWindowNotice
+            occurrence={occurrence}
+            canCheckinAfterClose={capabilities?.can_checkin_after_close ?? false}
+          />
 
           <CheckinStatCards
-            occurrenceId={occurrence.id}
+            occurrenceIds={scopeIds}
             audience="guest"
+            countCards={countCards}
             dimensions={GUEST_DIMENSIONS}
             reloadKey={statsVersion}
           />
@@ -297,31 +553,47 @@ export default function GuestCheckinPage() {
           <BPMCard>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                {FILTERS.map((f) => (
-                  <button
-                    key={f.key}
-                    type="button"
-                    onClick={() => setFilter(f.key)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                      filter === f.key
-                        ? 'border-amber-400 bg-amber-400/15 text-amber-600 dark:text-amber-300'
-                        : 'border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10'
-                    }`}
-                  >
-                    {f.label} ({filterCounts[f.key]})
-                  </button>
-                ))}
-                {UPLINE_FILTERS.map(({ key, label }) => (
+                <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Attendance">
+                  {FILTERS.map((f) => (
+                    <button
+                      key={f.key}
+                      type="button"
+                      aria-pressed={filter === f.key}
+                      onClick={() => setFilter(f.key)}
+                      className={pillClass(filter === f.key)}
+                    >
+                      {f.label} ({filterCounts[f.key]})
+                    </button>
+                  ))}
+                </div>
+                <div
+                  className="flex flex-wrap items-center gap-2 border-l border-slate-200 pl-2 dark:border-white/10"
+                  role="group"
+                  aria-label="Attending live or on Zoom"
+                >
+                  {ZOOM_FILTERS.map((f) => (
+                    <button
+                      key={f.key}
+                      type="button"
+                      aria-pressed={zoomFilter === f.key}
+                      onClick={() => setZoomFilter(f.key)}
+                      className={pillClass(zoomFilter === f.key)}
+                    >
+                      {f.label} ({zoomFilterCounts[f.key]})
+                    </button>
+                  ))}
+                </div>
+                {PERSON_FILTERS.filter((f) => allLocations || !f.allLocationsOnly).map(({ key, label }) => (
                   <Select
                     key={key}
                     variant="surface"
                     className="w-auto"
-                    value={uplineFilter[key]}
+                    value={personFilter[key]}
                     aria-label={`Filter by ${label}`}
-                    onChange={(e) => setUplineFilter((prev) => ({ ...prev, [key]: e.target.value }))}
+                    onChange={(e) => setPersonFilter((prev) => ({ ...prev, [key]: e.target.value }))}
                   >
                     <option value="">All {label}s</option>
-                    {uplineOptions[key].map((name) => (
+                    {personOptions[key].map((name) => (
                       <option key={name} value={name}>
                         {name}
                       </option>
@@ -338,15 +610,6 @@ export default function GuestCheckinPage() {
                     placeholder="Search invites & prospects…"
                   />
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="whitespace-nowrap"
-                  onClick={() => setQrOpen(true)}
-                >
-                  QR
-                </Button>
                 <Button type="button" size="sm" className="whitespace-nowrap" onClick={() => setAddGuestOpen(true)}>
                   + Add Guest
                 </Button>
@@ -363,12 +626,14 @@ export default function GuestCheckinPage() {
               <GuestCheckinTable
                 guests={visibleGuests}
                 busy={busy}
-                canCheckIn={checkinOpen}
+                canCheckIn={canCheckInGuest}
+                showLocation={allLocations}
                 onToggleCheckIn={toggleCheckIn}
                 onSetOutcome={setGuestOutcome}
                 onAddNote={addGuestNote}
                 onFollowUp={setFollowUpTarget}
-                onShowPass={setPassTarget}
+                onScheduleAppointment={setAppointmentTarget}
+                onSetZoom={setGuestZoom}
               />
             )}
 
@@ -392,9 +657,19 @@ export default function GuestCheckinPage() {
                   </div>
                 ) : null}
                 {prospectHits.length > 0 || associateHits.length === 0 ? (
-                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
-                    <span>Prospects not yet invited</span>
-                    {prospectSearching ? <span className="font-normal normal-case text-slate-400">searching…</span> : null}
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
+                      <span>Prospects not yet invited</span>
+                      {prospectSearching ? <span className="font-normal normal-case text-slate-400">searching…</span> : null}
+                    </div>
+                    {/* Where "Add & Check in" puts them. Renders only in
+                        All-locations mode; the same sticky choice as the modal's. */}
+                    <ScopeLocationSelect
+                      choices={locationChoices}
+                      value={addLocation}
+                      onChange={setAddLocationId}
+                      label="Add to location"
+                    />
                   </div>
                 ) : null}
                 {prospectHits.length > 0 ? (
@@ -414,7 +689,7 @@ export default function GuestCheckinPage() {
                           size="sm"
                           // This adds *and* checks in, so it obeys the window
                           // too — otherwise it would be a way around it.
-                          disabled={busy || !checkinOpen}
+                          disabled={busy || !addCheckinOpen}
                           className="whitespace-nowrap"
                           onClick={() => quickAddProspect(p)}
                         >
@@ -453,18 +728,18 @@ export default function GuestCheckinPage() {
 
       <AddGuestModal
         open={addGuestOpen}
-        presetOccurrence={occurrence}
+        presetOccurrence={addLocation}
+        locationChoices={locationChoices}
+        onLocationChange={setAddLocationId}
         onClose={() => setAddGuestOpen(false)}
-        onAdded={() => {
-          if (occurrence) void load(occurrence.id);
-        }}
+        onAdded={reload}
       />
 
       <FollowUpGuestModal
         open={Boolean(followUpTarget)}
         guest={followUpTarget}
         heading="Blue card"
-        occurrence={occurrence}
+        occurrence={occurrenceOf(followUpTarget)}
         interestOptions={interestOptions}
         appointmentTypes={appointmentTypes}
         onClose={() => setFollowUpTarget(null)}
@@ -476,24 +751,31 @@ export default function GuestCheckinPage() {
         onClose={() => setManageOptionsOpen(false)}
         onChanged={loadInterestOptions}
       />
-      {/* A scan here can now land on either list: an associate code records an
+      <AppointmentFormModal
+        open={appointmentTarget !== null}
+        title="Blue Card Follow Up"
+        initialValues={appointmentInitialValues}
+        appointmentTypes={appointmentTypes}
+        saving={savingAppointment}
+        onClose={() => setAppointmentTarget(null)}
+        onSubmit={scheduleAppointment}
+      />
+      {/* A scan here can land on either list: an associate code records an
           associate, and a guest's pass checks in a row on the very list behind
-          this modal (D8 reopened). Reloading covers both. */}
+          this modal (D8 reopened). A quiet reload covers both. There is no
+          "show pass" on this page — the guest has the pass by email.
+          All-locations mode: the modal asks which location's code (D24), and a
+          scan at any location in scope reloads the list; one outside it does
+          not touch this list. */}
       <BpmQrModal
         open={qrOpen}
-        occurrenceId={occurrence?.id ?? null}
+        occurrenceId={addLocation?.id ?? occurrence?.id ?? null}
+        locations={scopeOccurrences}
+        onLocationChange={setAddLocationId}
         onClose={() => setQrOpen(false)}
-        onCheckedIn={() => {
-          if (occurrence) void load(occurrence.id);
+        onCheckedIn={(result) => {
+          if (scopeIds.includes(result.occurrence_id)) reload();
         }}
-      />
-      {/* For the guest who says the link never arrived — the same code, on the
-          host's screen. */}
-      <GuestPassModal
-        open={passTarget !== null}
-        guest={passTarget}
-        occurrenceId={occurrence?.id ?? null}
-        onClose={() => setPassTarget(null)}
       />
     </BPMPageShell>
   );
