@@ -203,6 +203,10 @@ const CODE_MESSAGES: Record<string, string> = {
   not_payable: 'This invoice can no longer be paid here — it may already be paid.',
   already_resolved: 'This follow-up was already resolved.',
   not_approved: 'This cycle has not been approved yet, so nothing can be sent.',
+  quarter_not_ended: 'That quarter has not ended yet, so its payout cannot be prepared.',
+  not_draft: 'This payout is no longer a draft — it was already approved.',
+  not_retryable: 'This payout line can no longer be retried.',
+  not_voidable: 'This invoice can no longer be voided — it may be paid or processing.',
 };
 
 /**

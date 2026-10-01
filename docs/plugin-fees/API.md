@@ -4,14 +4,14 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees`, uncommitted; the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.3 |
-| **Verified against** | commit `fc7d037` plus the uncommitted `feature/plugin-fees` working tree (P2 + P3 + P4 screens) — 2026-10-01 |
+| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
+| **Doc version** | 0.4 |
+| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
 
-**Authority:** `mlm_platform/docs/plugin_fees/API.md` (contract v0.1: P2 §1–4, P3 §5, P4 §6). This file records
+**Authority:** `mlm_platform/docs/plugin_fees/API.md` (contract v0.1: P2 §1–4, P3 §5, P4 §6, P5 §7, P6 §8). This file records
 what the frontend sends and reads; it does not restate server behaviour.
 
 ## 1. Conventions
@@ -21,7 +21,7 @@ what the frontend sends and reads; it does not restate server behaviour.
   `Content-Type: application/json`; multipart calls send **only** `Authorization`.
 - Every path ends in `/`.
 - Errors are `{ "detail": str, "code": str }`, plus `fields` for `validation_error`.
-  `PluginFeesError` (`services/plugin-fees-service.ts:35`) carries `status`, `code`,
+  `PluginFeesError` (`services/plugin-fees-service.ts:71`) carries `status`, `code`,
   `fields`; a non-JSON error body becomes `Request failed: <status>`.
 - Money is integer cents; dates `YYYY-MM-DD`; timestamps ISO-8601 UTC.
 - File URLs are signed for 15 minutes.
@@ -58,6 +58,18 @@ what the frontend sends and reads; it does not restate server behaviour.
 | GET | `follow-ups/?status=` | `fetchFollowUps` | `useFollowUps` | Payments → Follow-ups |
 | POST | `follow-ups/{id}/resolve/` | `resolveFollowUp` | `useResolveFollowUp` | Resolve dialog |
 | GET | `balances/` | `fetchBalances` | `useBalances` | Billing cycles → SMD balances |
+| GET | `me/connect/` | `fetchMyConnect` | `useMyConnect` | Statement → Get paid (SMD) |
+| POST | `me/connect/onboarding-link/` | `createConnectOnboardingLink` | `useCreateConnectOnboardingLink` | Get paid button |
+| GET | `payouts/` | `fetchPayouts` | `usePayouts` | Payouts list |
+| POST | `payouts/` | `preparePayout` | `usePreparePayout` | Payouts → Prepare report |
+| GET | `payouts/{quarter}/` | `fetchPayoutReport` | `usePayoutReport` | Payouts → report |
+| POST | `payouts/{quarter}/approve/` | `approvePayout` | `useApprovePayout` | Approve payout dialog |
+| POST | `payouts/{quarter}/lines/{id}/retry/` | `retryPayoutLine` | `useRetryPayoutLine` | Payout line Retry |
+| GET | `dashboard/` | `fetchDashboard` | `useDashboard` | Overview |
+| GET | `sevc-totals/?from=&to=` | `fetchSevcTotals` | `useSevcTotals` | SEVC totals |
+| GET | `adjustments/?smd=&page=` | `fetchAdjustments` | `useAdjustments` | Adjustments list |
+| POST | `adjustments/` | `createAdjustment` | `useCreateAdjustment` | Adjustment form |
+| POST | `invoices/{id}/void/` | `voidInvoice` | `useVoidInvoice` | Void dialog (payments, agent statement) |
 
 ## 3. Payload types
 
@@ -83,6 +95,14 @@ All in `src/features/plugin-fees/types/index.ts`, mirroring the contract:
 | `CycleSummary` | `cycles/` | `generated_at`, `approved_at`, `approved_by` nullable |
 | `CycleReport`, `CycleTotals`, `SevcTotal`, `CycleAgent` | `cycles/{month}/`, `cycles/preview/`, approve response | `assistant_verified` null for MDs; `md_credit_*`, `closest_sevc_id`, `excluded_reason`, `invoice_id` nullable; P4 `sending?` typed optional |
 | `RecognitionCost` | `costs/` | `smd` is a `ReviewAgent`; `recipient_id`, `applied_month` nullable |
+| `ConnectAccount`, `ConnectStatus` | `me/connect/` | `requirements_due: string[]`; `updated_at` nullable |
+| `OnboardingLinkResponse` | onboarding-link | `{url}` |
+| `PayoutSummary`, `PayoutStatus` | `payouts/` | newest first; `approved_by`/`approved_at` nullable; `lines` is a count |
+| `PayoutReport`, `PayoutTotals`, `PayoutLine`, `PayoutEntry`, `PayoutLineStatus` | `payouts/{quarter}/`, approve response | entries carry no `id`/`balance_cents`; `stripe_transfer_id`, `sent_at` nullable; `failure` typed `string \| {code?, message?, at?} \| null` (contract shows only `null`) |
+| `PluginFeesDashboard`, `DashboardSevcTotal`, `UpcomingPayout`, `ConnectNotOnboarded` | `dashboard/` | `connect_not_onboarded[].status` excludes `enabled`; `sevc_name` typed nullable |
+| `SevcMonthTotal` | `sevc-totals/` | a `DashboardSevcTotal` + `month`, `total_cents` |
+| `LedgerAdjustment` | `adjustments/` | `agent` assumed `ReviewAgent`; `invoice_id`, `created_by` nullable |
+| `PaymentRow` | void response | typed as a payments row; unused (everything refetches) |
 
 **Request bodies**
 
@@ -99,6 +119,12 @@ All in `src/features/plugin-fees/types/index.ts`, mirroring the contract:
 | `me/invoices/{id}/pay-link/` | no body |
 | `cycles/{month}/send/` | no body |
 | `follow-ups/{id}/resolve/` | `{ "note": str }` — required, trimmed, never sent blank |
+| `me/connect/onboarding-link/` | no body |
+| `payouts/` (POST) | `{ "quarter": "YYYY-Qn" }` |
+| `payouts/{quarter}/approve/` | `{ "note": str }` — required, trimmed, never sent blank |
+| `payouts/{quarter}/lines/{id}/retry/` | no body |
+| `adjustments/` (POST) | `{ smd_id, amount_cents, note }` plus `invoice_id` only when given; `amount_cents` signed, non-zero, from direction × dollar text |
+| `invoices/{id}/void/` | `{ "note": str }` — required, trimmed, never sent blank |
 
 ## 4. Query parameters
 
@@ -108,6 +134,11 @@ The page size (25) is the server's; the client only computes "Page n of m" from 
 
 `payments/`: `month` (`YYYY-MM`, always sent; default the current UTC month).
 `follow-ups/`: `status` (`open` default · `resolved` · `all`, always sent).
+
+`sevc-totals/`: `from` and `to` (`YYYY-MM`, always sent; `from <= to` validated
+client-side; default the 6 months ending with the current UTC month). `adjustments/`:
+`smd` (only when a filter is picked), `page` — "Page n" with Previous / Next, as costs.
+Quarters in paths are `YYYY-Qn`, URL-encoded.
 
 `cycles/preview/`: `month` (`YYYY-MM`, validated client-side). `costs/`: `smd` (user id,
 only when a filter is picked), `month` (`YYYY-MM` of `date_sent`, only when set), `page`.
@@ -140,13 +171,22 @@ Previous / Next from `previous` / `next` rather than computing a page count.
 | `not_approved` | 409 | send | warning toast; dashboard and cycle refetch (on settle) |
 | `note_required` | 400 | resolve follow-up | prevented client-side; error toast if it happens |
 | `already_resolved` | 409 | resolve follow-up | warning toast, dialog closes, follow-ups refetch |
+| `not_eligible` | 403 | `me/connect/`, onboarding-link | panel: "Payouts are for active SMDs."; button: warning toast |
+| `stripe_unavailable` | 503 | onboarding-link (and `me/connect/` if it happens) | error toast; button re-enabled / inline error + Retry |
+| `quarter_not_ended` | 409 | prepare payout | warning toast |
+| `note_required` | 400 | approve payout, adjustment, void | prevented client-side; error toast / note field error if it happens |
+| `not_draft` | 409 | approve payout | warning toast, dialog closes, report refetches |
+| `not_retryable` | 409 | retry payout line | warning toast, report refetches |
+| `validation_error` (`fields`) | 400 | adjustment | `fields` mapped to inputs (`smd_id`, `amount_cents`, `note`, `invoice_id`); form error + toast |
+| `not_voidable` | 409 | void | warning toast, dialog closes; everything refetches on settle |
 
 **Stripe return.** `pay-link` sends the agent to Stripe, which returns to
-`/plugin-fees/statement?fee_pay=success|cancelled`; see
+`/plugin-fees/statement?fee_pay=success|cancelled`; `onboarding-link` to Stripe Connect,
+which returns to `/plugin-fees/statement?connect=return|refresh`; see
 [ARCHITECTURE.md §3](ARCHITECTURE.md#3-primary-flows).
 
 Messages prefer the backend `detail`; a fixed per-code message is the fallback
-(`describeError`, `utils/plugin-fees-format.ts:134`).
+(`describeError`, `utils/plugin-fees-format.ts:216`).
 
 ## 6. Backend ownership
 

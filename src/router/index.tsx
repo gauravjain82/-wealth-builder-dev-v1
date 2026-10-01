@@ -9,11 +9,15 @@ import { ContestSettingsRoute } from './contest-settings-route';
 import { GuidanceRoute } from './guidance-route';
 import { PluginFeesAccessRoute, PluginFeesReviewRoute } from './plugin-fees-review-route';
 import {
+  canManageAdjustments,
   canManageCosts,
   canSeeAgentStatements,
   canSeeCycles,
+  canSeeOverview,
   canSeeOwnStatement,
   canSeePayments,
+  canSeePayouts,
+  canSeeSevcTotals,
 } from '@/features/plugin-fees/utils/plugin-fees-access';
 import { ContestsRoute, PrefetchContests } from './contests-route';
 import { LeaderboardsRoute } from './leaderboards-route';
@@ -90,6 +94,18 @@ const PluginFeesPaymentsPage = lazy(
 );
 const PluginFeesAgentStatementPage = lazy(
   () => import('@/features/plugin-fees/pages/plugin-fees-agent-statement-page')
+);
+const PluginFeesOverviewPage = lazy(
+  () => import('@/features/plugin-fees/pages/plugin-fees-overview-page')
+);
+const PluginFeesPayoutsPage = lazy(
+  () => import('@/features/plugin-fees/pages/plugin-fees-payouts-page')
+);
+const PluginFeesSevcTotalsPage = lazy(
+  () => import('@/features/plugin-fees/pages/plugin-fees-sevc-totals-page')
+);
+const PluginFeesAdjustmentsPage = lazy(
+  () => import('@/features/plugin-fees/pages/plugin-fees-adjustments-page')
 );
 const HomeV2Page = lazy(
   () => import('@/features/home-v2/pages/home-v2-page')
@@ -347,6 +363,15 @@ const router = createBrowserRouter([
         element: <GuidanceRoute>{lazyLoad(GuidanceAdminPage)}</GuidanceRoute>,
       },
       {
+        // Plug-in fees admin overview (P6): plugin_fees:manage or :review.
+        path: 'admin/plugin-fees',
+        element: (
+          <PluginFeesAccessRoute allow={canSeeOverview}>
+            {lazyLoad(PluginFeesOverviewPage)}
+          </PluginFeesAccessRoute>
+        ),
+      },
+      {
         // Hierarchy Assistant office/assistant review queues; gated per-user by
         // plugin_fees:review (my-access can_review).
         path: 'admin/plugin-fees/review',
@@ -388,6 +413,34 @@ const router = createBrowserRouter([
         element: (
           <PluginFeesAccessRoute allow={canSeePayments}>
             {lazyLoad(PluginFeesPaymentsPage)}
+          </PluginFeesAccessRoute>
+        ),
+      },
+      {
+        // Quarterly payouts (P5): plugin_fees:manage, :review or :payout_approve. Prepare
+        // and Retry (:manage) and Approve (:payout_approve) are further gated inside.
+        path: 'admin/plugin-fees/payouts',
+        element: (
+          <PluginFeesAccessRoute allow={canSeePayouts}>
+            {lazyLoad(PluginFeesPayoutsPage)}
+          </PluginFeesAccessRoute>
+        ),
+      },
+      {
+        // SEVC totals by month (P6): plugin_fees:manage or :review.
+        path: 'admin/plugin-fees/sevc-totals',
+        element: (
+          <PluginFeesAccessRoute allow={canSeeSevcTotals}>
+            {lazyLoad(PluginFeesSevcTotalsPage)}
+          </PluginFeesAccessRoute>
+        ),
+      },
+      {
+        // Manual ledger adjustments (P6): plugin_fees:manage only.
+        path: 'admin/plugin-fees/adjustments',
+        element: (
+          <PluginFeesAccessRoute allow={canManageAdjustments}>
+            {lazyLoad(PluginFeesAdjustmentsPage)}
           </PluginFeesAccessRoute>
         ),
       },

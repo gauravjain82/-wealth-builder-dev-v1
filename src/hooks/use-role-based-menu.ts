@@ -13,8 +13,10 @@ import { usePluginFeesAccess } from '@/features/plugin-fees/hooks/use-plugin-fee
 import {
   canManageCosts,
   canSeeCycles,
+  canSeeOverview,
   canSeeOwnStatement,
   canSeePayments,
+  canSeePayouts,
   canSeeReviews,
 } from '@/features/plugin-fees/utils/plugin-fees-access';
 
@@ -62,6 +64,9 @@ export function useRoleBasedMenu(): MenuItem[] {
   const canManagePluginFees = canManageCosts(pluginFeesAccess);
   // Payments dashboard: :manage or :review (not :payout_approve, so not the cycles flag).
   const canViewPluginFeePayments = canSeePayments(pluginFeesAccess);
+  // Overview (and SEVC totals): :manage or :review. Payouts: also :payout_approve.
+  const canViewPluginFeeOverview = canSeeOverview(pluginFeesAccess);
+  const canViewPluginFeePayouts = canSeePayouts(pluginFeesAccess);
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
@@ -83,7 +88,9 @@ export function useRoleBasedMenu(): MenuItem[] {
         isPluginFeesBillable,
         canViewPluginFeeCycles,
         canManagePluginFees,
-        canViewPluginFeePayments
+        canViewPluginFeePayments,
+        canViewPluginFeeOverview,
+        canViewPluginFeePayouts
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -102,7 +109,9 @@ export function useRoleBasedMenu(): MenuItem[] {
       isPluginFeesBillable,
       canViewPluginFeeCycles,
       canManagePluginFees,
-      canViewPluginFeePayments
+      canViewPluginFeePayments,
+      canViewPluginFeeOverview,
+      canViewPluginFeePayouts
     );
   }, [
     user?.hasPromotionAccess,
@@ -121,5 +130,7 @@ export function useRoleBasedMenu(): MenuItem[] {
     canViewPluginFeeCycles,
     canManagePluginFees,
     canViewPluginFeePayments,
+    canViewPluginFeeOverview,
+    canViewPluginFeePayouts,
   ]);
 }

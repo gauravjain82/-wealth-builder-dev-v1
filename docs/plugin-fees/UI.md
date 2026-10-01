@@ -4,12 +4,12 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees`, uncommitted; the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.3 |
-| **Verified against** | commit `fc7d037` plus the uncommitted `feature/plugin-fees` working tree (P2 + P3 + P4 screens) — 2026-10-01 |
+| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
+| **Doc version** | 0.4 |
+| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
 
 ## 1. Routes and entry points
 
@@ -24,12 +24,22 @@
 | `/plugin-fees/statement?fee_pay=success` / `?fee_pay=cancelled` | Stripe return from Pay now | — |
 | `/admin/plugin-fees/costs` | admin | `PluginFeesAccessRoute` (`can_manage`) |
 | `/admin/plugin-fees/agents/:id/statement` | admin, Hierarchy Assistant | `PluginFeesAccessRoute` (`can_review \|\| can_manage`) |
+| `/plugin-fees/statement?connect=return` / `?connect=refresh` | Stripe Connect return (P5) | — |
+| `/admin/plugin-fees` | admin, Hierarchy Assistant | `PluginFeesAccessRoute` (`can_manage \|\| can_review`) |
+| `/admin/plugin-fees/payouts` (`?quarter=YYYY-Qn`) | admin, Hierarchy Assistant, approver | `PluginFeesAccessRoute` (`can_manage \|\| can_review \|\| can_approve_payouts`) |
+| `/admin/plugin-fees/sevc-totals` (`?from=YYYY-MM&to=YYYY-MM`) | admin, Hierarchy Assistant | `PluginFeesAccessRoute` (`can_manage \|\| can_review`) |
+| `/admin/plugin-fees/adjustments` | admin | `PluginFeesAccessRoute` (`can_manage`) |
+| `/admin/plugin-fees/review?tab=offices\|assistants&status=…` | overview deep link | read once (PF42) |
 | Settings → "View statement of account →" | `is_billable` | link under the plug-in fee sections |
 | Menu "My Plug-in Fees" 💳 | `is_billable` | inserted just under Home |
 | Menu "Plug-in Fee Reviews" 🗂️ | `can_review` | appended after the other per-user admin entries |
 | Menu "Billing Cycles" 🧾 | `can_manage \|\| can_review \|\| can_approve_payouts` | right after "Plug-in Fee Reviews" (or appended) |
 | Menu "Fee Payments" 💵 | `can_manage \|\| can_review` | after "Billing Cycles" (PF30) |
-| Menu "Recognition Costs" 🎖️ | `can_manage` | after "Fee Payments" |
+| Menu "Plug-in Fees" 📊 (overview) | `can_manage \|\| can_review` | first of the plug-in fees admin entries, before "Plug-in Fee Reviews" (PF41) |
+| Menu "Payouts" 🏦 | `can_manage \|\| can_review \|\| can_approve_payouts` | after "Fee Payments" |
+| Menu "SEVC Totals" 📈 | `can_manage \|\| can_review` | after "Payouts" |
+| Menu "Recognition Costs" 🎖️ | `can_manage` | after "SEVC Totals" |
+| Menu "Adjustments" ⚖️ | `can_manage` | after "Recognition Costs" |
 
 ## 2. Screens
 
@@ -91,11 +101,29 @@ link, submitted time, decision, actions history) and the action buttons. Paginat
 
 Heading "My Plug-in Fees", a line pointing to Settings, then:
 
+0. **Get paid** (P5) — only for an SMD (a `ledger`, and `my-access/` level `SMD`, PF34):
+   "Your positive balance is paid quarterly to your bank via Stripe. Stripe collects your
+   bank and tax details (W-9) securely."; the payout account badge — `none` "Not set up"
+   (grey), `onboarding` "Setup started — finish it" (amber), `restricted` "Stripe needs
+   more information" (red), `enabled` "Ready to receive payouts" (green) — with "Checked
+   with Stripe *time*"; the balance; for any status but `enabled`, a "Stripe still
+   needs:" list of `requirements_due` in plain words (PF36); and the button **Set up
+   payouts** (`none`) / **Finish setup** (`onboarding`, `restricted`) / **Update details**
+   (`enabled`, outline) → "Opening Stripe…" → redirect. Back with `?connect=return`: toast
+   "Back from Stripe. Checking your payout account…", a "Waiting for Stripe to update your
+   payout account…" line, polling 3 s × 30 s until the status changes (PF35), then a toast
+   with the new status, or on timeout "Stripe has not updated your payout account yet…".
+   `?connect=refresh`: warning toast "The link expired — click Finish setup again."
+   Errors: `not_eligible` "Only an active SMD can set up payouts." (load: "Payouts are for
+   active SMDs."); `stripe_unavailable` "Payout setup is temporarily unavailable…".
 1. **Balance and ledger** — only when the payload has `ledger` (SMDs). A balance card:
    positive → "Owed to you, paid quarterly" (green), negative → "You owe" with the
    absolute amount (red), zero → "Balance $0.00". Then the ledger table: date
    (`posted_at`), month (`Nov 2026`), description (label, memo underneath; a
-   `md_credit_rollup` entry carries a **Rolled up** tag), amount (`+$50.00` green /
+   `md_credit_rollup` entry carries a **Rolled up** tag; P5/P6: `payout` a green
+   **Payout** tag — the backend labels it "Quarterly payout sent (2026-Q4)" —, `reversal`
+   a red **Reversal** tag, `adjustment` a blue **Manual adjustment** tag with its memo
+   (the admin's note) underneath, PF45), amount (`+$50.00` green /
    `−$150.00` red), running balance.
 2. **Invoices** — month, kind (MD/SMD), payment state (badge + sentence, below), amount,
    paid date (plus "($x paid)" when `paid_cents` differs from the amount) and, on the
@@ -175,9 +203,20 @@ sign, `−$150.00`.
 
 ### 2.7 Agent statement lookup (`/admin/plugin-fees/agents/:id/statement`)
 
-"← Billing cycles" link (or "← Payments" when opened from the payments page, PF32), heading "Statement of account — *name*", a line "agency code ·
-level · email · read-only", then the §2.5 statement worded for a third party ("Owed to the
-agent…", "The agent owes"). No actions.
+"← Billing cycles" link (or "← Payments", "← Payouts", "← Plug-in Fees", "← Adjustments"
+— whichever page opened it, PF32/PF47), heading "Statement of account — *name*", a line
+"agency code · level · email" (plus "· read-only" unless `can_manage`), then the §2.5
+statement worded for a third party ("Owed to the agent…", "The agent owes"), without
+"Get paid" or Pay now.
+
+P6, `can_manage` only:
+- **Adjust ledger…** — in the ledger card's header (or under the heading when there is no
+  ledger) for an SMD; opens §2.13 with that SMD prefilled.
+- **Void…** on each `draft`, `open` or `failed` invoice → the void dialog: "Void the
+  *Month* invoice for *name* (*$x*)? Voiding cancels the charge and any scheduled retries.
+  It does not change the SMD ledger — post an adjustment if the month's fee must be
+  undone.", a required "Why is it being voided?" note; "Void invoice" disabled while
+  blank. `409 not_voidable` → warning toast, dialog closes.
 
 ### 2.8 Recognition & mailing costs (`/admin/plugin-fees/costs`)
 
@@ -215,12 +254,85 @@ Heading "Plug-in Fee Payments" (with "Read-only." for a `:review`-only user), th
    with two decimals). Columns: agent (links to the statement, agency code under it),
    level, kind, amount, status (§2.5 wording, admin audience), collection, attempts, next
    retry / due ("Retry *date*" or "Due *date*"), last failure (worded, date; message on
-   hover), paid (date + paid via), follow-up ("Open" red tag).
+   hover), paid (date + paid via), follow-up ("Open" red tag), and for `can_manage`
+   **Void…** on `draft` / `open` / `failed` rows (the §2.7 dialog, P6).
 4. **Follow-ups** — status select Open (default) · Resolved · All and a count; "Across all
    months." Columns: reason (Retries exhausted red / Self-pay overdue amber), agent (link),
    month, amount, opened, resolved (Open badge, or date and resolver — "Automatically"
    when no resolver), note, and **Resolve…** (`can_manage`, open only) → dialog with the
    follow-up summary and a required "What was done?" note.
+
+### 2.10 Payouts (`/admin/plugin-fees/payouts`)
+
+Heading "Quarterly Payouts" and an explanation, then:
+
+1. **Quarter + Prepare report** (only `can_manage`): a select of the last 8 ended quarters
+   ("Q3 2026 (Jul–Sep)"), defaulting to the most recently ended (PF37); "Preparing…";
+   success toast and the report opens. `409 quarter_not_ended` → warning toast.
+2. **Payout reports** (`payouts/`): quarter, period end, status badge, total, SMDs, held,
+   failed (amber when > 0), approved at · by, "View report" / "Showing".
+3. **Report** (`?quarter=`):
+   - Header: quarter, badge — `draft` "Draft — awaiting approval" (amber), `approved`
+     "Approved — queuing transfers" (blue), `sending` "Sending" (blue), `sent` "Sent"
+     (green), `partial` "Partly sent" (red); **Download CSV**; **Approve…**
+     (`can_approve_payouts`, `draft`). A draft callout ("nothing has been sent… held lines
+     carry to next quarter"); while `approved`/`sending` a "Transfers are being sent. This
+     report refreshes every few seconds." status line (5 s polling). Period end, approved
+     by, approved at, approval note.
+   - Totals cards: Total (+ SMD count), Payable, Held (amber, "*n* not onboarded"), Sent,
+     Failed (red, "*n* lines").
+   - **Lines**: ▸, SMD (links to the agent statement for `can_review || can_manage`;
+     agency code under it), amount, line status — `pending` "Pending", `held_no_connect`
+     "Not onboarded — balance carries forward", `sent` "Sent" with the date and the
+     transfer id, `failed` "Failed" with the failure —, payout account badge, and for
+     `can_manage` **Retry** on a failed or held line of a non-draft payout (PF39). ▸
+     expands to the ledger entries (date, month, label + memo, signed amount), a "Balance
+     carried in from before the quarter" row when they do not add up to the amount (PF38),
+     and a "Payout amount" footer.
+   - CSV (`plugin-fees-payout-<quarter>.csv`): one row per line with entries total.
+4. **Approve dialog**: Total · SMDs, Payable now, Held — not onboarded (amber); "Approving
+   sends Stripe transfers to every SMD whose payout account is ready. This cannot be
+   undone."; a note that accounts are re-checked; required "What did you check?" —
+   "Approve and send" disabled while blank. `409 not_draft` → warning toast + refetch.
+
+### 2.11 Overview (`/admin/plugin-fees`)
+
+Heading "Plug-in Fees", then cards (each header links to its page when the viewer may open
+it):
+
+1. **Payments — *Month*** → Payments (`?month=`): Outstanding, Paid, Processing, Retrying,
+   Self-pay overdue, Failed, Klarna, Follow-ups open (all months).
+2. **Verifications** → Reviews: Offices pending, Assistants pending, Re-verification due,
+   Expiring within 14 days — each a card linking to the matching tab and filter (PF42),
+   amber when > 0; plain counts for a viewer without `can_review`.
+3. **Recognition costs** → Costs (`can_manage`): this month's total. **Upcoming payout**
+   → Payouts: quarter, positive balances, SMD count, period end; Not onboarded (amber).
+4. **SEVC totals — *Month*** → SEVC totals by month: SEVC, SMD fees, costs, MD fees with
+   no SMD assistant. Empty: "Nothing received by an SEVC this month."
+5. **Payout accounts not set up**: SMD (statement link), payout account badge, balance.
+   Empty: "Every SMD with a balance has a payout account ready."
+
+### 2.12 SEVC totals (`/admin/plugin-fees/sevc-totals`)
+
+Heading "SEVC Totals" and what the columns mean; From / To month inputs (default the 6
+months ending this UTC month; "The start month must not be after the end month."), Show,
+**Download CSV** (`plugin-fees-sevc-totals-<from>-<to>.csv`). Table newest month first:
+month, SEVC, SMD fees, costs, MD fees with no SMD assistant, total; a **Grand total**
+footer.
+
+### 2.13 Ledger adjustments (`/admin/plugin-fees/adjustments`)
+
+"← Statement" when opened from an agent statement; heading "Ledger Adjustments" and the
+never-edited rule. Then:
+
+1. **Post an adjustment**: SMD (user search, prefilled from the statement), Direction
+   (Credit — owed to the SMD (+) / Debit — the SMD owes (−)), Amount ($) with "Posts
+   +$45.00 / −$45.00" beneath, Invoice id (optional, digits), Note (required). "Post
+   adjustment…" → confirmation: "This will credit/debit *name*'s ledger by $X.
+   Adjustments cannot be edited or deleted — correct a mistake with an opposite
+   adjustment." plus amount, note and invoice. Field errors from `fields` / `note_required`.
+2. **Adjustments**: SMD filter (+ "All SMDs"), count; posted, SMD (statement link), signed
+   amount, note, invoice, by. Previous / Next.
 
 ## 3. States
 
@@ -238,6 +350,13 @@ Heading "Plug-in Fee Payments" (with "Read-only." for a `:review`-only user), th
 | Statement Pay now | "Opening…" | no Pay now column when no invoice has `can_pay_now` | toast by code | not shown on the admin lookup |
 | Costs list | "Loading…" | "No costs have been logged." / "No costs match these filters." | `ErrorState` with retry | route redirects to `/home` |
 | Cost form | "Saving…" | — | per-field errors (client and `validation_error` `fields`, e.g. `smd_id` not an SMD) + form error + toast | — |
+| Get paid | "Loading your payout account…" | n/a | inline error + Retry; `not_eligible` → "Payouts are for active SMDs." | panel absent unless an SMD with a ledger |
+| Payouts list | "Loading…" | "No payout report has been prepared yet." | `ErrorState` with retry | route redirects to `/home` |
+| Payout report | "Loading the *quarter* payout…" | "No report open"; "No lines" when nobody had a positive balance | `ErrorState` with retry | Prepare / Retry absent without `can_manage`; Approve without `can_approve_payouts` |
+| Overview | "Loading…" | per-card empty lines | `ErrorState` with retry | route redirects to `/home` |
+| SEVC totals | "Loading…" | "No SEVC received anything in this range." | `ErrorState` with retry | route redirects to `/home` |
+| Adjustments | "Loading…" | "No adjustment has been posted." / "No adjustments for this SMD." | `ErrorState` with retry | route redirects to `/home` |
+| Adjustment form | "Posting…" | — | field errors + form error + toast | — |
 
 ## 4. Interaction rules
 
@@ -259,7 +378,16 @@ Heading "Plug-in Fee Payments" (with "Read-only." for a `:review`-only user), th
 - Resolve follow-up: the Resolve button is disabled while the note is blank. Success →
   toast, dialog closes. `409 already_resolved` → warning toast, dialog closes, the list
   refetches.
-- Payments CSV cells beginning `= + - @` are prefixed with `'`, as for the agents CSV.
+- Payments CSV cells beginning `= + - @` are prefixed with `'`, as for the agents CSV
+  (and the payout and SEVC totals CSVs).
+- Approve payout: success toast, the report reloads and polls while sending. `409
+  not_draft` → warning toast, dialog closes, refetch.
+- Retry a payout line: "Retrying…" (every Retry disabled); `409 not_retryable` → warning
+  toast, refetch.
+- Post an adjustment: always confirmed; on success the amount, note and invoice clear, the
+  SMD stays.
+- Void: the note is required; success toast; `409 not_voidable` → warning toast. Payments,
+  statements, follow-ups and the overview refetch either way.
 - Dollar inputs accept `30`, `30.5`, `1,200.00`; negatives and more than two decimals are
   rejected with "Enter dollars, at most two decimals, not negative."
 - Download CSV exports exactly the filtered agents (dollars with two decimals, booleans as
@@ -282,7 +410,9 @@ title). Thumbnails have `alt` text naming the file. Expandable rows use a button
 card is `role="alert"`, the balance card `role="status"`. P4: the sending bar is a
 `role="progressbar"` with `aria-valuenow`/`max`; payments filter tabs are a `tablist`
 over one `tabpanel`; each Pay now is `aria-describedby` its payment-options copy; the
-"Waiting for Stripe…" line is `role="status"`.
+"Waiting for Stripe…" line is `role="status"`. P5/P6: payout lines expand with the same
+`aria-expanded` button; the Connect and payout "waiting" lines are `role="status"`; the
+overview's count cards are real links with a visible focus border.
 
 ## 7. Styling and theming
 
@@ -295,4 +425,6 @@ Credits are green and debits red (`wb-pf-amount--credit` / `--debit`). P4 adds
 `wb-pf-pay-*` (payment state, Pay now copy), `wb-pf-stat--danger`, `wb-pf-stat--klarna`,
 `wb-pf-tag--klarna` / `--danger`, `wb-pf-sending` / `wb-pf-progress*`, `wb-pf-tabs--scroll`
 (filter tabs scroll inside on a phone) and `wb-pf-tab-count`, each with a light-mode
-override where it sets a colour.
+override where it sets a colour. P5/P6 add `wb-pf-connect-head`, `wb-pf-requirements`,
+`wb-pf-tag--payout` / `--adjustment`, `wb-pf-stat--link` (a count card that is a link),
+`wb-pf-overview-grid` and `wb-pf-total-row`, each colour with a light-mode override.

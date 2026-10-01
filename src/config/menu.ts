@@ -96,6 +96,13 @@ const MENU_ITEMS = {
   } as MenuItem,
   // Guidance library and review queue, gated per-user by gms:author (no role holds it).
   GUIDANCE: { label: 'Guidance', icon: '🧭', path: '/admin/guidance' } as MenuItem,
+  // Plug-in fees admin overview (the landing entry of the plug-in fees admin entries),
+  // gated per-user by plugin_fees:manage or :review.
+  PLUGIN_FEES_OVERVIEW: {
+    label: 'Plug-in Fees',
+    icon: '📊',
+    path: '/admin/plugin-fees',
+  } as MenuItem,
   // Plug-in fee office/assistant review queues, gated per-user by plugin_fees:review
   // (the Hierarchy Assistant). No plan grants it.
   PLUGIN_FEES_REVIEW: {
@@ -116,6 +123,25 @@ const MENU_ITEMS = {
     label: 'Fee Payments',
     icon: '💵',
     path: '/admin/plugin-fees/payments',
+  } as MenuItem,
+  // Quarterly SMD payouts (Stripe Connect), gated per-user by plugin_fees:manage, :review
+  // or :payout_approve.
+  PLUGIN_FEES_PAYOUTS: {
+    label: 'Payouts',
+    icon: '🏦',
+    path: '/admin/plugin-fees/payouts',
+  } as MenuItem,
+  // SEVC totals by month, gated per-user by plugin_fees:manage or :review.
+  PLUGIN_FEES_SEVC_TOTALS: {
+    label: 'SEVC Totals',
+    icon: '📈',
+    path: '/admin/plugin-fees/sevc-totals',
+  } as MenuItem,
+  // Manual SMD ledger adjustments, gated per-user by plugin_fees:manage.
+  PLUGIN_FEES_ADJUSTMENTS: {
+    label: 'Adjustments',
+    icon: '⚖️',
+    path: '/admin/plugin-fees/adjustments',
   } as MenuItem,
   // Recognition and mailing costs charged to SMDs, gated per-user by plugin_fees:manage.
   PLUGIN_FEES_COSTS: {
@@ -701,10 +727,14 @@ export function getMenuForUser(
   isPluginFeesBillable: boolean = false,
   // plugin_fees:manage, :review or :payout_approve: the billing cycles screen.
   canViewPluginFeeCycles: boolean = false,
-  // plugin_fees:manage: recognition and mailing costs.
+  // plugin_fees:manage: recognition and mailing costs, and ledger adjustments.
   canManagePluginFees: boolean = false,
   // plugin_fees:manage or :review: the payments dashboard and follow-ups.
-  canViewPluginFeePayments: boolean = false
+  canViewPluginFeePayments: boolean = false,
+  // plugin_fees:manage or :review: the plug-in fees overview and SEVC totals.
+  canViewPluginFeeOverview: boolean = false,
+  // plugin_fees:manage, :review or :payout_approve: quarterly payouts.
+  canViewPluginFeePayouts: boolean = false
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -784,21 +814,38 @@ export function getMenuForUser(
 
   // The rest of the plug-in fees admin entries follow the review entry, each on its
   // own grant: cycles (manage, review or payout_approve), payments (manage or review),
-  // costs (manage).
+  // payouts (manage, review or payout_approve), SEVC totals (manage or review), costs
+  // and adjustments (manage).
   const pluginFeesAdminEntries = [
     canViewPluginFeeCycles ? MENU_ITEMS.PLUGIN_FEES_CYCLES : null,
     canViewPluginFeePayments ? MENU_ITEMS.PLUGIN_FEES_PAYMENTS : null,
+    canViewPluginFeePayouts ? MENU_ITEMS.PLUGIN_FEES_PAYOUTS : null,
+    canViewPluginFeeOverview ? MENU_ITEMS.PLUGIN_FEES_SEVC_TOTALS : null,
     canManagePluginFees ? MENU_ITEMS.PLUGIN_FEES_COSTS : null,
+    canManagePluginFees ? MENU_ITEMS.PLUGIN_FEES_ADJUSTMENTS : null,
   ].filter(
     (entry): entry is MenuItem =>
       entry !== null && !menuItems.some((item) => item.label === entry.label)
   );
+  const pluginFeesReviewIdx = menuItems.findIndex(
+    (item) => item.label === MENU_ITEMS.PLUGIN_FEES_REVIEW.label
+  );
+  const pluginFeesInsertAt =
+    pluginFeesReviewIdx >= 0 ? pluginFeesReviewIdx + 1 : menuItems.length;
   if (pluginFeesAdminEntries.length) {
-    const reviewIdx = menuItems.findIndex(
-      (item) => item.label === MENU_ITEMS.PLUGIN_FEES_REVIEW.label
+    menuItems.splice(pluginFeesInsertAt, 0, ...cloneMenuItems(pluginFeesAdminEntries));
+  }
+  // The overview is the landing entry: it goes first, ahead of the review entry (or of
+  // the other admin entries when there is no review entry).
+  if (
+    canViewPluginFeeOverview &&
+    !menuItems.some((item) => item.label === MENU_ITEMS.PLUGIN_FEES_OVERVIEW.label)
+  ) {
+    menuItems.splice(
+      pluginFeesReviewIdx >= 0 ? pluginFeesReviewIdx : pluginFeesInsertAt,
+      0,
+      cloneMenuItems([MENU_ITEMS.PLUGIN_FEES_OVERVIEW])[0]
     );
-    const insertAt = reviewIdx >= 0 ? reviewIdx + 1 : menuItems.length;
-    menuItems.splice(insertAt, 0, ...cloneMenuItems(pluginFeesAdminEntries));
   }
 
   // An MD's or SMD's own plug-in fee statement. Not an admin tool, so it goes just

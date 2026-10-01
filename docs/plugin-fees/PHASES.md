@@ -4,15 +4,16 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees`, uncommitted; the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.3 |
-| **Verified against** | commit `fc7d037` plus the uncommitted `feature/plugin-fees` working tree (P2 + P3 + P4 screens) — 2026-10-01 |
+| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
+| **Doc version** | 0.4 |
+| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
 
-Phase numbers follow the backend's plan for `plugin_fees` (P2 is §1–4, P3 is §5 and P4 is
-§6 of the contract in `mlm_platform/docs/plugin_fees/API.md`); do not renumber.
+Phase numbers follow the backend's plan for `plugin_fees` (P2 is §1–4, P3 is §5, P4 is §6,
+P5 is §7 and P6 is §8 of the contract in `mlm_platform/docs/plugin_fees/API.md`); do not
+renumber.
 
 ## 1. Timeline
 
@@ -21,7 +22,9 @@ Phase numbers follow the backend's plan for `plugin_fees` (P2 is §1–4, P3 is 
 | 2026-09-30 | Spec v3 received (`mlm_platform/docs/integrations/plugin-fees/SPEC_v3.md`) |
 | 2026-10-01 | P2 contract v0.1 published; frontend P2 built on `feature/plugin-fees` (uncommitted) |
 | 2026-10-01 | P3 contract (§5) published; frontend P3 screens built on the same branch (uncommitted) |
-| 2026-10-01 | P4 contract (§6, collection) published; frontend P4 screens built on the same branch (uncommitted), backend P4 not yet built |
+| 2026-10-01 | P4 contract (§6, collection) published; frontend P4 screens built on the same branch, backend P4 not yet built |
+| 2026-10-01 | P2–P4 frontend committed (`21294f1`) |
+| 2026-10-01 | P5 (§7, payouts / Stripe Connect) and P6 (§8, admin remainder) contract published; frontend P5 + P6 built on the same branch (uncommitted) while the backend builds them in parallel |
 
 ## 2. Phases
 
@@ -73,9 +76,38 @@ written the backend had no P4 views yet (its `FeeInvoice` model still lacked
 - Menu entry "Fee Payments"; the agent statement lookup's back link returns to the page
   that opened it.
 
-### P5 — Payouts
+### P5 — Quarterly payouts: Stripe Connect
 
-**Status:** pending backend. Nothing built here.
+**Status:** built, not merged, not deployed. Built from contract §7 alone, in parallel with
+the backend; nothing here has run against a server.
+
+- "Get paid" on the SMD's own statement (`components/payouts/connect-panel.tsx`):
+  `me/connect/` status badge, what Stripe still needs (humanised), balance, the
+  explanation, and Set up payouts / Finish setup / Update details →
+  `me/connect/onboarding-link/` → redirect; the `?connect=return|refresh` return with a
+  3 s × 30 s poll (PF34–PF36).
+- Statement ledger: `payout`, `reversal` and `adjustment` entries tagged (PF45).
+- Payouts `/admin/plugin-fees/payouts` (`can_manage || can_review || can_approve_payouts`):
+  list, Prepare report (`can_manage`, quarter select, PF37), report with header, totals,
+  lines (agent link, amount, line status, payout account), expandable ledger entries that
+  reconcile to the amount (PF38), CSV, Approve (`can_approve_payouts`, draft, required
+  note), Retry (`can_manage`, PF39), 5 s polling while transfers are in flight.
+
+### P6 — Admin dashboard remainder
+
+**Status:** built, not merged, not deployed. Built from contract §8 alone.
+
+- Overview `/admin/plugin-fees` (`can_manage || can_review`), the landing menu entry
+  (PF41): payments, follow-ups, verifications (deep-linked to the review queue, PF42),
+  recognition costs, this month's SEVC totals, upcoming payout, payout accounts not set up.
+- SEVC totals `/admin/plugin-fees/sevc-totals` (`can_manage || can_review`), its own route
+  (PF40): month range in the URL, rows per month × SEVC, grand totals, CSV.
+- Ledger adjustments `/admin/plugin-fees/adjustments` (`can_manage`): list with SMD filter
+  and paging; form with direction + amount → signed cents, required note, optional
+  invoice id, restating confirmation (PF43). "Adjust ledger…" on the admin agent
+  statement.
+- Void (`can_manage`) on payments rows and admin agent statement invoices in `draft`,
+  `open` or `failed` (PF44).
 
 ## 3. Decision log
 
@@ -114,12 +146,29 @@ written the backend had no P4 views yet (its `FeeInvoice` model still lacked
 | PF31 | Send now asks for confirmation; Pay now and Resolve's note dialog follow the existing patterns (`NO_RETRY`, `ConfirmationDialog` with `confirmDisabled`) | Send now pushes every pending invoice to Stripe at once and cannot be undone. A `409 not_approved` is a warning toast; the dashboard and the cycle refetch on settle either way | `pages/plugin-fees-payments-page.tsx`; `hooks/use-plugin-fees.ts` `useSendCycle` |
 | PF32 | The agent statement lookup's back link honours `location.state.backTo` (only `/admin/plugin-fees/…` paths), defaulting to Billing cycles | It is now reached from four places; a hard-coded "← Billing cycles" from the payments page was wrong. Restricting the path keeps the state from being an open redirect | `pages/plugin-fees-agent-statement-page.tsx` |
 | PF33 | The SMD balances total is the sum of **positive** balances only, labelled "Total owed" | A negative balance is what an SMD owes, not what is owed to them; netting it in would understate the quarterly payout | `components/payments/balances-section.tsx` |
+| PF34 | "Get paid" renders above the ledger only when the statement has a `ledger` **and** `my-access/` says `is_billable` with `level_code === 'SMD'` (`canSetUpPayouts`); the panel owns its `?connect=` return | `me/connect/` answers anyone but an active SMD `403 not_eligible`; requiring both keeps an MD (or a stale access payload) from provoking it. Putting the return handling in the panel keeps the statement page's `?fee_pay=` logic untouched | contract §7; `components/payouts/connect-panel.tsx`; `pages/plugin-fees-statement-page.tsx` |
+| PF35 | `?connect=return` polls `me/connect/` every 3 s for up to 30 s until the status **differs from the one before the redirect**, remembered in `sessionStorage['wb.pf.connectStatusBefore']`; with storage blocked it polls until `enabled`. `?connect=refresh` only toasts "The link expired — click Finish setup again" | After a full-page redirect there is no cached baseline (the PF6 problem); remembering it per tab is the same fix as PF26. Stopping on `enabled` alone was rejected: an SMD who submits and lands in `restricted` would wait 30 s for nothing | `components/payouts/connect-panel.tsx` |
+| PF36 | `requirements_due` is shown in plain words from a map of common Stripe requirement paths, duplicates folded (the three `dob.*` paths read "Date of birth" once); unknown paths show their last segment humanised. Shown for any status but `enabled` | Raw paths (`individual.verification.document`) mean nothing to an agent. The contract asks for the list on `restricted`; `onboarding` can carry requirements too, and hiding them there was rejected | `utils/plugin-fees-payout.ts` `humanizeRequirements` |
+| PF37 | Prepare report defaults to the **most recently ended quarter on the UTC calendar** and offers only the last 8 ended quarters. The response is not cached; the list and that quarter's report are refetched | A quarter that has not ended only earns `409 quarter_not_ended` (still handled, as a toast). UTC because the backend's dates are (D5). The contract says prepare "returns the existing draft" without pinning the body, so writing it into the report cache was rejected | `utils/plugin-fees-payout.ts` `lastEndedQuarter`; `hooks/use-plugin-fees.ts` `usePreparePayout` |
+| PF38 | A payout line's expanded ledger detail adds a row **"Balance carried in from before the quarter"** = `amount_cents` − Σ`entries`, when non-zero, and the footer shows the server's `amount_cents` | `amount_cents` is the balance at `period_end`, but `entries` are only those posted in the quarter; a held line's carried balance would otherwise make the detail not add up. Hiding the difference, or showing a client sum as the total, was rejected (PF20) | `components/payouts/payout-report.tsx` `EntriesTable` |
+| PF39 | Retry is offered (`can_manage`) on a `failed` or `held_no_connect` line of any payout past `draft` (`approved`, `sending`, `sent`, `partial`). The report — and the list, while any row is in flight — is polled every 5 s while `approved` or `sending` | The contract says "an approved payout"; `sent`/`partial` are later states of one, and the server answers `409 not_retryable` if not. Polling only in flight keeps an idle page quiet | `utils/plugin-fees-payout.ts` `isLineRetryable`; `hooks/use-plugin-fees.ts` `usePayoutReport`, `usePayouts` |
+| PF40 | SEVC totals is **its own route** `/admin/plugin-fees/sevc-totals` with a menu entry; the overview shows only this month's, linking there. Range in the URL (`?from=&to=`), default the 6 months ending with the current UTC month; the grand total sums the rows' server `total_cents` | It is a range report with its own URL state and CSV; folding a range picker into the at-a-glance overview was rejected as clutter. The URL makes a range shareable and survives Back | `pages/plugin-fees-sevc-totals-page.tsx` |
+| PF41 | The menu gains "Plug-in Fees" (overview, landing), "Payouts", "SEVC Totals" and "Adjustments" through **two** new positional flags: `canViewPluginFeeOverview` (overview and SEVC totals, `:manage`/`:review`) and `canViewPluginFeePayouts` (`:manage`/`:review`/`:payout_approve`). Adjustments reuse `canManagePluginFees` (`:manage`, the costs flag). The overview is inserted **before** "Plug-in Fee Reviews" | Flags follow audiences, not pages (PF30): a third flag for SEVC totals or adjustments would duplicate an existing predicate. The overview leads the group because it is the landing page | `src/config/menu.ts`; `src/hooks/use-role-based-menu.ts` |
+| PF42 | Verification cards link to the review page with `?tab=&status=` (read once, as the opening tab and filter). "Expiring within 14 days" links to the assistants' `reverify_due` filter. Links are shown only where the viewer may open the target (e.g. a `:manage`-only admin sees counts without review links) | The queue has no "expiring" filter; the re-verification window opens 14 days before `reverify_due`, so the two sets should coincide. A link that redirects to `/home` was rejected | `pages/plugin-fees-overview-page.tsx`; `pages/plugin-fees-review-page.tsx`; `components/review/review-queue.tsx` `initialStatus` |
+| PF43 | The adjustment form takes a **direction** (Credit — owed to the SMD, + / Debit — the SMD owes, −) and an unsigned dollar amount, combined into one signed integer of cents; submit opens a confirmation restating the effect and that adjustments are never edited or deleted. The admin agent statement's "Adjust ledger…" (`:manage`, shown for level SMD or any statement with a ledger) passes the SMD in `location.state`, not the URL | A signed dollar field invites sign mistakes; the confirmation is the last chance since there is no undo. Router state keeps an id-prefilled money form out of shareable URLs; the SMD picker and the server's `fields.smd_id` remain the check (as PF14) | `components/adjustments/adjustment-form.tsx`; `pages/plugin-fees-adjustments-page.tsx`; `pages/plugin-fees-agent-statement-page.tsx` |
+| PF44 | One `VoidInvoiceDialog` (owning its mutation, required note, the contract's "does not change the SMD ledger" sentence) serves the payments rows and the admin agent statement. On settle it invalidates payments, every statement, follow-ups and the overview — **not** balances. The agent statement drops its "read-only" label for `:manage` | Voiding never touches the ledger (contract §8), so refetching balances would only suggest it does. Follow-ups are refetched because voiding resolves them | `components/invoices/void-invoice-dialog.tsx`; `hooks/use-plugin-fees.ts` `useVoidInvoice` |
+| PF45 | Ledger rows keep the backend's `label` and `memo` and add a tag: `payout` "Payout" (green), `reversal` "Reversal" (red), `adjustment` "Manual adjustment" (blue); fallback labels only when `label` is empty | The backend already words payouts ("Quarterly payout sent (2026-Q4)"); a tag makes the three non-routine entry types scannable without rewriting server copy. The adjustment's note is expected in `memo` | `components/statement/statement-view.tsx` `LedgerDescription` |
+| PF46 | Payout approve / retry also invalidate every statement; an adjustment also invalidates `['plugin-fees','connect','me']` | Beyond the brief's list: a sent payout posts a `payout` ledger entry, and an adjustment changes the SMD's balance that "Get paid" shows | `hooks/use-plugin-fees.ts` `useInvalidatePayouts`, `useCreateAdjustment` |
+| PF47 | The agent statement's back link also honours `/admin/plugin-fees` itself (the overview), still nothing outside the module | PF32's `/admin/plugin-fees/…` prefix rejected the overview's own path | `pages/plugin-fees-agent-statement-page.tsx` `backTarget` |
 
 ## 4. Deliberately not built
 
 - Client-side feature flags — rollout is backend grants only.
-- A URL-synced review tab/filter — not asked for; easy to add.
-- Any fee, ledger or payout editing — the Hierarchy Assistant cannot change them (spec).
+- A fully URL-synced review tab/filter — the overview's deep link is read once (PF42).
+- Any fee or payout editing by the Hierarchy Assistant — they cannot change them (spec);
+  adjustments and void are `:manage` only.
+- Editing or deleting an adjustment — the contract forbids it; post an opposite one.
+- A server-side payout or SEVC CSV — both are built client-side from the payload.
 - Editing a logged cost — the contract has no update endpoint; delete and re-log.
 - Server-side CSV or report search — the report carries every agent (PF18).
 
@@ -148,4 +197,15 @@ written the backend had no P4 views yet (its `FeeInvoice` model still lacked
   `agent` in `payments/` / `follow-ups/` / `balances/` is the same shape as
   `ReviewAgent` (assumed).
 - Run P4 against the backend once its §6 views exist.
-- P5 UI.
+- P5 / P6 contract points to confirm with the backend: the shape of a payout line's
+  `failure` (contract shows only `null`; typed `string | {code?, message?, at?}`); the
+  response bodies of `POST payouts/` (assumed the report, not used — PF37) and
+  `…/retry/` (typed `unknown`, unused) and of `invoices/{id}/void/` (typed as a payments
+  row, unused); whether `adjustments/` rows' `agent` is a `ReviewAgent` and `created_by` a
+  name string; whether the adjustment note becomes the ledger entry's `memo` (PF45);
+  whether `sevc_name` can be null (typed nullable); which date `costs_this_month_cents`
+  counts by (shown as "This month"); whether `assistants_expiring_14d` is exactly the
+  `reverify_due` queue (PF42); whether `me/connect/`.balance_cents equals the statement's
+  ledger balance (assumed).
+- Run P5 / P6 against the backend once its §7–§8 views exist; Stripe Connect onboarding
+  needs a test-mode Connect platform on the backend.

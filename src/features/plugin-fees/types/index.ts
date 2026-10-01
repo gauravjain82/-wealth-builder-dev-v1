@@ -1,5 +1,5 @@
 /**
- * Wire types for the plug-in fees P2, P3 and P4 surfaces.
+ * Wire types for the plug-in fees P2–P6 surfaces.
  *
  * These mirror the backend contract field for field:
  * `mlm_platform/docs/plugin_fees/API.md` (summarised in `docs/plugin-fees/API.md` §3).
@@ -568,9 +568,222 @@ export interface SendCycleResponse {
   queued: boolean;
 }
 
+/* --- P5: Stripe Connect and quarterly payouts (contract §7) ---------------- */
+
+/**
+ * `none` no account · `onboarding` started, details not submitted · `restricted`
+ * submitted, Stripe needs more / payouts not enabled · `enabled` ready for transfers.
+ */
+export type ConnectStatus = 'none' | 'onboarding' | 'restricted' | 'enabled';
+
+/** `GET me/connect/` — active SMDs only (others `403 not_eligible`). */
+export interface ConnectAccount {
+  status: ConnectStatus;
+  /** Stripe requirement paths, e.g. `individual.verification.document`. */
+  requirements_due: string[];
+  updated_at: string | null;
+  /** The SMD's current ledger balance; positive is owed to them. */
+  balance_cents: number;
+}
+
+/** `POST me/connect/onboarding-link/` */
+export interface OnboardingLinkResponse {
+  url: string;
+}
+
+/** `YYYY-Qn`, e.g. `2026-Q4`. */
+export type QuarterValue = string;
+
+export type PayoutStatus = 'draft' | 'approved' | 'sending' | 'sent' | 'partial';
+
+/** One row of `GET payouts/`, newest first. */
+export interface PayoutSummary {
+  quarter: QuarterValue;
+  /** `YYYY-MM-DD` */
+  period_end: string;
+  status: PayoutStatus;
+  total_cents: number;
+  /** Count of lines (SMDs with a positive balance at `period_end`). */
+  lines: number;
+  held: number;
+  failed: number;
+  approved_by: string | null;
+  approved_at: string | null;
+}
+
+export interface PayoutTotals {
+  total_cents: number;
+  payable_cents: number;
+  held_cents: number;
+  sent_cents: number;
+  failed_cents: number;
+  lines: number;
+  held: number;
+  failed: number;
+}
+
+export type PayoutLineStatus = 'pending' | 'held_no_connect' | 'sent' | 'failed';
+
+/** A ledger entry behind a payout line (entries posted in the quarter). */
+export interface PayoutEntry {
+  posted_at: string;
+  type: LedgerEntryType;
+  label: string;
+  memo: string;
+  amount_cents: number;
+  /** `YYYY-MM` */
+  month: string;
+}
+
+/**
+ * Why a transfer failed. The contract shows only `"failure": null`; it is typed to accept
+ * either a message string or the `{code, message}` shape the P4 failures use.
+ */
+export type PayoutFailure = string | { code?: string; message?: string; at?: string };
+
+export interface PayoutLine {
+  id: number;
+  agent: ReviewAgent;
+  /** The SMD's ledger balance as of `period_end` 23:59:59 UTC. */
+  amount_cents: number;
+  /**
+   * Ledger balance at the start of the quarter (contract §7.1):
+   * `opening_balance_cents + Σ entries.amount_cents === amount_cents`.
+   */
+  opening_balance_cents: number;
+  status: PayoutLineStatus;
+  connect_status: ConnectStatus;
+  stripe_transfer_id: string | null;
+  failure: PayoutFailure | null;
+  sent_at: string | null;
+  entries: PayoutEntry[];
+}
+
+/** `GET payouts/{quarter}/` */
+export interface PayoutReport {
+  quarter: QuarterValue;
+  period_end: string;
+  status: PayoutStatus;
+  approved_by: string | null;
+  approved_at: string | null;
+  note: string;
+  totals: PayoutTotals;
+  lines: PayoutLine[];
+}
+
+export interface ApprovePayoutInput {
+  quarter: QuarterValue;
+  note: string;
+}
+
+export interface RetryPayoutLineInput {
+  quarter: QuarterValue;
+  lineId: number;
+}
+
+/* --- P6: admin dashboard remainder (contract §8) --------------------------- */
+
+export interface DashboardSevcTotal {
+  sevc_id: number;
+  sevc_name: string | null;
+  smd_fees_cents: number;
+  costs_cents: number;
+  /** MD fees with no SMD assistant on the line, routed to the SEVC. */
+  md_unrouted_cents: number;
+}
+
+export interface UpcomingPayout {
+  quarter: QuarterValue;
+  period_end: string;
+  positive_balances_cents: number;
+  smds: number;
+  not_onboarded: number;
+}
+
+export interface ConnectNotOnboarded {
+  agent: ReviewAgent;
+  status: Exclude<ConnectStatus, 'enabled'>;
+  balance_cents: number;
+}
+
+/** `GET dashboard/` */
+export interface PluginFeesDashboard {
+  /** `YYYY-MM` */
+  month: string;
+  payments: {
+    counts: {
+      paid: number;
+      processing: number;
+      retrying: number;
+      self_pay_overdue: number;
+      failed: number;
+    };
+    outstanding_cents: number;
+    klarna_count: number;
+  };
+  follow_ups_open: number;
+  verifications: {
+    offices_pending: number;
+    assistants_pending: number;
+    assistants_reverify_due: number;
+    /** Verified with `reverify_due` within 14 days. */
+    assistants_expiring_14d: number;
+  };
+  costs_this_month_cents: number;
+  sevc_totals_this_month: DashboardSevcTotal[];
+  upcoming_payout: UpcomingPayout;
+  connect_not_onboarded: ConnectNotOnboarded[];
+}
+
+/** One row of `GET sevc-totals/?from=&to=`, net of reversals. */
+export interface SevcMonthTotal extends DashboardSevcTotal {
+  /** `YYYY-MM` */
+  month: string;
+  total_cents: number;
+}
+
+export interface SevcTotalsRange {
+  /** `YYYY-MM` */
+  from: string;
+  /** `YYYY-MM` */
+  to: string;
+}
+
+/** One row of `GET adjustments/` (paginated). Never edited or deleted. */
+export interface LedgerAdjustment {
+  id: number;
+  agent: ReviewAgent;
+  /** Signed: positive credits the SMD, negative debits. */
+  amount_cents: number;
+  note: string;
+  invoice_id: number | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface AdjustmentsQuery {
+  smd: number | null;
+  page: number;
+}
+
+/** `POST adjustments/` */
+export interface AdjustmentInput {
+  smd_id: number;
+  /** Signed, non-zero integer cents. */
+  amount_cents: number;
+  note: string;
+  invoice_id?: number;
+}
+
+/** `POST invoices/{id}/void/` */
+export interface VoidInvoiceInput {
+  id: number;
+  note: string;
+}
+
 /* --- errors --------------------------------------------------------------- */
 
-/** The stable `code`s the P2/P3 contract documents. Unknown codes are passed through. */
+/** The stable `code`s the P2–P6 contract documents. Unknown codes are passed through. */
 export type PluginFeesErrorCode =
   | 'validation_error'
   | 'file_type_invalid'
@@ -588,4 +801,8 @@ export type PluginFeesErrorCode =
   | 'already_applied'
   | 'not_payable'
   | 'already_resolved'
-  | 'not_approved';
+  | 'not_approved'
+  | 'quarter_not_ended'
+  | 'not_draft'
+  | 'not_retryable'
+  | 'not_voidable';

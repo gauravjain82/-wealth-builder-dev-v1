@@ -44,11 +44,16 @@ function AgentLine({ agent }: { agent: ReviewAgent }) {
 
 export function ReviewQueue<S extends string, Item extends { id: number; agent: ReviewAgent }, D extends string>({
   config,
+  initialStatus,
 }: {
   config: ReviewQueueConfig<S, Item, D>;
+  /** A status to open on (the overview's deep links); ignored unless it is one of `config.statuses`. */
+  initialStatus?: string | null;
 }) {
   const { addToast } = useToastStore();
-  const [status, setStatus] = useState<S>(config.defaultStatus);
+  const [status, setStatus] = useState<S>(
+    () => config.statuses.find((option) => option.value === initialStatus)?.value ?? config.defaultStatus
+  );
   const [searchInput, setSearchInput] = useState('');
   const search = useDebouncedValue(searchInput.trim());
   const [page, setPage] = useState(1);

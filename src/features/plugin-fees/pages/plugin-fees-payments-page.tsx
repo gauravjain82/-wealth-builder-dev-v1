@@ -2,7 +2,8 @@
  * Admin payments dashboard (P4, contract §6). Route `/admin/plugin-fees/payments`,
  * guarded on `can_manage || can_review` (read-only for review). Data:
  * `GET payments/?month=` and `GET follow-ups/?status=`. `:manage` may Send now
- * (`POST cycles/{month}/send/`) and resolve follow-ups.
+ * (`POST cycles/{month}/send/`), resolve follow-ups and (P6) void an invoice
+ * (`POST invoices/{id}/void/`).
  *
  * The month lives in the URL (`?month=YYYY-MM`, default the current UTC month) so Back
  * from an agent statement restores it. Screens and states: `docs/plugin-fees/UI.md` §2.9.
@@ -17,11 +18,12 @@ import { useToastStore } from '@/store';
 import { usePayments, usePluginFeesAccess, useSendCycle } from '../hooks/use-plugin-fees';
 import { PluginFeesError } from '../services/plugin-fees-service';
 import { CycleStatusBadge, Stat } from '../components/cycles/cycle-report';
+import { VoidInvoiceDialog, type VoidTarget } from '../components/invoices/void-invoice-dialog';
 import { FollowUpsSection } from '../components/payments/follow-ups-section';
 import { PaymentsTable } from '../components/payments/payments-table';
 import { SendingProgress } from '../components/payments/sending-progress';
 import type { PaymentsDashboard } from '../types';
-import { canResolveFollowUps, canSendCycles } from '../utils/plugin-fees-access';
+import { canResolveFollowUps, canSendCycles, canVoidInvoices } from '../utils/plugin-fees-access';
 import { describeError, formatMoney, formatMonth, MONTH_RE } from '../utils/plugin-fees-format';
 import { todayUtc } from '../utils/plugin-fees-payment';
 import '../components/plugin-fees.css';
@@ -79,6 +81,8 @@ export default function PluginFeesPaymentsPage() {
   const { data: access } = usePluginFeesAccess();
   const canSend = canSendCycles(access);
   const canResolve = canResolveFollowUps(access);
+  const canVoid = canVoidInvoices(access);
+  const [voiding, setVoiding] = useState<VoidTarget | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const paramMonth = searchParams.get('month');
@@ -199,12 +203,29 @@ export default function PluginFeesPaymentsPage() {
             <h2 id="wb-pf-invoices-list-heading" className="wb-pf-subheading">
               Invoices
             </h2>
-            <PaymentsTable key={data.month} rows={data.rows} month={data.month} />
+            <PaymentsTable
+              key={data.month}
+              rows={data.rows}
+              month={data.month}
+              onVoid={
+                canVoid
+                  ? (row) =>
+                      setVoiding({
+                        id: row.invoice_id,
+                        agentName: row.agent.name,
+                        month: data.month,
+                        amountCents: row.amount_cents,
+                      })
+                  : undefined
+              }
+            />
           </section>
         </>
       )}
 
       <FollowUpsSection canResolve={canResolve} />
+
+      {canVoid ? <VoidInvoiceDialog target={voiding} onClose={() => setVoiding(null)} /> : null}
 
       {showSend && data ? (
         <ConfirmationDialog

@@ -778,3 +778,78 @@ html:not(.dark) .wb-pf-progress-bar {
   white-space: normal;
   font-size: 13px;
 }
+
+/* --- P5 / P6 ------------------------------------------------------------------ */
+
+/* "Get paid": the payout account status beside the balance. */
+.wb-pf-connect-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.wb-pf-requirements {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+/* Ledger entry tags: payouts and manual adjustments. */
+.wb-pf-tag--payout {
+  border-style: solid;
+  border-color: rgba(76, 175, 80, 0.6);
+  color: #6fcf75;
+}
+
+html:not(.dark) .wb-pf-tag--payout {
+  border-color: rgba(21, 128, 61, 0.6);
+  color: #15803d;
+}
+
+.wb-pf-tag--adjustment {
+  border-style: solid;
+  border-color: rgba(96, 165, 250, 0.6);
+  color: #93c5fd;
+}
+
+html:not(.dark) .wb-pf-tag--adjustment {
+  border-color: rgba(29, 78, 216, 0.5);
+  color: #1d4ed8;
+}
+
+/* Overview: a count card that links to a filtered page. */
+.wb-pf-stat--link {
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.wb-pf-stat--link:hover,
+.wb-pf-stat--link:focus-visible {
+  border-color: rgba(212, 175, 55, 0.8);
+}
+
+html:not(.dark) .wb-pf-stat--link:hover,
+html:not(.dark) .wb-pf-stat--link:focus-visible {
+  border-color: rgba(161, 98, 7, 0.8);
+}
+
+.wb-pf-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 16px;
+}
+
+/* A table's grand-total footer. */
+.wb-pf-total-row th,
+.wb-pf-total-row td {
+  border-top: 2px solid rgba(212, 175, 55, 0.4);
+  font-weight: 700;
+}
+
+html:not(.dark) .wb-pf-total-row th,
+html:not(.dark) .wb-pf-total-row td {
+  border-top-color: rgba(0, 0, 0, 0.25);
+}

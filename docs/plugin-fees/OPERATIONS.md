@@ -4,12 +4,12 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees`, uncommitted; the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.3 |
-| **Verified against** | commit `fc7d037` plus the uncommitted `feature/plugin-fees` working tree (P2 + P3 + P4 screens) — 2026-10-01 |
+| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
+| **Doc version** | 0.4 |
+| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
 
 ## 1. Environment and configuration
 
@@ -40,6 +40,11 @@ No client-side flags. Visibility comes from `my-access/`:
 - Billing Cycles: `plugin_fees:manage`, `:review` or `:payout_approve`. Preview needs
   `:manage`, Approve needs `:payout_approve`. Recognition Costs: `:manage`. Nobody holds
   `:manage` or `:payout_approve` today. Grant an approver `:review` too (see PHASES PF15).
+- P5: "Get paid" appears on the statement of every active SMD once the backend is
+  deployed. Payouts: `:manage`, `:review` or `:payout_approve`; Prepare and Retry need
+  `:manage`, Approve `:payout_approve`.
+- P6: the Plug-in Fees overview and SEVC Totals: `:manage` or `:review`. Adjustments and
+  Void: `:manage` only.
 
 **Coupled branches.** This module depends on `feature/plugin-fees` in `mlm_platform`. The two
 must merge and deploy together: merged alone, the frontend's Settings block silently renders
@@ -53,16 +58,17 @@ No test runner. Checks run on the uncommitted working tree, 2026-10-01:
 
 | Check | Result |
 |---|---|
-| `npm run type-check` | passes |
-| `npm run build` | passes (each of the six pages is its own lazy chunk; `plugin-fees-payments-page` ≈ 15 kB) |
-| `npm run lint` | 7 errors / 117 warnings (124 problems) — identical to `main`; no problems in this module's files |
+| `npm run type-check` | passes (P5/P6 tree) |
+| `npm run build` | passes (each of the ten pages is its own lazy chunk) |
+| `npm run lint` | 7 errors / 117 warnings (124 problems) — identical to `main`; no problems in this module's files. `eslint` over the touched files reports only the pre-existing `react-refresh/only-export-components` warning at `src/router/index.tsx:166` |
 
 Manual verification against a running backend has **not** been done — the backend was being
 built in parallel. P4 in particular was built from contract §6 alone, before the backend's
-P4 views existed.
+P4 views existed, and P5/P6 from contract §7–§8 while the backend built them.
 
 **Stripe return URLs.** The backend builds `<FRONTEND_URL>/plugin-fees/statement?fee_pay=…`
-for Pay now (and `/settings?fee_pm=…` for the payment method). If `FRONTEND_URL` on the
+for Pay now, `<FRONTEND_URL>/plugin-fees/statement?connect=…` for Stripe Connect
+onboarding (and `/settings?fee_pm=…` for the payment method). If `FRONTEND_URL` on the
 backend points at another host, the agent lands there and the poll never runs.
 
 ## 5. Deployment
@@ -98,3 +104,15 @@ Firebase hosting with the rest of the SPA. Deploy only together with the backend
 | Send now → "has not been approved yet" | `409 not_approved` |
 | Resolve → "already resolved" | someone else resolved it, or the invoice was paid (auto-resolve); the list refetches |
 | Self-pay open + Overdue tab counts disagree with the totals cards | the tabs are computed client-side and assume the two counts are disjoint (PF27) |
+| No "Get paid" panel for an SMD | `my-access/` level is not `SMD`, or the statement has no `ledger` (PF34) |
+| "Get paid" → "Payouts are for active SMDs." | `me/connect/` answered `403 not_eligible` (inactive SMD) |
+| Back from Stripe Connect, "Waiting…" then the info toast | Stripe's account update is late, or the status did not change (e.g. the SMD left without submitting); reload later. Storage blocked → it waits for `enabled` (PF35) |
+| "The link expired — click Finish setup again" | `?connect=refresh`: the onboarding link expired; a new click makes a new one |
+| Prepare report → "has not ended yet" | `409 quarter_not_ended`; only ended quarters are offered, so the browser clock is probably off |
+| A payout stays "Approved — queuing transfers" | the backend's transfer job has not run; the page polls every 5 s |
+| No Retry on a held line | the payout is still `draft` (approve it first), or the user lacks `:manage` |
+| A payout line's detail has a "carried in" row | its balance includes amounts from before the quarter (PF38) |
+| No "Expiring within 14 days" link | the viewer lacks `:review`, so the review page is not theirs to open (PF42) |
+| Adjustment → error on SMD | `fields.smd_id`: the user cannot hold a ledger |
+| Void → "can no longer be voided" | `409 not_voidable`: paid or processing since the page loaded |
+| Voided an SMD invoice but the balance did not change | by design — voiding never touches the ledger; post an adjustment (PF44) |

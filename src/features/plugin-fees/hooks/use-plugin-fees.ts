@@ -1,5 +1,5 @@
 /**
- * React Query hooks for the plug-in fees P2, P3 and P4 surfaces.
+ * React Query hooks for the plug-in fees P2–P6 surfaces.
  *
  * Query keys carry the full selection (status, search, page) and every `queryFn`
  * forwards React Query's `signal` into `fetch`, as in
@@ -12,12 +12,16 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 
 import {
   approveCycle,
+  approvePayout,
+  createAdjustment,
+  createConnectOnboardingLink,
   createCost,
   createInvoicePayLink,
   createPaymentMethodSetupSession,
   decideAssistant,
   decideOffice,
   deleteCost,
+  fetchAdjustments,
   fetchAgentStatement,
   fetchAssistantReviews,
   fetchBalances,
@@ -25,27 +29,38 @@ import {
   fetchCyclePreview,
   fetchCycleReport,
   fetchCycles,
+  fetchDashboard,
   fetchFollowUps,
+  fetchMyConnect,
   fetchMyPluginFees,
   fetchMyStatement,
   fetchOfficeReviews,
   fetchPayments,
+  fetchPayoutReport,
+  fetchPayouts,
   fetchPluginFeesAccess,
+  fetchSevcTotals,
+  preparePayout,
   resolveFollowUp,
+  retryPayoutLine,
   sendCycle,
   setPaymentPreference,
   submitAssistant,
   submitOffice,
+  voidInvoice,
   withdrawAssistant,
   withdrawOffice,
 } from '../services/plugin-fees-service';
 import type {
+  AdjustmentsQuery,
   AssistantReviewStatus,
   CostsQuery,
   FollowUpStatusFilter,
   OfficeReviewStatus,
   ReviewKind,
+  PayoutStatus,
   ReviewQuery,
+  SevcTotalsRange,
 } from '../types';
 
 /**
@@ -86,6 +101,18 @@ export const pluginFeesKeys = {
   followUpsAll: ['plugin-fees', 'follow-ups'] as const,
   followUps: (status: FollowUpStatusFilter) => ['plugin-fees', 'follow-ups', status] as const,
   balances: ['plugin-fees', 'balances'] as const,
+  /** Prefix of `myStatement` and every `agentStatement`. */
+  statementsAll: ['plugin-fees', 'statement'] as const,
+  connectMe: ['plugin-fees', 'connect', 'me'] as const,
+  payouts: ['plugin-fees', 'payouts'] as const,
+  payoutAll: ['plugin-fees', 'payout'] as const,
+  payout: (quarter: string) => ['plugin-fees', 'payout', quarter] as const,
+  dashboard: ['plugin-fees', 'dashboard'] as const,
+  sevcTotalsAll: ['plugin-fees', 'sevc-totals'] as const,
+  sevcTotals: (range: SevcTotalsRange) => ['plugin-fees', 'sevc-totals', range.from, range.to] as const,
+  adjustmentsAll: ['plugin-fees', 'adjustments'] as const,
+  adjustments: (query: AdjustmentsQuery) =>
+    ['plugin-fees', 'adjustments', { smd: query.smd, page: query.page }] as const,
 };
 
 /** What the current user may do with plug-in fees. Drives the menu, guard and Settings sections. */
@@ -370,6 +397,177 @@ export function useResolveFollowUp() {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: pluginFeesKeys.followUpsAll }),
         queryClient.invalidateQueries({ queryKey: pluginFeesKeys.paymentsAll }),
+      ]),
+  });
+}
+
+/* --- P5: Stripe Connect --------------------------------------------------- */
+
+/**
+ * The signed-in SMD's payout account. Enable it only for an SMD — anyone else gets
+ * `403 not_eligible`. `pollEveryMs` is set briefly after returning from Stripe.
+ */
+export function useMyConnect(enabled: boolean, pollEveryMs: number | false = false) {
+  return useQuery({
+    queryKey: pluginFeesKeys.connectMe,
+    queryFn: ({ signal }) => fetchMyConnect(signal),
+    enabled,
+    staleTime: 60 * 1000,
+    refetchInterval: pollEveryMs,
+    // A 403 / 503 will not fix itself on a retry; show it at once.
+    retry: false,
+  });
+}
+
+/** Nothing to invalidate — the page redirects away to Stripe. */
+export function useCreateConnectOnboardingLink() {
+  return useMutation({ mutationFn: createConnectOnboardingLink, ...NO_RETRY });
+}
+
+/* --- P5: quarterly payouts ------------------------------------------------- */
+
+/** Transfers are queued after approval; poll the report until they settle. */
+const PAYOUT_IN_FLIGHT: ReadonlySet<PayoutStatus> = new Set<PayoutStatus>(['approved', 'sending']);
+const PAYOUT_POLL_MS = 5000;
+
+/** The payout list; polled like the report while any quarter is still sending. */
+export function usePayouts(enabled = true) {
+  return useQuery({
+    queryKey: pluginFeesKeys.payouts,
+    queryFn: ({ signal }) => fetchPayouts(signal),
+    enabled,
+    staleTime: 30 * 1000,
+    refetchInterval: (query) =>
+      query.state.data?.some((row) => PAYOUT_IN_FLIGHT.has(row.status)) ? PAYOUT_POLL_MS : false,
+  });
+}
+
+/** A quarter's payout report; polled every 5 s while its status is `approved` or `sending`. */
+export function usePayoutReport(quarter: string | null) {
+  return useQuery({
+    queryKey: pluginFeesKeys.payout(quarter ?? ''),
+    queryFn: ({ signal }) => fetchPayoutReport(quarter as string, signal),
+    enabled: quarter !== null,
+    staleTime: 30 * 1000,
+    refetchInterval: (query) =>
+      query.state.data && PAYOUT_IN_FLIGHT.has(query.state.data.status) ? PAYOUT_POLL_MS : false,
+  });
+}
+
+/** Approve / retry move money and post ledger entries: everything that shows either. */
+function useInvalidatePayouts() {
+  const queryClient = useQueryClient();
+  return (quarter: string) =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: pluginFeesKeys.payout(quarter) }),
+      queryClient.invalidateQueries({ queryKey: pluginFeesKeys.payouts }),
+      queryClient.invalidateQueries({ queryKey: pluginFeesKeys.balances }),
+      queryClient.invalidateQueries({ queryKey: pluginFeesKeys.dashboard }),
+      queryClient.invalidateQueries({ queryKey: pluginFeesKeys.statementsAll }),
+    ]);
+}
+
+/**
+ * Prepare refetches the list and that quarter's report rather than caching the response:
+ * the contract says it "returns the existing draft" without pinning the body's shape.
+ */
+export function usePreparePayout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: preparePayout,
+    ...NO_RETRY,
+    onSettled: (_data, _error, quarter) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.payouts }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.payout(quarter) }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.dashboard }),
+      ]),
+  });
+}
+
+export function useApprovePayout() {
+  const queryClient = useQueryClient();
+  const invalidate = useInvalidatePayouts();
+  return useMutation({
+    mutationFn: approvePayout,
+    ...NO_RETRY,
+    onSuccess: (report) => queryClient.setQueryData(pluginFeesKeys.payout(report.quarter), report),
+    onSettled: (_data, _error, input) => invalidate(input.quarter),
+  });
+}
+
+export function useRetryPayoutLine() {
+  const invalidate = useInvalidatePayouts();
+  return useMutation({
+    mutationFn: retryPayoutLine,
+    ...NO_RETRY,
+    onSettled: (_data, _error, input) => invalidate(input.quarter),
+  });
+}
+
+/* --- P6: admin overview, SEVC totals, adjustments, void --------------------- */
+
+export function useDashboard(enabled = true) {
+  return useQuery({
+    queryKey: pluginFeesKeys.dashboard,
+    queryFn: ({ signal }) => fetchDashboard(signal),
+    enabled,
+    staleTime: 30 * 1000,
+  });
+}
+
+/** `null` disables the query (an invalid range). */
+export function useSevcTotals(range: SevcTotalsRange | null) {
+  return useQuery({
+    queryKey: pluginFeesKeys.sevcTotals(range ?? { from: '', to: '' }),
+    queryFn: ({ signal }) => fetchSevcTotals(range as SevcTotalsRange, signal),
+    enabled: range !== null,
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useAdjustments(query: AdjustmentsQuery) {
+  return useQuery({
+    queryKey: pluginFeesKeys.adjustments(query),
+    queryFn: ({ signal }) => fetchAdjustments(query, signal),
+    placeholderData: keepPreviousData,
+    staleTime: 30 * 1000,
+  });
+}
+
+/** An adjustment posts a ledger entry: every list, statement and balance that shows one. */
+export function useCreateAdjustment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createAdjustment,
+    ...NO_RETRY,
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.adjustmentsAll }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.statementsAll }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.balances }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.dashboard }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.connectMe }),
+      ]),
+  });
+}
+
+/**
+ * Voiding cancels the charge and its retries and resolves its follow-ups; it never
+ * touches the ledger, so balances are not refetched.
+ */
+export function useVoidInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: voidInvoice,
+    ...NO_RETRY,
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.paymentsAll }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.statementsAll }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.followUpsAll }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.dashboard }),
       ]),
   });
 }

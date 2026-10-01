@@ -183,3 +183,10 @@ export function describePayment(
       return { ...base, badge: humanize(String(state.status)), tone: 'neutral', headline: null };
   }
 }
+
+/** Contract §8: only these can be voided; `paid` and `processing` answer `409 not_voidable`. */
+const VOIDABLE: ReadonlySet<string> = new Set(['draft', 'open', 'failed']);
+
+export function isVoidable(status: string): boolean {
+  return VOIDABLE.has(status);
+}

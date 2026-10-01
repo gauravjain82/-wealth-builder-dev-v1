@@ -4,12 +4,12 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees`, uncommitted; the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.3 |
-| **Verified against** | commit `fc7d037` plus the uncommitted `feature/plugin-fees` working tree (P2 + P3 + P4 screens) — 2026-10-01 |
+| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
+| **Doc version** | 0.4 |
+| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
 
 ## 1. Layering
 
@@ -23,13 +23,18 @@ Page/component → hook → service → API, as everywhere else
 | Hooks | `hooks/use-plugin-fees.ts` | Query keys, caching, invalidation; no URLs |
 | Utils | `utils/plugin-fees-format.ts` | Formatting (incl. `formatMoney`, `parseDollarsToCents`), file pre-checks, hours validation, error text, CSV |
 | Utils | `utils/plugin-fees-access.ts` | One predicate per surface over `my-access/`; shared by guards, menu and pages |
-| Utils | `utils/plugin-fees-payment.ts` | P4: an invoice's payment state in words (`describePayment`), overdue / retrying, failure codes, paid-via labels |
+| Utils | `utils/plugin-fees-payment.ts` | P4: an invoice's payment state in words (`describePayment`), overdue / retrying, failure codes, paid-via labels; P6 `isVoidable` |
+| Utils | `utils/plugin-fees-payout.ts` | P5: Connect / payout / payout-line status wording, `requirements_due` in plain words, retryability, quarters (`lastEndedQuarter`, `formatQuarter`) |
 | Components | `components/` | Never call `fetch` |
 | Pages | `pages/plugin-fees-review-page.tsx` | Composes `ReviewQueue` twice |
 | Pages | `pages/plugin-fees-statement-page.tsx`, `plugin-fees-agent-statement-page.tsx` | Fetch a statement, render `StatementView` |
 | Pages | `pages/plugin-fees-cycles-page.tsx` | Month picker, cycle list, report selection (URL), approve mutation |
 | Pages | `pages/plugin-fees-costs-page.tsx` | Filters, list, delete dialog; embeds `CostForm` |
-| Pages | `pages/plugin-fees-payments-page.tsx` | Month (URL), dashboard, Send now; embeds `PaymentsTable` and `FollowUpsSection` |
+| Pages | `pages/plugin-fees-payments-page.tsx` | Month (URL), dashboard, Send now, Void; embeds `PaymentsTable` and `FollowUpsSection` |
+| Pages | `pages/plugin-fees-payouts-page.tsx` | Quarter (URL), list, prepare / approve / retry mutations; embeds `PayoutReportView` |
+| Pages | `pages/plugin-fees-overview-page.tsx` | `dashboard/` as linked cards |
+| Pages | `pages/plugin-fees-sevc-totals-page.tsx` | Range (URL), table, grand totals, CSV |
+| Pages | `pages/plugin-fees-adjustments-page.tsx` | List, SMD filter, paging; embeds `AdjustmentForm` |
 
 ## 2. Component map
 
@@ -85,6 +90,29 @@ and Pay now (own statement only, passed as `payNow`).
 ├── CostForm (components/costs/cost-form.tsx)   UserAutocompleteDropdown ×2
 ├── costs table + pagination
 └── DeleteCostDialog (ConfirmationDialog + required reason)
+
+/plugin-fees/statement (SMD with a ledger) additionally renders, above StatementView:
+└── ConnectPanel (components/payouts/connect-panel.tsx)   me/connect, ?connect= return, polling
+
+/admin/plugin-fees/payouts → PluginFeesAccessRoute(manage|review|payout_approve) → PluginFeesPayoutsPage
+├── prepare form (manage) → POST payouts/ → ?quarter=
+├── payouts table → ?quarter=YYYY-Qn
+└── PayoutReportView (components/payouts/payout-report.tsx)
+    ├── PayoutStatusBadge, Stat ×5, CSV
+    ├── LinesTable   ExpandButton → EntriesTable · ConnectStatusBadge · Retry (manage)
+    └── ApprovePayoutDialog (ConfirmationDialog + required note)
+
+/admin/plugin-fees → PluginFeesAccessRoute(manage|review) → PluginFeesOverviewPage
+└── OverviewCard ×6 (Stat, CountLink, ConnectStatusBadge)
+
+/admin/plugin-fees/sevc-totals → PluginFeesAccessRoute(manage|review) → PluginFeesSevcTotalsPage
+/admin/plugin-fees/adjustments → PluginFeesAccessRoute(manage) → PluginFeesAdjustmentsPage
+└── AdjustmentForm (components/adjustments/adjustment-form.tsx)   confirmation dialog
+
+VoidInvoiceDialog (components/invoices/void-invoice-dialog.tsx) is rendered by the
+payments page (PaymentsTable `onVoid`) and the agent statement page (StatementView
+`voidInvoice`), for can_manage. StatementView also takes `ledgerAction` (the agent
+statement's "Adjust ledger…").
 ```
 
 Shared presentational pieces (`StatusBadge` — now with a `tone` override —, `FileLink`,
@@ -95,7 +123,7 @@ Shared presentational pieces (`StatusBadge` — now with a `tone` override —, 
 ## 3. Primary flows
 
 **Submit an office / assistant.** The form pre-checks required fields, state code, and file
-type/size (`checkFile`, `utils/plugin-fees-format.ts:30`; `validateHours`, `:165`). The
+type/size (`checkFile`, `utils/plugin-fees-format.ts:30`; `validateHours`, `:247`). The
 hook posts multipart with only the `Authorization` header
 (`services/plugin-fees-service.ts`, `getMultipartHeaders`). `hours` is sent as a JSON
 string. A `validation_error` maps `fields` onto the inputs; any other `code` shows the
@@ -161,6 +189,36 @@ UTC date is past `due_date`, PF25); `open` automatic "Charge scheduled" (attempt
 about 4 business days"; `failed` "Payment failed — please pay now" (agent) / "…the agent
 can still pay now" (admin). Payments filters, overdue and CSV are client-side over `rows`.
 
+**Get paid (P5).** Only for an SMD with a ledger (PF34). `GET me/connect/` (no query
+retry: a 403/503 shows at once). The button POSTs `me/connect/onboarding-link/`,
+remembers the current status in `sessionStorage['wb.pf.connectStatusBefore']`, then
+`window.location.href = url`. Stripe returns to `/plugin-fees/statement?connect=`:
+`return` → toast, refetch, poll `['plugin-fees','connect','me']` every 3 s for up to 30 s
+until the status differs from the remembered one (or is `enabled` when none was
+remembered, PF35); `refresh` → warning toast. The param is removed with `replace`.
+
+**Payouts (P5).** Prepare (`can_manage`) POSTs `payouts/` with the selected quarter, then
+writes `?quarter=`; on settle `payouts`, `payout/<quarter>` and `dashboard` are
+invalidated (the response is not cached, PF37). Approve (`can_approve_payouts`, `draft`,
+required note) writes the returned report into `['plugin-fees','payout',quarter]`; approve
+and retry invalidate the report, the list, `balances`, `dashboard` and every statement
+(PF46). `409 not_draft` / `not_retryable` → warning toast + refetch. While a report (or any
+list row) is `approved` or `sending`, its query polls every 5 s (`refetchInterval` as a
+function of the data). Line entries reconcile to the amount via a carried-in row (PF38).
+
+**Overview, SEVC totals (P6).** One `dashboard/` call; SEVC totals reads `?from=&to=` (both
+`YYYY-MM`, `from <= to`, else the 6-month default) and keys the query on both.
+
+**Adjustment (P6).** Direction × unsigned dollars → signed integer cents
+(`parseDollarsToCents`, never floats), required note, optional numeric invoice id;
+confirmation first (PF43). On settle invalidates every adjustments page, every
+statement, `balances`, `dashboard` and `connect/me`. `validation_error` / `note_required`
+map onto fields.
+
+**Void (P6).** `VoidInvoiceDialog` with a required note → `POST invoices/{id}/void/`. On
+settle invalidates every payments month, every statement, every follow-ups filter and the
+dashboard — not balances (PF44). `409 not_voidable` → warning toast.
+
 ## 4. Server state and caching
 
 | Key | Hook | staleTime | Refetch | Invalidated by |
@@ -177,7 +235,17 @@ can still pay now" (admin). Payments filters, overdue and CSV are client-side ov
 | `['plugin-fees','costs',{smd,month,page}]` | `useCosts` | 30 s | app default | `useCreateCost`, `useDeleteCost` (prefix `['plugin-fees','costs']`) |
 | `['plugin-fees','payments',month]` | `usePayments` | 30 s | app default | `useSendCycle`, `useResolveFollowUp` (prefix `['plugin-fees','payments']`) |
 | `['plugin-fees','follow-ups',status]` | `useFollowUps` | 30 s | app default | `useResolveFollowUp` (prefix `['plugin-fees','follow-ups']`) |
-| `['plugin-fees','balances']` | `useBalances` | 60 s | app default | — |
+| `['plugin-fees','balances']` | `useBalances` | 60 s | app default | `useApprovePayout`, `useRetryPayoutLine`, `useCreateAdjustment` |
+| `['plugin-fees','connect','me']` | `useMyConnect` | 60 s | every 3 s while polling after `?connect=return`; query `retry: false` | `useCreateAdjustment` |
+| `['plugin-fees','payouts']` | `usePayouts` | 30 s | every 5 s while any row is `approved`/`sending` | `usePreparePayout`, `useApprovePayout`, `useRetryPayoutLine` |
+| `['plugin-fees','payout',quarter]` | `usePayoutReport` | 30 s | every 5 s while `approved`/`sending` | `usePreparePayout`, `useApprovePayout` (set from response, then invalidated), `useRetryPayoutLine` |
+| `['plugin-fees','dashboard']` | `useDashboard` | 30 s | app default | prepare / approve / retry payout, `useCreateAdjustment`, `useVoidInvoice` |
+| `['plugin-fees','sevc-totals',from,to]` | `useSevcTotals` | 60 s | app default | — |
+| `['plugin-fees','adjustments',{smd,page}]` | `useAdjustments` | 30 s | app default | `useCreateAdjustment` (prefix `['plugin-fees','adjustments']`) |
+
+P5/P6 also invalidate existing keys: every statement (prefix `['plugin-fees','statement']`)
+on approve / retry payout, adjustment and void; every payments month and follow-ups filter
+on void.
 
 - Every `queryFn` forwards React Query's `signal` into `fetch`, and review keys carry the
   full selection — together a superseded page or search is both irrelevant and cancelled.
@@ -186,7 +254,7 @@ can still pay now" (admin). Payments filters, overdue and CSV are client-side ov
   month (it checks `data.month`) and shows "Loading *Month*…" instead.
 - The pay-link mutation invalidates nothing — the page navigates away to Stripe.
 - P3 payloads carry no signed URLs, so they do not use the 10-minute refresh.
-- The 10-minute refresh (`SIGNED_URL_REFRESH_MS`, `hooks/use-plugin-fees.ts:37`) exists
+- The 10-minute refresh (`SIGNED_URL_REFRESH_MS`, `hooks/use-plugin-fees.ts:70`) exists
   because file URLs are signed for 15 minutes (decision PF4).
 - Every mutation sets `retry: false`, overriding the app-wide `mutations.retry: 1`
   (`src/infrastructure/query/provider.tsx:15`) — decision PF5.
@@ -214,7 +282,18 @@ can still pay now" (admin). Payments filters, overdue and CSV are client-side ov
 | Payments month | `?month=YYYY-MM` | URL; default the current UTC month; invalid → default |
 | Payments filter tab, search | `PaymentsTable` | Reset when the month changes (keyed by month) |
 | Follow-up status filter, resolve target | `FollowUpsSection` | Default `open` |
-| Agent statement back link | `location.state.{backTo,backLabel}` | Only `/admin/plugin-fees/…` honoured (PF32) |
+| Agent statement back link | `location.state.{backTo,backLabel}` | Only `/admin/plugin-fees` and `/admin/plugin-fees/…` honoured (PF32, PF47) |
+| `?connect=` | URL | Read once, then removed |
+| Connect status before redirect | `sessionStorage['wb.pf.connectStatusBefore']` | Set before the Stripe redirect, taken on return; wrapped in try/catch |
+| Connect poll baseline + start time | `ConnectPanel` | `null` when not polling |
+| Open payout report | `?quarter=YYYY-Qn` | URL; invalid → "No report open" |
+| Prepare quarter, retrying line | `PluginFeesPayoutsPage` | Defaults to the last ended UTC quarter |
+| Expanded payout lines | `PayoutReportView` `LinesTable` | Reset per quarter (keyed) |
+| SEVC range | `?from=&to=` | URL; invalid → the 6-month default |
+| Adjustment prefill + back link | `location.state.{prefillSmd,backTo,backLabel}` | From the agent statement; read once; only plug-in fees admin paths honoured |
+| Adjustment SMD filter, page; form fields; confirmation | `PluginFeesAdjustmentsPage`, `AdjustmentForm` | Page resets to 1 on a filter change |
+| Void target | payments page / agent statement page | Drives `VoidInvoiceDialog` |
+| Review tab + status deep link | `?tab=&status=` | Read once as the opening tab / filter (PF42) |
 
 ## 6. Permissions and gating
 
@@ -238,12 +317,21 @@ can still pay now" (admin). Payments filters, overdue and CSV are client-side ov
 | Resolve follow-up | `can_manage` (`canResolveFollowUps`) and the follow-up open |
 | SMD balances (cycles page) | `can_manage \|\| can_review \|\| can_approve_payouts` (`canSeeBalances`); names link only for `canSeeAgentStatements` |
 | Pay now | own statement only, invoice `can_pay_now` (server-computed) |
+| Get paid panel | `is_billable && level_code === 'SMD'` (`canSetUpPayouts`) and the statement has a `ledger` |
+| Payouts route, menu "Payouts" | `can_manage \|\| can_review \|\| can_approve_payouts` (`canSeePayouts`) |
+| Prepare report, Retry | `can_manage` (`canPreparePayouts`); Retry also needs a failed/held line on a non-draft payout |
+| Approve payout | `can_approve_payouts` (`canApprovePayouts`) and `status === 'draft'` |
+| Overview route, menu "Plug-in Fees" | `can_manage \|\| can_review` (`canSeeOverview`); each card's link only when its own predicate allows |
+| SEVC totals route, menu "SEVC Totals" | `can_manage \|\| can_review` (`canSeeSevcTotals`) |
+| Adjustments route, menu "Adjustments", "Adjust ledger…" | `can_manage` (`canManageAdjustments`) |
+| Void | `can_manage` (`canVoidInvoices`) and status `draft`/`open`/`failed` (`isVoidable`) |
 
 All P3 routes use `PluginFeesAccessRoute({ allow })` — the same loader / redirect as the
 review guard, which is now a thin wrapper over it. Menu entries arrive through positional
 booleans appended to `getMenuForUser` (`canReviewPluginFees`, `isPluginFeesBillable`,
-`canViewPluginFeeCycles`, `canManagePluginFees`, `canViewPluginFeePayments`), computed in
-`use-role-based-menu.ts` with the same predicates.
+`canViewPluginFeeCycles`, `canManagePluginFees`, `canViewPluginFeePayments`, and for P5/P6
+`canViewPluginFeeOverview`, `canViewPluginFeePayouts` — PF41), computed in
+`use-role-based-menu.ts` with the same predicates and listed in its `useMemo` deps.
 
 The guards and the menu decide rendering only. Every endpoint checks its capability
 itself; removing a guard is a UX regression, not an escalation. The approver
@@ -283,6 +371,11 @@ itself; removing a guard is a UX regression, not an escalation. The approver
 | "Overdue" uses the UTC date | `todayUtc` | an invoice flips to overdue a day early/late by timezone |
 | Pay now never auto-retries | `NO_RETRY` | two pay links / sessions for one click |
 | Resolve cannot be sent without a note | `confirmDisabled` | `400 note_required` |
+| Payout approve, void and adjustment cannot be sent without a note | `confirmDisabled` / form validation | `400 note_required` |
+| An adjustment is always confirmed and its amount is a non-zero signed integer of cents | `AdjustmentForm` | a sign or rounding mistake that can only be undone by an opposite entry |
+| A payout line's detail reconciles to its amount | `EntriesTable` carried-in row | detail and amount disagree silently (PF38) |
+| `me/connect/` is requested only for an SMD | `canSetUpPayouts` + `ledger` | a `403 not_eligible` on every MD statement |
+| Payout mutations and the onboarding link never auto-retry | `NO_RETRY` | two transfers queued / two links for one click (the backend is idempotent, the UI does not rely on it) |
 
 Polling stops as soon as `status === 'saved'`; if a method was already saved before the
 redirect, polling stops immediately and the new method appears on the next refresh

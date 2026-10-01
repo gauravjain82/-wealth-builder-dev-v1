@@ -51,7 +51,7 @@ See [the standard §5](DOCUMENTATION_STANDARD.md#5-doc-tiers) for how a tier is 
 | [leaderboards](leaderboards/) | `/leaderboards` | `wbreporting` | 2123 | Merged-not-deployed | ✅ **reference** |
 | [licensing](licensing/) | `/licensing/*` (4 routes) | `accounts` — **not called** | 1405 | Production | ✅ |
 | [matchup](matchup/) | `/matchup`, `/calendar` | `matchup`, `notifications` | 4563 | Production | ✅ |
-| [plugin-fees](plugin-fees/) | `/plugin-fees/statement`, `/admin/plugin-fees/{review,cycles,payments,costs}`, `/admin/plugin-fees/agents/:id/statement`, three sections of `/settings` | `plugin_fees` | ~6500 | **Merged-not-deployed** — not yet merged: branch `feature/plugin-fees`, coupled to the `mlm_platform` branch of the same name; `plugin_fees:review` / `:manage` / `:payout_approve` not granted | ✅ |
+| [plugin-fees](plugin-fees/) | `/plugin-fees/statement`, `/admin/plugin-fees`, `/admin/plugin-fees/{review,cycles,payments,payouts,sevc-totals,costs,adjustments}`, `/admin/plugin-fees/agents/:id/statement`, three sections of `/settings` | `plugin_fees` | ~9400 | **Merged-not-deployed** — not yet merged: branch `feature/plugin-fees`, coupled to the `mlm_platform` branch of the same name; `plugin_fees:review` / `:manage` / `:payout_approve` not granted | ✅ |
 | [promotion](promotion/) | `/promotion/dashboard`, `/promotion/team` | `promotion` | 1226 | Production | ✅ |
 | [settings](settings/) | `/settings` | `accounts`, `authz`, `payments`, `telegram` | 2307 | Production | ✅ |
 | [team](team/) | `/team/*` (7 trackers), `/onboarding-game`, 1 public | `accounts`, `network`, `tracker` | 22818 | Production | ✅ |

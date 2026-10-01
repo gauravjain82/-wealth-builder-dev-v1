@@ -7,6 +7,9 @@
  * the statement is polled every 3 s for up to 30 s until that invoice reads `paid` or
  * `processing`, then the parameter is stripped — the same shape as the `?fee_pm=` return
  * in `components/plugin-fees-settings-sections.tsx`.
+ *
+ * P5: an SMD (a ledger, and `my-access/` level `SMD`) sees "Get paid" above the ledger —
+ * the Stripe Connect payout account, which owns its own `?connect=` return.
  * Screens and states: `docs/plugin-fees/UI.md` §2.5.
  */
 
@@ -16,10 +19,12 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ErrorState, Heading, Text } from '@/shared/components';
 import { useToastStore } from '@/store';
 
-import { useCreateInvoicePayLink, useMyStatement } from '../hooks/use-plugin-fees';
+import { useCreateInvoicePayLink, useMyStatement, usePluginFeesAccess } from '../hooks/use-plugin-fees';
 import { PluginFeesError } from '../services/plugin-fees-service';
+import { ConnectPanel } from '../components/payouts/connect-panel';
 import { StatementView } from '../components/statement/statement-view';
 import type { StatementInvoice } from '../types';
+import { canSetUpPayouts } from '../utils/plugin-fees-access';
 import { describeError, formatMonth } from '../utils/plugin-fees-format';
 import '../components/plugin-fees.css';
 
@@ -62,6 +67,7 @@ export default function PluginFeesStatementPage() {
   const handledReturn = useRef<string | null>(null);
 
   const statement = useMyStatement(true, poll ? POLL_EVERY_MS : false);
+  const { data: access } = usePluginFeesAccess();
   const payLink = useCreateInvoicePayLink();
   const { refetch } = statement;
 
@@ -177,7 +183,10 @@ export default function PluginFeesStatementPage() {
           onRetry={() => void statement.refetch()}
         />
       ) : (
-        <StatementView statement={statement.data} payNow={{ onPay, payingId }} />
+        <>
+          {statement.data.ledger && canSetUpPayouts(access) ? <ConnectPanel /> : null}
+          <StatementView statement={statement.data} payNow={{ onPay, payingId }} />
+        </>
       )}
     </div>
   );

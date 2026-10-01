@@ -4,12 +4,12 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees`, uncommitted; the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.3 |
-| **Verified against** | commit `fc7d037` plus the uncommitted `feature/plugin-fees` working tree (P2 + P3 + P4 screens) — 2026-10-01 |
+| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
+| **Doc version** | 0.4 |
+| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
 
 ## 1. Purpose
 
@@ -19,7 +19,7 @@ assistant. The platform — not Stripe — decides all of that, so it needs the 
 office address with a lease and a photo, an assistant's contact details, hours and photo,
 and a saved payment method to collect from.
 
-This module is the frontend for **phases P2, P3 and P4** of that feature.
+This module is the frontend for **phases P2 to P6** of that feature.
 
 - **P2** gives the agent three sections on the Settings page (office, assistant, payment
   method) and gives the **Hierarchy Assistant** — the SEVC's assistant, holder of
@@ -38,7 +38,15 @@ This module is the frontend for **phases P2, P3 and P4** of that feature.
   status, CSV), **follow-ups** with a required resolution note, and **SMD ledger
   balances**.
 
-Payouts (P5) are not built; see [PHASES.md](PHASES.md#5-outstanding).
+- **P5** pays SMDs: on their statement an SMD sets up a **Stripe Connect** payout account
+  ("Get paid": status, what Stripe still needs, balance, the onboarding redirect and its
+  `?connect=` return), and admins get **Payouts** — prepare a finished quarter's report,
+  review each SMD's line and the ledger entries behind it, approve it (which sends the
+  Stripe transfers), retry a failed or held line, CSV.
+- **P6** completes the admin side: the **Plug-in Fees overview** (one card per area, each
+  linking to its page, plus the SMDs whose payout account is not set up), **SEVC totals**
+  by month with a range and CSV, **manual ledger adjustments**, and **Void** on an
+  invoice (payments dashboard and admin agent statement).
 
 ## 2. Scope
 
@@ -61,10 +69,15 @@ Payouts (P5) are not built; see [PHASES.md](PHASES.md#5-outstanding).
 - Payment state on every invoice; Pay now and the `?fee_pay=` return.
 - Payments dashboard and follow-ups at `/admin/plugin-fees/payments`; SMD balances on the
   billing cycles page; sending progress on an approved cycle report.
+- "Get paid" (Stripe Connect) on the SMD's statement; the `?connect=` return.
+- Payouts at `/admin/plugin-fees/payouts`: list, prepare, report with expandable ledger
+  detail, approve, retry, CSV.
+- Overview at `/admin/plugin-fees`; SEVC totals at `/admin/plugin-fees/sevc-totals`; ledger
+  adjustments at `/admin/plugin-fees/adjustments`; Void on invoices.
 
 **Explicitly out of scope**
-- Fee configuration, payouts (P5) — pending backend. Ledger adjustments, editing a cost,
-  refunds and voiding an invoice — not in the contract.
+- Fee configuration — pending backend. Editing a cost, editing or deleting an adjustment,
+  refunds — not in the contract.
 - The website subscription and its billing portal — [settings](../settings/).
 - Any server behaviour — `mlm_platform/docs/plugin_fees/`.
 
@@ -72,13 +85,13 @@ Payouts (P5) are not built; see [PHASES.md](PHASES.md#5-outstanding).
 
 | | |
 |---|---|
-| Routes | 6 + 3 sections on `/settings` |
-| Pages | 6 |
-| Components | 47 named component functions in 18 component files (recounted for P4); plus 2 local to the costs page and 1 to the payments page |
-| Hooks | 28 (one file) |
+| Routes | 10 + 3 sections on `/settings` |
+| Pages | 10 |
+| Components | 57 named component functions in 22 component files (recounted for P5/P6); plus a few local to pages |
+| Hooks | 40 (one file, incl. `useDebouncedValue`) |
 | Services | 1 |
-| Endpoints consumed | 27 |
-| LOC (ts/tsx) | ~6500 |
+| Endpoints consumed | 39 |
+| LOC (ts/tsx) | ~9400 |
 | Doc tier | Full |
 
 ## 4. Domain vocabulary
@@ -103,6 +116,12 @@ Payouts (P5) are not built; see [PHASES.md](PHASES.md#5-outstanding).
 | Billing cycle | One month's computation. `preview` (dry run, nothing saved) → `generated` → `approved`. Only the go-live month waits for approval (D18) |
 | Excluded | A billable-level agent not billed; `no_sevc` = no SEVC on the recruiting line |
 | Recognition costs | Recognition and mailing costs charged to an SMD, netted on the 1st of the month after `date_sent` |
+| Connect status | An SMD's Stripe Connect payout account: `none` "Not set up" · `onboarding` "Setup started — finish it" · `restricted` "Stripe needs more information" · `enabled` "Ready to receive payouts" |
+| Payout | A quarter's report (`YYYY-Qn`): `draft` → `approved` → `sending` → `sent` / `partial`. One line per SMD with a positive balance at `period_end` |
+| Payout line | `pending` · `held_no_connect` "Not onboarded — balance carries forward" · `sent` (transfer id) · `failed` |
+| Adjustment | A manual, signed ledger entry by an admin (credit +, debit −) with a required note; never edited or deleted |
+| Void | Cancels a `draft` / `open` / `failed` invoice and its retries; never changes the ledger |
+| SEVC totals | What each SEVC received per month: SMD fees, costs, MD fees with no SMD assistant (`md_unrouted_cents`) |
 
 ## 5. Dependencies
 
@@ -115,20 +134,22 @@ Payouts (P5) are not built; see [PHASES.md](PHASES.md#5-outstanding).
 **Downstream (imports this module)**
 - `src/features/settings/pages/settings-page.tsx:1548` — renders `PluginFeesSettingsSections`.
 - `src/router/plugin-fees-review-route.tsx` — `PluginFeesAccessRoute` (predicate guard) and
-  `PluginFeesReviewRoute`; `src/router/index.tsx` — the six routes.
-- `src/hooks/use-role-based-menu.ts` — `my-access/` feeds five menu entries through the
-  predicates in `utils/plugin-fees-access.ts`.
+  `PluginFeesReviewRoute`; `src/router/index.tsx` — the ten routes.
+- `src/hooks/use-role-based-menu.ts` — `my-access/` feeds nine menu entries (seven
+  positional flags) through the predicates in `utils/plugin-fees-access.ts`.
 - `@/shared/components` — `UserAutocompleteDropdown` (cost SMD / recipient pickers);
   `ConfirmationDialog` gained `confirmDisabled`.
 
 **Backend**
 - `plugin_fees` — `/api/plugin-fees/my-access/`, `me/…`, `review/…`, `agents/…`,
-  `cycles/…`, `costs/…`, `payments/`, `follow-ups/…`, `balances/`, `me/invoices/…`. Contract:
+  `cycles/…`, `costs/…`, `payments/`, `follow-ups/…`, `balances/`, `me/invoices/…`,
+  `me/connect/…`, `payouts/…`, `dashboard/`, `sevc-totals/`, `adjustments/`,
+  `invoices/{id}/void/`. Contract:
   `mlm_platform/docs/plugin_fees/API.md`.
 
 **External**
-- Stripe Checkout (setup mode) and Stripe's hosted invoice payment page (Pay now), reached
-  only by redirect to the URL the backend returns.
+- Stripe Checkout (setup mode; payment mode for Pay now) and Stripe Connect Express
+  onboarding, reached only by redirect to the URL the backend returns.
 
 ## 6. Document map
 
@@ -152,3 +173,5 @@ Payouts (P5) are not built; see [PHASES.md](PHASES.md#5-outstanding).
    `components/cycles/` — the billing cycle report.
 7. `src/features/plugin-fees/utils/plugin-fees-payment.ts` and `components/payments/` — the
    P4 payment state and the payments page.
+8. `src/features/plugin-fees/utils/plugin-fees-payout.ts` and `components/payouts/` — P5
+   wording (Connect, payout and line status, quarters), "Get paid" and the payout report.

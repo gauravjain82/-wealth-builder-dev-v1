@@ -2,10 +2,13 @@
  * Hierarchy Assistant review page: office approvals and assistant verifications.
  * Route `/admin/plugin-fees/review`, guarded by `PluginFeesReviewRoute` on
  * `my-access/`.can_review (`plugin_fees:review`). The backend re-checks every request.
+ * The overview links here with `?tab=offices|assistants&status=<filter>` (P6); both are
+ * read once, as the opening tab and filter.
  * Screens and states: `docs/plugin-fees/UI.md` §2.4.
  */
 
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { Heading, Text } from '@/shared/components';
 
@@ -80,7 +83,13 @@ const TABS: { key: ReviewKind; label: string }[] = [
 ];
 
 export default function PluginFeesReviewPage() {
-  const [tab, setTab] = useState<ReviewKind>('offices');
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState<ReviewKind>(() =>
+    searchParams.get('tab') === 'assistants' ? 'assistants' : 'offices'
+  );
+  // The deep-linked filter applies to the tab it was given for, on first open only.
+  const [linked] = useState(() => ({ tab: searchParams.get('tab'), status: searchParams.get('status') }));
+  const initialStatus = (kind: ReviewKind) => (linked.tab === kind ? linked.status : null);
 
   return (
     <div className="space-y-6">
@@ -113,9 +122,9 @@ export default function PluginFeesReviewPage() {
 
       <div role="tabpanel" id={`wb-pf-panel-${tab}`} aria-labelledby={`wb-pf-tab-${tab}`}>
         {tab === 'offices' ? (
-          <ReviewQueue key="offices" config={OFFICE_CONFIG} />
+          <ReviewQueue key="offices" config={OFFICE_CONFIG} initialStatus={initialStatus('offices')} />
         ) : (
-          <ReviewQueue key="assistants" config={ASSISTANT_CONFIG} />
+          <ReviewQueue key="assistants" config={ASSISTANT_CONFIG} initialStatus={initialStatus('assistants')} />
         )}
       </div>
     </div>

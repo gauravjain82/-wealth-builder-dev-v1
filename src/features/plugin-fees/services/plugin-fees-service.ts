@@ -3,7 +3,8 @@
  * payment-method sections on Settings, the Hierarchy Assistant review queues (P2), and
  * statements of account, billing cycles and recognition costs (P3, contract §5), and
  * collection — pay links, the payments dashboard, follow-ups, SMD balances and sending
- * (P4, contract §6).
+ * (P4, contract §6), Stripe Connect and quarterly payouts (P5, §7), and the admin
+ * overview, SEVC totals, manual adjustments and invoice voiding (P6, §8).
  *
  * Contract: `mlm_platform/docs/plugin_fees/API.md` (consumed endpoints are listed in
  * `docs/plugin-fees/API.md` §2). Every path ends in `/` — Django's APPEND_SLASH would
@@ -12,13 +13,17 @@
  */
 
 import type {
+  AdjustmentInput,
+  AdjustmentsQuery,
   AgentStatement,
+  ApprovePayoutInput,
   ApproveCycleInput,
   AssistantDecision,
   AssistantReviewItem,
   AssistantReviewStatus,
   AssistantSubmission,
   AssistantSubmissionInput,
+  ConnectAccount,
   CostInput,
   CostsQuery,
   CycleReport,
@@ -27,15 +32,21 @@ import type {
   DeleteCostInput,
   FollowUp,
   FollowUpStatusFilter,
+  LedgerAdjustment,
   OfficeDecision,
   OfficeReviewItem,
   OfficeReviewStatus,
   OfficeSubmission,
   OfficeSubmissionInput,
+  OnboardingLinkResponse,
   Paginated,
   PayLinkResponse,
   PaymentPreference,
+  PaymentRow,
   PaymentsDashboard,
+  PayoutReport,
+  PayoutSummary,
+  PluginFeesDashboard,
   PluginFeesAccess,
   PluginFeesErrorCode,
   PluginFeesMe,
@@ -43,10 +54,14 @@ import type {
   PluginFeesStatement,
   RecognitionCost,
   ResolveFollowUpInput,
+  RetryPayoutLineInput,
   ReviewQuery,
   SendCycleResponse,
   SetupSessionResponse,
+  SevcMonthTotal,
+  SevcTotalsRange,
   SmdBalance,
+  VoidInvoiceInput,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -321,4 +336,75 @@ export function fetchBalances(signal?: AbortSignal): Promise<SmdBalance[]> {
 /** Sends the month's `draft` invoices now (normally automatic after approval). */
 export function sendCycle(month: string): Promise<SendCycleResponse> {
   return postJson(`/cycles/${encodeURIComponent(month)}/send/`);
+}
+
+/* --- P5: Stripe Connect and quarterly payouts ------------------------------ */
+
+/** The signed-in SMD's payout account. Active SMDs only (`403 not_eligible` otherwise). */
+export function fetchMyConnect(signal?: AbortSignal): Promise<ConnectAccount> {
+  return getJson('/me/connect/', signal);
+}
+
+/**
+ * A Stripe Connect onboarding link; the caller redirects the browser to `url`. Stripe
+ * returns to `/plugin-fees/statement?connect=return` or `?connect=refresh`.
+ */
+export function createConnectOnboardingLink(): Promise<OnboardingLinkResponse> {
+  return postJson('/me/connect/onboarding-link/');
+}
+
+export function fetchPayouts(signal?: AbortSignal): Promise<PayoutSummary[]> {
+  return getJson('/payouts/', signal);
+}
+
+/** Prepares (idempotently) the draft payout report for a finished quarter. */
+export function preparePayout(quarter: string): Promise<PayoutReport> {
+  return postJson('/payouts/', { quarter });
+}
+
+export function fetchPayoutReport(quarter: string, signal?: AbortSignal): Promise<PayoutReport> {
+  return getJson(`/payouts/${encodeURIComponent(quarter)}/`, signal);
+}
+
+/** Approving queues the Stripe transfers. Cannot be undone. */
+export function approvePayout(input: ApprovePayoutInput): Promise<PayoutReport> {
+  return postJson(`/payouts/${encodeURIComponent(input.quarter)}/approve/`, { note: input.note });
+}
+
+/** Retries a `failed` or `held_no_connect` line of an approved payout. */
+export function retryPayoutLine(input: RetryPayoutLineInput): Promise<unknown> {
+  return postJson(`/payouts/${encodeURIComponent(input.quarter)}/lines/${input.lineId}/retry/`);
+}
+
+/* --- P6: admin dashboard remainder ----------------------------------------- */
+
+export function fetchDashboard(signal?: AbortSignal): Promise<PluginFeesDashboard> {
+  return getJson('/dashboard/', signal);
+}
+
+export function fetchSevcTotals(range: SevcTotalsRange, signal?: AbortSignal): Promise<SevcMonthTotal[]> {
+  const params = new URLSearchParams();
+  params.set('from', range.from);
+  params.set('to', range.to);
+  return getJson(`/sevc-totals/?${params.toString()}`, signal);
+}
+
+export function fetchAdjustments(
+  query: AdjustmentsQuery,
+  signal?: AbortSignal
+): Promise<Paginated<LedgerAdjustment>> {
+  const params = new URLSearchParams();
+  if (query.smd !== null) params.set('smd', String(query.smd));
+  params.set('page', String(query.page));
+  return getJson(`/adjustments/?${params.toString()}`, signal);
+}
+
+/** Posts a ledger `adjustment`. Never edited or deleted — correct with an opposite one. */
+export function createAdjustment(input: AdjustmentInput): Promise<LedgerAdjustment> {
+  return postJson('/adjustments/', input);
+}
+
+/** Voids a `draft`, `open` or `failed` invoice. Never changes the ledger. */
+export function voidInvoice(input: VoidInvoiceInput): Promise<PaymentRow> {
+  return postJson(`/invoices/${input.id}/void/`, { note: input.note });
 }

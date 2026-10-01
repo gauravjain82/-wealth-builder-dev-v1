@@ -1,7 +1,8 @@
 /**
  * The invoices of a month on the payments dashboard: filter tabs (client-side over
  * `rows` — the payload carries every sent invoice), a name / agency-code search, a CSV of
- * exactly the rows showing, and one row per invoice with its payment state.
+ * exactly the rows showing, and one row per invoice with its payment state. P6: `onVoid`
+ * (passed for `:manage`) adds "Void…" on `draft`, `open` and `failed` rows.
  * Screens: `docs/plugin-fees/UI.md` §2.9.
  */
 
@@ -18,6 +19,7 @@ import {
   failureCodeLabel,
   isOverdue,
   isRetrying,
+  isVoidable,
   paidViaLabel,
   todayUtc,
 } from '../../utils/plugin-fees-payment';
@@ -125,7 +127,16 @@ function RetryOrDue({ row }: { row: PaymentRow }) {
   return <span>{row.next_retry_on ? `Retry ${formatDate(row.next_retry_on)}` : '—'}</span>;
 }
 
-export function PaymentsTable({ rows, month }: { rows: PaymentRow[]; month: string }) {
+export function PaymentsTable({
+  rows,
+  month,
+  onVoid,
+}: {
+  rows: PaymentRow[];
+  month: string;
+  /** `:manage` only: open the void dialog for a row. */
+  onVoid?: (row: PaymentRow) => void;
+}) {
   const [filter, setFilter] = useState<PaymentFilter>('all');
   const [search, setSearch] = useState('');
   const today = todayUtc();
@@ -212,6 +223,11 @@ export function PaymentsTable({ rows, month }: { rows: PaymentRow[]; month: stri
                   <th scope="col">Last failure</th>
                   <th scope="col">Paid</th>
                   <th scope="col">Follow-up</th>
+                  {onVoid ? (
+                    <th scope="col">
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  ) : null}
                 </tr>
               </thead>
               <tbody>
@@ -263,6 +279,15 @@ export function PaymentsTable({ rows, month }: { rows: PaymentRow[]; month: stri
                       )}
                     </td>
                     <td>{row.follow_up_open ? <span className="wb-pf-tag wb-pf-tag--danger">Open</span> : '—'}</td>
+                    {onVoid ? (
+                      <td>
+                        {isVoidable(row.status) ? (
+                          <Button type="button" size="sm" variant="outline" onClick={() => onVoid(row)}>
+                            Void…
+                          </Button>
+                        ) : null}
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>

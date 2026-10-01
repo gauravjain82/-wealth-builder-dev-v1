@@ -3,12 +3,13 @@
  * its running balance. Shared by the agent's own page and the read-only admin lookup;
  * it renders the payload and fetches nothing. P4: each invoice shows its payment state,
  * and on the agent's own page an invoice with `can_pay_now` offers Pay now (the page
- * owns the pay-link mutation and passes `payNow`).
+ * owns the pay-link mutation and passes `payNow`). P6: on the admin lookup, `:manage`
+ * may void a `draft`, `open` or `failed` invoice (the page owns the dialog, `voidInvoice`).
  *
  * Screens and states: `docs/plugin-fees/UI.md` §2.5.
  */
 
-import { Fragment, useState } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 
 import { Button } from '@/shared/components';
 
@@ -23,6 +24,7 @@ import {
 } from '../../utils/plugin-fees-format';
 import { StatusBadge } from '../submission-parts';
 import { PaymentFacts, PaymentStateCell } from '../payments/payment-state';
+import { isVoidable } from '../../utils/plugin-fees-payment';
 
 const INVOICE_STATUS: Record<InvoiceStatus, { label: string; tone: string }> = {
   draft: { label: 'Scheduled', tone: 'info' },
@@ -109,6 +111,12 @@ export interface PayNowControl {
   payingId: number | null;
 }
 
+/** Void, offered by the admin agent statement page to `:manage`. */
+export interface VoidControl {
+  onVoid: (invoice: StatementInvoice) => void;
+  disabled: boolean;
+}
+
 const PAY_NOW_COPY =
   "Pay by bank, card, or Klarna (pay over time, subject to Klarna's approval and fees).";
 
@@ -116,10 +124,12 @@ function InvoicesTable({
   invoices,
   own,
   payNow,
+  voidInvoice,
 }: {
   invoices: StatementInvoice[];
   own: boolean;
   payNow?: PayNowControl;
+  voidInvoice?: VoidControl;
 }) {
   const [open, setOpen] = useState<Set<number>>(() => new Set());
   const toggle = (id: number) =>
@@ -133,7 +143,8 @@ function InvoicesTable({
   if (!invoices.length) return <p className="wb-pf-muted">No invoices yet.</p>;
 
   const showPay = Boolean(payNow) && invoices.some((invoice) => invoice.can_pay_now);
-  const columns = showPay ? 7 : 6;
+  const showVoid = Boolean(voidInvoice) && invoices.some((invoice) => isVoidable(invoice.status));
+  const columns = 6 + (showPay ? 1 : 0) + (showVoid ? 1 : 0);
 
   return (
     <div className="wb-pf-table-wrap">
@@ -153,6 +164,11 @@ function InvoicesTable({
             {showPay ? (
               <th scope="col">
                 <span className="sr-only">Pay</span>
+              </th>
+            ) : null}
+            {showVoid ? (
+              <th scope="col">
+                <span className="sr-only">Actions</span>
               </th>
             ) : null}
           </tr>
@@ -203,6 +219,21 @@ function InvoicesTable({
                       ) : null}
                     </td>
                   ) : null}
+                  {showVoid && voidInvoice ? (
+                    <td>
+                      {isVoidable(invoice.status) ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => voidInvoice.onVoid(invoice)}
+                          disabled={voidInvoice.disabled}
+                        >
+                          Void…
+                        </Button>
+                      ) : null}
+                    </td>
+                  ) : null}
                 </tr>
                 {expanded ? (
                   <tr id={panelId} className="wb-pf-detail-row">
@@ -223,12 +254,30 @@ function InvoicesTable({
   );
 }
 
+/** Entry types called out with a tag beside the backend's label. */
+const LEDGER_TAG: Partial<Record<string, { label: string; className?: string }>> = {
+  md_credit_rollup: { label: 'Rolled up' },
+  payout: { label: 'Payout', className: 'wb-pf-tag--payout' },
+  reversal: { label: 'Reversal', className: 'wb-pf-tag--danger' },
+  adjustment: { label: 'Manual adjustment', className: 'wb-pf-tag--adjustment' },
+};
+
+const LEDGER_FALLBACK_LABEL: Partial<Record<string, string>> = {
+  payout: 'Quarterly payout sent',
+  adjustment: 'Ledger adjustment',
+};
+
+/**
+ * The backend labels every entry (a payout reads "Quarterly payout sent (2026-Q4)"); the
+ * memo carries the detail — for an adjustment, the admin's note.
+ */
 function LedgerDescription({ entry }: { entry: LedgerEntry }) {
+  const tag = LEDGER_TAG[entry.type];
   return (
     <span>
       <span className="wb-pf-row" style={{ gap: 6 }}>
-        <strong>{entry.label || humanize(entry.type)}</strong>
-        {entry.type === 'md_credit_rollup' ? <span className="wb-pf-tag">Rolled up</span> : null}
+        <strong>{entry.label || LEDGER_FALLBACK_LABEL[entry.type] || humanize(entry.type)}</strong>
+        {tag ? <span className={`wb-pf-tag${tag.className ? ` ${tag.className}` : ''}`}>{tag.label}</span> : null}
       </span>
       {entry.memo ? <span className="wb-pf-muted" style={{ display: 'block' }}>{entry.memo}</span> : null}
     </span>
@@ -301,18 +350,26 @@ export function StatementView({
   statement,
   own = true,
   payNow,
+  voidInvoice,
+  ledgerAction,
 }: {
   statement: PluginFeesStatement;
   own?: boolean;
   payNow?: PayNowControl;
+  voidInvoice?: VoidControl;
+  /** Rendered in the ledger card's header (the admin's "Adjust ledger"). */
+  ledgerAction?: ReactNode;
 }) {
   return (
     <div className="wb-pf-stack">
       {statement.ledger ? (
         <section className="wb-pf-card" aria-labelledby="wb-pf-ledger-heading">
-          <h2 id="wb-pf-ledger-heading" className="wb-pf-subheading">
-            Balance and ledger
-          </h2>
+          <div className="wb-pf-card-header">
+            <h2 id="wb-pf-ledger-heading" className="wb-pf-subheading">
+              Balance and ledger
+            </h2>
+            {ledgerAction}
+          </div>
           <BalanceCard cents={statement.ledger.balance_cents} own={own} />
           <p className="wb-pf-muted" style={{ margin: 0 }}>
             Credits are positive and debits negative. MD fees credited from own MDs and MD fees
@@ -326,7 +383,7 @@ export function StatementView({
         <h2 id="wb-pf-invoices-heading" className="wb-pf-subheading">
           Invoices
         </h2>
-        <InvoicesTable invoices={statement.invoices} own={own} payNow={payNow} />
+        <InvoicesTable invoices={statement.invoices} own={own} payNow={payNow} voidInvoice={voidInvoice} />
       </section>
     </div>
   );
