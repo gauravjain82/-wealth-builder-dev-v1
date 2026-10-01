@@ -261,3 +261,76 @@ export async function resolveRelatedTrackerUserId(
   const profile = await fetchTrackerUserProfile(sourceUserId);
   return relation === 'recruiter' ? profile.recruited_by ?? null : profile.leader ?? null;
 }
+
+/** A person named in the change history; `id` is null for a deleted actor. */
+export interface UserHistoryPerson {
+  id: number | null;
+  name: string;
+}
+
+export interface UserHistoryFieldChange {
+  field: string;
+  label: string;
+  /** Display text; null when the field was empty. */
+  old: string | null;
+  new: string | null;
+}
+
+interface UserHistoryEventBase {
+  id: string;
+  at: string;
+  /** Null when the system made the change on its own. */
+  actor: UserHistoryPerson | null;
+  /** `api` | `admin` | `system` | `command`, or a role-transition source. */
+  source: string;
+  reason: string;
+}
+
+export interface UserHistoryFieldEvent extends UserHistoryEventBase {
+  kind: 'fields';
+  action: 'CREATE' | 'UPDATE' | 'DELETE';
+  changes: UserHistoryFieldChange[];
+}
+
+export interface UserHistoryRoleEvent extends UserHistoryEventBase {
+  kind: 'role';
+  approved_by: UserHistoryPerson | null;
+  from_role: string | null;
+  to_role: string | null;
+  trigger: string;
+  transition_type: string;
+  status: string;
+}
+
+export type UserHistoryEvent = UserHistoryFieldEvent | UserHistoryRoleEvent;
+
+/** `allowed: false` when the viewer lacks `audit_log:read` (the backend answers 403). */
+export type UserHistoryResult = { allowed: false } | { allowed: true; events: UserHistoryEvent[] };
+
+/**
+ * Who changed this person's record and their roles, newest first.
+ *
+ * `GET /api/accounts/users/<id>/history/` — gated server-side on `audit_log:read`; a
+ * 403 is returned as `{ allowed: false }` so the caller can hide the panel rather than
+ * show an error.
+ */
+export async function fetchUserHistory(
+  userId: number,
+  signal?: AbortSignal
+): Promise<UserHistoryResult> {
+  const response = await fetch(`${API_BASE_URL}/api/accounts/users/${userId}/history/`, {
+    headers: getAuthHeaders(),
+    signal,
+  });
+
+  if (response.status === 403 || response.status === 404) {
+    // 404 also covers a backend that predates the endpoint.
+    return { allowed: false };
+  }
+  if (!response.ok) {
+    throw new Error(`Failed to fetch change history: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as { events?: UserHistoryEvent[] };
+  return { allowed: true, events: data.events ?? [] };
+}

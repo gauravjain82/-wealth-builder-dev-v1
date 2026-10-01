@@ -75,6 +75,8 @@ legitimately has no licensing row before they start licensing.
 | GET | `/api/accounts/users/brokers/` | broker list |
 | GET | `/api/accounts/users/segments/` | **segment visibility** — `accessible_segments` |
 | GET | `/api/accounts/users/org-chart/root/` | the chart's root |
+| PATCH | `/api/accounts/users/{id}/` | the profile modal's save — **only the fields edited since load** |
+| GET | `/api/accounts/users/{id}/history/` | the profile modal's Change History panel. Needs `audit_log:read`; a 403 (or 404 on an older backend) hides the panel |
 | GET | `/api/accounts/levels/` | levels. **Also imported by `admin`** |
 | GET · POST | `/api/accounts/invitations/` | invitations |
 
@@ -101,6 +103,7 @@ files import:
 | `ProductionTrackerRecord` | `production-tracker/services/production-tracker-service.ts` |
 | `TrackerNote` | `services/tracker-notes-service.ts` |
 | `TrackerUserProfile`, `TrackerProfileSnapshots` | `services/tracker-user-profile-service.ts` |
+| `UserHistoryEvent` (`fields` \| `role`), `UserHistoryResult` | `services/tracker-user-profile-service.ts` |
 | `TeamSegmentSummaryResponse` | `services/team-segment-service.ts` |
 | `Level` | `prospect/services/prospect-service.ts` — **imported by `admin`** |
 | prospect types | `prospect/types.ts` |

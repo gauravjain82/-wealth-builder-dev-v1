@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Button,
   Checkbox,
@@ -10,6 +11,8 @@ import {
 } from '@/shared/components';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { useToastStore } from '@/store';
+import { UserChangeHistory } from '@/features/team/components/user-change-history';
+import { userHistoryKey } from '@/features/team/hooks/use-user-history';
 import { fetchLevels, type Level } from '@/features/team/prospect/services/prospect-service';
 import {
   fetchTrackerProfileSnapshots,
@@ -17,6 +20,7 @@ import {
   terminateTrackerUser,
   type TrackerProfileSnapshots,
   type TrackerUserProfile,
+  type TrackerUserProfileUpdatePayload,
   updateTrackerUserProfile,
   uploadTrackerUserPhoto,
 } from '@/features/team/services/tracker-user-profile-service';
@@ -156,6 +160,80 @@ function mapToForm(user: TrackerUserProfile): ProfileFormState {
   };
 }
 
+const PROFILE_FORM_KEYS = [
+  'birthday',
+  'state',
+  'homeAddress',
+  'homeAddress2',
+  'homeCity',
+  'homeZip',
+  'gender',
+  'occupation',
+  'howKnown',
+  'whatTold',
+  'relationship',
+  'dependentChildren',
+  'married',
+] as const satisfies readonly (keyof ProfileFormState)[];
+
+/**
+ * The PATCH body for what the user actually edited since the form was loaded.
+ *
+ * Sending every field re-asserted values the user never touched: a modal left open
+ * while someone else changed the recruiter, or while the backend recalculated the
+ * leader, wrote the old values back on save. Only edited fields are sent now.
+ * `profile` is one sub-record on the backend, so it is sent whole when any of its
+ * fields changed.
+ */
+function buildUpdatePayload(
+  initial: ProfileFormState,
+  form: ProfileFormState,
+  existingFlags: Record<string, boolean> | undefined
+): TrackerUserProfileUpdatePayload {
+  const payload: TrackerUserProfileUpdatePayload = {};
+  const changed = <K extends keyof ProfileFormState>(key: K) => initial[key] !== form[key];
+  const trimmedChanged = (key: 'firstName' | 'lastName' | 'email' | 'phone' | 'agencyCode' | 'poloSize' | 'spouseName' | 'spousePhone' | 'spousePoloSize') =>
+    initial[key].trim() !== form[key].trim();
+
+  if (trimmedChanged('firstName')) payload.first_name = form.firstName.trim();
+  if (trimmedChanged('lastName')) payload.last_name = form.lastName.trim();
+  if (trimmedChanged('email')) payload.email = form.email.trim();
+  if (trimmedChanged('phone')) payload.phone = form.phone.trim();
+  if (trimmedChanged('agencyCode')) payload.agency_code = form.agencyCode.trim();
+  if (changed('amaDate')) payload.ama_date = form.amaDate || null;
+  if (trimmedChanged('poloSize')) payload.polo_size = form.poloSize.trim();
+  if (trimmedChanged('spouseName')) payload.spouse_name = form.spouseName.trim();
+  if (trimmedChanged('spousePhone')) payload.spouse_phone = form.spousePhone.trim();
+  if (trimmedChanged('spousePoloSize')) payload.spouse_polo_size = form.spousePoloSize.trim();
+  if (changed('levelId')) payload.level_id = form.levelId;
+  if (changed('recruiterId')) payload.recruited_by = form.recruiterId;
+  if (changed('leaderId')) payload.leader = form.leaderId;
+
+  if (PROFILE_FORM_KEYS.some((key) => changed(key))) {
+    const relationshipNumber = Number.parseInt(form.relationship, 10);
+    payload.profile = {
+      birthday: form.birthday || null,
+      state: form.state || '',
+      home_address: form.homeAddress || '',
+      home_address2: form.homeAddress2 || '',
+      home_city: form.homeCity || '',
+      home_zip: form.homeZip || '',
+      gender: form.gender || '',
+      occupation: form.occupation || '',
+      how_known: form.howKnown || '',
+      what_told: form.whatTold || '',
+      relationship: Number.isFinite(relationshipNumber) ? relationshipNumber : null,
+      dependent_children: form.dependentChildren,
+      flags: {
+        ...(existingFlags || {}),
+        married: form.married,
+        dependentKids: form.dependentChildren,
+      },
+    };
+  }
+  return payload;
+}
+
 function yesNo(value: boolean | null | undefined): string {
   return value ? 'Yes' : 'No';
 }
@@ -196,6 +274,9 @@ export function TrackerUserProfileModal({
   const [snapshots, setSnapshots] = useState<TrackerProfileSnapshots | null>(null);
   const [levels, setLevels] = useState<Level[]>([]);
   const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
+  // The form as last loaded from the server; Save sends only what differs from it.
+  const [loadedForm, setLoadedForm] = useState<ProfileFormState>(EMPTY_FORM);
+  const queryClient = useQueryClient();
   const [confirmTerminateOpen, setConfirmTerminateOpen] = useState(false);
   const addToast = useToastStore((state) => state.addToast);
 
@@ -213,6 +294,7 @@ export function TrackerUserProfileModal({
         setSnapshots(loadedSnapshots);
         setLevels(loadedLevels);
         setForm(mapToForm(loadedProfile));
+        setLoadedForm(mapToForm(loadedProfile));
       })
       .catch((err) => {
         if (!active) return;
@@ -276,48 +358,21 @@ export function TrackerUserProfileModal({
       return;
     }
 
+    const payload = buildUpdatePayload(loadedForm, form, profile?.profile?.flags);
+    if (Object.keys(payload).length === 0) {
+      addToast({ type: 'info', message: 'No changes to save.' });
+      return;
+    }
+
     try {
       setSaving(true);
-      const relationshipNumber = Number.parseInt(form.relationship, 10);
-
-      await updateTrackerUserProfile(userId, {
-        first_name: form.firstName.trim(),
-        last_name: form.lastName.trim(),
-        full_name: `${form.firstName} ${form.lastName}`.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        agency_code: form.agencyCode.trim(),
-        ama_date: form.amaDate || null,
-        polo_size: form.poloSize.trim(),
-        spouse_name: form.spouseName.trim(),
-        spouse_phone: form.spousePhone.trim(),
-        spouse_polo_size: form.spousePoloSize.trim(),
-        level_id: form.levelId,
-        recruited_by: form.recruiterId,
-        leader: form.leaderId,
-        profile: {
-          birthday: form.birthday || null,
-          state: form.state || '',
-          home_address: form.homeAddress || '',
-          home_address2: form.homeAddress2 || '',
-          home_city: form.homeCity || '',
-          home_zip: form.homeZip || '',
-          gender: form.gender || '',
-          occupation: form.occupation || '',
-          how_known: form.howKnown || '',
-          what_told: form.whatTold || '',
-          relationship: Number.isFinite(relationshipNumber) ? relationshipNumber : null,
-          dependent_children: form.dependentChildren,
-          flags: {
-            ...(profile?.profile?.flags || {}),
-            married: form.married,
-            dependentKids: form.dependentChildren,
-          },
-        },
-      });
+      await updateTrackerUserProfile(userId, payload);
 
       const updated = await fetchTrackerUserProfile(userId);
 
+      // Recruiter and leader come from the server, not the form: saving a
+      // recruiter can make the backend recalculate (or clear) the leader, and
+      // showing the form's old value hid that until the next reload.
       const normalizedUpdated: TrackerUserProfile = {
         ...updated,
         level:
@@ -328,14 +383,12 @@ export function TrackerUserProfileModal({
                 name: form.levelLabel || null,
               }
             : null),
-        recruited_by: updated.recruited_by ?? form.recruiterId,
-        leader: updated.leader ?? form.leaderId,
-        recruited_by_name: updated.recruited_by_name || form.recruiterLabel || null,
-        leader_name: updated.leader_name || form.leaderLabel || null,
       };
 
       setProfile(normalizedUpdated);
       setForm(mapToForm(normalizedUpdated));
+      setLoadedForm(mapToForm(normalizedUpdated));
+      void queryClient.invalidateQueries({ queryKey: userHistoryKey(userId) });
       onSaved?.(normalizedUpdated);
       addToast({ type: 'success', message: 'Profile updated successfully.' });
     } catch (err) {
@@ -640,6 +693,8 @@ export function TrackerUserProfileModal({
                   Level: {typeof profile?.level === 'string' ? profile.level : profile?.level?.name || '-'}
                 </div>
               </div>
+
+              <UserChangeHistory userId={userId} enabled={open} />
             </section>
           </div>
 

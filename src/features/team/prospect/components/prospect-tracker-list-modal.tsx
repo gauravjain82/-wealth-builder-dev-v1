@@ -18,6 +18,7 @@ import {
 import { AddProspectModal } from '@/features/team/prospect/components/add-prospect-modal';
 import { CallLogModal } from '@/features/team/prospect/components/call-log-modal';
 import type { AddAgentFormData, AddProspectFormData } from '@/features/team/prospect/types';
+import { changedIdentityFields } from '@/features/team/prospect/prospect-utils';
 import {
   createProductionRecord,
   fetchProductionCompanyProducts,
@@ -719,15 +720,8 @@ export function ProspectTrackerListModal({
 
     try {
       setSavingCallLog(true);
-      const fullName = `${formData.firstName || ''} ${formData.lastName || ''}`.trim();
       const updated = await updateProspectDetails(editingProspect.id, {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        full_name: fullName || undefined,
-        email: formData.email,
-        phone: formData.phone,
-        recruited_by: formData.recruiterId,
-        leader: formData.leaderId,
+        ...changedIdentityFields(mapProspectToForm(editingProspect), formData),
         profile: {
           state: formData.state || undefined,
           home_address: formData.homeAddress || undefined,

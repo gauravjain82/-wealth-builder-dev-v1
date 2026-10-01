@@ -286,7 +286,7 @@ export async function activateProspectWithAgencyCode(
   return (await response.json()) as Prospect;
 }
 
-interface UpdateProspectPayload {
+export interface UpdateProspectPayload {
   first_name?: string;
   last_name?: string;
   full_name?: string;
