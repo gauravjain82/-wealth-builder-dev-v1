@@ -19,7 +19,7 @@
 | `/welcome-videos/:videoKey` | `ProtectedRoute` only | `WelcomeVideosPage`, player open on that video |
 
 Entry points:
-- **Sidebar** — "Welcome Videos" 🎬, directly after Onboarding Game, in every plan's menu.
+- **Sidebar** — "Welcome Videos" 🎬, directly after Home, in every plan's menu.
 - **`/home`** — `WelcomeVideosHomeCard`, in the new-agent-only block above "Start your onboarding
   process". Static; it makes no request.
 - **`ShareWelcomeVideosModal`**, embedded where leaders work with agents:

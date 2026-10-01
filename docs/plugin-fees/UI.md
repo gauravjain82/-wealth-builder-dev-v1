@@ -31,7 +31,7 @@
 | `/admin/plugin-fees/adjustments` | admin | `PluginFeesAccessRoute` (`can_manage`) |
 | `/admin/plugin-fees/review?tab=offices\|assistants&status=…` | overview deep link | read once (PF42) |
 | Settings → "View statement of account →" | `is_billable` | link under the plug-in fee sections |
-| Menu "My Plug-in Fees" 💳 | `is_billable` | inserted just under Home |
+| Menu "My Plug-in Fees" 💳 | `is_billable` | inserted just after My Team (under Home if the plan has no My Team) |
 | Menu "Plug-in Fee Reviews" 🗂️ | `can_review` | appended after the other per-user admin entries |
 | Menu "Billing Cycles" 🧾 | `can_manage \|\| can_review \|\| can_approve_payouts` | right after "Plug-in Fee Reviews" (or appended) |
 | Menu "Fee Payments" 💵 | `can_manage \|\| can_review` | after "Billing Cycles" (PF30) |

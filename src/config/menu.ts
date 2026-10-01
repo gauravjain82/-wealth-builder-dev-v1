@@ -224,9 +224,9 @@ const DATA_INTEGRITY_GROUP: MenuItem = {
 export const PLAN_MENUS = {
   [Plan.NewAgent]: [
     MENU_ITEMS.HOME,
+    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -267,9 +267,9 @@ export const PLAN_MENUS = {
   
   [Plan.Agent]: [
     MENU_ITEMS.HOME,
+    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -314,9 +314,9 @@ export const PLAN_MENUS = {
   
   [Plan.Leader]: [
     MENU_ITEMS.HOME,
+    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -366,9 +366,10 @@ export const PLAN_MENUS = {
   ] as MenuItem[],
   
   [Plan.Broker]: [
-    MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
-    MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.HOME,
     MENU_ITEMS.WELCOME_VIDEOS,
+    MENU_ITEMS.INSIGHT_CENTER,
+    MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -430,9 +431,10 @@ export const PLAN_MENUS = {
   
   // Senior Broker uses same menu as Broker
   [Plan.SeniorBroker]: [
-    MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
-    MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.HOME,
     MENU_ITEMS.WELCOME_VIDEOS,
+    MENU_ITEMS.INSIGHT_CENTER,
+    MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -493,9 +495,10 @@ export const PLAN_MENUS = {
   ] as MenuItem[],
   
   [Plan.Admin]: [
-    MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
-    MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.HOME,
     MENU_ITEMS.WELCOME_VIDEOS,
+    MENU_ITEMS.INSIGHT_CENTER,
+    MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -571,9 +574,10 @@ export const PLAN_MENUS = {
   ] as MenuItem[],
 
   [Plan.SuperAdmin]: [
-    MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
-    MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.HOME,
     MENU_ITEMS.WELCOME_VIDEOS,
+    MENU_ITEMS.INSIGHT_CENTER,
+    MENU_ITEMS.ONBOARDING_GAME,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -858,14 +862,17 @@ export function getMenuForUser(
   }
 
   // An MD's or SMD's own plug-in fee statement. Not an admin tool, so it goes just
-  // under Home rather than among the admin entries.
+  // after My Team (or under Home, if a plan has no My Team) rather than among the
+  // admin entries.
   if (
     isPluginFeesBillable &&
     !menuItems.some((item) => item.label === MENU_ITEMS.PLUGIN_FEES_STATEMENT.label)
   ) {
+    const myTeamIdx = menuItems.findIndex((item) => item.label === 'My Team');
     const homeIdx = menuItems.findIndex((item) => item.label === MENU_ITEMS.HOME.label);
+    const anchorIdx = myTeamIdx >= 0 ? myTeamIdx : homeIdx;
     menuItems.splice(
-      homeIdx >= 0 ? homeIdx + 1 : menuItems.length,
+      anchorIdx >= 0 ? anchorIdx + 1 : menuItems.length,
       0,
       cloneMenuItems([MENU_ITEMS.PLUGIN_FEES_STATEMENT])[0]
     );
