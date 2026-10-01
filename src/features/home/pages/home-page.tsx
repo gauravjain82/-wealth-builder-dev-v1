@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { VideoHero, CanvaVideoCard, LeaderboardCard, PerformanceTable } from '@/features/home/components';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { useHomePageContent } from '@/features/home/hooks/use-home-content';
+import { WelcomeVideosHomeCard } from '@/features/welcome-videos';
 import type { HomePageSlot } from '@/features/home/services/home-content-service';
 import { roleToPlan } from '@core/constants/roles';
 import { Plan } from '@core/types';
@@ -119,6 +120,9 @@ export default function HomePage() {
                 </Card>
               </div>
             </section>
+
+            {/* Welcome videos — the drip videos, also in the sidebar for every role */}
+            <WelcomeVideosHomeCard />
 
             {/* Start your onboarding process Card */}
             <section className="px-4 pb-16">

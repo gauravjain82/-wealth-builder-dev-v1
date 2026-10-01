@@ -27,6 +27,8 @@ const MENU_ITEMS = {
   HOME: { label: 'Home', icon: '🏠', path: '/home' } as MenuItem,
   INSIGHT_CENTER: { label: 'Insight Center', icon: '💡', path: '/insight-center' } as MenuItem,
   ONBOARDING_GAME: { label: 'Onboarding Game', icon: '🎮', path: '/onboarding-game' } as MenuItem,
+  // Every role: leaders show these to agents and share the links.
+  WELCOME_VIDEOS: { label: 'Welcome Videos', icon: '🎬', path: '/welcome-videos' } as MenuItem,
   PROMOTION: { label: 'Promotion', icon: '🏆', path: '/promotion/dashboard' } as MenuItem,
   
   // Tools
@@ -224,6 +226,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -266,6 +269,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -312,6 +316,7 @@ export const PLAN_MENUS = {
     MENU_ITEMS.HOME,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -363,6 +368,7 @@ export const PLAN_MENUS = {
   [Plan.Broker]: [
     MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -426,6 +432,7 @@ export const PLAN_MENUS = {
   [Plan.SeniorBroker]: [
     MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -488,6 +495,7 @@ export const PLAN_MENUS = {
   [Plan.Admin]: [
     MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
@@ -565,6 +573,7 @@ export const PLAN_MENUS = {
   [Plan.SuperAdmin]: [
     MENU_ITEMS.HOME,    MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
+    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',

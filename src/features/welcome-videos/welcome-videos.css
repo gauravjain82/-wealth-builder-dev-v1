@@ -1,0 +1,194 @@
+/**
+ * Styling for the welcome-video library. Every rule is scoped under `wb-wv-`; colours
+ * follow the host's dark surfaces and the yellow accent the home page already uses.
+ */
+
+.wb-wv {
+  max-width: 72rem;
+  margin: 0 auto;
+  color: #f8fafc;
+}
+
+.wb-wv__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.wb-wv__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #facc15;
+}
+
+.wb-wv__subtitle {
+  margin: 0;
+  max-width: 44rem;
+  color: #9ca3af;
+}
+
+.wb-wv__empty {
+  color: #9ca3af;
+}
+
+.wb-wv__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+}
+
+.wb-wv-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.75rem;
+  background: rgb(0 0 0 / 0.2);
+  backdrop-filter: blur(12px);
+}
+
+.wb-wv-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.wb-wv-card__number {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  border: 1px solid rgb(250 204 21 / 0.4);
+  color: #facc15;
+  font-weight: 700;
+}
+
+.wb-wv-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.wb-wv-card__speaker {
+  margin: 0.15rem 0 0;
+  font-size: 0.875rem;
+  color: #facc15;
+}
+
+.wb-wv-card__description {
+  flex: 1;
+  margin: 0;
+  white-space: pre-line;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #d1d5db;
+}
+
+.wb-wv-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.wb-wv-btn {
+  padding: 0.5rem 0.9rem;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 0.05);
+  color: #f8fafc;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.wb-wv-btn:hover {
+  background: rgb(255 255 255 / 0.12);
+}
+
+.wb-wv-btn--primary {
+  border-color: rgb(250 204 21 / 0.4);
+  background: rgb(250 204 21 / 0.15);
+  color: #facc15;
+}
+
+.wb-wv-btn--primary:hover {
+  background: rgb(250 204 21 / 0.25);
+}
+
+.wb-wv-player {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 0.8);
+}
+
+.wb-wv-player__dialog {
+  width: min(100%, 64rem);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.75rem;
+  background: #0f131c;
+  overflow: hidden;
+}
+
+.wb-wv-player__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.wb-wv-player__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.wb-wv-player__close {
+  border: 0;
+  background: none;
+  color: #f8fafc;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wb-wv-player__frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.wb-wv-player__frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.wb-wv-player__fallback {
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #d1d5db;
+}
+
+.wb-wv-player__fallback a {
+  color: #facc15;
+}

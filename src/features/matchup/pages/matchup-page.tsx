@@ -5,6 +5,7 @@ import { useToastStore } from '@/store';
 import { Button, Input, Select } from '@shared/components/ui';
 import { TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange } from '@/shared/components';
 import { AddAgencyCodeModal } from '@/features/team/prospect/components/add-agency-code-modal';
+import { ShareWelcomeVideosModal } from '@/features/welcome-videos';
 import { AddProductionModal, type AddProductionFormData } from '@/features/team/prospect/components/add-production-modal';
 import { AddProspectModal } from '@/features/team/prospect/components/add-prospect-modal';
 import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/components/tracker-team-scope-filter';
@@ -173,6 +174,7 @@ export default function MatchupPage() {
   const [detailsTarget, setDetailsTarget] = useState<AppointmentDetail | null>(null);
   const [followUpDefaults, setFollowUpDefaults] = useState<Partial<FollowUpAppointmentDefaults> | null>(null);
   const [addAgencyCodeFor, setAddAgencyCodeFor] = useState<Prospect | null>(null);
+  const [shareVideosFor, setShareVideosFor] = useState<{ name: string; justActivated: boolean } | null>(null);
   const [addProductionFor, setAddProductionFor] = useState<Prospect | null>(null);
   const [savingAgencyCode, setSavingAgencyCode] = useState(false);
   const [savingProduction, setSavingProduction] = useState(false);
@@ -550,6 +552,7 @@ export default function MatchupPage() {
       await activateProspectWithAgencyCode(addAgencyCodeFor.id, formData.agencyCode.trim());
       setAddAgencyCodeFor(null);
       addToast({ type: 'success', message: 'Agency code added successfully.' });
+      setShareVideosFor({ name: addAgencyCodeFor.full_name?.trim() || 'New agent', justActivated: true });
     } catch (err) {
       addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to add agency code.' });
     } finally {
@@ -877,6 +880,11 @@ export default function MatchupPage() {
         saving={savingAgencyCode}
         onClose={() => setAddAgencyCodeFor(null)}
         onSubmit={submitAgencyCode}
+      />
+      <ShareWelcomeVideosModal
+        recipientName={shareVideosFor?.name ?? null}
+        justActivated={shareVideosFor?.justActivated}
+        onClose={() => setShareVideosFor(null)}
       />
       <AddProductionModal
         open={Boolean(addProductionFor)}

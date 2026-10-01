@@ -14,6 +14,8 @@ interface CallLogModalProps {
   onRequestTrainer: (prospect: Prospect) => Promise<void>;
   onAddAppointment: (prospect: Prospect) => Promise<void>;
   onAddProduction: (prospect: Prospect) => Promise<void>;
+  /** Omit to hide the button. */
+  onShareWelcomeVideos?: (prospect: Prospect) => void;
 }
 
 export function CallLogModal({
@@ -28,6 +30,7 @@ export function CallLogModal({
   onRequestTrainer,
   onAddAppointment,
   onAddProduction,
+  onShareWelcomeVideos,
 }: CallLogModalProps) {
   const [outcome, setOutcome] = useState('Left Message');
   const [note, setNote] = useState('');
@@ -125,6 +128,16 @@ export function CallLogModal({
                 className="rounded-lg border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold tracking-wide text-amber-700 hover:bg-amber-100 dark:border-[#b59a0a] dark:bg-[#3b3524] dark:text-[#ffdd45] dark:hover:bg-[#4a422b]"
               >
                 ADD AGENCY CODE
+              </Button>
+            )}
+            {onShareWelcomeVideos && (
+              <Button
+                type="button"
+                onClick={() => onShareWelcomeVideos(prospect)}
+                variant="outline"
+                className="rounded-lg border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold tracking-wide text-amber-700 hover:bg-amber-100 dark:border-[#b59a0a] dark:bg-[#3b3524] dark:text-[#ffdd45] dark:hover:bg-[#4a422b]"
+              >
+                SHARE WELCOME VIDEOS
               </Button>
             )}
         </div>

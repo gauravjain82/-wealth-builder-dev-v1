@@ -136,6 +136,7 @@ const CrashCoursePage = lazy(() => import('@/features/licensing/crash-course/pag
 const ChapterCoursePage = lazy(() => import('@/features/licensing/crash-course/pages/chapter-course-page'));
 const TenSystematicToolsPage = lazy(() => import('@/features/systematic-tools/pages/ten-systematic-tools-page'));
 const OnboardingGamePage = lazy(() => import('@/features/team/onboarding-game/pages/onboarding-game-page'));
+const WelcomeVideosPage = lazy(() => import('@/features/welcome-videos/pages/welcome-videos-page'));
 const ResetPasswordPage = lazy(() => import('@/features/auth/components/reset-password-page'));
 const TrainingCenterPage = lazy(() => import('@/features/training-center/pages/training-center-page'));
 const TrainingSchedulePage = lazy(() => import('@/features/training-schedule/pages/training-schedule-page'));
@@ -559,6 +560,14 @@ const router = createBrowserRouter([
       {
         path: 'onboarding-game',
         element: lazyLoad(OnboardingGamePage),
+      },
+      {
+        path: 'welcome-videos',
+        element: lazyLoad(WelcomeVideosPage),
+      },
+      {
+        path: 'welcome-videos/:videoKey',
+        element: lazyLoad(WelcomeVideosPage),
       },
       {
         path: 'promotion/dashboard',

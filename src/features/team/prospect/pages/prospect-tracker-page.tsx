@@ -22,6 +22,7 @@ import {
   updateProspectDetails,
 } from '../services/prospect-service';
 import { AddProspectModal } from '../components/add-prospect-modal';
+import { ShareWelcomeVideosModal } from '@/features/welcome-videos';
 import { AddAgencyCodeModal } from '../components/add-agency-code-modal';
 import { AddProductionModal, type AddProductionFormData } from '../components/add-production-modal';
 import { CallLogModal } from '../components/call-log-modal';
@@ -237,6 +238,7 @@ export default function ProspectTrackerPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeCallLogProspect, setActiveCallLogProspect] = useState<Prospect | null>(null);
   const [addAgencyCodeFor, setAddAgencyCodeFor] = useState<Prospect | null>(null);
+  const [shareVideosFor, setShareVideosFor] = useState<{ name: string; justActivated: boolean } | null>(null);
   const [addProductionFor, setAddProductionFor] = useState<Prospect | null>(null);
   const [savingProduction, setSavingProduction] = useState(false);
   const [addProspectOpen, setAddProspectOpen] = useState(false);
@@ -792,6 +794,7 @@ export default function ProspectTrackerPage() {
       setActiveCallLogProspect(null);
       setAddAgencyCodeFor(null);
       addToast({ type: 'success', message: 'Agency code added successfully.' });
+      setShareVideosFor({ name: addAgencyCodeFor.full_name?.trim() || 'New agent', justActivated: true });
     } catch (err) {
       addToast({
         type: 'error',
@@ -1737,6 +1740,9 @@ export default function ProspectTrackerPage() {
         onSave={handleSaveCallLog}
         onInvite={handleInviteProspect}
         onAddAgencyCode={handleAddAgencyCode}
+        onShareWelcomeVideos={(prospect) =>
+          setShareVideosFor({ name: prospect.full_name?.trim() || 'Agent', justActivated: false })
+        }
         onRequestTrainer={async (prospect) => openAppointmentModalForProspect(prospect, 'REQUEST_TRAINER')}
         onAddAppointment={async (prospect) => openAppointmentModalForProspect(prospect, 'PERSONAL')}
         onAddProduction={async (prospect) => { setAddProductionFor(prospect); }}
@@ -1756,6 +1762,12 @@ export default function ProspectTrackerPage() {
         saving={savingCallLog}
         onClose={() => setAddAgencyCodeFor(null)}
         onSubmit={handleSubmitAddAgencyCode}
+      />
+
+      <ShareWelcomeVideosModal
+        recipientName={shareVideosFor?.name ?? null}
+        justActivated={shareVideosFor?.justActivated}
+        onClose={() => setShareVideosFor(null)}
       />
 
       <AddProductionModal
