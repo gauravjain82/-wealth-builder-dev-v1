@@ -47,7 +47,7 @@ render through.
 | `ContentSectionFormModal` | title, subtitle, icon, activity |
 | `ContentItemFormModal` | one `SchemaField` per declared `ContentFieldSchema` entry |
 | `DeliveryModeSelector` | inline / download / link, pre-selected from the file |
-| `StagedFilePicker` | holds the chosen file and thumbnail until the item exists |
+| `StagedFilePicker` | holds the chosen file and thumbnail until the item exists. Lives in `src/shared/components/staged-file-picker.tsx` since plug-in fees reused it; the 413 warning is passed in by `content-item-form-modal.tsx` |
 | `RoleAccessPicker` | which roles may see this section or item |
 
 Because the form is schema-driven, adding a field to a content type is a schema entry rather

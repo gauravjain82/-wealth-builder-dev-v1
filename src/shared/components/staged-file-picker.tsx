@@ -1,7 +1,5 @@
 import { useRef } from 'react';
-import { Button } from '@/shared/components';
-
-const LARGE_FILE_WARNING_BYTES = 50 * 1024 * 1024;
+import { Button } from './ui/button';
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -17,8 +15,17 @@ type StagedFilePickerProps = {
   existingName?: string;
   onFileChange: (file: File | null) => void;
   disabled?: boolean;
+  /** A validation message shown under the picker. */
+  error?: string;
+  /** Warn (without blocking) once the staged file reaches `bytes`. */
+  largeFileWarning?: { bytes: number; message: string };
 };
 
+/**
+ * Holds a chosen file in form state until the caller submits it. Lifted from
+ * `admin/content-pages` (decision AD3 in `docs/admin/PHASES.md`) so plug-in fees can
+ * reuse it; the content-pages large-upload warning is now passed in by that caller.
+ */
 export function StagedFilePicker({
   label,
   hint,
@@ -27,14 +34,16 @@ export function StagedFilePicker({
   existingName,
   onFileChange,
   disabled,
+  error,
+  largeFileWarning,
 }: StagedFilePickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="space-y-2">
       <div>
-        <p className="text-sm font-medium text-white">{label}</p>
-        {hint && <p className="text-xs text-white/60">{hint}</p>}
+        <p className="text-sm font-medium text-slate-900 dark:text-white">{label}</p>
+        {hint && <p className="text-xs text-slate-500 dark:text-white/60">{hint}</p>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -43,7 +52,11 @@ export function StagedFilePicker({
           className="hidden"
           accept={accept}
           disabled={disabled}
-          onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+          onChange={(event) => {
+            onFileChange(event.target.files?.[0] ?? null);
+            // Allow re-choosing the same file after a Remove.
+            event.target.value = '';
+          }}
         />
         <Button
           type="button"
@@ -56,7 +69,7 @@ export function StagedFilePicker({
         </Button>
         {file ? (
           <>
-            <span className="text-sm text-white/80">
+            <span className="text-sm text-slate-700 dark:text-white/80">
               {file.name} ({formatFileSize(file.size)})
             </span>
             <Button
@@ -70,14 +83,12 @@ export function StagedFilePicker({
             </Button>
           </>
         ) : existingName ? (
-          <span className="text-sm text-white/60">Current: {existingName}</span>
+          <span className="text-sm text-slate-500 dark:text-white/60">Current: {existingName}</span>
         ) : null}
       </div>
-      {file && file.size >= LARGE_FILE_WARNING_BYTES && (
-        <p className="text-xs text-amber-300">
-          Large files often fail with HTTP 413 on the API proxy. For videos, prefer External
-          link (Vimeo, Google Drive) instead of uploading the file through this form.
-        </p>
+      {error && <p className="text-xs text-red-600 dark:text-red-300">{error}</p>}
+      {file && largeFileWarning && file.size >= largeFileWarning.bytes && (
+        <p className="text-xs text-amber-600 dark:text-amber-300">{largeFileWarning.message}</p>
       )}
     </div>
   );

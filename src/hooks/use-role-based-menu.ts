@@ -9,6 +9,16 @@ import { roleToPlan } from '../core/constants/roles';
 import { getMenuForUser, type MenuItem } from '../config/menu';
 import { useGmsAccess } from '@/features/gms';
 import { useBpmCapabilities } from '@/features/bpm/hooks/use-bpm-capabilities';
+import { usePluginFeesAccess } from '@/features/plugin-fees/hooks/use-plugin-fees';
+import {
+  canManageCosts,
+  canSeeCycles,
+  canSeeOverview,
+  canSeeOwnStatement,
+  canSeePayments,
+  canSeePayouts,
+  canSeeReviews,
+} from '@/features/plugin-fees/utils/plugin-fees-access';
 
 /**
  * Hook to get plan-based menu structure
@@ -45,6 +55,18 @@ export function useRoleBasedMenu(): MenuItem[] {
   // Hidden while capabilities load, so it never flashes in and out.
   const { data: bpmCapabilities } = useBpmCapabilities();
   const canManageBpmSettings = Boolean(bpmCapabilities?.can_manage_settings);
+  // Plug-in fee reviews are for the Hierarchy Assistant (plugin_fees:review).
+  const { data: pluginFeesAccess } = usePluginFeesAccess();
+  const canReviewPluginFees = canSeeReviews(pluginFeesAccess);
+  // The same payload: own statement (active MD/SMD), billing cycles, costs.
+  const isPluginFeesBillable = canSeeOwnStatement(pluginFeesAccess);
+  const canViewPluginFeeCycles = canSeeCycles(pluginFeesAccess);
+  const canManagePluginFees = canManageCosts(pluginFeesAccess);
+  // Payments dashboard: :manage or :review (not :payout_approve, so not the cycles flag).
+  const canViewPluginFeePayments = canSeePayments(pluginFeesAccess);
+  // Overview (and SEVC totals): :manage or :review. Payouts: also :payout_approve.
+  const canViewPluginFeeOverview = canSeeOverview(pluginFeesAccess);
+  const canViewPluginFeePayouts = canSeePayouts(pluginFeesAccess);
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
@@ -61,7 +83,14 @@ export function useRoleBasedMenu(): MenuItem[] {
         canAccessLeaderboards,
         canManageReporting,
         canAuthorGuidance,
-        canManageBpmSettings
+        canManageBpmSettings,
+        canReviewPluginFees,
+        isPluginFeesBillable,
+        canViewPluginFeeCycles,
+        canManagePluginFees,
+        canViewPluginFeePayments,
+        canViewPluginFeeOverview,
+        canViewPluginFeePayouts
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -75,7 +104,14 @@ export function useRoleBasedMenu(): MenuItem[] {
       canAccessLeaderboards,
       canManageReporting,
       canAuthorGuidance,
-      canManageBpmSettings
+      canManageBpmSettings,
+      canReviewPluginFees,
+      isPluginFeesBillable,
+      canViewPluginFeeCycles,
+      canManagePluginFees,
+      canViewPluginFeePayments,
+      canViewPluginFeeOverview,
+      canViewPluginFeePayouts
     );
   }, [
     user?.hasPromotionAccess,
@@ -89,5 +125,12 @@ export function useRoleBasedMenu(): MenuItem[] {
     canManageReporting,
     canAuthorGuidance,
     canManageBpmSettings,
+    canReviewPluginFees,
+    isPluginFeesBillable,
+    canViewPluginFeeCycles,
+    canManagePluginFees,
+    canViewPluginFeePayments,
+    canViewPluginFeeOverview,
+    canViewPluginFeePayouts,
   ]);
 }

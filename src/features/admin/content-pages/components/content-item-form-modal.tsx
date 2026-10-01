@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input, Select } from '@/shared/components';
+import { Button, Input, Select, StagedFilePicker } from '@/shared/components';
 import { DeliveryModeSelector } from './delivery-mode-selector';
 import { RoleAccessPicker } from './role-access-picker';
 import { SchemaField } from './schema-field';
-import { StagedFilePicker } from './staged-file-picker';
 import {
   existingDocumentLabel,
   existingThumbnailLabel,
@@ -20,6 +19,13 @@ import {
   type ContentUploadResult,
   type FieldValue,
 } from '../types';
+
+/** Large uploads tend to hit HTTP 413 on the API proxy; warn before the user tries. */
+const LARGE_FILE_WARNING = {
+  bytes: 50 * 1024 * 1024,
+  message:
+    'Large files often fail with HTTP 413 on the API proxy. For videos, prefer External link (Vimeo, Google Drive) instead of uploading the file through this form.',
+};
 
 const DEFAULT_RESOURCE_TYPES = ['link', 'video', 'pdf', 'doc', 'ppt', 'image'];
 
@@ -253,6 +259,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
             <>
               <StagedFilePicker
                 label="File"
+                largeFileWarning={LARGE_FILE_WARNING}
                 hint="Saved and linked automatically when you click Save. Keep this window open until the upload finishes."
                 file={documentFile}
                 existingName={existingDocumentLabel(item)}
@@ -262,6 +269,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
               {thumbnailVisible && (
                 <StagedFilePicker
                   label="Thumbnail image (optional)"
+                  largeFileWarning={LARGE_FILE_WARNING}
                   hint="Shown on the card."
                   accept="image/*"
                   file={thumbnailFile}

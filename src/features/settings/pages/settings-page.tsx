@@ -32,6 +32,7 @@ import {
   type PaymentHistoryResponse,
 } from '../services/settings-billing-service';
 import { CalendarSyncSection } from '@/features/calendar-sync/components/calendar-sync-section';
+import { PluginFeesSettingsSections } from '@/features/plugin-fees/components/plugin-fees-settings-sections';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import './settings-page.css';
@@ -1542,6 +1543,9 @@ export default function SettingsPage() {
           </div>
         </div>
         ) : null}
+
+        {/* Office, assistant and plug-in fee payment method; renders only what my-access allows. */}
+        <PluginFeesSettingsSections />
 
         {currentPlan !== Plan.Admin ? (
         <div className="glass-section">

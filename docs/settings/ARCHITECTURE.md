@@ -36,6 +36,7 @@ their forms, their state and their billing workflows with no internal decomposit
   ├── §Account Level              ⭐  displayed from authz roles
   ├── §Subscription & Billing     💎  id: settings-billing-upgrade
   ├── §Manage Subscription        🔧  id: settings-manage-subscription  → Stripe Portal
+  ├── <PluginFeesSettingsSections />  ids: settings-plugin-fees-{office,assistant,payment}  ← owned by plugin-fees (branch feature/plugin-fees, not merged)
   ├── §My Upgrade Requests        🧾  what I asked for
   ├── §Pending Approval Requests  ✅  what I must approve (conditional)
   └── <CalendarSyncSection />         id: settings-calendar-sync  ← owned by calendar-sync
@@ -97,6 +98,7 @@ management.
 | Payment history | `payments` |
 | Telegram link token | `telegram` |
 | Calendar sync | **`calendar-sync`'s own React Query hooks**, inside its section |
+| Plug-in fees (office, assistant, fee payment method) | **`plugin-fees`' own React Query hooks**, inside its sections |
 
 So one route runs two state models side by side: the page's `useState` and, inside the hosted section,
 React Query. That works because they share nothing.
@@ -140,6 +142,9 @@ a capability check.
   [events](../events/) has its own, separate usage.
 - **[calendar-sync](../calendar-sync/)** — hosted here, and **stylistically dependent** on this page:
   `.glass-section` and `.input-field` are scoped under `.settings-profile-page`.
+- **[plugin-fees](../plugin-fees/)** — hosted here the same way, with the same stylistic dependency
+  (`.glass-section`, `.field-group`, `.input-field`, `.btn-primary`). Renders nothing for users who are not
+  MDs/SMDs. Handles its own Stripe return (`?fee_pm=`), separate from the subscription flows.
 
 ## 8. Invariants and failure modes
 
@@ -152,7 +157,7 @@ a capability check.
 | Photo upload sends `FormData` | no `Content-Type` set | an opaque parser error |
 | The base URL is normalised | `getApiBaseUrl()` strips a trailing slash | `//api/...` |
 | **The section `id`s are stable** | convention only | a broken deep link from `bpm`, `matchup` or a billing prompt — **with no compile error** |
-| The hosted section keeps this page's styles | `.settings-profile-page` scoping | `calendar-sync` rendering unstyled |
+| The hosted sections keep this page's styles | `.settings-profile-page` scoping | `calendar-sync` or `plugin-fees` rendering unstyled |
 
 **The size problem.** 1,783 lines in one component, with seven sections' state in one place, is the
 module's defining weakness. It is why the lint warning exists, why the Pending Approval section is easy to
