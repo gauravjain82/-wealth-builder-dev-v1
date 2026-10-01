@@ -75,3 +75,20 @@ export interface ResolvedRowColors {
   fill?: RowColorRule;
   border?: RowColorRule;
 }
+
+/**
+ * One condition a list can report for a row — what a rule's `key` can name.
+ *
+ * The catalogue is what the settings editor offers instead of a free-text key:
+ * a key nothing emits is a rule that silently never fires, and the only way to
+ * learn which keys exist used to be reading the list's source.
+ */
+export interface RowColorCondition {
+  key: string;
+  /** Short name, as the key select shows it. */
+  label: string;
+  /** When the condition is true for a row, in plain words. */
+  description: string;
+  /** Which screens and rows report it. */
+  appearsIn: string;
+}

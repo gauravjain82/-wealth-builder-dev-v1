@@ -38,6 +38,13 @@ interface StatusControlProps {
   /** The stored override, or null when the status is derived from the clock. */
   statusOverride: BPMStatusOverride | null;
   disabled?: boolean;
+  /**
+   * Offer Archived / Hidden / Cancelled. Off leaves only Automatic (and Deleted,
+   * if allowed) — for a user who may delete a date but not otherwise edit it.
+   */
+  allowOverrides?: boolean;
+  /** Offer Deleted. The caller passes `can_delete`; hidden, not disabled, without it. */
+  allowDelete?: boolean;
   onChange: (next: BPMStatusOverride | null) => void;
 }
 
@@ -53,9 +60,18 @@ export function StatusControl({
   effectiveStatus,
   statusOverride,
   disabled = false,
+  allowOverrides = true,
+  allowDelete = true,
   onChange,
 }: StatusControlProps) {
   const isDeleted = statusOverride === 'DELETED';
+  const options = OVERRIDE_OPTIONS.filter((option) =>
+    option === 'DELETED'
+      ? allowDelete
+      : // Never drop the option the row already holds, or the select would
+        // show a value it has no entry for.
+        allowOverrides || option === statusOverride,
+  );
 
   if (isDeleted) {
     return (
@@ -81,7 +97,7 @@ export function StatusControl({
       <option value="">
         Automatic ({BPM_STATUS_LABELS[effectiveStatus]})
       </option>
-      {OVERRIDE_OPTIONS.map((option) => (
+      {options.map((option) => (
         <option key={option} value={option}>
           {BPM_STATUS_LABELS[option]}
         </option>

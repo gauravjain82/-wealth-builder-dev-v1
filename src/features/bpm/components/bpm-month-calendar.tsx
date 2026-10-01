@@ -2,16 +2,20 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, Modal } from '@shared/components';
 import { formatOccurrenceTime } from '../services/bpm-service';
+import { BpmTitleLink } from './bpm-title-link';
 import { MonthJumpModal } from './month-jump-modal';
 import { OccurrenceRowActions } from './occurrence-row-actions';
 import { StatusBadge } from './status-control';
 import type { BPMOccurrence } from '../types';
+// BPM-owned overrides for the day modal. The grid itself keeps Matchup's
+// classes; the modal's item layout is BPM's own, see the stylesheet.
+import './bpm-month-calendar.css';
 
 interface BPMMonthCalendarProps {
   month: Date;
   occurrences: BPMOccurrence[];
   onMonthChange: (date: Date) => void;
-  /** Open the attachments popup for an occurrence's BPM. */
+  /** Open the attachments popup for an occurrence's BPM (from its title). */
   onOpenAttachments?: (occurrence: BPMOccurrence) => void;
 }
 
@@ -88,6 +92,13 @@ function groupByEvent(occurrences: BPMOccurrence[]): DayGroup[] {
     group.associateCount += occurrence.associate_count;
     group.hasAttachments = group.hasAttachments || occurrence.has_attachments;
   }
+  // First location first (start, then id) — the order the selection context
+  // uses, so an All-locations link anchors on the same occurrence it would.
+  for (const group of groups.values()) {
+    group.occurrences.sort(
+      (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime() || a.id - b.id,
+    );
+  }
   return [...groups.values()];
 }
 
@@ -99,8 +110,9 @@ export function BPMMonthCalendar({
 }: BPMMonthCalendarProps) {
   const [modalDate, setModalDate] = useState<Date | null>(null);
   const [jumpOpen, setJumpOpen] = useState(false);
-  // Which location is targeted per BPM, for multi-location days.
-  const [picked, setPicked] = useState<Record<number, BPMOccurrence>>({});
+  // Which location is targeted per BPM, for multi-location days. Absent means
+  // the default, which for several locations is All locations (D23).
+  const [picked, setPicked] = useState<Record<number, BPMOccurrence | 'all'>>({});
 
   const days = buildDays(month);
   const monthLabel = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(month);
@@ -158,30 +170,41 @@ export function BPMMonthCalendar({
           ))}
           {days.map((day, index) => {
             if (!day) return <div key={`blank-${index}`} className="matchup-day matchup-day-empty" />;
-            const items = byDay[dayKey(day)] || [];
+            // One chip per BPM, not per occurrence: a BPM running at three
+            // locations is still one meeting on the calendar, and the badge
+            // counts BPMs the same way.
+            const groups = groupByEvent(byDay[dayKey(day)] || []);
             return (
               <button
                 key={day.toISOString()}
                 type="button"
-                className={['matchup-day', sameDate(day, today) ? 'is-today' : '', items.length ? 'has-items' : ''].join(' ').trim()}
-                onClick={() => items.length && setModalDate(day)}
+                className={['matchup-day', sameDate(day, today) ? 'is-today' : '', groups.length ? 'has-items' : ''].join(' ').trim()}
+                onClick={() => groups.length && setModalDate(day)}
               >
                 <span className="matchup-day-head">
                   <span className="matchup-day-number">{day.getDate()}</span>
-                  {items.length ? (
-                    <span className="matchup-day-count" aria-label={`${items.length} BPMs`}>{items.length}</span>
+                  {groups.length ? (
+                    <span
+                      className="matchup-day-count"
+                      aria-label={`${groups.length} ${groups.length === 1 ? 'BPM' : 'BPMs'}`}
+                    >
+                      {groups.length}
+                    </span>
                   ) : null}
                 </span>
                 <span className="matchup-day-events">
-                  {items.slice(0, 3).map((occurrence) => (
+                  {groups.slice(0, 3).map((group) => (
                     <span
-                      key={occurrence.id}
-                      style={{ ['--status-color' as string]: STATUS_COLOR[occurrence.effective_status] || '#64748b' }}
+                      key={group.key}
+                      style={{
+                        ['--status-color' as string]:
+                          STATUS_COLOR[group.occurrences[0].effective_status] || '#64748b',
+                      }}
                     >
-                      {occurrence.event_name}
+                      {group.eventName}
                     </span>
                   ))}
-                  {items.length > 3 ? <span>+{items.length - 3} more</span> : null}
+                  {groups.length > 3 ? <span>+{groups.length - 3} more</span> : null}
                 </span>
               </button>
             );
@@ -189,19 +212,40 @@ export function BPMMonthCalendar({
         </div>
       </div>
 
+      {/* `wb-bpm-day-modal` widens the panel to ~90% of the viewport. It has to
+          win over the Modal's own `max-w-[860px]`, which a second Tailwind
+          max-width class would not reliably do (Modal joins class strings, it
+          does not merge them), so the stylesheet raises its specificity. */}
       <Modal
         open={Boolean(modalDate)}
         title={modalDate ? new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(modalDate) : ''}
         onClose={() => setModalDate(null)}
-        contentClassName="matchup-day-modal max-w-[860px]"
+        contentClassName="wb-bpm-day-modal"
       >
-        <div className="matchup-day-modal-list">
+        <div className="wb-bpm-day-list">
           {modalGroups.map((group) => {
-            const target = picked[group.eventId] ?? group.occurrences[0];
+            // `picked` is per BPM, not per day: a location picked on another day
+            // is not one of this day's, so it falls back to the default.
+            const choice = picked[group.eventId];
+            const chosen =
+              choice && choice !== 'all'
+                ? group.occurrences.find((row) => row.id === choice.id)
+                : undefined;
+            const all = !chosen && group.occurrences.length > 1;
+            // In All mode the row reads as the date's first location — its time
+            // and status — since that is the anchor the sub-tools open on.
+            const target = chosen ?? group.occurrences[0];
             return (
-              <div key={group.key} className="matchup-day-modal-item">
-                <div>
-                  <strong>{group.eventName}</strong>
+              <div key={group.key} className="wb-bpm-day-item">
+                <div className="wb-bpm-day-item-info">
+                  <strong>
+                    <BpmTitleLink
+                      hasAttachments={group.hasAttachments}
+                      onOpen={onOpenAttachments ? () => onOpenAttachments(target) : undefined}
+                    >
+                      {group.eventName}
+                    </BpmTitleLink>
+                  </strong>
                   <span>{formatOccurrenceTime(target.start_at)}</span>
                   <small>
                     {group.checkedInCount}/{group.guestCount} guests · {group.associateCount} associates
@@ -210,15 +254,15 @@ export function BPMMonthCalendar({
                     <StatusBadge status={target.effective_status} />
                   </div>
                 </div>
-                <div className="matchup-day-modal-item-actions">
+                <div className="wb-bpm-day-item-actions">
                   <OccurrenceRowActions
                     occurrences={group.occurrences}
                     selected={target}
+                    allSelected={all}
                     onSelect={(occurrence) =>
                       setPicked((prev) => ({ ...prev, [group.eventId]: occurrence }))
                     }
-                    hasAttachments={group.hasAttachments}
-                    onOpenAttachments={onOpenAttachments}
+                    onSelectAll={() => setPicked((prev) => ({ ...prev, [group.eventId]: 'all' }))}
                     onNavigate={() => setModalDate(null)}
                   />
                 </div>

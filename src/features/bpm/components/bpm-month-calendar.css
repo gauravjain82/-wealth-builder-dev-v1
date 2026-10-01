@@ -1,0 +1,98 @@
+/*
+ * BPM Overview's day modal.
+ *
+ * The month grid borrows Matchup's classes, but the day modal's items do not:
+ * `.matchup-day-modal-item` is a no-wrap flex row with a fixed-width actions
+ * column, which overflows a phone once five jump buttons sit in it. Matchup's
+ * stylesheet is Matchup's, so BPM carries its own `wb-bpm-` classes here rather
+ * than editing a shared rule.
+ */
+
+/*
+ * Doubled class: the Modal panel carries Tailwind's `w-full max-w-[860px]`, and
+ * a single class here would win or lose on stylesheet order alone. The panel
+ * already caps its height at 90vh and scrolls its body, so the list grows until
+ * it fills that and then scrolls.
+ */
+.wb-bpm-day-modal.wb-bpm-day-modal {
+  width: 90vw;
+  max-width: 90vw;
+}
+
+@media (max-width: 640px) {
+  .wb-bpm-day-modal.wb-bpm-day-modal {
+    /* The backdrop's 16px gutter already frames it; take the rest. */
+    width: 100%;
+    max-width: 100%;
+    padding: 16px;
+  }
+}
+
+.wb-bpm-day-list {
+  display: grid;
+  gap: 8px;
+}
+
+/* Stacked by default — title and meta above, the actions below. */
+.wb-bpm-day-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 10px 12px;
+}
+
+.dark .wb-bpm-day-item {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.wb-bpm-day-item-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wb-bpm-day-item-info strong {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.wb-bpm-day-item-info > span {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.wb-bpm-day-item-info > small {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.wb-bpm-day-item-actions {
+  min-width: 0;
+}
+
+/* Side by side once the modal is wide enough for both. */
+@media (min-width: 1024px) {
+  .wb-bpm-day-item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .wb-bpm-day-item-info {
+    flex: 1 1 220px;
+  }
+
+  .wb-bpm-day-item-actions {
+    flex: 0 1 auto;
+  }
+
+  .wb-bpm-day-item-actions > div {
+    justify-content: flex-end;
+  }
+}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Eye, Lock, Trash2 } from 'lucide-react';
 import {
   Button,
   Checkbox,
@@ -14,9 +14,11 @@ import {
   rowColorStyle,
 } from '@shared/components';
 import type { RowColorStyle } from '@shared/components';
+import { BPM_GUEST_CONDITIONS, rowColorCondition } from '@shared/components/row-colors';
 import { useToastStore } from '@/store';
 import { bpmService } from '../services/bpm-service';
 import type { BPMRowColorRule, BPMRowColorRulePayload } from '../types';
+import { ConditionKeyModal, type ConditionKeyPreview } from './condition-key-modal';
 
 /**
  * Row-colour CRUD.
@@ -38,6 +40,13 @@ import type { BPMRowColorRule, BPMRowColorRulePayload } from '../types';
  * against the whole rule set through `isHexAvailable`, which compares
  * normalised hexes — the server enforces the same rule, this only saves a round
  * trip.
+ *
+ * The condition key is picked from the known catalogue (`BPM_GUEST_CONDITIONS`)
+ * rather than typed: a mistyped key is a rule that silently never fires. A key
+ * outside the catalogue — a custom rule saved before the select existed — stays
+ * selectable as itself so the row still round-trips. The eye beside a key, and
+ * the key itself on a built-in row, open "Show condition key": a sample guest
+ * row in the draft color, what the condition means, and where it shows.
  */
 
 const STYLE_OPTIONS: { value: RowColorStyle; label: string }[] = [
@@ -56,6 +65,56 @@ const emptyDraft = (): Draft => ({
   priority: 100,
   enabled: true,
 });
+
+/** The key select: the catalogue, plus the current key if it is not in it. */
+function ConditionKeySelect({
+  id,
+  value,
+  disabled,
+  ariaLabel,
+  onChange,
+}: {
+  id?: string;
+  value: string;
+  disabled?: boolean;
+  ariaLabel?: string;
+  onChange: (key: string) => void;
+}) {
+  const known = rowColorCondition(value) !== undefined;
+  return (
+    <Select
+      id={id}
+      value={value}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      {value === '' ? <option value="">Choose a condition…</option> : null}
+      {BPM_GUEST_CONDITIONS.map((condition) => (
+        <option key={condition.key} value={condition.key}>
+          {condition.label}
+        </option>
+      ))}
+      {value !== '' && !known ? <option value={value}>{value} (custom)</option> : null}
+    </Select>
+  );
+}
+
+/** The eye button that opens "Show condition key". */
+function ShowKeyButton({ label, disabled, onClick }: { label: string; disabled?: boolean; onClick: () => void }) {
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      disabled={disabled}
+      title="Show condition key"
+      aria-label={`Show condition key for ${label}`}
+      onClick={onClick}
+    >
+      <Eye size={14} />
+    </Button>
+  );
+}
 
 /** A single rule painted with the real resolver, so the preview cannot lie. */
 function RulePreview({ rule }: { rule: BPMRowColorRule }) {
@@ -83,6 +142,7 @@ export function RowColorRulesEditor({ rules, onChanged }: RowColorRulesEditorPro
   const [newDraft, setNewDraft] = useState<Draft>(emptyDraft);
   const [busyId, setBusyId] = useState<number | 'new' | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<BPMRowColorRule | null>(null);
+  const [showKey, setShowKey] = useState<ConditionKeyPreview | null>(null);
 
   useEffect(() => {
     const next: Record<number, Draft> = {};
@@ -118,7 +178,7 @@ export function RowColorRulesEditor({ rules, onChanged }: RowColorRulesEditorPro
     }
   };
 
-  /** Colours already taken, for the live "that one is used" hint on the new row. */
+  /** Colors already taken, for the live "that one is used" hint on the new row. */
   const newHexFree = useMemo(
     () => newDraft.hex.trim() === '' || isHexAvailable(newDraft.hex, rules),
     [newDraft.hex, rules],
@@ -139,7 +199,7 @@ export function RowColorRulesEditor({ rules, onChanged }: RowColorRulesEditorPro
               <th className="px-3 py-2">On</th>
               <th className="px-3 py-2">Name</th>
               <th className="px-3 py-2">Condition key</th>
-              <th className="px-3 py-2">Colour</th>
+              <th className="px-3 py-2">Color</th>
               <th className="px-3 py-2">Style</th>
               <th className="px-3 py-2" title="Lower wins when two rules fire on the same channel">
                 Priority
@@ -182,15 +242,31 @@ export function RowColorRulesEditor({ rules, onChanged }: RowColorRulesEditorPro
                     />
                   </td>
                   <td className="px-3 py-2">
-                    <Input
-                      value={draft.key}
-                      // Built-in keys are emitted verbatim by the guest lists,
-                      // so renaming one would not move the rule — it would
-                      // silently switch it off. The server refuses it too.
-                      disabled={busy || rule.reserved}
-                      aria-label={`Condition key for ${rule.label}`}
-                      onChange={(e) => patchDraft(rule.id, { key: e.target.value })}
-                    />
+                    <div className="flex items-center gap-1">
+                      {rule.reserved ? (
+                        // Built-in keys are emitted verbatim by the guest lists,
+                        // so renaming one would not move the rule — it would
+                        // silently switch it off. The server refuses it too. The
+                        // key is shown locked, and clicking it explains it.
+                        <button
+                          type="button"
+                          className="inline-flex min-w-0 items-center gap-1 text-left text-sm underline decoration-dotted underline-offset-2 hover:decoration-solid"
+                          title="Show condition key"
+                          onClick={() => setShowKey({ ...draft })}
+                        >
+                          <Lock size={12} className="shrink-0 text-slate-400 dark:text-white/40" />
+                          {rowColorCondition(draft.key)?.label ?? draft.key}
+                        </button>
+                      ) : (
+                        <ConditionKeySelect
+                          value={draft.key}
+                          disabled={busy}
+                          ariaLabel={`Condition key for ${rule.label}`}
+                          onChange={(key) => patchDraft(rule.id, { key })}
+                        />
+                      )}
+                      <ShowKeyButton label={rule.label} onClick={() => setShowKey({ ...draft })} />
+                    </div>
                     {rule.reserved ? (
                       <span className="text-[11px] text-slate-400 dark:text-white/40">Built-in</span>
                     ) : null}
@@ -202,19 +278,19 @@ export function RowColorRulesEditor({ rules, onChanged }: RowColorRulesEditorPro
                         className="h-8 w-8 cursor-pointer rounded border border-slate-300 bg-transparent dark:border-white/15"
                         value={normalizeHex(draft.hex) ?? '#000000'}
                         disabled={busy}
-                        aria-label={`Colour for ${rule.label}`}
+                        aria-label={`Color for ${rule.label}`}
                         onChange={(e) => patchDraft(rule.id, { hex: e.target.value })}
                       />
                       <Input
                         className="w-28"
                         value={draft.hex}
                         disabled={busy}
-                        aria-label={`Colour hex for ${rule.label}`}
+                        aria-label={`Color hex for ${rule.label}`}
                         onChange={(e) => patchDraft(rule.id, { hex: e.target.value })}
                       />
                     </div>
                     {!hexValid ? (
-                      <span className="text-[11px] text-rose-600 dark:text-rose-400">Not a hex colour</span>
+                      <span className="text-[11px] text-rose-600 dark:text-rose-400">Not a hex color</span>
                     ) : !hexFree ? (
                       <span className="text-[11px] text-rose-600 dark:text-rose-400">
                         Already used by another rule
@@ -284,7 +360,7 @@ export function RowColorRulesEditor({ rules, onChanged }: RowColorRulesEditorPro
 
       <div className="mt-4 rounded-lg border border-dashed border-slate-300 p-4 dark:border-white/15">
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
-          Add a colour scheme
+          Add a color scheme
         </h3>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
@@ -298,25 +374,31 @@ export function RowColorRulesEditor({ rules, onChanged }: RowColorRulesEditorPro
           </div>
           <div>
             <Label htmlFor="new-rule-key">Condition key</Label>
-            <Input
-              id="new-rule-key"
-              value={newDraft.key}
-              placeholder="tracker.prospect.hot"
-              onChange={(e) => setNewDraft((prev) => ({ ...prev, key: e.target.value }))}
-            />
+            <div className="flex items-center gap-1">
+              <ConditionKeySelect
+                id="new-rule-key"
+                value={newDraft.key}
+                onChange={(key) => setNewDraft((prev) => ({ ...prev, key }))}
+              />
+              <ShowKeyButton
+                label={newDraft.label || 'the new rule'}
+                disabled={newDraft.key === ''}
+                onClick={() => setShowKey({ ...newDraft })}
+              />
+            </div>
             <p className="text-[11px] text-slate-400 dark:text-white/40">
-              The identifier a list reports for this state. A rule with a key nothing emits
-              simply never fires.
+              {rowColorCondition(newDraft.key)?.description ??
+                'The state a row has to be in for this color to show.'}
             </p>
           </div>
           <div>
-            <Label htmlFor="new-rule-hex">Colour</Label>
+            <Label htmlFor="new-rule-hex">Color</Label>
             <div className="flex items-center gap-2">
               <input
                 type="color"
                 className="h-9 w-9 cursor-pointer rounded border border-slate-300 bg-transparent dark:border-white/15"
                 value={normalizeHex(newDraft.hex) ?? '#000000'}
-                aria-label="New rule colour"
+                aria-label="New rule color"
                 onChange={(e) => setNewDraft((prev) => ({ ...prev, hex: e.target.value }))}
               />
               <Input
@@ -327,7 +409,7 @@ export function RowColorRulesEditor({ rules, onChanged }: RowColorRulesEditorPro
             </div>
             {!newHexFree ? (
               <p className="text-[11px] text-rose-600 dark:text-rose-400">
-                That colour already means something else.
+                That color already means something else.
               </p>
             ) : null}
           </div>
@@ -361,9 +443,11 @@ export function RowColorRulesEditor({ rules, onChanged }: RowColorRulesEditorPro
         </div>
       </div>
 
+      <ConditionKeyModal preview={showKey} onClose={() => setShowKey(null)} />
+
       <ConfirmationDialog
         open={Boolean(deleteTarget)}
-        title="Delete colour scheme"
+        title="Delete color scheme"
         message={`Delete "${deleteTarget?.label}"? Rows in that state will simply render plain.`}
         confirmText="Delete"
         onClose={() => setDeleteTarget(null)}

@@ -72,8 +72,15 @@ export type GuestCheckinOutcomeField = 'late' | 'stayed_after' | 'blue_card' | '
 /** Either screen's outcome flags — the type a shared toggle handler takes. */
 export type GuestOutcomeField = GuestInviteOutcomeField | GuestCheckinOutcomeField;
 
-/** Every boolean the set-guest-flags endpoint accepts: both outcome sets plus Confirmed. */
-export type GuestFlagField = GuestOutcomeField | 'confirmed';
+/**
+ * Every boolean the set-guest-flags endpoint accepts: both outcome sets, Confirmed,
+ * and the two Zoom marks.
+ *
+ * `zoom` is the invite-time expectation (Guest Invites' Z) and only takes when the
+ * guest is confirmed; un-confirming clears it server-side. `attended_zoom` is what
+ * actually happened on the night (Guest Check-In's Z).
+ */
+export type GuestFlagField = GuestOutcomeField | 'confirmed' | 'zoom' | 'attended_zoom';
 /** Section a follow-up interest option belongs to (drives the checkbox groups). */
 export type BPMInterestGroup = 'GOALS' | 'BUSINESS' | 'SELF_IMPROVEMENT';
 
@@ -221,8 +228,19 @@ export interface BPMOccurrence {
    * or the rule ends up in two places and drifts.
    */
   checkin_opens_at: string | null;
-  /** Whether check-in is open right now. Opens early; never closes again. */
+  /**
+   * When check-in closes for this date — `checkin_close_hours` after `end_at` —
+   * or null when the window is switched off.
+   */
+  checkin_closes_at: string | null;
+  /** Whether check-in is open right now: past `checkin_opens_at`, before `checkin_closes_at`. */
   checkin_open: boolean;
+  /**
+   * Past `checkin_closes_at`. Distinct from `!checkin_open`, which is also true
+   * before the window opens: after close, a user with `can_checkin_after_close`
+   * may still check people in; before open, nobody may.
+   */
+  checkin_closed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -353,6 +371,11 @@ export interface BPMGuestFollowup {
 export interface BPMGuest {
   id: number;
   occurrence: number;
+  /**
+   * The occurrence's location label ("Houston Office", "Zoom"). What the
+   * Location column shows when a list spans all of a date's locations.
+   */
+  occurrence_label: string | null;
   prospect: number | null;
   prospect_detail: BPMGuestProspectCard | null;
   inviter: number | null;
@@ -373,6 +396,17 @@ export interface BPMGuest {
   reschedule: boolean;
   /** Someone expects this guest to turn up. A separate axis from the outcomes. */
   confirmed: boolean;
+  /**
+   * Expected to attend on Zoom — Guest Invites' Z. Only settable while
+   * `confirmed`; the server clears it when the guest is un-confirmed.
+   */
+  zoom: boolean;
+  /**
+   * Attended on Zoom — Guest Check-In's Z. Null until somebody sets it or the
+   * guest is checked in, when the server copies `zoom` across as the default.
+   * Read it as `attended_zoom ?? zoom`.
+   */
+  attended_zoom: boolean | null;
   // On-the-night outcomes, recorded on Guest Check-In.
   late: boolean;
   stayed_after: boolean;
@@ -403,6 +437,9 @@ export interface BPMGuest {
 
 export interface AssociateCheckIn {
   id: number;
+  /** Which location they were checked in at — rows from several in All-locations mode. */
+  occurrence: number;
+  occurrence_label: string | null;
   user: number;
   user_name: string | null;
   /** The associate's own upline — unlike a guest row, the person *is* the subject. */
@@ -412,6 +449,12 @@ export interface AssociateCheckIn {
   checked_in_at: string;
   checked_in_by: number | null;
   checked_in_by_name: string | null;
+  /**
+   * Attending on Zoom. Defaulted at check-in from this date's associate invite
+   * (`BPMAssociateInvite.zoom`), false when there was none; toggled afterwards
+   * with `setAssociateCheckinZoom`.
+   */
+  zoom: boolean;
   /** 4X4 mission tracker milestones. Green dot when true, red when false. */
   finish_1st_recruit: boolean;
   finish_1st_savings: boolean;
@@ -498,10 +541,16 @@ export interface BPMCapabilities {
   can_manage_schedule?: boolean;
   /** bpm_settings:manage — gates BPM Settings, including deleted-item recovery. */
   can_manage_settings?: boolean;
+  /**
+   * May check people in after the window has closed. Held by BPM managers
+   * (bpm_settings:manage); undo is ungated for everybody regardless.
+   */
+  can_checkin_after_close?: boolean;
 }
 
 export interface SaveGuestFollowupPayload {
   guest_id: number;
+  spouse_name?: string;
   /** Interest option slugs. */
   interests?: string[];
   /** Associate who collected the card. Omit to leave as-is; null to clear. */
@@ -540,11 +589,13 @@ export interface OccurrenceFilters {
 export type CheckinAudience = 'guest' | 'associate';
 
 /**
- * A rollup dimension. Both audiences carry all four since Phase 6 —
+ * A rollup dimension. `direct` groups associates by the person who recruited
+ * them (`User.recruited_by`), and is computed for the associate audience only.
+ * Both audiences carry the other four since Phase 6 —
  * `BPMAssociateInvite.invited_by` finally gave the associate audience somebody
  * to rank, where before that associates only checked themselves in.
  */
-export type CheckinDimension = 'inviter' | 'leader' | 'md' | 'smd';
+export type CheckinDimension = 'inviter' | 'leader' | 'md' | 'smd' | 'direct';
 
 /** One person's line in a ranking. */
 export interface CheckinRankEntry {
@@ -556,6 +607,10 @@ export interface CheckinRankEntry {
   ratio: number;
   /** 1-based; ties share a rank. */
   rank: number;
+  /** The ranked person's own upline, for the ranking modal's columns. */
+  leader_name?: string | null;
+  md_name?: string | null;
+  smd_name?: string | null;
 }
 
 /** One card, plus the ranked list its modal shows. */
@@ -569,7 +624,13 @@ export interface CheckinDimensionStats {
 
 /** Response of GET /api/bpm/occurrences/{id}/checkin-stats/. */
 export interface CheckinStats {
-  occurrence: number;
+  /** The single occurrence, or null for an All-locations payload. */
+  occurrence: number | null;
+  /**
+   * Every occurrence the numbers cover. A person counts **once** across them
+   * (D22): checked in both in the room and on Zoom is one attendee.
+   */
+  occurrences?: number[];
   audience: CheckinAudience;
   totals: {
     invited: number;
@@ -622,6 +683,18 @@ export interface BPMAssociateInviteRow {
   goal: string;
   invited: boolean;
   called: boolean;
+  /** C — confirmed. Only settable while `invited`; cleared with it. */
+  confirmed: boolean;
+  /** Z — confirmed for Zoom. Only settable while `confirmed`; cleared with it. */
+  zoom: boolean;
+  /**
+   * The location this date's invite is stored on, or null when there is none.
+   * An invite is to the **date** (D21): in All-locations mode the flags read
+   * across every location, and edits go to this occurrence — or, when null, to
+   * the date's first location.
+   */
+  invite_occurrence: number | null;
+  invite_occurrence_label: string | null;
   invited_by: number | null;
   invited_by_name: string | null;
   latest_note_text: string | null;
@@ -635,20 +708,31 @@ export interface BPMAssociateInviteState {
   user_id: number;
   invited: boolean;
   called: boolean;
+  confirmed: boolean;
+  zoom: boolean;
+  /** Present when the write carried `scope_occurrence_ids`: the union's holder. */
+  invite_occurrence?: number | null;
+  invite_occurrence_label?: string | null;
   invited_by: number | null;
   invited_by_name: string | null;
 }
 
 /** Query for GET /api/bpm/associate-invites/. `occurrence` is required. */
 export interface AssociateInviteFilters {
-  occurrence: number;
+  /**
+   * One location's date, or — with more than one id — every location of the
+   * date at once (the flags then read true if set at any of them). Exactly one
+   * of the two is sent.
+   */
+  occurrence?: number;
+  occurrences?: number[];
   /** Server-side sort key, `-` prefixed for descending. */
   sort?: string;
   /** BASESHOP / SUPERBASE / SUPERTEAM — the TrackerTeamScopeFilter's value. */
   segment?: string;
   page?: number;
   page_size?: number;
-  /** The inherited Associate Tracker filters, plus `invited` / `called`. */
+  /** The inherited Associate Tracker filters, plus `invited` / `called` / `confirmed` / `zoom`. */
   filters?: Record<string, string>;
 }
 
@@ -665,24 +749,44 @@ export interface AssociateInviteFilters {
 export interface BPMSettings {
   /** Off by default, so existing BPMs keep their always-open check-in. */
   checkin_window_enabled: boolean;
-  /** Hours before start that check-in opens. The window never closes again. */
+  /** Hours before start that check-in opens. */
   checkin_window_hours: number;
+  /**
+   * Hours after the BPM ends that check-in closes (default 4). After that only
+   * `can_checkin_after_close` holders may check anybody in; undo stays open.
+   */
+  checkin_close_hours: number;
   qr_host_to_associate: boolean;
-  /** Reserved for the emailed-guest-QR feature (D8) — the switch, not the feature. */
+  /** Guest passes (D8, reopened and shipped after Phase 8). Defaults off. */
   qr_host_to_guest: boolean;
   qr_associate_to_host: boolean;
   /** Off removes the attachment URL from every response — the real gate (D11). */
   attachments_view: boolean;
   /** Off hides the download control only; the CDN URL stays reachable (D11). */
   attachments_download: boolean;
-  /** A switch for a sender that does not exist yet (D5). */
+  /** Gates SMS in the send-event modal (D5's sender, shipped after Phase 8). */
   text_event_to_guests: boolean;
-  /** A switch for a sender that does not exist yet (D5). */
+  /** Gates email in the send-event modal (D5's sender, shipped after Phase 8). */
   email_event_to_guests: boolean;
+  /**
+   * Background colour per stat card on both check-in screens, as `#rrggbb`.
+   * The server fills every key with its default, so a missing key is a stale
+   * payload rather than "no colour".
+   */
+  stat_card_colors: Record<BPMStatCardKey, string>;
   updated_by: number | null;
   updated_by_name: string | null;
   updated_at: string;
 }
+
+/** Every stat card on Guest Check-In and Associate Check-In whose colour is configurable. */
+export type BPMStatCardKey =
+  | 'guests_invited'
+  | 'guests_checked_in'
+  | 'guests_ratio'
+  | 'agents_invited'
+  | 'agents_checked_in'
+  | CheckinDimension;
 
 export type BPMSettingsPayload = Partial<
   Omit<BPMSettings, 'updated_by' | 'updated_by_name' | 'updated_at'>
@@ -778,6 +882,9 @@ export interface BPMSendPayload {
 export interface BPMQrToken {
   token: string;
   label: string;
+  /** Identity codes only (`/qr/my-identity/`): the holder's name and agency code. */
+  name?: string;
+  agency_code?: string | null;
 }
 
 /** Which way a resolved scan pointed. */

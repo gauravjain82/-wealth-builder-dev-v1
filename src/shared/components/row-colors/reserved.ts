@@ -1,4 +1,4 @@
-import type { RowColorRule } from './types';
+import type { RowColorCondition, RowColorRule } from './types';
 
 /**
  * Reserved default row colours.
@@ -33,6 +33,64 @@ export const BPM_GUEST_STATE = {
   /** A blue card was saved with an appointment booked off it. */
   APPOINTMENT_SCHEDULED: 'bpm.guest.appointment_scheduled',
 } as const;
+
+/** Where every BPM guest condition is reported. */
+const BPM_GUEST_ROWS = 'Guest Invites and Guest Check-In rows';
+
+/**
+ * Every condition key the BPM guest lists report, for the settings editor.
+ *
+ * Must match `guestStateKeys` in `features/bpm/components/guest-row-colors.ts`,
+ * which is the one place a guest is mapped to these keys. A key added there
+ * belongs here too, or it cannot be picked for a rule.
+ */
+export const BPM_GUEST_CONDITIONS: RowColorCondition[] = [
+  {
+    key: BPM_GUEST_STATE.RESCHEDULED,
+    label: 'Rescheduled',
+    description:
+      'The guest was actually moved on from this BPM — to another BPM date, or to a 1-on-1 appointment.',
+    appearsIn: BPM_GUEST_ROWS,
+  },
+  {
+    key: BPM_GUEST_STATE.CONFIRMED,
+    label: 'Confirmed',
+    description: 'Somebody ticked Confirmed on the guest: they are expected to turn up.',
+    appearsIn: BPM_GUEST_ROWS,
+  },
+  {
+    key: BPM_GUEST_STATE.NOT_INTERESTED,
+    label: 'Not interested',
+    description: "The guest's outcome is recorded as Not interested.",
+    appearsIn: BPM_GUEST_ROWS,
+  },
+  {
+    key: BPM_GUEST_STATE.RESCHEDULE_REQUESTED,
+    label: 'Wants to reschedule',
+    description:
+      'The outcome says the guest wants to reschedule, but no new BPM date or appointment has been booked yet.',
+    appearsIn: BPM_GUEST_ROWS,
+  },
+  {
+    key: BPM_GUEST_STATE.CONTACTED,
+    label: 'Called / left message',
+    description:
+      'Called or Left message is ticked on the guest — contact was made, but nothing has moved yet.',
+    appearsIn: BPM_GUEST_ROWS,
+  },
+  {
+    key: BPM_GUEST_STATE.APPOINTMENT_SCHEDULED,
+    label: 'Appointment scheduled',
+    description:
+      'An appointment was booked for the guest — ticked on Guest Check-In, or booked from a saved blue card.',
+    appearsIn: BPM_GUEST_ROWS,
+  },
+];
+
+/** The catalogue entry for a key, or undefined for a key nothing is known to emit. */
+export function rowColorCondition(key: string): RowColorCondition | undefined {
+  return BPM_GUEST_CONDITIONS.find((condition) => condition.key === key);
+}
 
 /**
  * Reserved rules for the BPM guest lists (Guest Invites and Guest Check-In).

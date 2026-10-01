@@ -8,6 +8,17 @@ interface ProspectDetailsModalProps {
   prospectId: number | null;
   fallbackName?: string;
   onClose: () => void;
+  /**
+   * Where the profile comes from. Defaults to `/api/accounts/users/{id}/`,
+   * which is scoped to the viewer's team; BPM passes its own endpoint, which
+   * serves anyone a BPM list names. Keep the reference stable — it is an effect
+   * dependency.
+   */
+  load?: (id: number) => Promise<Prospect>;
+  /** Modal title. Neutral wording for callers that open associates too. */
+  title?: string;
+  /** Line under the name in the header card. */
+  subtitle?: string;
 }
 
 const PROFILE_FLAG_LABELS: Record<string, string> = {
@@ -16,7 +27,15 @@ const PROFILE_FLAG_LABELS: Record<string, string> = {
   spanishPreferred: 'Spanish Speaking Preferred', married: 'Married', dependentKids: 'Dependent Kids',
 };
 
-export function ProspectDetailsModal({ open, prospectId, fallbackName, onClose }: ProspectDetailsModalProps) {
+export function ProspectDetailsModal({
+  open,
+  prospectId,
+  fallbackName,
+  onClose,
+  load = fetchProspectDetails,
+  title = 'Prospect Details',
+  subtitle = 'Prospect profile · View only',
+}: ProspectDetailsModalProps) {
   const [prospect, setProspect] = useState<Prospect | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,11 +44,11 @@ export function ProspectDetailsModal({ open, prospectId, fallbackName, onClose }
     if (!open || !prospectId) return;
     setLoading(true);
     setError('');
-    void fetchProspectDetails(prospectId)
+    void load(prospectId)
       .then(setProspect)
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load prospect.'))
       .finally(() => setLoading(false));
-  }, [open, prospectId]);
+  }, [open, prospectId, load]);
 
   const profile = prospect?.profile;
   const flags = profile?.flags || {};
@@ -37,11 +56,11 @@ export function ProspectDetailsModal({ open, prospectId, fallbackName, onClose }
   const address = [profile?.home_address, profile?.home_address2, profile?.home_city, profile?.state, profile?.home_zip].filter(Boolean).join(', ');
 
   return (
-    <Modal open={open} title="Prospect Details" onClose={onClose} contentClassName="max-w-[720px]">
+    <Modal open={open} title={title} onClose={onClose} contentClassName="max-w-[720px]">
       {loading ? <p className="py-8 text-center text-sm text-slate-500">Loading prospect...</p> : error ? <p className="py-8 text-center text-sm text-red-500">{error}</p> : (
         <div className="space-y-4">
           <div className="rounded-xl bg-slate-900 p-5 text-white">
-            <div className="flex items-center gap-3"><UserRound size={25} /><div><h2 className="text-xl font-bold">{prospect?.full_name || fallbackName || 'Prospect'}</h2><p className="text-xs text-slate-400">Prospect profile · View only</p></div></div>
+            <div className="flex items-center gap-3"><UserRound size={25} /><div><h2 className="text-xl font-bold">{prospect?.full_name || fallbackName || 'Prospect'}</h2><p className="text-xs text-slate-400">{subtitle}</p></div></div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <Detail icon={<Mail size={16} />} label="Email" value={prospect?.email} />

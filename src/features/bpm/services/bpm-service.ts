@@ -47,6 +47,7 @@ import type {
   SaveGuestFollowupPayload,
   UserRef,
 } from '../types';
+import type { Prospect } from '@/features/team/prospect/services/prospect-service';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -236,8 +237,17 @@ export const bpmService = {
         page_size: filters.page_size,
       })}`,
     ),
-  // Current user's BPM action permissions, for gating UI controls.
-  capabilities: () => request<BPMCapabilities>('/api/bpm/events/capabilities/'),
+  // Current user's BPM action permissions, for gating UI controls. `signal` is
+  // for React Query callers (the sidebar); the pages call it without one.
+  capabilities: (signal?: AbortSignal) =>
+    request<BPMCapabilities>('/api/bpm/events/capabilities/', { signal }),
+  /**
+   * A person's read-only profile, as BPM shows it. Anyone who can read BPM may
+   * open anybody a BPM list names — guest, inviter, associate or ranked upline —
+   * which `/api/accounts/users/{id}/` refuses outside the caller's own team.
+   * Same shape as that endpoint, so the one details modal renders either.
+   */
+  person: (userId: number) => request<Prospect>(`/api/bpm/people/${userId}/`),
   // Every SMD company-wide, for the "Select all SMDs" button in the BPM form.
   smdRoster: () => request<UserRef[]>('/api/bpm/events/smd-roster/'),
   event: (id: number) => request<BPMEventDetail>(`/api/bpm/events/${id}/`),
@@ -267,6 +277,12 @@ export const bpmService = {
 
   // -- BPM Settings: deleted-item recovery ---------------------------------
   deletedEvents: () => request<BPMEventListItem[]>('/api/bpm/events/deleted/'),
+  /**
+   * Dates deleted one at a time. Deleting a date sets the occurrence's
+   * override, which `deletedEvents` never listed — so a deleted date had no
+   * way back. Restore with `setOccurrenceStatus(id, null)`.
+   */
+  deletedOccurrences: () => request<BPMOccurrence[]>('/api/bpm/occurrences/deleted/'),
   undeleteEvent: (id: number) =>
     request<BPMEventDetail>(`/api/bpm/events/${id}/undelete/`, { method: 'POST' }),
 
@@ -275,6 +291,17 @@ export const bpmService = {
   // reader — `attachments_download` and the check-in window decide what an
   // ordinary user's screen renders — while writing needs bpm_settings:manage.
   settings: () => request<BPMSettings>('/api/bpm/settings/'),
+  /**
+   * BPM managers: the people besides Admin who may create, edit and delete BPMs
+   * and use BPM Settings. Stored as per-user authz grants, so the list is a view
+   * over `UserPermission` rather than a second permission system.
+   */
+  bpmManagers: () => request<UserRef[]>('/api/bpm/settings/managers/'),
+  setBpmManagers: (userIds: number[]) =>
+    request<UserRef[]>('/api/bpm/settings/managers/', {
+      method: 'PUT',
+      body: JSON.stringify({ user_ids: userIds }),
+    }),
   updateSettings: (payload: BPMSettingsPayload) =>
     request<BPMSettings>('/api/bpm/settings/', {
       method: 'PATCH',
@@ -460,6 +487,18 @@ export const bpmService = {
 
   guests: (occurrenceId: number) =>
     request<BPMGuest[]>(`/api/bpm/occurrences/${occurrenceId}/guests/`),
+  /**
+   * The guest list for a scope — one location, or every location of a date.
+   *
+   * One id takes the per-occurrence endpoint, so a single-location screen is
+   * unchanged; several take the collection endpoint, which checks each id is
+   * visible and returns the union with `occurrence_label` on every row. Row
+   * mutations keep using the row's own `guest.occurrence`.
+   */
+  guestsForScope: (occurrenceIds: number[]) =>
+    occurrenceIds.length === 1
+      ? request<BPMGuest[]>(`/api/bpm/occurrences/${occurrenceIds[0]}/guests/`)
+      : request<BPMGuest[]>(`/api/bpm/occurrences/guests/${buildQuery({ ids: occurrenceIds.join(',') })}`),
   // Reception pickers: inviter is company-wide; guests are that inviter's BaseShop.
   searchInviters: (q: string, limit = 25) =>
     request<InviterSearchHit[]>(`/api/bpm/inviter-search/${buildQuery({ q, limit })}`),
@@ -542,6 +581,11 @@ export const bpmService = {
       method: 'POST',
       body: JSON.stringify({ user_id: userId }),
     }),
+  setAssociateCheckinZoom: (occurrenceId: number, userId: number, zoom: boolean) =>
+    request<AssociateCheckIn>(`/api/bpm/occurrences/${occurrenceId}/set-associate-checkin-zoom/`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, zoom }),
+    }),
   undoCheckInAssociate: (occurrenceId: number, userId: number) =>
     request<{ removed: boolean }>(`/api/bpm/occurrences/${occurrenceId}/undo-check-in-associate/`, {
       method: 'POST',
@@ -549,6 +593,13 @@ export const bpmService = {
     }),
   associateCheckins: (occurrenceId: number) =>
     request<AssociateCheckIn[]>(`/api/bpm/occurrences/${occurrenceId}/associate-checkins/`),
+  /** Associate check-ins for a scope; see `guestsForScope`. */
+  associateCheckinsForScope: (occurrenceIds: number[]) =>
+    occurrenceIds.length === 1
+      ? request<AssociateCheckIn[]>(`/api/bpm/occurrences/${occurrenceIds[0]}/associate-checkins/`)
+      : request<AssociateCheckIn[]>(
+          `/api/bpm/occurrences/associate-checkins/${buildQuery({ ids: occurrenceIds.join(',') })}`,
+        ),
   /**
    * The team, with one date's invite state joined on — the Associate Invites
    * list, and the Invited Associates panel on Associate Check-In (`invited=true`).
@@ -558,10 +609,19 @@ export const bpmService = {
    * Associate Tracker's own vocabulary (name / recruiter_name / leader_name /
    * broker_id / from_date / to_date) plus `invited` / `called`.
    */
-  associateInvites: ({ occurrence, sort, segment, page, page_size, filters = {} }: AssociateInviteFilters) =>
+  associateInvites: ({
+    occurrence,
+    occurrences,
+    sort,
+    segment,
+    page,
+    page_size,
+    filters = {},
+  }: AssociateInviteFilters) =>
     request<PaginatedResponse<BPMAssociateInviteRow>>(
       `/api/bpm/associate-invites/${buildQuery({
         occurrence,
+        occurrences: occurrences?.join(','),
         sort,
         segment,
         page,
@@ -576,7 +636,19 @@ export const bpmService = {
    * written, so a screen can flip one box without asserting the other.
    */
   setAssociateInviteFlags: (
-    payload: { occurrence_id: number; user_id: number } & Partial<{ invited: boolean; called: boolean }>,
+    payload: { occurrence_id: number; user_id: number } & Partial<{
+      invited: boolean;
+      called: boolean;
+      confirmed: boolean;
+      zoom: boolean;
+      /**
+       * All-locations mode: the date's occurrence ids. An untick (and its
+       * cascades) then clears the flag at every location that has it, since
+       * the list reads a flag as set if set anywhere (D21); a tick still lands
+       * on `occurrence_id` only.
+       */
+      scope_occurrence_ids: number[];
+    }>,
   ) =>
     request<BPMAssociateInviteState>('/api/bpm/associate-invites/set-flags/', {
       method: 'POST',
@@ -597,6 +669,15 @@ export const bpmService = {
     request<CheckinStats>(
       `/api/bpm/occurrences/${occurrenceId}/checkin-stats/${buildQuery({ audience, dimension })}`,
     ),
+  /** Check-in stats for a scope; several ids count each person once (D22). */
+  checkinStatsForScope: (occurrenceIds: number[], audience: CheckinAudience = 'guest') =>
+    occurrenceIds.length === 1
+      ? request<CheckinStats>(
+          `/api/bpm/occurrences/${occurrenceIds[0]}/checkin-stats/${buildQuery({ audience })}`,
+        )
+      : request<CheckinStats>(
+          `/api/bpm/occurrences/checkin-stats/${buildQuery({ ids: occurrenceIds.join(','), audience })}`,
+        ),
   /**
    * Whether a typed email/phone already belongs to somebody (D9).
    *

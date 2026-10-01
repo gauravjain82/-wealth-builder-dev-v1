@@ -6,6 +6,7 @@ import { browserTimezone, formatAppointmentTime, localDateTimeValue } from '../s
 import { fetchProspectDetails, updateProspectDetails } from '@/features/team/prospect/services/prospect-service';
 import type { Prospect } from '@/features/team/prospect/services/prospect-service';
 import { createTrackerNote } from '@/features/team/services/tracker-notes-service';
+import { useToastStore } from '@/store';
 import '../pages/matchup-page.css';
 import type {
   AppointmentDetail,
@@ -185,6 +186,7 @@ export function AppointmentFormModal({
 }: AppointmentFormModalProps) {
   const [form, setForm] = useState<FormState>(defaultForm);
   const [error, setError] = useState<string | null>(null);
+  const addToast = useToastStore((state) => state.addToast);
 
   // When editing an existing appointment we also surface its read-only history
   // (assignments, reschedules) and recorded outcome alongside the editable form.
@@ -315,24 +317,50 @@ export function AppointmentFormModal({
     }));
   };
 
+  const [submitting, setSubmitting] = useState(false);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  // The form is long and the Save button is at the bottom of it, so an error
+  // rendered anywhere else is an error nobody sees. Bring it into view whenever
+  // it changes.
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [error]);
+
+  /** The first required field left empty, named — or null when the form is complete. */
+  const validationError = (): string | null => {
+    if (!form.start_at) return 'Start is required.';
+    if (!form.types.length) return 'Select at least one appointment type.';
+    if (!form.contact) {
+      return form.kind === 'REQUEST_TRAINER'
+        ? 'Contact is required for Request Trainer appointments.'
+        : 'Contact is required for Personal appointments.';
+    }
+    if (form.kind === 'REQUEST_TRAINER' && !form.trainee) {
+      return 'Trainee is required for Request Trainer appointments.';
+    }
+    if (form.location_type === 'PHYSICAL') {
+      const missing = [
+        { label: 'Address', value: form.address },
+        { label: 'City', value: form.city },
+        { label: 'State', value: form.state },
+      ]
+        .filter((field) => !field.value.trim())
+        .map((field) => field.label);
+      if (missing.length) {
+        return `Physical appointments require ${missing.join(', ')}.`;
+      }
+    }
+    return null;
+  };
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 
-    if (!form.types.length) {
-      setError('Select at least one appointment type.');
-      return;
-    }
-    if (form.kind === 'REQUEST_TRAINER' && (!form.contact || !form.trainee)) {
-      setError('Request Trainer appointments require both a contact and a trainee.');
-      return;
-    }
-    if (form.kind === 'PERSONAL' && !form.contact) {
-      setError('Personal appointments require a contact.');
-      return;
-    }
-    if (form.location_type === 'PHYSICAL' && (!form.address.trim() || !form.city.trim() || !form.state.trim())) {
-      setError('Physical appointments require address, city, and state.');
+    const invalid = validationError();
+    if (invalid) {
+      setError(invalid);
       return;
     }
 
@@ -362,18 +390,49 @@ export function AppointmentFormModal({
     if (form.contact_spouse_name.trim()) payload.contact_spouse_name = form.contact_spouse_name.trim();
     if (form.trainee_phone.trim()) payload.trainee_phone = form.trainee_phone.trim();
 
-    if (form.kind === 'REQUEST_TRAINER' && form.contact) {
-      await updateProspectDetails(form.contact, {
-        profile: { flags: form.contact_profile_flags },
-      });
-    }
+    /*
+     * The profile flags and the note are extras riding along with the
+     * appointment, and neither is allowed to block it. Both write to the
+     * *contact's* records, which the caller may not be scoped to — a BPM door
+     * worker booking a 1-on-1 for somebody else's guest gets a 403 there — and
+     * before this they were awaited bare, so the rejection escaped the form
+     * handler and Save simply did nothing. Each is tried, and a failure is
+     * reported once the appointment itself has been saved.
+     */
+    const skipped: string[] = [];
+    setSubmitting(true);
+    try {
+      if (form.kind === 'REQUEST_TRAINER' && form.contact) {
+        try {
+          await updateProspectDetails(form.contact, {
+            profile: { flags: form.contact_profile_flags },
+          });
+        } catch {
+          skipped.push('contact profile');
+        }
+      }
 
-    const noteUserId = form.contact || form.trainee;
-    if (noteUserId && form.notes.trim()) {
-      await createTrackerNote(noteUserId, form.notes, 'matchup');
-    }
+      const noteUserId = form.contact || form.trainee;
+      if (noteUserId && form.notes.trim()) {
+        try {
+          await createTrackerNote(noteUserId, form.notes, 'matchup');
+        } catch {
+          skipped.push('note');
+        }
+      }
 
-    await onSubmit(payload, appointment?.id);
+      await onSubmit(payload, appointment?.id);
+      if (skipped.length) {
+        addToast({
+          type: 'warning',
+          message: `Appointment saved, but the ${skipped.join(' and ')} could not be saved.`,
+        });
+      }
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Failed to save the appointment.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -384,8 +443,6 @@ export function AppointmentFormModal({
       contentClassName="matchup-modal-content"
     >
       <form className="matchup-form" onSubmit={(event) => void submit(event)}>
-        {error ? <div className="matchup-form-error">{error}</div> : null}
-
         <div className="matchup-form-grid">
           <label>
             <span>Kind</span>
@@ -638,9 +695,19 @@ export function AppointmentFormModal({
           </div>
         ) : null}
 
+        {/* Beside Save rather than at the top of the form: this is where the
+            user is looking when it appears. */}
+        {error ? (
+          <div ref={errorRef} className="matchup-form-error" role="alert">
+            {error}
+          </div>
+        ) : null}
+
         <div className="matchup-form-actions">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Appointment'}</Button>
+          <Button type="submit" disabled={saving || submitting}>
+            {saving || submitting ? 'Saving...' : 'Save Appointment'}
+          </Button>
         </div>
       </form>
     </Modal>

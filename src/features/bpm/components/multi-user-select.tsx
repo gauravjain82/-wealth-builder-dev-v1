@@ -10,9 +10,22 @@ interface MultiUserSelectProps {
   selected: SelectedUser[];
   onChange: (users: SelectedUser[]) => void;
   placeholder?: string;
+  /**
+   * A search of your own instead of the default user search, which is scoped to
+   * the caller's team. BPM Settings passes the company-wide inviter search, since
+   * a BPM manager can sit anywhere in the company.
+   */
+  fetchOptions?: (search: string) => Promise<UserAutocompleteOption[]>;
+  disabled?: boolean;
 }
 
-export function MultiUserSelect({ selected, onChange, placeholder = 'Search users' }: MultiUserSelectProps) {
+export function MultiUserSelect({
+  selected,
+  onChange,
+  placeholder = 'Search users',
+  fetchOptions,
+  disabled = false,
+}: MultiUserSelectProps) {
   const add = (option: UserAutocompleteOption) => {
     if (selected.some((user) => user.id === option.id)) return;
     onChange([...selected, { id: option.id, label: option.label }]);
@@ -26,7 +39,9 @@ export function MultiUserSelect({ selected, onChange, placeholder = 'Search user
         selectedId={null}
         selectedLabel=""
         placeholder={placeholder}
-        fetchFromApi
+        fetchFromApi={!fetchOptions}
+        fetchOptions={fetchOptions}
+        disabled={disabled}
         buttonText="ADD"
         onSelect={add}
       />
@@ -38,7 +53,12 @@ export function MultiUserSelect({ selected, onChange, placeholder = 'Search user
               className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 text-xs text-slate-700 dark:border-white/20 dark:bg-white/5 dark:text-white/80"
             >
               {user.label}
-              <button type="button" aria-label={`Remove ${user.label}`} onClick={() => remove(user.id)}>
+              <button
+                type="button"
+                aria-label={`Remove ${user.label}`}
+                disabled={disabled}
+                onClick={() => remove(user.id)}
+              >
                 <X size={12} />
               </button>
             </span>

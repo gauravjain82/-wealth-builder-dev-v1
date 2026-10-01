@@ -53,7 +53,7 @@ export function ContactBadge({ summary, onOpen }: ContactBadgeProps) {
 interface GuestMessageHistoryModalProps {
   open: boolean;
   onClose: () => void;
-  occurrenceId: number | null;
+  /** Read on the guest's own `occurrence` — in All-locations mode that is its row's location. */
   guest: BPMGuest | null;
 }
 
@@ -75,7 +75,6 @@ const STATUS_TONE: Record<string, string> = {
 export function GuestMessageHistoryModal({
   open,
   onClose,
-  occurrenceId,
   guest,
 }: GuestMessageHistoryModalProps) {
   const [rows, setRows] = useState<BPMGuestMessageRow[]>([]);
@@ -95,8 +94,8 @@ export function GuestMessageHistoryModal({
   }, []);
 
   useEffect(() => {
-    if (open && occurrenceId && guest) void load(occurrenceId, guest.id);
-  }, [open, occurrenceId, guest, load]);
+    if (open && guest) void load(guest.occurrence, guest.id);
+  }, [open, guest, load]);
 
   return (
     <Modal

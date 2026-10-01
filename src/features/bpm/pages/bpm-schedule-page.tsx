@@ -1,11 +1,20 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Button, DateRangePicker, Input, LoadingState, Select, type DateRangeValue } from '@shared/components';
+import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
+import {
+  Button,
+  ConfirmationDialog,
+  DateRangePicker,
+  Input,
+  LoadingState,
+  Select,
+  type DateRangeValue,
+} from '@shared/components';
 import { useToastStore } from '@/store';
 import { BPMCard, BPMPageShell } from '../components/bpm-page-shell';
 import { BPMFormModal } from '../components/bpm-form-modal';
 import { StatusBadge, StatusControl } from '../components/status-control';
 import { OccurrenceRowActions } from '../components/occurrence-row-actions';
+import { BpmTitleLink } from '../components/bpm-title-link';
 import { AttachmentsModal } from '../components/event-attachments';
 import { useAttachmentsDownloadAllowed } from '../context/bpm-config-context';
 import { bpmService, formatOccurrenceTime } from '../services/bpm-service';
@@ -39,6 +48,7 @@ interface OccurrenceGroup {
   occurrences: BPMOccurrence[];
   guestCount: number;
   checkedInCount: number;
+  hasAttachments: boolean;
 }
 
 /** Group the flat occurrence list by (event, local date) for the expandable rows. */
@@ -57,14 +67,31 @@ const groupOccurrences = (occurrences: BPMOccurrence[]): OccurrenceGroup[] => {
         occurrences: [],
         guestCount: 0,
         checkedInCount: 0,
+        hasAttachments: false,
       };
       groups.set(key, group);
     }
     group.occurrences.push(occurrence);
     group.guestCount += occurrence.guest_count;
     group.checkedInCount += occurrence.checked_in_count;
+    group.hasAttachments = group.hasAttachments || occurrence.has_attachments;
   }
   return Array.from(groups.values());
+};
+
+/**
+ * Whether the BPM itself is deleted, as far as its dates show it.
+ *
+ * An occurrence does not carry its event's override, only its own and the
+ * resolved `effective_status`. A date without an override of its own inherits
+ * the event's, so those dates answer the question; a date with its own
+ * (CANCELLED, HIDDEN, …) keeps it after an event-level delete and says nothing.
+ * Only when every date has its own override does this fall back to "all deleted".
+ */
+const isEventDeleted = (group: OccurrenceGroup): boolean => {
+  const inheriting = group.occurrences.filter((row) => !row.status_override);
+  const rows = inheriting.length > 0 ? inheriting : group.occurrences;
+  return rows.every((row) => row.effective_status === 'DELETED');
 };
 
 export default function BpmSchedulePage() {
@@ -80,6 +107,8 @@ export default function BpmSchedulePage() {
   const [editingEvent, setEditingEvent] = useState<BPMEventDetail | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [capabilities, setCapabilities] = useState<BPMCapabilities | null>(null);
+  // The BPM whose whole series is about to be deleted, awaiting confirmation.
+  const [deleteTarget, setDeleteTarget] = useState<OccurrenceGroup | null>(null);
   const [attachmentsFor, setAttachmentsFor] = useState<{
     name: string;
     attachments: BPMEventAttachment[];
@@ -90,6 +119,16 @@ export default function BpmSchedulePage() {
   // BPM Schedule is the CRUD surface and the only list that shows HIDDEN /
   // CANCELLED / DELETED rows. Below broker level the page stays read-only.
   const canManage = Boolean(capabilities?.can_manage_schedule);
+  // Create / Edit / Delete gate on their own capability, the same way BPM
+  // Overview gates Create, so the two screens never disagree about who may do
+  // what. A control the user lacks is hidden, not disabled.
+  const canCreate = Boolean(capabilities?.can_create);
+  const canUpdate = Boolean(capabilities?.can_update);
+  // Deleting is a status change, and the status endpoints require
+  // bpm_schedule:manage on the server — so both delete controls need it too,
+  // or a user with bpm:delete alone would be offered a button that 403s.
+  const canDelete = Boolean(capabilities?.can_delete) && canManage;
+  const canSetStatus = canManage;
 
   const toggleGroup = (key: string) =>
     setExpanded((prev) => {
@@ -168,6 +207,27 @@ export default function BpmSchedulePage() {
     }
   };
 
+  /**
+   * Delete a BPM's whole series. Per-date delete stays on the status control;
+   * this is the BPM-level status, so every date without a status of its own
+   * goes with it and BPM Settings restores it as one item.
+   */
+  const deleteSeries = async (group: OccurrenceGroup) => {
+    setBusy(true);
+    try {
+      await bpmService.setEventStatus(group.eventId, 'DELETED');
+      addToast({ type: 'success', message: `${group.eventName} deleted. Restore it from BPM Settings.` });
+      await load();
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to delete BPM',
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const groups = useMemo(() => groupOccurrences(occurrences), [occurrences]);
 
   const openCreate = () => {
@@ -197,7 +257,7 @@ export default function BpmSchedulePage() {
     <BPMPageShell
       title="BPM Schedule"
       description="Create BPMs and browse upcoming occurrences by date, location, or team."
-      actions={canManage ? <Button onClick={openCreate}>Create BPM</Button> : null}
+      actions={canCreate ? <Button onClick={openCreate}>Create BPM</Button> : null}
     >
       <BPMCard className="mb-4">
         <div className="grid gap-3 md:grid-cols-4">
@@ -253,7 +313,12 @@ export default function BpmSchedulePage() {
                         <td className="px-3 py-2 font-medium text-slate-900 dark:text-white">
                           <span className="inline-flex items-center gap-1.5">
                             {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                            {group.eventName}
+                            <BpmTitleLink
+                              hasAttachments={group.hasAttachments}
+                              onOpen={() => void openAttachments(group.occurrences[0])}
+                            >
+                              {group.eventName}
+                            </BpmTitleLink>
                           </span>
                         </td>
                         <td className="px-3 py-2 text-slate-700 dark:text-white/80">
@@ -270,7 +335,22 @@ export default function BpmSchedulePage() {
                           {group.checkedInCount}/{group.guestCount}
                         </td>
                         <td className="px-3 py-2" />
-                        <td className="px-3 py-2" />
+                        <td className="px-3 py-2 text-right">
+                          {canDelete && !isEventDeleted(group) ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={busy}
+                              onClick={(event) => {
+                                // The row expands on click; this must not.
+                                event.stopPropagation();
+                                setDeleteTarget(group);
+                              }}
+                            >
+                              <Trash2 size={13} /> Delete BPM
+                            </Button>
+                          ) : null}
+                        </td>
                       </tr>
                       {isOpen
                         ? group.occurrences.map((occurrence) => (
@@ -289,11 +369,15 @@ export default function BpmSchedulePage() {
                                 {occurrence.checked_in_count}/{occurrence.guest_count}
                               </td>
                               <td className="px-3 py-2 text-slate-700 dark:text-white/80">
-                                {canManage ? (
+                                {canSetStatus ? (
+                                  // Deleting one date is the Deleted option here,
+                                  // offered only with can_delete.
                                   <StatusControl
                                     effectiveStatus={occurrence.effective_status}
                                     statusOverride={occurrence.status_override}
                                     disabled={busy}
+                                    allowOverrides={canSetStatus}
+                                    allowDelete={canDelete}
                                     onChange={(next) => void changeStatus(occurrence, next)}
                                   />
                                 ) : (
@@ -308,11 +392,9 @@ export default function BpmSchedulePage() {
                                     occurrences={[occurrence]}
                                     selected={occurrence}
                                     onSelect={() => undefined}
-                                    hasAttachments={occurrence.has_attachments}
-                                    onOpenAttachments={(row) => void openAttachments(row)}
                                     disabled={busy}
                                   />
-                                  {canManage ? (
+                                  {canUpdate ? (
                                     <Button
                                       size="sm"
                                       variant="secondary"
@@ -342,6 +424,19 @@ export default function BpmSchedulePage() {
       </BPMCard>
 
       <BPMFormModal open={formOpen} onClose={closeForm} onSaved={load} event={editingEvent} />
+
+      <ConfirmationDialog
+        open={Boolean(deleteTarget)}
+        title="Delete BPM"
+        message={`Delete "${deleteTarget?.eventName}"? Its dates disappear from every list until it is restored from BPM Settings. Guests and check-ins are kept.`}
+        confirmText="Delete BPM"
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          const target = deleteTarget;
+          setDeleteTarget(null);
+          if (target) void deleteSeries(target);
+        }}
+      />
 
       <AttachmentsModal
         open={Boolean(attachmentsFor)}
