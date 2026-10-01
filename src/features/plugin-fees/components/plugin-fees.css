@@ -1,0 +1,780 @@
+/*
+ * Plug-in fees module styles. Every selector is prefixed `wb-pf-` and scoped to this
+ * module's own markup; no global theme rules. The Settings sections also reuse the
+ * Settings page's own classes (glass-section, field-group, input-field, ticket-*), which
+ * are scoped under `.settings-profile-page` in settings-page.css.
+ */
+
+.wb-pf-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wb-pf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.wb-pf-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.wb-pf-form-grid .wb-pf-span-2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 640px) {
+  .wb-pf-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wb-pf-form-grid .wb-pf-span-2 {
+    grid-column: auto;
+  }
+}
+
+.wb-pf-subheading {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #d4af37;
+}
+
+.wb-pf-muted {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+html:not(.dark) .wb-pf-muted {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.wb-pf-field-error,
+.wb-pf-form-error {
+  font-size: 12px;
+  color: #ff7b7b;
+}
+
+html:not(.dark) .wb-pf-field-error,
+html:not(.dark) .wb-pf-form-error {
+  color: #b91c1c;
+}
+
+.wb-pf-form-error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.12);
+  font-size: 13px;
+}
+
+/* Callouts: the verification deadline and the re-verification notice. */
+.wb-pf-callout {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: rgba(212, 175, 55, 0.1);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.wb-pf-callout--strong {
+  font-weight: 600;
+}
+
+.wb-pf-callout--warning {
+  border-color: rgba(255, 152, 0, 0.45);
+  background: rgba(255, 152, 0, 0.12);
+}
+
+/* Status badge. */
+.wb-pf-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(148, 163, 184, 0.15);
+  color: inherit;
+  white-space: nowrap;
+}
+
+.wb-pf-badge--pending,
+.wb-pf-badge--reverify {
+  border-color: rgba(255, 193, 7, 0.5);
+  background: rgba(255, 193, 7, 0.18);
+  color: #e0a800;
+}
+
+.wb-pf-badge--approved,
+.wb-pf-badge--verified {
+  border-color: rgba(76, 175, 80, 0.5);
+  background: rgba(76, 175, 80, 0.18);
+  color: #3fa548;
+}
+
+.wb-pf-badge--rejected,
+.wb-pf-badge--expired {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.15);
+  color: #e05252;
+}
+
+/* A submission summary card. */
+.wb-pf-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+html:not(.dark) .wb-pf-card {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.wb-pf-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wb-pf-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 16px;
+}
+
+.wb-pf-detail-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.65;
+}
+
+.wb-pf-detail-value {
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.wb-pf-thumb {
+  display: block;
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.wb-pf-link {
+  color: #d4af37;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  word-break: break-all;
+}
+
+.wb-pf-actions-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.wb-pf-actions-list li {
+  padding-left: 10px;
+  border-left: 2px solid rgba(212, 175, 55, 0.4);
+}
+
+.wb-pf-note {
+  display: block;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.wb-pf-history > summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 6px 0;
+}
+
+.wb-pf-history[open] > summary {
+  margin-bottom: 10px;
+}
+
+/* Hours editor rows. */
+.wb-pf-hours-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.2fr) minmax(96px, 1fr) minmax(96px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .wb-pf-hours-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Review page. */
+.wb-pf-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.wb-pf-tab {
+  padding: 8px 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.wb-pf-tab[aria-selected='true'] {
+  border-bottom-color: #d4af37;
+  opacity: 1;
+}
+
+.wb-pf-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.wb-pf-toolbar .wb-pf-search {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.wb-pf-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* How you pay (D19b): automatic debit vs pay each month myself. */
+.wb-pf-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.wb-pf-choice-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.wb-pf-choice-option input {
+  margin-top: 4px;
+}
+
+/* --- P3: statements, billing cycles, costs --------------------------------- */
+
+/* Extra badge tones for invoice and cycle statuses. */
+.wb-pf-badge--info {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.15);
+  color: #6aa3ff;
+}
+
+html:not(.dark) .wb-pf-badge--info {
+  color: #1d4ed8;
+}
+
+.wb-pf-badge--neutral {
+  border-color: rgba(148, 163, 184, 0.45);
+  background: rgba(148, 163, 184, 0.15);
+}
+
+html:not(.dark) .wb-pf-badge--approved {
+  color: #15803d;
+}
+
+html:not(.dark) .wb-pf-badge--pending,
+html:not(.dark) .wb-pf-badge--reverify {
+  color: #a16207;
+}
+
+html:not(.dark) .wb-pf-badge--rejected,
+html:not(.dark) .wb-pf-badge--expired {
+  color: #b91c1c;
+}
+
+/* A small inline tag, e.g. "Rolled up" on an MD credit. */
+.wb-pf-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border: 1px dashed rgba(212, 175, 55, 0.7);
+  color: #d4af37;
+  white-space: nowrap;
+}
+
+html:not(.dark) .wb-pf-tag {
+  border-color: rgba(161, 98, 7, 0.6);
+  color: #a16207;
+}
+
+/* Tables. Wide tables scroll inside their wrapper, never the page. */
+.wb-pf-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.wb-pf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.wb-pf-table th,
+.wb-pf-table td {
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.wb-pf-table thead th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.wb-pf-table--dense th,
+.wb-pf-table--dense td {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.wb-pf-table .wb-pf-num,
+.wb-pf-lines .wb-pf-num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-pf-detail-row > td {
+  background: rgba(212, 175, 55, 0.06);
+}
+
+html:not(.dark) .wb-pf-detail-row > td {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.wb-pf-detail-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 560px;
+}
+
+.wb-pf-row--selected > td {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+/* Excluded agents: not billed until the hierarchy is fixed. */
+.wb-pf-row--excluded > td {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.wb-pf-row--excluded > td:first-child {
+  box-shadow: inset 3px 0 0 #e05252;
+}
+
+.wb-pf-excluded-reason {
+  display: inline-block;
+  min-width: 14rem;
+  font-weight: 600;
+  color: #ff7b7b;
+}
+
+html:not(.dark) .wb-pf-excluded-reason {
+  color: #b91c1c;
+}
+
+.wb-pf-expand {
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* An invoice's lines. */
+.wb-pf-lines {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.wb-pf-lines td,
+.wb-pf-lines th {
+  padding: 4px 0;
+  text-align: left;
+  font-weight: inherit;
+}
+
+.wb-pf-lines tfoot th,
+.wb-pf-lines tfoot td {
+  border-top: 1px solid rgba(148, 163, 184, 0.4);
+  padding-top: 6px;
+  font-weight: 700;
+}
+
+/* Money coloured by sign. */
+.wb-pf-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-pf-amount--credit {
+  color: #3fa548;
+}
+
+.wb-pf-amount--debit {
+  color: #e05252;
+}
+
+html:not(.dark) .wb-pf-amount--credit {
+  color: #15803d;
+}
+
+html:not(.dark) .wb-pf-amount--debit {
+  color: #b91c1c;
+}
+
+.wb-pf-yes {
+  color: #3fa548;
+  font-weight: 700;
+}
+
+.wb-pf-no {
+  color: #e05252;
+  font-weight: 700;
+}
+
+html:not(.dark) .wb-pf-yes {
+  color: #15803d;
+}
+
+html:not(.dark) .wb-pf-no {
+  color: #b91c1c;
+}
+
+.wb-pf-warn-text {
+  color: #ffa726;
+  font-weight: 600;
+}
+
+html:not(.dark) .wb-pf-warn-text {
+  color: #b45309;
+}
+
+/* The SMD's balance. */
+.wb-pf-balance {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.wb-pf-balance--credit {
+  border-color: rgba(76, 175, 80, 0.5);
+  background: rgba(76, 175, 80, 0.12);
+}
+
+.wb-pf-balance--debit {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.wb-pf-balance-amount {
+  font-size: 28px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Report totals. */
+.wb-pf-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.wb-pf-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+html:not(.dark) .wb-pf-stat {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.wb-pf-stat--warning {
+  border-color: rgba(255, 152, 0, 0.55);
+  background: rgba(255, 152, 0, 0.12);
+}
+
+html:not(.dark) .wb-pf-stat--warning {
+  background: rgba(255, 152, 0, 0.1);
+}
+
+.wb-pf-stat--wide {
+  grid-column: 1 / -1;
+}
+
+.wb-pf-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-pf-stat-sub {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.wb-pf-report-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.wb-pf-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+/* Approve dialog totals. */
+.wb-pf-summary-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.wb-pf-summary-list dt {
+  opacity: 0.7;
+}
+
+.wb-pf-summary-list dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Admin forms outside Settings. */
+.wb-pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.wb-pf-field-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* "View statement of account →" under the Settings sections. */
+.wb-pf-statement-link {
+  margin: 4px 0 20px;
+  font-size: 14px;
+  text-align: right;
+}
+
+/* --- P4: collection --------------------------------------------------------- */
+
+/* An invoice's payment state: badge, the sentence under it, the last failure. */
+.wb-pf-pay-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 11rem;
+}
+
+.wb-pf-pay-headline {
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+.wb-pf-pay-headline--danger {
+  color: #ff7b7b;
+  opacity: 1;
+  font-weight: 600;
+}
+
+html:not(.dark) .wb-pf-pay-headline--danger {
+  color: #b91c1c;
+}
+
+.wb-pf-pay-failure {
+  font-size: 12px;
+  color: #ffb057;
+}
+
+html:not(.dark) .wb-pf-pay-failure {
+  color: #a16207;
+}
+
+/* Pay now and the copy beside it. */
+.wb-pf-pay-now {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 12rem;
+  max-width: 16rem;
+}
+
+.wb-pf-pay-copy {
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.75;
+  white-space: normal;
+}
+
+.wb-pf-tag--klarna {
+  border-style: solid;
+  border-color: rgba(255, 168, 205, 0.8);
+  color: #ffa8cd;
+}
+
+html:not(.dark) .wb-pf-tag--klarna {
+  border-color: rgba(190, 24, 93, 0.6);
+  color: #be185d;
+}
+
+.wb-pf-tag--danger {
+  border-style: solid;
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ff7b7b;
+}
+
+html:not(.dark) .wb-pf-tag--danger {
+  border-color: rgba(185, 28, 28, 0.6);
+  color: #b91c1c;
+}
+
+.wb-pf-stat--danger {
+  border-color: rgba(239, 68, 68, 0.55);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+html:not(.dark) .wb-pf-stat--danger {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.wb-pf-stat--klarna {
+  border-color: rgba(255, 168, 205, 0.5);
+}
+
+html:not(.dark) .wb-pf-stat--klarna {
+  border-color: rgba(190, 24, 93, 0.35);
+}
+
+/* Sending progress: "118 of 120 sent". */
+.wb-pf-sending {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.wb-pf-progress {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.25);
+}
+
+.wb-pf-progress-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: #d4af37;
+}
+
+html:not(.dark) .wb-pf-progress-bar {
+  background: #a16207;
+}
+
+/* Filter tabs that may outgrow a phone: scroll inside, never the page. */
+.wb-pf-tabs--scroll {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.wb-pf-tab-count {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.wb-pf-note-cell {
+  display: block;
+  max-width: 22rem;
+  white-space: normal;
+  font-size: 13px;
+}

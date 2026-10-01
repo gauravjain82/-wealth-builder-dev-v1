@@ -80,3 +80,4 @@ export {
 	type RowColorRule,
 	type RowColorStyle,
 } from './row-colors';
+export { StagedFilePicker } from './staged-file-picker';
