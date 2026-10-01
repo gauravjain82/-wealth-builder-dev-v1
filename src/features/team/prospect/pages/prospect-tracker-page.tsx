@@ -15,6 +15,7 @@ import {
   activateProspectWithAgencyCode,
   createProspect,
   deleteProspect,
+  fetchProspectDetails,
   fetchProspects,
   sendProspectInvitation,
   type Prospect,
@@ -34,6 +35,7 @@ import {
 } from '@/features/team/production-tracker/services/production-tracker-service';
 import { buildProspectColumns } from '../prospect-columns';
 import type { AddAgentFormData, AddProspectFormData } from '../types';
+import { changedIdentityFields } from '../prospect-utils';
 import {
   createTrackerNote,
   fetchTrackerNotesForUser,
@@ -597,13 +599,7 @@ export default function ProspectTrackerPage() {
 
       const fullName = `${formData.firstName || ''} ${formData.lastName || ''}`.trim();
       const updated = await updateProspectDetails(editingProspect.id, {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        full_name: fullName || undefined,
-        email: formData.email,
-        phone: formData.phone,
-        recruited_by: formData.recruiterId,
-        leader: formData.leaderId,
+        ...changedIdentityFields(mapProspectToForm(editingProspect), formData),
         profile: {
           state: formData.state || undefined,
           home_address: formData.homeAddress || undefined,
@@ -632,6 +628,33 @@ export default function ProspectTrackerPage() {
         },
       });
 
+      // The server decides recruiter and leader: a recruiter change can make it move or
+      // clear the leader. The PATCH response carries ids but not names, so when it chose
+      // something other than the form, re-read the prospect for the names.
+      const hierarchyAsAsked =
+        (updated.recruited_by ?? null) === formData.recruiterId && (updated.leader ?? null) === formData.leaderId;
+      const hierarchy = hierarchyAsAsked
+        ? {
+            recruited_by: formData.recruiterId,
+            leader: formData.leaderId,
+            recruited_by_name: formData.recruiter || editingProspect.recruited_by_name,
+            leader_name: formData.leader || editingProspect.leader_name,
+          }
+        : await fetchProspectDetails(editingProspect.id).then(
+            (fresh) => ({
+              recruited_by: fresh.recruited_by,
+              leader: fresh.leader,
+              recruited_by_name: fresh.recruited_by_name,
+              leader_name: fresh.leader_name,
+            }),
+            () => ({
+              recruited_by: updated.recruited_by ?? null,
+              leader: updated.leader ?? null,
+              recruited_by_name: '',
+              leader_name: '',
+            })
+          );
+
       // Apply an immediate local merge so UI updates even if the API returns a partial object.
       const optimisticMerged: Prospect = {
         ...editingProspect,
@@ -641,10 +664,7 @@ export default function ProspectTrackerPage() {
         full_name: fullName || updated.full_name || editingProspect.full_name,
         email: formData.email,
         phone: formData.phone,
-        recruited_by: formData.recruiterId,
-        leader: formData.leaderId,
-        recruited_by_name: formData.recruiter || editingProspect.recruited_by_name,
-        leader_name: formData.leader || editingProspect.leader_name,
+        ...hierarchy,
         profile: {
           ...(editingProspect.profile || {}),
           ...(updated.profile || {}),

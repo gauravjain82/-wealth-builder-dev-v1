@@ -120,6 +120,8 @@ A gamified onboarding path. Routed at `/onboarding-game`.
 | Eligible / not eligible | mission ring | the server's verdict, with its reason |
 | Projected | Production's projected scope | different numbers from the default view |
 | Import preview | CSV chosen | parsed rows before commit |
+| Nothing to save | profile modal Save with no edits | an info toast, "No changes to save."; no request |
+| Change history | profile modal open | the Change History panel under Tracker Summary: who, when, App / Django admin / Automatic / Data repair, old → new, and the reason for system changes. **Absent** for a viewer without `audit_log:read` |
 
 ## 4. Interaction rules
 

@@ -31,6 +31,7 @@
 | ~4 | 2026-08-18 → 08-29 | Shipped | Segment filtering; Production filters and query parameters reworked |
 | ~5 | 2026-09-02 → 09-18 | Shipped | Mission ring: proof, eligibility (×3), ring sizes. Production: projected scope, gross/net, date ranges |
 | ~6 | 2026-09-22 | Shipped | Agency-code handling and validation |
+| 7 | 2026-10-02 | In review | Profile modal: changed-fields-only save; Change History panel |
 
 ## 2. Phases
 
@@ -98,6 +99,20 @@ validation added on 09-16.
 without one works and shows nothing — they are counted only as `uncoded_member_count` in
 [leaderboards](../leaderboards/README.md#4-domain-vocabulary).
 
+### 7 — who changed this person (2026-10-02)
+
+**Why.** The field reported leaders, recruiters and phones changing on records nobody had edited.
+Part of the cause was here: the profile modal PATCHed every field on every save, so a stale modal
+wrote old recruiter and leader values back, and after a save it showed the form's leader even when
+the backend had cleared it.
+
+**What shipped.** A changed-fields-only save, the server's values shown after saving, and a Change
+History panel over the new backend endpoint (`mlm_platform` accounts Phase 10). **Coupled** with
+the backend branch `feature/user-change-history`: the panel stays hidden until the endpoint exists,
+and the save change stands alone.
+
+**Decisions.** T10, T11.
+
 ## 3. Decision log
 
 | ID | Decision | Rationale | Source |
@@ -111,6 +126,8 @@ without one works and shows nothing — they are counted only as `uncoded_member
 | T7 | The read-only prospect modal is the one other modules get | `tracker-user-profile-modal` is editable and can terminate a user — not something to hand a BPM greeter. `prospect-details-modal` was promoted to shared instead | `prospect/components/prospect-details-modal.tsx`; `BPM_V2_PLAN.md` D4 |
 | T8 | The Daily Six page is public | A builder's daily activity is shared by agency code, so it must render without a session | `router/index.tsx:214` |
 | **T9** | **Team → Builders and [builder-ai](../builder-ai/) are separate products.** Here a builder is `AssociateTracker.is_key_player`; the results leaderboard (`/api/tracker/builders/leaderboard/results/`) ranks key players, not active `BuilderMembership` rows (2026-09-30) | The page already listed its roster by `is_key_player` (`builders-page.tsx:22`), but since backend `b269a89` its results leaderboard read BuilderAI enrolment — so key players never invited into BuilderAI (a 100-score and an 89-score builder in Sept 2026) were missing from it. Chosen over enrolling them in BuilderAI and over ranking the union. BuilderAI's Bulletin is unchanged. Cost: BuilderAI members who are not key players are no longer on this board, and the same person can now be on one product's lists and not the other's | User decision, 2026-09-30; backend `mlm_platform` tracker T20 / builderai B13 |
+| T10 | The profile modal PATCHes only fields edited since load | Re-sending the whole form made every save a silent revert of anything changed elsewhere since the modal opened — including the backend's own leader recalculation | Phase 7; `buildUpdatePayload()` |
+| T11 | The Change History panel asks the endpoint and hides on 403, rather than adding a capability flag | The backend decides (`audit_log:read`), as every gate here does. A per-user capability endpoint for one panel would be a second source of truth for the same grant | Phase 7; `user-change-history.tsx` |
 
 ## 4. Deliberately not built
 

@@ -101,6 +101,20 @@ Each is fetched "optionally" — a missing record is not an error, because a per
 no licensing row before they start licensing. This is why one modal can show a whole person from any
 tracker.
 
+**Saving sends only what changed.** `buildUpdatePayload()` diffs the form against the form as
+last loaded (`loadedForm`) and PATCHes only the edited fields; `profile` is sent whole when any of
+its fields changed, because the backend writes it as one record. Sending every field used to
+re-assert values nobody touched: a modal left open while someone else changed the recruiter, or
+while the backend recalculated the leader, wrote the old values back. After the save the modal shows
+the server's recruiter and leader, not the form's — a recruiter change can make the backend clear or
+move the leader, and the form's value hid that.
+
+**Change history.** `components/user-change-history.tsx` sits under the Tracker Summary and reads
+`hooks/use-user-history.ts` (React Query, key `['team', 'user-history', userId]`, `signal`
+forwarded). It lists who changed the person's fields and roles, including the system's own changes
+and their reason. The backend gates it on `audit_log:read`; the panel renders nothing on a 403. A
+save invalidates the key.
+
 **A quirk worth naming.** The mission tracker's API key is the literal string `4X4`, and this file
 assembles it as `['4', 'X4'].join('')` (`:6`) while `mission-tracker-service.ts` writes `4X4`
 inline (`:85`). There is no functional difference; the two spellings mean a search for `4X4` misses
@@ -139,6 +153,7 @@ production endpoints. Export uses the same module in reverse.
 | Every tracker's records | `useEffect` + `useState`, per page |
 | Notes | per-tracker service call on open |
 | Profile snapshots | three parallel fetches on modal open |
+| Profile change history | **React Query**, `['team', 'user-history', userId]`, invalidated by the modal's save |
 | Segment summary | **React Query**, via `queryClient` reached directly from a service |
 | Levels, brokers, org-chart root | per-service fetches |
 
