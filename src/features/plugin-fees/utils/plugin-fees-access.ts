@@ -79,3 +79,15 @@ export const canManageAdjustments = (access: Access): boolean => Boolean(access?
 
 /** `invoices/{id}/void/`: `:manage`. */
 export const canVoidInvoices = (access: Access): boolean => Boolean(access?.can_manage);
+
+/* --- fee configuration (2026-10-03) ------------------------------------------ */
+
+/**
+ * `/admin/plugin-fees/settings` (`fee-schedule/`, `settings/`, `config-history/`):
+ * readers are `:manage`, `:review` and `:payout_approve`.
+ */
+export const canSeeFeeSettings = (access: Access): boolean =>
+  Boolean(access?.can_manage || access?.can_review || access?.can_approve_payouts);
+
+/** Scheduling a price, removing a scheduled one and saving billing settings: `:manage`. */
+export const canManageFeeSettings = (access: Access): boolean => Boolean(access?.can_manage);

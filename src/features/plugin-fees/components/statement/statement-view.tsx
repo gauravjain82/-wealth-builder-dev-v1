@@ -5,6 +5,8 @@
  * and on the agent's own page an invoice with `can_pay_now` offers Pay now (the page
  * owns the pay-link mutation and passes `payNow`). P6: on the admin lookup, `:manage`
  * may void a `draft`, `open` or `failed` invoice (the page owns the dialog, `voidInvoice`).
+ * The ledger opens with its lifetime totals by type (`ledger.totals`, 2026-10-03), MD fees
+ * from own MDs and rolled up from downline SMDs kept apart.
  *
  * Screens and states: `docs/plugin-fees/UI.md` §2.5.
  */
@@ -13,7 +15,14 @@ import { Fragment, useState, type ReactNode } from 'react';
 
 import { Button } from '@/shared/components';
 
-import type { InvoiceStatus, LedgerEntry, PluginFeesStatement, StatementInvoice, StatementLine } from '../../types';
+import type {
+  InvoiceStatus,
+  LedgerEntry,
+  LedgerTotals,
+  PluginFeesStatement,
+  StatementInvoice,
+  StatementLine,
+} from '../../types';
 import {
   formatMoney,
   formatMonth,
@@ -304,6 +313,44 @@ function BalanceCard({ cents, own }: { cents: number; own: boolean }) {
   );
 }
 
+function TotalStat({ label, cents, sub }: { label: string; cents: number; sub?: string }) {
+  return (
+    <div className="wb-pf-stat">
+      <span className="wb-pf-detail-label">{label}</span>
+      <span className="wb-pf-stat-value">
+        <SignedAmount cents={cents} signed />
+      </span>
+      {sub ? <span className="wb-pf-stat-sub">{sub}</span> : null}
+    </div>
+  );
+}
+
+/**
+ * Lifetime sums by entry type, signed like the entries. MD fees credited from the SMD's
+ * own MDs and those rolled up from downline SMDs without a verified assistant are shown
+ * apart; collections, reversals and adjustments are folded into "Other".
+ */
+function LedgerTotalsGrid({ totals }: { totals: LedgerTotals }) {
+  const value = (key: keyof LedgerTotals) => (typeof totals[key] === 'number' ? totals[key] : 0);
+  return (
+    <div className="wb-pf-stats" aria-label="Ledger totals, all time">
+      <TotalStat label="MD fees credited — own MDs" cents={value('md_credit_own')} />
+      <TotalStat
+        label="MD fees credited — rolled up from downline SMDs"
+        cents={value('md_credit_rollup')}
+      />
+      <TotalStat label="SMD fees" cents={value('smd_fee')} />
+      <TotalStat label="Recognition & mailing costs" cents={value('costs')} />
+      <TotalStat label="Payouts" cents={value('payout')} />
+      <TotalStat
+        label="Other"
+        cents={value('charge_collected') + value('reversal') + value('adjustment')}
+        sub="Collections, reversals and adjustments"
+      />
+    </div>
+  );
+}
+
 function LedgerTable({ entries }: { entries: LedgerEntry[] }) {
   if (!entries.length) return <p className="wb-pf-muted">No ledger entries yet.</p>;
   return (
@@ -371,6 +418,15 @@ export function StatementView({
             {ledgerAction}
           </div>
           <BalanceCard cents={statement.ledger.balance_cents} own={own} />
+          {/* Older payloads carry no `totals`; the summary is then simply left out. */}
+          {statement.ledger.totals ? (
+            <>
+              <h3 className="wb-pf-field-label" style={{ margin: 0 }}>
+                Totals, all time
+              </h3>
+              <LedgerTotalsGrid totals={statement.ledger.totals} />
+            </>
+          ) : null}
           <p className="wb-pf-muted" style={{ margin: 0 }}>
             Credits are positive and debits negative. MD fees credited from own MDs and MD fees
             rolled up from below are listed separately.

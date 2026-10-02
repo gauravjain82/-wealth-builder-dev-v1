@@ -4,12 +4,12 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/settings`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.4 |
-| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
+| **Status** | Merged-not-deployed — P2–P6 merged to `main` via PR #18 (`e91e5a5`); not deployed. Fee configuration + ledger split (2026-10-03) on branch `feature/plugin-fees-config`, uncommitted. Nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` yet |
+| **Doc version** | 0.5 |
+| **Verified against** | `main` at `f8b0a78` (P2–P6, merged via PR #18) plus the uncommitted `feature/plugin-fees-config` working tree (fee configuration, ledger totals) — 2026-10-03 |
 
 ## 1. Routes and entry points
 
@@ -29,6 +29,7 @@
 | `/admin/plugin-fees/payouts` (`?quarter=YYYY-Qn`) | admin, Hierarchy Assistant, approver | `PluginFeesAccessRoute` (`can_manage \|\| can_review \|\| can_approve_payouts`) |
 | `/admin/plugin-fees/sevc-totals` (`?from=YYYY-MM&to=YYYY-MM`) | admin, Hierarchy Assistant | `PluginFeesAccessRoute` (`can_manage \|\| can_review`) |
 | `/admin/plugin-fees/adjustments` | admin | `PluginFeesAccessRoute` (`can_manage`) |
+| `/admin/plugin-fees/settings` | admin (edits), Hierarchy Assistant and approver (read-only) | `PluginFeesAccessRoute` (`canSeeFeeSettings`: `can_manage \|\| can_review \|\| can_approve_payouts`) |
 | `/admin/plugin-fees/review?tab=offices\|assistants&status=…` | overview deep link | read once (PF42) |
 | Settings → "View statement of account →" | `is_billable` | link under the plug-in fee sections |
 | Menu "My Plug-in Fees" 💳 | `is_billable` | inserted just after My Team (under Home if the plan has no My Team) |
@@ -40,6 +41,7 @@
 | Menu "SEVC Totals" 📈 | `can_manage \|\| can_review` | after "Payouts" |
 | Menu "Recognition Costs" 🎖️ | `can_manage` | after "SEVC Totals" |
 | Menu "Adjustments" ⚖️ | `can_manage` | after "Recognition Costs" |
+| Menu "Fee Settings" 🛠️ | `can_manage \|\| can_review \|\| can_approve_payouts` | last of the plug-in fees admin entries, after "Adjustments" (rides the cycles flag — same audience) |
 
 ## 2. Screens
 
@@ -124,7 +126,11 @@ Heading "My Plug-in Fees", a line pointing to Settings, then:
    **Payout** tag — the backend labels it "Quarterly payout sent (2026-Q4)" —, `reversal`
    a red **Reversal** tag, `adjustment` a blue **Manual adjustment** tag with its memo
    (the admin's note) underneath, PF45), amount (`+$50.00` green /
-   `−$150.00` red), running balance.
+   `−$150.00` red), running balance. Between the balance card and the table, when the
+   payload carries `ledger.totals` (2026-10-03), **Totals, all time**: six signed tiles —
+   "MD fees credited — own MDs", "MD fees credited — rolled up from downline SMDs", "SMD
+   fees", "Recognition & mailing costs", "Payouts", and "Other" (collections + reversals +
+   adjustments). An older payload without `totals` shows no tiles.
 2. **Invoices** — month, kind (MD/SMD), payment state (badge + sentence, below), amount,
    paid date (plus "($x paid)" when `paid_cents` differs from the amount) and, on the
    agent's own statement, **Pay now** on each invoice with `can_pay_now`, with the copy
@@ -334,6 +340,45 @@ never-edited rule. Then:
 2. **Adjustments**: SMD filter (+ "All SMDs"), count; posted, SMD (statement link), signed
    amount, note, invoice, by. Previous / Next.
 
+### 2.14 Fee settings (`/admin/plugin-fees/settings`)
+
+Heading "Fee Settings" ("Read-only." appended for anyone without `can_manage`). Who sees
+what: `can_manage` sees every section with its controls; `can_review` and
+`can_approve_payouts` see the fee table, scheduled changes (no Remove), the billing
+settings as plain values, the change history and the price history — no "Schedule a price
+change" section.
+
+1. **Fee table** — rows MD / SMD (`billed_levels`), columns "With approved office" /
+   "Without office": the current price (`formatMoney`; "Not set" without one) and, beneath,
+   "From *Mon YYYY*: $X" for the next cycle's price when it differs from the current one and
+   for every scheduled price. Helper text: prices are effective-dated; a price in force
+   never changes; a change applies from a future 1st of the month; each billing cycle
+   freezes the price it used.
+2. **Schedule a price change** (`can_manage`) — "Effective from" month input (default and
+   minimum `earliest_effective_from`), "Next cycle *Month*", four dollar inputs
+   (`MD · with approved office ($)` …) prefilled with each cell's `next_cycle` price, each
+   showing "Next cycle: $X → $Y" once changed; a required reason. "Schedule change…" is
+   disabled until a price differs ("Change at least one price."). The confirmation lists
+   old → new for each changed price, the month and the reason; only changed prices are
+   sent. Server field errors land on the month, the price that was sent, or the reason;
+   `cycle_exists` / `conflict` show the `detail`.
+3. **Scheduled changes** — prices with `started: false`, earliest first: from, fee, price,
+   note, scheduled by / at; **Remove** (`can_manage`) → dialog "Remove scheduled price"
+   with a required reason. "No price changes are scheduled." when empty.
+4. **Billing settings** — `can_manage`: a form with Go-live month (disabled, with "A
+   billing cycle has been approved, so the go-live month can no longer move." while
+   `go_live_locked`), Self-pay due day (1–28), Re-verification window (1–90 days),
+   Assistant verification deadline, a required reason and "Save settings" (disabled with
+   "Nothing changed." until an input differs; only the changed fields are sent; a cleared
+   month or date is sent as `null`). Others: the same four values read-only. Both show
+   "Last changed *time*".
+5. **Change history** — the latest 50 changes, newest first: when, who (and "via
+   *source*"), what (Fee / Settings tag + `object_repr`), action (Created / Changed /
+   Removed), changes as "Field: old → **new**" (cents fields as dollars, dates as dates,
+   booleans Yes/No, empty `—`), reason.
+6. **Price history** — a collapsed "Price history (*n*)" with every `rows` entry: effective
+   date, fee, price, status (In force / Superseded / Scheduled), note, set by / at.
+
 ## 3. States
 
 | Surface | Loading | Empty | Error | Denied |
@@ -357,6 +402,9 @@ never-edited rule. Then:
 | SEVC totals | "Loading…" | "No SEVC received anything in this range." | `ErrorState` with retry | route redirects to `/home` |
 | Adjustments | "Loading…" | "No adjustment has been posted." / "No adjustments for this SMD." | `ErrorState` with retry | route redirects to `/home` |
 | Adjustment form | "Posting…" | — | field errors + form error + toast | — |
+| Fee settings sections | "Loading…" per section | "No price changes are scheduled." / "No changes have been recorded." / "No prices have been set." | `ErrorState` with retry per query (schedule, settings, history) | route redirects to `/home`; edit controls absent without `can_manage` |
+| Schedule a price change | "Scheduling…" | submit disabled until a price changes | field errors + form error + toast (409: warning) | section absent without `can_manage` |
+| Billing settings form | "Saving…" | "Nothing changed." | field errors + form error + toast (`go_live_locked`: on the go-live input, warning) | read-only values without `can_manage` |
 
 ## 4. Interaction rules
 
@@ -388,6 +436,10 @@ never-edited rule. Then:
   SMD stays.
 - Void: the note is required; success toast; `409 not_voidable` → warning toast. Payments,
   statements, follow-ups and the overview refetch either way.
+- Schedule a price change: always confirmed; on success the reason clears and the prices
+  re-prefill from the returned schedule. Remove a scheduled price: the reason is required;
+  `404` / `409` → warning toast, dialog closes, the schedule refetches.
+- Save billing settings: success toast; the form reloads with the saved values.
 - Dollar inputs accept `30`, `30.5`, `1,200.00`; negatives and more than two decimals are
   rejected with "Enter dollars, at most two decimals, not negative."
 - Download CSV exports exactly the filtered agents (dollars with two decimals, booleans as

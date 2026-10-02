@@ -4,12 +4,12 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/settings`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.4 |
-| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
+| **Status** | Merged-not-deployed — P2–P6 merged to `main` via PR #18 (`e91e5a5`); not deployed. Fee configuration + ledger split (2026-10-03) on branch `feature/plugin-fees-config`, uncommitted. Nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` yet |
+| **Doc version** | 0.5 |
+| **Verified against** | `main` at `f8b0a78` (P2–P6, merged via PR #18) plus the uncommitted `feature/plugin-fees-config` working tree (fee configuration, ledger totals) — 2026-10-03 |
 
 ## 1. Environment and configuration
 

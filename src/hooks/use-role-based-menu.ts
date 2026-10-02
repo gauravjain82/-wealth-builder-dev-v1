@@ -58,7 +58,8 @@ export function useRoleBasedMenu(): MenuItem[] {
   // Plug-in fee reviews are for the Hierarchy Assistant (plugin_fees:review).
   const { data: pluginFeesAccess } = usePluginFeesAccess();
   const canReviewPluginFees = canSeeReviews(pluginFeesAccess);
-  // The same payload: own statement (active MD/SMD), billing cycles, costs.
+  // The same payload: own statement (active MD/SMD), billing cycles (and fee settings,
+  // the same audience: canSeeFeeSettings), costs.
   const isPluginFeesBillable = canSeeOwnStatement(pluginFeesAccess);
   const canViewPluginFeeCycles = canSeeCycles(pluginFeesAccess);
   const canManagePluginFees = canManageCosts(pluginFeesAccess);

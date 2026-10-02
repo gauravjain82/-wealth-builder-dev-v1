@@ -4,12 +4,12 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/settings`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.4 |
-| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
+| **Status** | Merged-not-deployed — P2–P6 merged to `main` via PR #18 (`e91e5a5`); not deployed. Fee configuration + ledger split (2026-10-03) on branch `feature/plugin-fees-config`, uncommitted. Nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` yet |
+| **Doc version** | 0.5 |
+| **Verified against** | `main` at `f8b0a78` (P2–P6, merged via PR #18) plus the uncommitted `feature/plugin-fees-config` working tree (fee configuration, ledger totals) — 2026-10-03 |
 
 ## 1. Purpose
 
@@ -19,7 +19,8 @@ assistant. The platform — not Stripe — decides all of that, so it needs the 
 office address with a lease and a photo, an assistant's contact details, hours and photo,
 and a saved payment method to collect from.
 
-This module is the frontend for **phases P2 to P6** of that feature.
+This module is the frontend for **phases P2 to P6** of that feature, plus the **fee
+configuration** screen and the ledger totals (2026-10-03).
 
 - **P2** gives the agent three sections on the Settings page (office, assistant, payment
   method) and gives the **Hierarchy Assistant** — the SEVC's assistant, holder of
@@ -47,6 +48,13 @@ This module is the frontend for **phases P2 to P6** of that feature.
   linking to its page, plus the SMDs whose payout account is not set up), **SEVC totals**
   by month with a range and CSV, **manual ledger adjustments**, and **Void** on an
   invoice (payments dashboard and admin agent statement).
+- **Fee configuration (2026-10-03)** gives admins **Fee Settings**: the effective-dated fee
+  table (MD / SMD × with / without an approved office), scheduling a price change from a
+  future 1st of the month, removing a scheduled one, the billing settings (go-live month,
+  self-pay due day, re-verification window, assistant verification deadline), and the
+  change history — every change with a required reason. Readers (`:review`,
+  `:payout_approve`) see it read-only. The SMD ledger gains lifetime totals with MD fees
+  from own MDs and rolled up from downline SMDs shown apart.
 
 ## 2. Scope
 
@@ -74,10 +82,13 @@ This module is the frontend for **phases P2 to P6** of that feature.
   detail, approve, retry, CSV.
 - Overview at `/admin/plugin-fees`; SEVC totals at `/admin/plugin-fees/sevc-totals`; ledger
   adjustments at `/admin/plugin-fees/adjustments`; Void on invoices.
+- Fee settings at `/admin/plugin-fees/settings`: fee table, schedule / remove a price
+  change, billing settings, change history, price history; ledger totals on statements.
 
 **Explicitly out of scope**
-- Fee configuration — pending backend. Editing a cost, editing or deleting an adjustment,
-  refunds — not in the contract.
+- Editing a cost, editing or deleting an adjustment, refunds — not in the contract.
+- Changing a price already in force — the backend forbids it by design; schedule a new
+  price from a future month instead.
 - The website subscription and its billing portal — [settings](../settings/).
 - Any server behaviour — `mlm_platform/docs/plugin_fees/`.
 
@@ -85,13 +96,13 @@ This module is the frontend for **phases P2 to P6** of that feature.
 
 | | |
 |---|---|
-| Routes | 10 + 3 sections on `/settings` |
-| Pages | 10 |
-| Components | 57 named component functions in 22 component files (recounted for P5/P6); plus a few local to pages |
-| Hooks | 40 (one file, incl. `useDebouncedValue`) |
+| Routes | 11 + 3 sections on `/settings` |
+| Pages | 11 |
+| Components | 68 named component functions in 26 component files (recounted 2026-10-03); plus a few local to pages |
+| Hooks | 46 (one file, incl. `useDebouncedValue`) |
 | Services | 1 |
-| Endpoints consumed | 39 |
-| LOC (ts/tsx) | ~9400 |
+| Endpoints consumed | 45 |
+| LOC (ts/tsx) | ~10850 |
 | Doc tier | Full |
 
 ## 4. Domain vocabulary
@@ -105,6 +116,8 @@ This module is the frontend for **phases P2 to P6** of that feature.
 | Re-verification | Quarterly check of a verified assistant; the window opens 14 days before `reverify_due` (`reverify_open`) |
 | Hierarchy Assistant | The reviewer role; capability `plugin_fees:review` |
 | Rates | `with_office_cents` / `without_office_cents` for the next cycle, integer cents |
+| Fee schedule | Effective-dated prices per level × office; a price starts on a 1st of the month, never changes once in force, and each cycle freezes the price it used |
+| Go-live month | The first billed month; the only one that waits for approval. Locked once any cycle is approved (`go_live_locked`) |
 | Statement of account | An agent's invoices (and, for SMDs, ledger) — spec D16 |
 | Invoice status | `draft` "Scheduled" · `no_charge` "Nothing to pay" · `open` (due / charge scheduled / retrying) · `processing` (bank payment in flight, ~4 business days) · `paid` · `failed` (retries exhausted or reversed; can still pay now) · `void` |
 | Collection | `automatic` (charged on the 1st, retried on failure) or `self_pay` (payment link, due by `due_date`) — D19b |
@@ -134,8 +147,8 @@ This module is the frontend for **phases P2 to P6** of that feature.
 **Downstream (imports this module)**
 - `src/features/settings/pages/settings-page.tsx:1548` — renders `PluginFeesSettingsSections`.
 - `src/router/plugin-fees-review-route.tsx` — `PluginFeesAccessRoute` (predicate guard) and
-  `PluginFeesReviewRoute`; `src/router/index.tsx` — the ten routes.
-- `src/hooks/use-role-based-menu.ts` — `my-access/` feeds nine menu entries (seven
+  `PluginFeesReviewRoute`; `src/router/index.tsx` — the eleven routes.
+- `src/hooks/use-role-based-menu.ts` — `my-access/` feeds ten menu entries (seven
   positional flags) through the predicates in `utils/plugin-fees-access.ts`.
 - `@/shared/components` — `UserAutocompleteDropdown` (cost SMD / recipient pickers);
   `ConfirmationDialog` gained `confirmDisabled`.
@@ -144,7 +157,7 @@ This module is the frontend for **phases P2 to P6** of that feature.
 - `plugin_fees` — `/api/plugin-fees/my-access/`, `me/…`, `review/…`, `agents/…`,
   `cycles/…`, `costs/…`, `payments/`, `follow-ups/…`, `balances/`, `me/invoices/…`,
   `me/connect/…`, `payouts/…`, `dashboard/`, `sevc-totals/`, `adjustments/`,
-  `invoices/{id}/void/`. Contract:
+  `invoices/{id}/void/`, `fee-schedule/…`, `settings/`, `config-history/`. Contract:
   `mlm_platform/docs/plugin_fees/API.md`.
 
 **External**
