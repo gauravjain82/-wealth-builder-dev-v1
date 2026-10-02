@@ -4,12 +4,12 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/settings`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.4 |
-| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
+| **Status** | Merged-not-deployed — P2–P6 merged to `main` via PR #18 (`e91e5a5`); not deployed. Fee configuration + ledger split (2026-10-03) on branch `feature/plugin-fees-config`, uncommitted. Nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` yet |
+| **Doc version** | 0.5 |
+| **Verified against** | `main` at `f8b0a78` (P2–P6, merged via PR #18) plus the uncommitted `feature/plugin-fees-config` working tree (fee configuration, ledger totals) — 2026-10-03 |
 
 ## 1. Layering
 
@@ -25,6 +25,7 @@ Page/component → hook → service → API, as everywhere else
 | Utils | `utils/plugin-fees-access.ts` | One predicate per surface over `my-access/`; shared by guards, menu and pages |
 | Utils | `utils/plugin-fees-payment.ts` | P4: an invoice's payment state in words (`describePayment`), overdue / retrying, failure codes, paid-via labels; P6 `isVoidable` |
 | Utils | `utils/plugin-fees-payout.ts` | P5: Connect / payout / payout-line status wording, `requirements_due` in plain words, retryability, quarters (`lastEndedQuarter`, `formatQuarter`) |
+| Utils | `utils/plugin-fees-fee-schedule.ts` | Fee configuration: cell keys and labels, upcoming / scheduled prices, a rate's standing, change-history field labels and values |
 | Components | `components/` | Never call `fetch` |
 | Pages | `pages/plugin-fees-review-page.tsx` | Composes `ReviewQueue` twice |
 | Pages | `pages/plugin-fees-statement-page.tsx`, `plugin-fees-agent-statement-page.tsx` | Fetch a statement, render `StatementView` |
@@ -35,6 +36,7 @@ Page/component → hook → service → API, as everywhere else
 | Pages | `pages/plugin-fees-overview-page.tsx` | `dashboard/` as linked cards |
 | Pages | `pages/plugin-fees-sevc-totals-page.tsx` | Range (URL), table, grand totals, CSV |
 | Pages | `pages/plugin-fees-adjustments-page.tsx` | List, SMD filter, paging; embeds `AdjustmentForm` |
+| Pages | `pages/plugin-fees-settings-page.tsx` | Fee schedule, billing settings, change history; edit controls for `can_manage` only |
 
 ## 2. Component map
 
@@ -108,6 +110,12 @@ and Pay now (own statement only, passed as `payNow`).
 /admin/plugin-fees/sevc-totals → PluginFeesAccessRoute(manage|review) → PluginFeesSevcTotalsPage
 /admin/plugin-fees/adjustments → PluginFeesAccessRoute(manage) → PluginFeesAdjustmentsPage
 └── AdjustmentForm (components/adjustments/adjustment-form.tsx)   confirmation dialog
+
+/admin/plugin-fees/settings → PluginFeesAccessRoute(manage|review|payout_approve) → PluginFeesSettingsPage
+├── FeeTable, ScheduledChanges (+ RemoveRateDialog, manage), PriceHistory   (fee-settings/fee-schedule-tables.tsx)
+├── ScheduleChangeForm (manage)   confirmation dialog                      (fee-settings/schedule-change-form.tsx)
+├── BillingSettingsForm (manage) | BillingSettingsView                     (fee-settings/billing-settings-form.tsx)
+└── ConfigHistoryTable                                                     (fee-settings/config-history-table.tsx)
 
 VoidInvoiceDialog (components/invoices/void-invoice-dialog.tsx) is rendered by the
 payments page (PaymentsTable `onVoid`) and the agent statement page (StatementView
@@ -242,6 +250,12 @@ dashboard — not balances (PF44). `409 not_voidable` → warning toast.
 | `['plugin-fees','dashboard']` | `useDashboard` | 30 s | app default | prepare / approve / retry payout, `useCreateAdjustment`, `useVoidInvoice` |
 | `['plugin-fees','sevc-totals',from,to]` | `useSevcTotals` | 60 s | app default | — |
 | `['plugin-fees','adjustments',{smd,page}]` | `useAdjustments` | 30 s | app default | `useCreateAdjustment` (prefix `['plugin-fees','adjustments']`) |
+| `['plugin-fees','fee-schedule']` | `useFeeSchedule` | 30 s | app default | `useScheduleFeeChange`, `useDeleteFeeRate` (set from response, then invalidated) |
+| `['plugin-fees','settings']` | `useBillingSettings` | 30 s | app default | `useUpdateBillingSettings` (set from response, then invalidated) |
+| `['plugin-fees','config-history']` | `useConfigHistory` | 30 s | app default | every fee schedule and settings write |
+
+Fee schedule writes also invalidate `['plugin-fees','me']` and every cycle preview; a
+settings save also invalidates `['plugin-fees','me']` (PF51).
 
 P5/P6 also invalidate existing keys: every statement (prefix `['plugin-fees','statement']`)
 on approve / retry payout, adjustment and void; every payments month and follow-ups filter
@@ -325,6 +339,8 @@ on void.
 | SEVC totals route, menu "SEVC Totals" | `can_manage \|\| can_review` (`canSeeSevcTotals`) |
 | Adjustments route, menu "Adjustments", "Adjust ledger…" | `can_manage` (`canManageAdjustments`) |
 | Void | `can_manage` (`canVoidInvoices`) and status `draft`/`open`/`failed` (`isVoidable`) |
+| Fee settings route, menu "Fee Settings" | `can_manage \|\| can_review \|\| can_approve_payouts` (`canSeeFeeSettings`; the menu rides `canViewPluginFeeCycles`, PF48) |
+| Schedule / remove a price, save billing settings | `can_manage` (`canManageFeeSettings`) |
 
 All P3 routes use `PluginFeesAccessRoute({ allow })` — the same loader / redirect as the
 review guard, which is now a thin wrapper over it. Menu entries arrive through positional

@@ -15,7 +15,7 @@ interface PluginFeesAccessRouteProps {
  * Route guard for every plug-in fees page, parameterised by a predicate over
  * `/api/plugin-fees/my-access/` — the statement (`is_billable`), the review queues
  * (`can_review`), billing cycles, costs, payments, the agent statement lookup, and (P5/P6)
- * the overview, payouts, SEVC totals and adjustments.
+ * the overview, payouts, SEVC totals and adjustments, and the fee settings page.
  *
  * While the check is in flight we render a loader; anyone the predicate refuses (or for
  * whom `my-access/` fails) is redirected to /home. This decides rendering only — every

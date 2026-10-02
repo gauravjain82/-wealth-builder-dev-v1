@@ -4,14 +4,15 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/settings`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.4 |
-| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
+| **Status** | Merged-not-deployed — P2–P6 merged to `main` via PR #18 (`e91e5a5`); not deployed. Fee configuration + ledger split (2026-10-03) on branch `feature/plugin-fees-config`, uncommitted. Nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` yet |
+| **Doc version** | 0.5 |
+| **Verified against** | `main` at `f8b0a78` (P2–P6, merged via PR #18) plus the uncommitted `feature/plugin-fees-config` working tree (fee configuration, ledger totals) — 2026-10-03 |
 
-**Authority:** `mlm_platform/docs/plugin_fees/API.md` (contract v0.1: P2 §1–4, P3 §5, P4 §6, P5 §7, P6 §8). This file records
+**Authority:** `mlm_platform/docs/plugin_fees/API.md` (contract v0.1: P2 §1–4, P3 §5, P4 §6, P5 §7, P6 §8;
+plus the fee configuration endpoints and `ledger.totals`, added 2026-10-03). This file records
 what the frontend sends and reads; it does not restate server behaviour.
 
 ## 1. Conventions
@@ -70,6 +71,16 @@ what the frontend sends and reads; it does not restate server behaviour.
 | GET | `adjustments/?smd=&page=` | `fetchAdjustments` | `useAdjustments` | Adjustments list |
 | POST | `adjustments/` | `createAdjustment` | `useCreateAdjustment` | Adjustment form |
 | POST | `invoices/{id}/void/` | `voidInvoice` | `useVoidInvoice` | Void dialog (payments, agent statement) |
+| GET | `fee-schedule/` | `fetchFeeSchedule` | `useFeeSchedule` | Fee settings → fee table, scheduled changes, price history, schedule form |
+| POST | `fee-schedule/` | `scheduleFeeChange` | `useScheduleFeeChange` | Fee settings → Schedule a price change |
+| DELETE (JSON body) | `fee-schedule/{id}/` | `deleteFeeRate` | `useDeleteFeeRate` | Fee settings → scheduled change Remove |
+| GET | `settings/` | `fetchBillingSettings` | `useBillingSettings` | Fee settings → Billing settings |
+| PATCH | `settings/` | `updateBillingSettings` | `useUpdateBillingSettings` | Fee settings → Billing settings form |
+| GET | `config-history/` | `fetchConfigHistory` | `useConfigHistory` | Fee settings → Change history |
+
+Reads of `fee-schedule/`, `settings/` and `config-history/` need `:manage`, `:review` or
+`:payout_approve`; every write needs `:manage`. `me/statement/` and
+`agents/{id}/statement/` now also carry `ledger.totals` (below).
 
 ## 3. Payload types
 
@@ -103,6 +114,10 @@ All in `src/features/plugin-fees/types/index.ts`, mirroring the contract:
 | `SevcMonthTotal` | `sevc-totals/` | a `DashboardSevcTotal` + `month`, `total_cents` |
 | `LedgerAdjustment` | `adjustments/` | `agent` assumed `ReviewAgent`; `invoice_id`, `created_by` nullable |
 | `PaymentRow` | void response | typed as a payments row; unused (everything refetches) |
+| `LedgerTotals` | statements, `ledger.totals?` | lifetime signed sums per `LedgerEntryType` (`md_credit_own`, `md_credit_rollup`, `smd_fee`, `costs`, `charge_collected`, `payout`, `reversal`, `adjustment`); **optional** — absent from older payloads, the summary is then hidden |
+| `FeeSchedule`, `FeeMatrixCell`, `FeeRate`, `FeeLevelCode` | `fee-schedule/` (GET, and the POST / DELETE response) | `today`, `next_cycle_month`, `earliest_effective_from`, `billed_levels`; `matrix` (4 cells) with `current` / `next_cycle` nullable and `scheduled[]`; `rows` newest `effective_from` first; `created_by_name`, `created_at` nullable |
+| `PluginFeesBillingSettings` | `settings/` (GET, PATCH response) | `go_live_month`, `assistant_verification_deadline`, `updated_at` nullable; `go_live_locked` |
+| `ConfigHistory`, `ConfigHistoryEntry` | `config-history/` | `{results}` newest first, max 50; `actor_name`, `source` nullable; `changes: {field: {old, new}}` with `unknown` values |
 
 **Request bodies**
 
@@ -125,6 +140,9 @@ All in `src/features/plugin-fees/types/index.ts`, mirroring the contract:
 | `payouts/{quarter}/lines/{id}/retry/` | no body |
 | `adjustments/` (POST) | `{ smd_id, amount_cents, note }` plus `invoice_id` only when given; `amount_cents` signed, non-zero, from direction × dollar text |
 | `invoices/{id}/void/` | `{ "note": str }` — required, trimmed, never sent blank |
+| `fee-schedule/` (POST) | `{ effective_from: "YYYY-MM", reason, rates: [{ level_code, with_office, amount_cents }] }` — `reason` required and trimmed; only the rates whose amount differs from the cell's `next_cycle` are sent (1–4); cents parsed from the dollar text, never via floats |
+| `fee-schedule/{id}/` (DELETE) | `{ "reason": str }` — required; sent as a JSON body on the DELETE |
+| `settings/` (PATCH) | `{ reason, …changed fields only }` — any of `go_live_month` (`YYYY-MM` or `null` when cleared), `self_pay_due_day` (1–28), `reverify_window_days` (1–90), `assistant_verification_deadline` (`YYYY-MM-DD` or `null`); `go_live_month` never sent while `go_live_locked` |
 
 ## 4. Query parameters
 
@@ -179,6 +197,14 @@ Previous / Next from `previous` / `next` rather than computing a page count.
 | `not_retryable` | 409 | retry payout line | warning toast, report refetches |
 | `validation_error` (`fields`) | 400 | adjustment | `fields` mapped to inputs (`smd_id`, `amount_cents`, `note`, `invoice_id`); form error + toast |
 | `not_voidable` | 409 | void | warning toast, dialog closes; everything refetches on settle |
+| `reason_required` | 400 | schedule price, remove price, save settings | prevented client-side; shown on the reason field + toast if it happens |
+| `validation_error` (`fields`) | 400 | schedule price | `effective_from`, `reason` → their inputs; `rates[i]…` → the price input of the i-th **sent** rate; `rates` → under the form |
+| `effective_from_not_future` | 400 | schedule price | `detail` on the month input + form error + toast |
+| `cycle_exists` | 409 | schedule price, remove price | form error + warning toast (schedule); warning toast, dialog closes (remove); the schedule refetches on settle |
+| `conflict` | 409 | schedule price | form error + warning toast; the schedule refetches on settle |
+| `not_found`, `rate_started` | 404, 409 | remove price | warning toast, dialog closes; the schedule refetches |
+| `validation_error` (`fields`) | 400 | save settings | `fields` mapped to the inputs; form error + toast |
+| `go_live_locked` | 409 | save settings | `detail` on the go-live input + warning toast (the input is disabled while `go_live_locked`, so only a race reaches this) |
 
 **Stripe return.** `pay-link` sends the agent to Stripe, which returns to
 `/plugin-fees/statement?fee_pay=success|cancelled`; `onboarding-link` to Stripe Connect,

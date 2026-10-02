@@ -1,5 +1,5 @@
 /**
- * React Query hooks for the plug-in fees P2–P6 surfaces.
+ * React Query hooks for the plug-in fees P2–P6 surfaces and the fee configuration screen.
  *
  * Query keys carry the full selection (status, search, page) and every `queryFn`
  * forwards React Query's `signal` into `fetch`, as in
@@ -21,15 +21,19 @@ import {
   decideAssistant,
   decideOffice,
   deleteCost,
+  deleteFeeRate,
   fetchAdjustments,
   fetchAgentStatement,
   fetchAssistantReviews,
   fetchBalances,
+  fetchBillingSettings,
+  fetchConfigHistory,
   fetchCosts,
   fetchCyclePreview,
   fetchCycleReport,
   fetchCycles,
   fetchDashboard,
+  fetchFeeSchedule,
   fetchFollowUps,
   fetchMyConnect,
   fetchMyPluginFees,
@@ -43,10 +47,12 @@ import {
   preparePayout,
   resolveFollowUp,
   retryPayoutLine,
+  scheduleFeeChange,
   sendCycle,
   setPaymentPreference,
   submitAssistant,
   submitOffice,
+  updateBillingSettings,
   voidInvoice,
   withdrawAssistant,
   withdrawOffice,
@@ -113,6 +119,9 @@ export const pluginFeesKeys = {
   adjustmentsAll: ['plugin-fees', 'adjustments'] as const,
   adjustments: (query: AdjustmentsQuery) =>
     ['plugin-fees', 'adjustments', { smd: query.smd, page: query.page }] as const,
+  feeSchedule: ['plugin-fees', 'fee-schedule'] as const,
+  billingSettings: ['plugin-fees', 'settings'] as const,
+  configHistory: ['plugin-fees', 'config-history'] as const,
 };
 
 /** What the current user may do with plug-in fees. Drives the menu, guard and Settings sections. */
@@ -568,6 +577,92 @@ export function useVoidInvoice() {
         queryClient.invalidateQueries({ queryKey: pluginFeesKeys.statementsAll }),
         queryClient.invalidateQueries({ queryKey: pluginFeesKeys.followUpsAll }),
         queryClient.invalidateQueries({ queryKey: pluginFeesKeys.dashboard }),
+      ]),
+  });
+}
+
+/* --- fee configuration (2026-10-03) ----------------------------------------- */
+
+export function useFeeSchedule(enabled = true) {
+  return useQuery({
+    queryKey: pluginFeesKeys.feeSchedule,
+    queryFn: ({ signal }) => fetchFeeSchedule(signal),
+    enabled,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useBillingSettings(enabled = true) {
+  return useQuery({
+    queryKey: pluginFeesKeys.billingSettings,
+    queryFn: ({ signal }) => fetchBillingSettings(signal),
+    enabled,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useConfigHistory(enabled = true) {
+  return useQuery({
+    queryKey: pluginFeesKeys.configHistory,
+    queryFn: ({ signal }) => fetchConfigHistory(signal),
+    enabled,
+    staleTime: 30 * 1000,
+  });
+}
+
+/**
+ * A fee schedule write changes the schedule, the history, the agents' own `rates` in
+ * `me/` and any cached cycle preview (it prices the next cycle).
+ */
+function useInvalidateFeeSchedule() {
+  const queryClient = useQueryClient();
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: pluginFeesKeys.feeSchedule }),
+      queryClient.invalidateQueries({ queryKey: pluginFeesKeys.configHistory }),
+      queryClient.invalidateQueries({ queryKey: pluginFeesKeys.me }),
+      queryClient.invalidateQueries({ queryKey: pluginFeesKeys.cyclePreviewAll }),
+    ]);
+}
+
+/** The response is the whole schedule: written into the cache, then refetched anyway. */
+export function useScheduleFeeChange() {
+  const queryClient = useQueryClient();
+  const invalidate = useInvalidateFeeSchedule();
+  return useMutation({
+    mutationFn: scheduleFeeChange,
+    ...NO_RETRY,
+    onSuccess: (schedule) => queryClient.setQueryData(pluginFeesKeys.feeSchedule, schedule),
+    onSettled: invalidate,
+  });
+}
+
+export function useDeleteFeeRate() {
+  const queryClient = useQueryClient();
+  const invalidate = useInvalidateFeeSchedule();
+  return useMutation({
+    mutationFn: deleteFeeRate,
+    ...NO_RETRY,
+    onSuccess: (schedule) => queryClient.setQueryData(pluginFeesKeys.feeSchedule, schedule),
+    onSettled: invalidate,
+  });
+}
+
+/**
+ * Billing settings feed the agent's own deadlines in `me/` (self-pay due day, the
+ * assistant verification deadline), so `me/` refetches too.
+ */
+export function useUpdateBillingSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateBillingSettings,
+    ...NO_RETRY,
+    onSuccess: (settings) => queryClient.setQueryData(pluginFeesKeys.billingSettings, settings),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.billingSettings }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.configHistory }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.me }),
       ]),
   });
 }

@@ -4,7 +4,9 @@
  * statements of account, billing cycles and recognition costs (P3, contract §5), and
  * collection — pay links, the payments dashboard, follow-ups, SMD balances and sending
  * (P4, contract §6), Stripe Connect and quarterly payouts (P5, §7), and the admin
- * overview, SEVC totals, manual adjustments and invoice voiding (P6, §8).
+ * overview, SEVC totals, manual adjustments and invoice voiding (P6, §8), and the fee
+ * configuration screen — the effective-dated fee schedule, billing settings and their
+ * change history (2026-10-03).
  *
  * Contract: `mlm_platform/docs/plugin_fees/API.md` (consumed endpoints are listed in
  * `docs/plugin-fees/API.md` §2). Every path ends in `/` — Django's APPEND_SLASH would
@@ -23,6 +25,7 @@ import type {
   AssistantReviewStatus,
   AssistantSubmission,
   AssistantSubmissionInput,
+  ConfigHistory,
   ConnectAccount,
   CostInput,
   CostsQuery,
@@ -30,6 +33,8 @@ import type {
   CycleSummary,
   DecisionInput,
   DeleteCostInput,
+  DeleteFeeRateInput,
+  FeeSchedule,
   FollowUp,
   FollowUpStatusFilter,
   LedgerAdjustment,
@@ -48,6 +53,7 @@ import type {
   PayoutSummary,
   PluginFeesDashboard,
   PluginFeesAccess,
+  PluginFeesBillingSettings,
   PluginFeesErrorCode,
   PluginFeesMe,
   PluginFeesPaymentMethod,
@@ -56,11 +62,13 @@ import type {
   ResolveFollowUpInput,
   RetryPayoutLineInput,
   ReviewQuery,
+  ScheduleFeeChangeInput,
   SendCycleResponse,
   SetupSessionResponse,
   SevcMonthTotal,
   SevcTotalsRange,
   SmdBalance,
+  UpdateBillingSettingsInput,
   VoidInvoiceInput,
 } from '../types';
 
@@ -150,7 +158,15 @@ function postJson<T>(path: string, body?: unknown): Promise<T> {
   });
 }
 
-/** A DELETE with a JSON body (the cost delete carries a required `reason`). */
+function patchJson<T>(path: string, body: unknown): Promise<T> {
+  return request<T>(path, {
+    method: 'PATCH',
+    headers: getJsonHeaders(),
+    body: JSON.stringify(body),
+  });
+}
+
+/** A DELETE with a JSON body (the cost and fee-rate deletes carry a required `reason`). */
 function deleteJson<T>(path: string, body: unknown): Promise<T> {
   return request<T>(path, {
     method: 'DELETE',
@@ -407,4 +423,36 @@ export function createAdjustment(input: AdjustmentInput): Promise<LedgerAdjustme
 /** Voids a `draft`, `open` or `failed` invoice. Never changes the ledger. */
 export function voidInvoice(input: VoidInvoiceInput): Promise<PaymentRow> {
   return postJson(`/invoices/${input.id}/void/`, { note: input.note });
+}
+
+/* --- fee configuration (2026-10-03) ----------------------------------------- */
+
+export function fetchFeeSchedule(signal?: AbortSignal): Promise<FeeSchedule> {
+  return getJson('/fee-schedule/', signal);
+}
+
+/**
+ * Schedules new prices from a future 1st of the month; only the changed rates are sent.
+ * Answers the whole schedule. A price already in force never changes.
+ */
+export function scheduleFeeChange(input: ScheduleFeeChangeInput): Promise<FeeSchedule> {
+  return postJson('/fee-schedule/', input);
+}
+
+/** Removes a scheduled price that has not started. Answers the whole schedule. */
+export function deleteFeeRate(input: DeleteFeeRateInput): Promise<FeeSchedule> {
+  return deleteJson(`/fee-schedule/${input.id}/`, { reason: input.reason });
+}
+
+export function fetchBillingSettings(signal?: AbortSignal): Promise<PluginFeesBillingSettings> {
+  return getJson('/settings/', signal);
+}
+
+/** Sends the reason plus only the changed fields. */
+export function updateBillingSettings(input: UpdateBillingSettingsInput): Promise<PluginFeesBillingSettings> {
+  return patchJson('/settings/', input);
+}
+
+export function fetchConfigHistory(signal?: AbortSignal): Promise<ConfigHistory> {
+  return getJson('/config-history/', signal);
 }

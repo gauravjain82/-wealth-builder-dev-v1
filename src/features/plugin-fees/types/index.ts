@@ -322,10 +322,18 @@ export interface LedgerEntry {
   balance_cents: number;
 }
 
+/**
+ * Lifetime sums of the ledger by entry type, signed like the entries (credits positive,
+ * debits negative). Added with the fee configuration work (2026-10-03).
+ */
+export type LedgerTotals = Record<LedgerEntryType, number>;
+
 export interface StatementLedger {
   /** Positive: owed to the SMD (paid out quarterly). Negative: the SMD owes. */
   balance_cents: number;
   entries: LedgerEntry[];
+  /** Absent from payloads served before the fee configuration work — guard for it. */
+  totals?: LedgerTotals;
 }
 
 /** `GET /api/plugin-fees/me/statement/` */
@@ -781,6 +789,113 @@ export interface VoidInvoiceInput {
   note: string;
 }
 
+/* --- fee configuration (2026-10-03) ---------------------------------------- */
+
+/** The billed levels; the fee schedule prices each with and without an approved office. */
+export type FeeLevelCode = 'MD' | 'SMD';
+
+/** One effective-dated price. Never changes once `started` (in force). */
+export interface FeeRate {
+  id: number;
+  level_code: FeeLevelCode;
+  with_office: boolean;
+  amount_cents: number;
+  /** `YYYY-MM-DD`, always the 1st of a month. */
+  effective_from: string;
+  note: string;
+  /** True once `effective_from` is today or past: the price is (or was) in force. */
+  started: boolean;
+  created_by_name: string | null;
+  created_at: string | null;
+}
+
+/** One cell of the 2×2 fee table (MD/SMD × with/without office). */
+export interface FeeMatrixCell {
+  level_code: FeeLevelCode;
+  with_office: boolean;
+  current: FeeRate | null;
+  /** The price the next cycle will use. */
+  next_cycle: FeeRate | null;
+  /** Future prices, not yet in force. */
+  scheduled: FeeRate[];
+}
+
+/** `GET fee-schedule/`; also the body of a successful POST or DELETE. */
+export interface FeeSchedule {
+  /** `YYYY-MM-DD` */
+  today: string;
+  /** `YYYY-MM` */
+  next_cycle_month: string;
+  /** `YYYY-MM-DD` — the earliest 1st of a month a new price may start on. */
+  earliest_effective_from: string;
+  billed_levels: FeeLevelCode[];
+  matrix: FeeMatrixCell[];
+  /** Full history, newest `effective_from` first. */
+  rows: FeeRate[];
+}
+
+export interface FeeRateInput {
+  level_code: FeeLevelCode;
+  with_office: boolean;
+  amount_cents: number;
+}
+
+/** `POST fee-schedule/`. Rates left out keep their price; a same-date schedule is replaced. */
+export interface ScheduleFeeChangeInput {
+  /** `YYYY-MM` or `YYYY-MM-01` */
+  effective_from: string;
+  reason: string;
+  rates: FeeRateInput[];
+}
+
+/** `DELETE fee-schedule/{id}/` — only a rate that has not started. */
+export interface DeleteFeeRateInput {
+  id: number;
+  reason: string;
+}
+
+/** `GET settings/` */
+export interface PluginFeesBillingSettings {
+  /** `YYYY-MM` */
+  go_live_month: string | null;
+  self_pay_due_day: number;
+  reverify_window_days: number;
+  /** `YYYY-MM-DD` */
+  assistant_verification_deadline: string | null;
+  /** True once any cycle is approved: the go-live month can no longer move. */
+  go_live_locked: boolean;
+  updated_at: string | null;
+}
+
+/** `PATCH settings/`: a required reason plus only the fields that changed. */
+export interface UpdateBillingSettingsInput {
+  reason: string;
+  go_live_month?: string | null;
+  self_pay_due_day?: number;
+  reverify_window_days?: number;
+  assistant_verification_deadline?: string | null;
+}
+
+export type ConfigHistoryObject = 'fee' | 'settings';
+export type ConfigHistoryAction = 'create' | 'update' | 'delete';
+
+/** One row of `GET config-history/` (newest first, at most 50). */
+export interface ConfigHistoryEntry {
+  id: number;
+  at: string;
+  object: ConfigHistoryObject;
+  object_repr: string;
+  action: ConfigHistoryAction;
+  actor_name: string | null;
+  source: string | null;
+  reason: string;
+  changes: Record<string, { old: unknown; new: unknown }>;
+}
+
+export interface ConfigHistory {
+  results: ConfigHistoryEntry[];
+}
+
 /* --- errors --------------------------------------------------------------- */
 
 /** The stable `code`s the P2–P6 contract documents. Unknown codes are passed through. */
@@ -805,4 +920,10 @@ export type PluginFeesErrorCode =
   | 'quarter_not_ended'
   | 'not_draft'
   | 'not_retryable'
-  | 'not_voidable';
+  | 'not_voidable'
+  | 'reason_required'
+  | 'effective_from_not_future'
+  | 'cycle_exists'
+  | 'conflict'
+  | 'rate_started'
+  | 'go_live_locked';

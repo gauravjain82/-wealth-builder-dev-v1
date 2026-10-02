@@ -4,12 +4,12 @@
 |---|---|
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
-| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
+| **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/settings`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
 | **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
-| **Status** | Merged-not-deployed — **not yet merged**: branch `feature/plugin-fees` (P2–P4 committed at `21294f1`, P5–P6 uncommitted); the backend counterpart is in development and nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` |
-| **Doc version** | 0.4 |
-| **Verified against** | commit `21294f1` (P2–P4) plus the uncommitted `feature/plugin-fees` working tree (P5 payouts + P6 admin remainder) — 2026-10-01 |
+| **Status** | Merged-not-deployed — P2–P6 merged to `main` via PR #18 (`e91e5a5`); not deployed. Fee configuration + ledger split (2026-10-03) on branch `feature/plugin-fees-config`, uncommitted. Nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` yet |
+| **Doc version** | 0.5 |
+| **Verified against** | `main` at `f8b0a78` (P2–P6, merged via PR #18) plus the uncommitted `feature/plugin-fees-config` working tree (fee configuration, ledger totals) — 2026-10-03 |
 
 Phase numbers follow the backend's plan for `plugin_fees` (P2 is §1–4, P3 is §5, P4 is §6,
 P5 is §7 and P6 is §8 of the contract in `mlm_platform/docs/plugin_fees/API.md`); do not
@@ -25,12 +25,14 @@ renumber.
 | 2026-10-01 | P4 contract (§6, collection) published; frontend P4 screens built on the same branch, backend P4 not yet built |
 | 2026-10-01 | P2–P4 frontend committed (`21294f1`) |
 | 2026-10-01 | P5 (§7, payouts / Stripe Connect) and P6 (§8, admin remainder) contract published; frontend P5 + P6 built on the same branch (uncommitted) while the backend builds them in parallel |
+| — | P5–P6 committed (`9cfa5db`); P2–P6 merged to `main` via PR #18 (`e91e5a5`). Not deployed |
+| 2026-10-03 | Backend adds fee configuration (`fee-schedule/`, `settings/`, `config-history/`) and `ledger.totals`; frontend Fee Settings page + ledger totals built on `feature/plugin-fees-config` (uncommitted) |
 
 ## 2. Phases
 
 ### P2 — Submissions, review queues, payment method
 
-**Status:** built, not merged, not deployed (backend in development in parallel).
+**Status:** merged to `main` (PR #18), not deployed.
 
 - Settings sections: office, assistant, payment method; Stripe setup-session return.
 - Review page with office and assistant queues.
@@ -40,8 +42,7 @@ renumber.
 
 ### P3 — Statements, billing cycles, recognition costs
 
-**Status:** built, not merged, not deployed (backend in development in parallel; not run
-against it).
+**Status:** merged to `main` (PR #18), not deployed.
 
 - Statement of account `/plugin-fees/statement` (`is_billable`): invoices with expandable
   lines; SMD balance and ledger with running balance, rolled-up MD credits tagged.
@@ -58,7 +59,7 @@ against it).
 
 ### P4 — Collection: Stripe, retries, self-pay, Klarna, follow-up
 
-**Status:** built, not merged, not deployed. Built from the contract alone: when it was
+**Status:** merged to `main` (PR #18), not deployed. Built from the contract alone: when it was
 written the backend had no P4 views yet (its `FeeInvoice` model still lacked
 `processing`), so nothing here has run against a server.
 
@@ -78,7 +79,7 @@ written the backend had no P4 views yet (its `FeeInvoice` model still lacked
 
 ### P5 — Quarterly payouts: Stripe Connect
 
-**Status:** built, not merged, not deployed. Built from contract §7 alone, in parallel with
+**Status:** merged to `main` (PR #18), not deployed. Built from contract §7 alone, in parallel with
 the backend; nothing here has run against a server.
 
 - "Get paid" on the SMD's own statement (`components/payouts/connect-panel.tsx`):
@@ -95,7 +96,7 @@ the backend; nothing here has run against a server.
 
 ### P6 — Admin dashboard remainder
 
-**Status:** built, not merged, not deployed. Built from contract §8 alone.
+**Status:** merged to `main` (PR #18), not deployed. Built from contract §8 alone.
 
 - Overview `/admin/plugin-fees` (`can_manage || can_review`), the landing menu entry
   (PF41): payments, follow-ups, verifications (deep-linked to the review queue, PF42),
@@ -108,6 +109,24 @@ the backend; nothing here has run against a server.
   statement.
 - Void (`can_manage`) on payments rows and admin agent statement invoices in `draft`,
   `open` or `failed` (PF44).
+
+### Fee configuration and ledger split (2026-10-03)
+
+**Status:** built on `feature/plugin-fees-config`, uncommitted, not merged, not deployed.
+Built from the backend's endpoint description alone; not run against a server.
+
+- Fee Settings `/admin/plugin-fees/settings` (`canSeeFeeSettings`: `can_manage ||
+  can_review || can_approve_payouts`; edits `can_manage`, `canManageFeeSettings`), menu
+  "Fee Settings" (PF48): fee table with upcoming prices, Schedule a price change (only
+  changed prices sent, confirmation old → new, PF49), Scheduled changes with Remove
+  (required reason), Billing settings (only changed fields sent, go-live locked, PF50),
+  Change history, collapsible Price history.
+- Statement ledger: "Totals, all time" tiles from `ledger.totals`, MD fees from own MDs
+  and rolled up from downline SMDs apart; hidden when `totals` is absent (PF52).
+- Service + hooks: `fetchFeeSchedule` / `scheduleFeeChange` / `deleteFeeRate`,
+  `fetchBillingSettings` / `updateBillingSettings` (the first PATCH in the module),
+  `fetchConfigHistory`; keys `['plugin-fees','fee-schedule' | 'settings' |
+  'config-history']`.
 
 ## 3. Decision log
 
@@ -160,6 +179,11 @@ the backend; nothing here has run against a server.
 | PF45 | Ledger rows keep the backend's `label` and `memo` and add a tag: `payout` "Payout" (green), `reversal` "Reversal" (red), `adjustment` "Manual adjustment" (blue); fallback labels only when `label` is empty | The backend already words payouts ("Quarterly payout sent (2026-Q4)"); a tag makes the three non-routine entry types scannable without rewriting server copy. The adjustment's note is expected in `memo` | `components/statement/statement-view.tsx` `LedgerDescription` |
 | PF46 | Payout approve / retry also invalidate every statement; an adjustment also invalidates `['plugin-fees','connect','me']` | Beyond the brief's list: a sent payout posts a `payout` ledger entry, and an adjustment changes the SMD's balance that "Get paid" shows | `hooks/use-plugin-fees.ts` `useInvalidatePayouts`, `useCreateAdjustment` |
 | PF47 | The agent statement's back link also honours `/admin/plugin-fees` itself (the overview), still nothing outside the module | PF32's `/admin/plugin-fees/…` prefix rejected the overview's own path | `pages/plugin-fees-agent-statement-page.tsx` `backTarget` |
+| PF48 | "Fee Settings" reuses the `canViewPluginFeeCycles` menu flag (no new positional flag); the route uses its own predicate `canSeeFeeSettings` | Its audience (`:manage`/`:review`/`:payout_approve`) is exactly the cycles audience; PF41's rule is flags follow audiences. A separate predicate keeps the route honest if the two ever diverge | `src/config/menu.ts`; `utils/plugin-fees-access.ts` |
+| PF49 | A price change compares each input with the cell's **`next_cycle`** price and sends only the differing ones; the confirmation shows `next_cycle` → new. A blank price input is an error when the cell has a price | The backend keeps the price of any rate left out, so sending all four would record no-op changes in the history. For a month later than an already scheduled change, "old" is still the next cycle's price, not the price in force just before the chosen month — the brief asked for `next_cycle`; revisit if admins schedule far ahead | `components/fee-settings/schedule-change-form.tsx` |
+| PF50 | Billing settings: the form remounts (`key = updated_at`) after a save or refetch; `go_live_month` is never sent while `go_live_locked`; a cleared month/date is sent as `null`. Readers see plain values, not disabled inputs | Remounting is the simplest way to show the stored values after a save. Disabled inputs for readers were rejected as implying they could be enabled | `components/fee-settings/billing-settings-form.tsx`; `pages/plugin-fees-settings-page.tsx` |
+| PF51 | Fee schedule writes put the returned schedule in the cache, then invalidate the schedule, the history, `me/` (the agent's `rates`) and every cycle preview; a settings save also invalidates `me/` (deadlines) | The POST/DELETE answer the whole schedule; `me/.rates` and a cached preview price the next cycle and would be stale | `hooks/use-plugin-fees.ts` |
+| PF52 | `ledger.totals` is typed optional and the tiles are hidden without it; "Other" = `charge_collected + reversal + adjustment` | Older payloads lack it; a zero row would misreport history. The three are folded per the brief to keep six tiles | `components/statement/statement-view.tsx` `LedgerTotalsGrid` |
 
 ## 4. Deliberately not built
 
@@ -207,5 +231,10 @@ the backend; nothing here has run against a server.
   counts by (shown as "This month"); whether `assistants_expiring_14d` is exactly the
   `reverify_due` queue (PF42); whether `me/connect/`.balance_cents equals the statement's
   ledger balance (assumed).
+- Fee configuration points to confirm with the backend: whether a rate's `note` is the
+  reason given when it was scheduled (shown as "Note"); whether `config-history` `changes`
+  ever carry non-scalar values (rendered as JSON); the vocabulary of `source` (shown as
+  "via *source*"); whether `rates[i]` field-error indices follow the request order
+  (assumed, PF49).
 - Run P5 / P6 against the backend once its §7–§8 views exist; Stripe Connect onboarding
   needs a test-mode Connect platform on the backend.

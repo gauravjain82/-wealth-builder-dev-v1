@@ -151,6 +151,13 @@ const MENU_ITEMS = {
     icon: '🎖️',
     path: '/admin/plugin-fees/costs',
   } as MenuItem,
+  // Plug-in fee schedule, billing settings and their change history, gated per-user by
+  // plugin_fees:manage, :review or :payout_approve (editing: :manage, inside the page).
+  PLUGIN_FEES_SETTINGS: {
+    label: 'Fee Settings',
+    icon: '🛠️',
+    path: '/admin/plugin-fees/settings',
+  } as MenuItem,
   // The agent's own plug-in fee statement; an active MD or SMD (my-access is_billable).
   PLUGIN_FEES_STATEMENT: {
     label: 'My Plug-in Fees',
@@ -738,7 +745,8 @@ export function getMenuForUser(
   canReviewPluginFees: boolean = false,
   // An active MD or SMD (my-access is_billable): their own statement of account.
   isPluginFeesBillable: boolean = false,
-  // plugin_fees:manage, :review or :payout_approve: the billing cycles screen.
+  // plugin_fees:manage, :review or :payout_approve: the billing cycles screen, and the
+  // fee settings screen (the same audience).
   canViewPluginFeeCycles: boolean = false,
   // plugin_fees:manage: recognition and mailing costs, and ledger adjustments.
   canManagePluginFees: boolean = false,
@@ -828,7 +836,8 @@ export function getMenuForUser(
   // The rest of the plug-in fees admin entries follow the review entry, each on its
   // own grant: cycles (manage, review or payout_approve), payments (manage or review),
   // payouts (manage, review or payout_approve), SEVC totals (manage or review), costs
-  // and adjustments (manage).
+  // and adjustments (manage), fee settings (manage, review or payout_approve — the
+  // cycles audience, so the cycles flag).
   const pluginFeesAdminEntries = [
     canViewPluginFeeCycles ? MENU_ITEMS.PLUGIN_FEES_CYCLES : null,
     canViewPluginFeePayments ? MENU_ITEMS.PLUGIN_FEES_PAYMENTS : null,
@@ -836,6 +845,7 @@ export function getMenuForUser(
     canViewPluginFeeOverview ? MENU_ITEMS.PLUGIN_FEES_SEVC_TOTALS : null,
     canManagePluginFees ? MENU_ITEMS.PLUGIN_FEES_COSTS : null,
     canManagePluginFees ? MENU_ITEMS.PLUGIN_FEES_ADJUSTMENTS : null,
+    canViewPluginFeeCycles ? MENU_ITEMS.PLUGIN_FEES_SETTINGS : null,
   ].filter(
     (entry): entry is MenuItem =>
       entry !== null && !menuItems.some((item) => item.label === entry.label)

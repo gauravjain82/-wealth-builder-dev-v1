@@ -13,6 +13,7 @@ import {
   canManageCosts,
   canSeeAgentStatements,
   canSeeCycles,
+  canSeeFeeSettings,
   canSeeOverview,
   canSeeOwnStatement,
   canSeePayments,
@@ -106,6 +107,9 @@ const PluginFeesSevcTotalsPage = lazy(
 );
 const PluginFeesAdjustmentsPage = lazy(
   () => import('@/features/plugin-fees/pages/plugin-fees-adjustments-page')
+);
+const PluginFeesSettingsPage = lazy(
+  () => import('@/features/plugin-fees/pages/plugin-fees-settings-page')
 );
 const HomeV2Page = lazy(
   () => import('@/features/home-v2/pages/home-v2-page')
@@ -442,6 +446,16 @@ const router = createBrowserRouter([
         element: (
           <PluginFeesAccessRoute allow={canManageAdjustments}>
             {lazyLoad(PluginFeesAdjustmentsPage)}
+          </PluginFeesAccessRoute>
+        ),
+      },
+      {
+        // Fee schedule, billing settings and their change history: plugin_fees:manage,
+        // :review or :payout_approve read; editing is further gated (:manage) inside.
+        path: 'admin/plugin-fees/settings',
+        element: (
+          <PluginFeesAccessRoute allow={canSeeFeeSettings}>
+            {lazyLoad(PluginFeesSettingsPage)}
           </PluginFeesAccessRoute>
         ),
       },

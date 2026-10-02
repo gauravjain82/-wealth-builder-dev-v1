@@ -97,6 +97,15 @@ export function parseDollarsToCents(value: string): number | null | 'invalid' {
   return Number.isSafeInteger(cents) ? cents : 'invalid';
 }
 
+/**
+ * Integer cents → the dollar text an admin edits (`25000` → `250.00`), the inverse of
+ * `parseDollarsToCents`. Built from integer parts, never through floating point.
+ */
+export function centsToDollarText(cents: number | null | undefined): string {
+  if (typeof cents !== 'number' || !Number.isSafeInteger(cents) || cents < 0) return '';
+  return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
+}
+
 function parseIsoDate(value: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return null;
@@ -207,6 +216,12 @@ const CODE_MESSAGES: Record<string, string> = {
   not_draft: 'This payout is no longer a draft — it was already approved.',
   not_retryable: 'This payout line can no longer be retried.',
   not_voidable: 'This invoice can no longer be voided — it may be paid or processing.',
+  reason_required: 'A reason is required.',
+  effective_from_not_future: 'A price change must start on the 1st of a future month.',
+  cycle_exists: 'A billing cycle already exists for that month or later, so its prices are frozen.',
+  conflict: 'Someone else changed this at the same time. Reload and try again.',
+  rate_started: 'That price is already in force and can no longer be removed.',
+  go_live_locked: 'A cycle has been approved, so the go-live month can no longer move.',
 };
 
 /**
