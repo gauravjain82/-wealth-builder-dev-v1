@@ -4,6 +4,7 @@ import { Badge, Button, Input, Text } from '@shared/components';
 // from the profile menu, so it lands in the entry chunk, and the barrel would
 // drag the whole events feature in with it.
 import { CheckinCameraScanner } from '@/features/events/components/checkin-camera-scanner';
+import { CheckinSuccessFlash } from '@/features/events/components/checkin-success-flash';
 import { isCameraScanSupported } from '@/features/events/utils/checkin-scan';
 import { bpmService } from '../services/bpm-service';
 import type { BPMQrScanResult } from '../types';
@@ -60,17 +61,19 @@ export function BpmQrScanPanel({ occurrenceId = null, onCheckedIn }: BpmQrScanPa
   const [busy, setBusy] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
+  const [flash, setFlash] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraSupported = isCameraScanSupported();
 
   const submit = useCallback(
-    async (raw: string) => {
+    async (raw: string, fromCamera = false) => {
       const scan = raw.trim();
       if (!scan || busy) return;
       setBusy(true);
       try {
         const result = await bpmService.scanQr(scan, occurrenceId);
         setOutcome({ kind: 'ok', result });
+        if (fromCamera && !result.duplicate) setFlash((n) => n + 1);
         setValue('');
         onCheckedIn?.(result);
       } catch (error) {
@@ -120,9 +123,10 @@ export function BpmQrScanPanel({ occurrenceId = null, onCheckedIn }: BpmQrScanPa
         <CheckinCameraScanner
           paused={busy}
           fallbackHint="Find the person in the check-in list instead."
-          onDetected={(payload) => void submit(payload)}
+          onDetected={(payload) => void submit(payload, true)}
         />
       ) : null}
+      <CheckinSuccessFlash trigger={flash} />
 
       {!cameraSupported ? (
         <Text variant="muted" className="text-xs">

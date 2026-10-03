@@ -108,6 +108,10 @@ A refund "refunds the payment (Stripe if applicable) and marks every ticket refu
 Scan or manual, stats, filters and export (`xlsx` / `pdf`). **A scan can be reversed** — an accidental
 scan is a normal operational event at a door, not an error state.
 
+A **camera** scan that records a new check-in flashes the whole screen green with a check mark for
+300 ms (`components/checkin-success-flash.tsx`), because the badge under the viewfinder went unseen. A
+duplicate does not flash; its amber "Already checked in" line stands. BPM's scanner shares the flash.
+
 ### 2.7 Post-sale screens
 
 | Page | Shows |

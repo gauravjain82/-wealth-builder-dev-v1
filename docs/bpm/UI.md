@@ -319,6 +319,10 @@ one name. Older payloads with only `label` still render.
 The camera viewfinder (shared with Events) follows orientation: 3:4 in portrait, 4:3 in
 landscape, capped at 60vh / 70vh so the controls under it stay on screen.
 
+A camera scan that checks somebody in flashes the whole screen green with a check mark for
+300 ms (`events/components/checkin-success-flash.tsx`, shared with Events; D25). A duplicate
+does not flash — its amber "Already checked in" line is the message.
+
 ### 2.12 Person details — `team/components/user-details-link.tsx`
 
 Every name on a BPM list opens a read-only **Details** modal loaded from
@@ -340,6 +344,7 @@ associates at shared BPMs, which the team-scoped accounts endpoint refused with 
 | Everyone arrived | every invited associate checked in | the Invited Associates panel says so instead of listing struck-through names |
 | Scan unavailable | no `BarcodeDetector`, `@zxing/browser` loading | the fallback scanner; guests can be taken by name meanwhile |
 | Scan resolved | `/qr/scan/` returned | an outcome line naming guest **or** associate |
+| Camera check-in recorded | a camera scan returned a new (not duplicate) check-in | a full-screen green with a check mark for 300 ms, then the outcome line (D25) |
 | Duplicate suspected | phone or email matched | the confirm dialog, not a block and not a silent merge |
 | Send report | after a send | per-guest outcomes; a repeat send is allowed |
 | Status override | `ARCHIVED`/`HIDDEN`/`CANCELLED`/`DELETED` | the override wins over the derived status in the badge |

@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { Badge, Button, Card, CardContent, Input, Text } from '@shared/components';
 import { CheckinCameraScanner } from './checkin-camera-scanner';
+import { CheckinSuccessFlash } from './checkin-success-flash';
 import { isCameraScanSupported } from '../utils/checkin-scan';
 import type { CheckinPayload, CheckinScanResult } from '../types/checkin';
 
@@ -41,16 +42,19 @@ export function CheckinScanBox({ onScan }: CheckinScanBoxProps) {
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
+  const [flash, setFlash] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraSupported = isCameraScanSupported();
 
   const submit = useCallback(
-    async (raw: string) => {
+    async (raw: string, fromCamera = false) => {
       const scan = raw.trim();
       if (!scan || busy) return;
       setBusy(true);
       try {
-        setOutcome({ kind: 'ok', attendee: await onScan({ scan }) });
+        const attendee = await onScan({ scan });
+        setOutcome({ kind: 'ok', attendee });
+        if (fromCamera && !attendee.duplicate) setFlash((n) => n + 1);
         setValue('');
       } catch (err) {
         setOutcome({
@@ -98,9 +102,10 @@ export function CheckinScanBox({ onScan }: CheckinScanBoxProps) {
           <CheckinCameraScanner
             paused={busy}
             fallbackHint="Type the ticket number instead."
-            onDetected={(payload) => void submit(payload)}
+            onDetected={(payload) => void submit(payload, true)}
           />
         ) : null}
+        <CheckinSuccessFlash trigger={flash} />
 
         {outcome ? (
           <div className={`rounded-lg border px-3 py-2 ${outcomeClass(outcome)}`}>
