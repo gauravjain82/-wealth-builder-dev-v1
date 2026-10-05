@@ -1,10 +1,13 @@
 import type { ReactNode } from 'react';
 import { ErrorState, Heading, LoadingState, Select, Text } from '@shared/components';
 import { useBigEventSelection } from '../hooks/use-big-event-selection';
+import type { BigEventScreen } from '../types/access';
 
 interface BigEventSurfaceProps {
   title: string;
   subtitle?: string;
+  /** The screen being shown: the picker lists only the events it opens for. */
+  screen: BigEventScreen;
   /** Rendered once an event is selected; receives the chosen event id. */
   children: (eventId: number) => ReactNode;
 }
@@ -14,8 +17,8 @@ interface BigEventSurfaceProps {
  * in-event pages (which read the id from the URL), these are event-agnostic: the
  * shell provides an event picker and hands the selected id to its child screen.
  */
-export function BigEventSurface({ title, subtitle, children }: BigEventSurfaceProps) {
-  const { events, selectedId, setSelectedId, loading, error } = useBigEventSelection();
+export function BigEventSurface({ title, subtitle, screen, children }: BigEventSurfaceProps) {
+  const { events, selectedId, setSelectedId, loading, error } = useBigEventSelection(screen);
 
   return (
     <div className="space-y-6">
@@ -50,7 +53,7 @@ export function BigEventSurface({ title, subtitle, children }: BigEventSurfacePr
       ) : error ? (
         <ErrorState description={error} />
       ) : selectedId == null ? (
-        <Text variant="muted">No events yet. Create one from Big Event Builder.</Text>
+        <Text variant="muted">No events here yet. Events you create, or are given access to, appear here.</Text>
       ) : (
         children(selectedId)
       )}

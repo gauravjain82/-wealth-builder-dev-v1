@@ -122,7 +122,8 @@ The canonical implementation is
 `useRoleBasedMenu` (`src/hooks/use-role-based-menu.ts`) takes the plan from `useAuth`,
 calls `getMenuForUser` to filter `config/menu.ts` by plan and role, then injects entries for
 each capability the backend reports — Builder AI, misalignments, products, the reporting
-pipeline, leaderboards, contest settings, guidance. Five `my-access` endpoints are read on
+pipeline, leaderboards, contest settings, guidance, and the Big Event group, whose children
+follow `GET /api/events/events/my-access/` ([events §6](../events/ARCHITECTURE.md#6-permissions-and-gating)). Five `my-access` endpoints are read on
 every authenticated page load (`builderai`, `misalignments`, `tracker/products`, `gms`,
 `wbreporting`), one request each; their long `staleTime` is what keeps that cheap.
 

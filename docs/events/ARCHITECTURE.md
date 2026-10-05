@@ -168,6 +168,22 @@ server-side, through two mechanisms:
 Per-event delegation is the interesting one: an event owner can grant somebody check-in rights for one
 event without giving them anything else. `/events/:id/access` is that screen.
 
+**Which screens show is decided by access, from either layer, never by role** (decision
+[E13](PHASES.md#3-decision-log)). `GET /api/events/events/my-access/` reports, per screen — builder,
+purchases, check-in, recognition, emails, questions, permissions — whether it opens for at least one
+event (`surfaces`), for every visible event (`global_surfaces`), and per delegated event
+(`delegations`). `hooks/use-events-access.ts` reads it with React Query, and three places use it:
+
+| Consumer | Uses |
+|---|---|
+| The sidebar's Big Event group (`config/menu.ts`) | `surfaces` — one child per open screen; no group if none |
+| The event picker on the cross-event pages (`BigEventSurface`) | sends `?surface=<screen>`, so the backend lists only the events that screen opens for |
+| `EventSubnav` | `global_surfaces` plus this event's `delegations` entry; *My tickets* always shows |
+
+A platform-wide grant counts whether it comes from a role, a level or a per-user override in
+**Admin → User Permissions**. The screen-to-grant mapping lives once, in the backend's
+`events.permissions.SURFACES`; the frontend never reimplements it.
+
 **The four public routes are outside `ProtectedRoute` entirely.** Their protection is: nothing for
 browsing, Stripe for payment, and email-plus-invoice-number (rate-limited) for ticket management.
 

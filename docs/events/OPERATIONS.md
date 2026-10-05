@@ -51,6 +51,12 @@ Authorization is server-side and has two layers:
 Per-event delegation is how a door volunteer gets check-in rights for one event and nothing else. The
 screen is `/events/:eventId/access`.
 
+**The sidebar follows both layers** (decision [E13](PHASES.md#3-decision-log)). Granting a delegate
+`CHECKIN` puts **Big Event → Check-in** in their sidebar; granting a platform-wide events permission —
+through a role, a level, or **Admin → User Permissions** — puts in every screen it opens. `my-access` is
+cached for five minutes, so the grantee sees the change on their next page load after that, or at once
+after a refresh.
+
 **The four public routes are ungated by design.** An event is meant to be shared; the protections are
 Stripe for money and email-plus-invoice-number (rate-limited) for ticket management.
 
@@ -116,6 +122,8 @@ Three deployment-time hazards, all about money:
 | The sales button is missing with no explanation | the page should render the `SalesState` reason | `SalesState.reason` |
 | A promo gave an unexpected total | the server prices it | the promo preview response, not client arithmetic |
 | A door volunteer can see too much | per-event permission scope | `/events/:eventId/access`; grant `CHECKIN` alone |
+| A user has a grant but no Big Event in the sidebar | `my-access` is cached for five minutes, or the grant is on another event | refresh; then `GET /api/events/events/my-access/` as that user |
+| A Broker lost the Big Event group | the group follows access now, not role (E13) | grant the events permissions to their role or level, or per user |
 | Scanning will not open the camera | not HTTPS, or an iOS in-app webview | expected; check in by name instead |
 | A mis-scan cannot be undone | undo exists | `checkin-service.ts:96` |
 | A blast went to the wrong people | audience is `holders`/`purchasers`/`owners` | preview recipients first; sends are not recallable |

@@ -1,3 +1,4 @@
+import type { EventsAccess } from '../types/access';
 import type { BigEvent, BigEventListItem, BigEventPayload, EventFilters, PaginatedResponse } from '../types/event';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -56,6 +57,11 @@ export const eventService = {
 
   get(id: number): Promise<BigEvent> {
     return request(`${EVENTS_BASE}/${id}/`);
+  },
+
+  /** Which Big Event screens the viewer can open, and for which events. */
+  myAccess(signal?: AbortSignal): Promise<EventsAccess> {
+    return request(`${EVENTS_BASE}/my-access/`, { signal });
   },
 
   create(payload: BigEventPayload): Promise<BigEvent> {

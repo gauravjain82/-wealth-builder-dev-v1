@@ -36,7 +36,9 @@ Only 4 commits touch this directory: the module arrived in large drops rather th
 
 Later refinements: event routing and `@types/qrcode` (2026-09-04), embedded rendering with menu changes
 (2026-09-06), and the QR scan work shared with BPM's Phase 8 including **the fallback decoder iOS needs**
-(2026-09-25).
+(2026-09-25). **Access-driven Big Event navigation** (2026-10-05, decision E13): the sidebar group, the
+event pickers and the in-event tabs follow access instead of role, so a per-event delegate can reach
+their event. Coupled with the `mlm_platform` branch of the same name, `feature/wb-big-event-access`.
 
 ## 2. Phases
 
@@ -106,6 +108,7 @@ From `EVENTS_CONTEXT.md` §"Key Design Decisions (Resolved)", verified against t
 | **E10** | **Prospect creation on assign goes through a lazy import** | Keeps the events app decoupled from BPM. The toggle is logged-in-only, since a public guest has no team to attach a prospect to |
 | E11 | One discount model: `discount_type` (`FLAT`/`PERCENTAGE`/`FIXED_PRICE`) + `discount_value`, plus `max_uses`/`current_uses` | Three promo shapes in one model rather than three models |
 | E12 | Invoice numbers are `{shortcut}-{padded counter}`, generated atomically | Human-readable and per-event, and the atomic counter is what makes them usable as half of E7's credential |
+| **E13** | **Big Event navigation follows access, from either layer, not role** — the sidebar group, the event pickers and `EventSubnav` read `my-access`; the event list includes delegated events | Chosen over the plan-based group Broker and above had (2026-10-05). The plan menu hid the group from an Agent or Leader delegated `CHECKIN`, and the picker's list required `events:view`, so a delegate the backend would serve had no way in but a hand-typed URL. Conversely a Broker with no events grant saw a group whose pages failed. The screen-to-grant map lives once, in the backend's `events.permissions.SURFACES` |
 
 ## 4. Deliberately not built
 

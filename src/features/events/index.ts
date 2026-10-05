@@ -15,6 +15,7 @@ export { useConfigList, type ConfigListApi } from './hooks/use-config-list';
 export { usePublicEvent } from './hooks/use-public-event';
 export { useEventCheckout, type CheckoutStage } from './hooks/use-event-checkout';
 export { useTicketClaim } from './hooks/use-ticket-claim';
+export { useEventsAccess, EVENTS_ACCESS_QUERY_KEY } from './hooks/use-events-access';
 
 // Components — builder
 export { EventBuilderShell } from './components/builder/event-builder-shell';
@@ -105,3 +106,4 @@ export type * from './types/config';
 export type * from './types/public';
 export type * from './types/reports';
 export type * from './types/checkin';
+export type * from './types/access';
