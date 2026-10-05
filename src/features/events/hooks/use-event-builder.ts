@@ -51,6 +51,19 @@ export function useEventBuilder(eventId: number) {
     [eventId],
   );
 
+  /** Publish or unpublish, replacing the event with the server's copy. */
+  const changeStatus = useCallback(
+    async (action: 'publish' | 'unpublish'): Promise<void> => {
+      setSaving(true);
+      try {
+        setEvent(await eventService[action](eventId));
+      } finally {
+        setSaving(false);
+      }
+    },
+    [eventId],
+  );
+
   const missingRequiredFields = useMemo(() => {
     if (!event) return [];
     return PUBLISH_REQUIRED_FIELDS.filter((field) => {
@@ -67,6 +80,7 @@ export function useEventBuilder(eventId: number) {
     activeTab,
     setActiveTab,
     saveTab,
+    changeStatus,
     missingRequiredFields,
   };
 }

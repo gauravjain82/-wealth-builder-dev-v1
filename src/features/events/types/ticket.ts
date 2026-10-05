@@ -15,6 +15,9 @@ export interface EventTicket {
   holder_phone: string;
   holder_user?: number | null;
   attributed_seller?: number | null;
+  /** The SMD this ticket is credited to, and their external team (if any). */
+  attributed_seller_name?: string;
+  attributed_seller_team?: string;
   custom_field_values?: Record<string, unknown>;
   current_owner_user: number | null;
   transfer_count: number;
@@ -30,12 +33,16 @@ export interface AssignHolderPayload {
   email: string;
   phone?: string;
   create_prospect?: boolean;
+  /** The SMD the holder is with — re-credits the ticket. */
+  attributed_seller_id?: number | null;
 }
 
 export interface TransferPayload {
   to_user_id?: number | null;
   to_email: string;
   to_label: string;
+  /** The SMD the recipient is with — re-credits the ticket. */
+  attributed_seller_id?: number | null;
 }
 
 export interface TicketHistory {

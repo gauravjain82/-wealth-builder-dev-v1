@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Card, CardContent, Text } from '@shared/components';
+import { Badge, Button, Card, CardContent, Text } from '@shared/components';
 import { useToastStore } from '@/store';
 import { formatPrice } from '../utils/public-pricing';
 import { orderService } from '../services/order-service';
@@ -148,6 +148,11 @@ export function ReportsPanel({
                           {row.display_name}
                           {row.agent_code ? (
                             <span className="ml-1 text-xs text-slate-500">{row.agent_code}</span>
+                          ) : null}
+                          {row.team_name ? (
+                            <Badge variant="outline" className="ml-2">
+                              {row.team_name}
+                            </Badge>
                           ) : null}
                         </td>
                         <td className="py-1.5">{row.ticket_count}</td>

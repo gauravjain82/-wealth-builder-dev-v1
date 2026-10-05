@@ -215,6 +215,7 @@ export function OrderDetailModal({
                       {sellers.map((seller) => (
                         <option key={seller.id} value={seller.id}>
                           {seller.display_name}
+                          {seller.team_name ? ` · ${seller.team_name}` : ''}
                         </option>
                       ))}
                     </Select>

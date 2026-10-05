@@ -11,7 +11,9 @@ export type BigEventScreen =
   | 'recognition'
   | 'emails'
   | 'questions'
-  | 'permissions';
+  | 'permissions'
+  /** The shared External Teams directory — not tied to one event (events:manage). */
+  | 'external_teams';
 
 export interface EventDelegation {
   event: number;

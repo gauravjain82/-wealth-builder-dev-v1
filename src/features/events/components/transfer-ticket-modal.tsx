@@ -12,6 +12,8 @@ import {
   UserAutocompleteDropdown,
 } from '@shared/components';
 import type { EventTicket, TransferPayload } from '../types/ticket';
+import { useEventSellers } from '../hooks/use-event-sellers';
+import { TicketSellerSelect } from './ticket-seller-select';
 
 interface TransferTicketModalProps {
   open: boolean;
@@ -23,7 +25,8 @@ interface TransferTicketModalProps {
 
 /**
  * Transfer ownership to a teammate (picked from the user directory) or an
- * off-platform email. Matches the backend `to_user_id` / `to_email` / `to_label`.
+ * off-platform email. Matches the backend `to_user_id` / `to_email` / `to_label`,
+ * plus the SMD the recipient is with (re-credits the ticket).
  */
 export function TransferTicketModal({
   open,
@@ -35,12 +38,15 @@ export function TransferTicketModal({
   const [toUserId, setToUserId] = useState<number | null>(null);
   const [toLabel, setToLabel] = useState('');
   const [toEmail, setToEmail] = useState('');
+  const [sellerId, setSellerId] = useState<number | null>(null);
+  const sellers = useEventSellers(ticket?.event, open);
 
   useEffect(() => {
     if (!open) return;
     setToUserId(null);
     setToLabel('');
     setToEmail('');
+    setSellerId(null);
   }, [open]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -49,6 +55,7 @@ export function TransferTicketModal({
       to_user_id: toUserId ?? undefined,
       to_email: toEmail.trim(),
       to_label: toLabel.trim(),
+      attributed_seller_id: sellerId,
     });
   };
 
@@ -95,6 +102,12 @@ export function TransferTicketModal({
             placeholder="Required if they are not a platform user"
           />
         </FormRow>
+        <TicketSellerSelect
+          sellers={sellers}
+          value={sellerId}
+          onChange={setSellerId}
+          label="Recipient's SMD"
+        />
         <FormActions>
           <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
             Cancel

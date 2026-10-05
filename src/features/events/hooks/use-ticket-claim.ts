@@ -9,7 +9,12 @@
 import { useCallback, useState } from 'react';
 
 import { publicEventService } from '../services/public-event-service';
-import type { ClaimProof, ClaimResult } from '../types/public';
+import type {
+  AssignHolderInput,
+  ClaimProof,
+  ClaimResult,
+  TransferRecipientInput,
+} from '../types/public';
 
 interface UseTicketClaimResult {
   /** The verified proof, or `null` before a successful claim. */
@@ -20,14 +25,8 @@ interface UseTicketClaimResult {
   pendingTicketId: number | null;
   error: string | null;
   lookup: (proof: ClaimProof) => Promise<boolean>;
-  assign: (
-    ticketId: number,
-    holder: { first_name: string; last_name: string; holder_email: string; phone?: string },
-  ) => Promise<boolean>;
-  transfer: (
-    ticketId: number,
-    recipient: { to_email: string; to_name?: string },
-  ) => Promise<boolean>;
+  assign: (ticketId: number, holder: AssignHolderInput) => Promise<boolean>;
+  transfer: (ticketId: number, recipient: TransferRecipientInput) => Promise<boolean>;
   signOut: () => void;
 }
 
@@ -87,15 +86,7 @@ export function useTicketClaim(shortcut: string): UseTicketClaimResult {
   );
 
   const assign = useCallback(
-    (
-      ticketId: number,
-      holder: {
-        first_name: string;
-        last_name: string;
-        holder_email: string;
-        phone?: string;
-      },
-    ) =>
+    (ticketId: number, holder: AssignHolderInput) =>
       mutate(
         ticketId,
         (verified) =>
@@ -110,7 +101,7 @@ export function useTicketClaim(shortcut: string): UseTicketClaimResult {
   );
 
   const transfer = useCallback(
-    (ticketId: number, recipient: { to_email: string; to_name?: string }) =>
+    (ticketId: number, recipient: TransferRecipientInput) =>
       mutate(
         ticketId,
         (verified) =>

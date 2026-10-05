@@ -7,12 +7,23 @@
  * someone else (which clears the holder, so the recipient names their own).
  * The transfer control is disabled from the policy flags the claim returned, so
  * the UI blocks exactly what `TicketService.transfer` would reject.
+ *
+ * Both forms ask which SMD the attendee / recipient is with: one SMD can buy
+ * many tickets and hand them to people from other SMDs (or external teams), and
+ * each ticket is credited to its holder's SMD.
  */
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import type { ClaimResult, PublicOrderTicket } from '../../types/public';
+import type {
+  AssignHolderInput,
+  ClaimResult,
+  PublicOrderTicket,
+  PublicSeller,
+  TransferRecipientInput,
+} from '../../types/public';
+import { SellerSelect } from './checkout-fields';
 import { PUBLIC_FIELD_CLASS } from '../../utils/public-brand';
 import { BrandButton, PublicCard, PublicField } from './public-event-shell';
 
@@ -35,19 +46,17 @@ type OpenForm = 'none' | 'assign' | 'transfer';
 interface ClaimedTicketRowProps {
   ticket: PublicOrderTicket;
   claim: ClaimResult;
+  /** The event's SMD list (empty when the event doesn't track sellers). */
+  sellers: PublicSeller[];
   busy: boolean;
-  onAssign: (holder: {
-    first_name: string;
-    last_name: string;
-    holder_email: string;
-    phone?: string;
-  }) => Promise<boolean>;
-  onTransfer: (recipient: { to_email: string; to_name?: string }) => Promise<boolean>;
+  onAssign: (holder: AssignHolderInput) => Promise<boolean>;
+  onTransfer: (recipient: TransferRecipientInput) => Promise<boolean>;
 }
 
 export function ClaimedTicketRow({
   ticket,
   claim,
+  sellers,
   busy,
   onAssign,
   onTransfer,
@@ -91,6 +100,11 @@ export function ClaimedTicketRow({
               ) : null}
             </div>
           ) : null}
+          {ticket.attributed_seller_name ? (
+            <div className="mt-1 text-xs text-slate-500 dark:text-white/50">
+              SMD: {ticket.attributed_seller_name}
+            </div>
+          ) : null}
         </div>
 
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -123,6 +137,7 @@ export function ClaimedTicketRow({
       {open === 'assign' ? (
         <AssignForm
           ticket={ticket}
+          sellers={sellers}
           busy={busy}
           onCancel={() => setOpen('none')}
           onSubmit={(holder) => handleDone(() => onAssign(holder))}
@@ -131,6 +146,7 @@ export function ClaimedTicketRow({
 
       {open === 'transfer' ? (
         <TransferForm
+          sellers={sellers}
           busy={busy}
           onCancel={() => setOpen('none')}
           onSubmit={(recipient) => handleDone(() => onTransfer(recipient))}
@@ -148,19 +164,16 @@ export function ClaimedTicketRow({
 
 function AssignForm({
   ticket,
+  sellers,
   busy,
   onCancel,
   onSubmit,
 }: {
   ticket: PublicOrderTicket;
+  sellers: PublicSeller[];
   busy: boolean;
   onCancel: () => void;
-  onSubmit: (holder: {
-    first_name: string;
-    last_name: string;
-    holder_email: string;
-    phone?: string;
-  }) => void;
+  onSubmit: (holder: AssignHolderInput) => void;
 }) {
   // Pre-fill from the current holder so "change attendee" is an edit, not a
   // re-entry.
@@ -168,8 +181,17 @@ function AssignForm({
   const [lastName, setLastName] = useState(ticket.holder_last_name);
   const [email, setEmail] = useState(ticket.holder_email);
   const [phone, setPhone] = useState(ticket.holder_phone);
+  // Only pre-select an SMD once someone has been named: a fresh ticket still
+  // carries the buyer's SMD, which may not be the attendee's.
+  const [sellerId, setSellerId] = useState<number | null>(
+    ticket.assignment_status === 'ASSIGNED' ? ticket.attributed_seller_id : null,
+  );
 
-  const incomplete = !firstName.trim() || !lastName.trim() || !email.trim();
+  const incomplete =
+    !firstName.trim() ||
+    !lastName.trim() ||
+    !email.trim() ||
+    (sellers.length > 0 && sellerId === null);
 
   return (
     <div className="mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-white/10">
@@ -209,6 +231,16 @@ function AssignForm({
             disabled={busy}
           />
         </PublicField>
+        <div className="sm:col-span-2">
+          <SellerSelect
+            sellers={sellers}
+            value={sellerId}
+            onChange={setSellerId}
+            disabled={busy}
+            label="Attendee's SMD"
+            hint="The SMD this person is with — their ticket is credited to them."
+          />
+        </div>
       </div>
       <FormActionsRow
         busy={busy}
@@ -221,6 +253,7 @@ function AssignForm({
             last_name: lastName.trim(),
             holder_email: email.trim(),
             phone: phone.trim() || undefined,
+            attributed_seller_id: sellerId,
           })
         }
       />
@@ -229,16 +262,19 @@ function AssignForm({
 }
 
 function TransferForm({
+  sellers,
   busy,
   onCancel,
   onSubmit,
 }: {
+  sellers: PublicSeller[];
   busy: boolean;
   onCancel: () => void;
-  onSubmit: (recipient: { to_email: string; to_name?: string }) => void;
+  onSubmit: (recipient: TransferRecipientInput) => void;
 }) {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [sellerId, setSellerId] = useState<number | null>(null);
 
   return (
     <div className="mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-white/10">
@@ -265,14 +301,28 @@ function TransferForm({
             disabled={busy}
           />
         </PublicField>
+        <div className="sm:col-span-2">
+          <SellerSelect
+            sellers={sellers}
+            value={sellerId}
+            onChange={setSellerId}
+            disabled={busy}
+            label="Recipient's SMD"
+            hint="The SMD the recipient is with — the ticket is credited to them."
+          />
+        </div>
       </div>
       <FormActionsRow
         busy={busy}
-        disabled={!email.trim()}
+        disabled={!email.trim() || (sellers.length > 0 && sellerId === null)}
         submitLabel="Transfer Ticket"
         onCancel={onCancel}
         onSubmit={() =>
-          onSubmit({ to_email: email.trim(), to_name: name.trim() || undefined })
+          onSubmit({
+            to_email: email.trim(),
+            to_name: name.trim() || undefined,
+            attributed_seller_id: sellerId,
+          })
         }
       />
     </div>

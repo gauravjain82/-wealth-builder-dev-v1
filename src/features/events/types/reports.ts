@@ -32,6 +32,8 @@ export interface SmdBreakdownRow {
   display_name: string;
   agent_code: string;
   level_code: string;
+  /** External team name; empty for our own leaders and the Unassigned row. */
+  team_name: string;
   order_count: number;
   ticket_count: number;
   total: string;

@@ -32,7 +32,12 @@ async function parseError(response: Response): Promise<string> {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: { ...authHeaders(init?.body !== undefined), ...init?.headers },
+    // FormData bodies must not carry a Content-Type: the browser sets the
+    // multipart boundary itself.
+    headers: {
+      ...authHeaders(init?.body !== undefined && !(init.body instanceof FormData)),
+      ...init?.headers,
+    },
   });
   if (!response.ok) throw new Error(await parseError(response));
   if (response.status === 204) return undefined as T;
@@ -86,6 +91,11 @@ export const eventService = {
     return request(`${EVENTS_BASE}/${id}/publish/`, { method: 'POST' });
   },
 
+  /** Take a published or archived event back to draft (hides the public page). */
+  unpublish(id: number): Promise<BigEvent> {
+    return request(`${EVENTS_BASE}/${id}/unpublish/`, { method: 'POST' });
+  },
+
   clone(id: number): Promise<BigEvent> {
     return request(`${EVENTS_BASE}/${id}/clone/`, { method: 'POST' });
   },
@@ -102,7 +112,6 @@ export const eventService = {
     return request(`${EVENTS_BASE}/${id}/upload/${fieldName}/`, {
       method: 'POST',
       body: formData,
-      headers: authHeaders(false),
     });
   },
 };

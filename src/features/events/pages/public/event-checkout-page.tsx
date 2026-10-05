@@ -168,7 +168,8 @@ function CheckoutForEvent({
   const formIncomplete =
     !purchaser.purchaser_first_name.trim() ||
     !purchaser.purchaser_last_name.trim() ||
-    !purchaser.purchaser_email.trim();
+    !purchaser.purchaser_email.trim() ||
+    (event.sellers.length > 0 && sellerId === null);
 
   return (
     <PublicEventShell
@@ -245,7 +246,7 @@ function CheckoutForEvent({
                   disabled={locked}
                 />
                 <SellerSelect
-                  event={event}
+                  sellers={event.sellers}
                   value={sellerId}
                   onChange={setSellerId}
                   disabled={locked}

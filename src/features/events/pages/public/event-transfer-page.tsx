@@ -18,6 +18,7 @@ import { useToastStore } from '@/store';
 import { usePublicEvent } from '../../hooks/use-public-event';
 import { useTicketClaim } from '../../hooks/use-ticket-claim';
 import { ClaimedTicketRow } from '../../components/public/claimed-ticket-row';
+import type { AssignHolderInput, TransferRecipientInput } from '../../types/public';
 import { PUBLIC_FIELD_CLASS } from '../../utils/public-brand';
 import {
   BrandButton,
@@ -34,15 +35,7 @@ export default function EventTransferPage() {
   const claimState = useTicketClaim(shortcut);
   const { claim, proof } = claimState;
 
-  const handleAssign = async (
-    ticketId: number,
-    holder: {
-      first_name: string;
-      last_name: string;
-      holder_email: string;
-      phone?: string;
-    },
-  ) => {
+  const handleAssign = async (ticketId: number, holder: AssignHolderInput) => {
     const ok = await claimState.assign(ticketId, holder);
     addToast(
       ok
@@ -52,10 +45,7 @@ export default function EventTransferPage() {
     return ok;
   };
 
-  const handleTransfer = async (
-    ticketId: number,
-    recipient: { to_email: string; to_name?: string },
-  ) => {
+  const handleTransfer = async (ticketId: number, recipient: TransferRecipientInput) => {
     const ok = await claimState.transfer(ticketId, recipient);
     addToast(
       ok
@@ -124,6 +114,7 @@ export default function EventTransferPage() {
                 key={ticket.id}
                 ticket={ticket}
                 claim={claim}
+                sellers={event?.sellers ?? []}
                 busy={claimState.pendingTicketId === ticket.id}
                 onAssign={(holder) => handleAssign(ticket.id, holder)}
                 onTransfer={(recipient) => handleTransfer(ticket.id, recipient)}
