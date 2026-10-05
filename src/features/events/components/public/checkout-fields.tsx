@@ -11,6 +11,7 @@ import type {
   CheckoutAddOnSpec,
   PromoPreview,
   PublicEvent,
+  PublicSeller,
 } from '../../types/public';
 import type { EventCustomField } from '../../types/config';
 import { PUBLIC_FIELD_CLASS } from '../../utils/public-brand';
@@ -115,43 +116,76 @@ export function PurchaserFields({
 }
 
 /**
- * Attribution selector ("who referred you").
+ * Split sellers into our own leaders (team `''`, listed first and ungrouped) and
+ * one group per external team, in the order each team first appears.
+ */
+function groupSellersByTeam(
+  sellers: PublicSeller[],
+): Array<{ team: string; sellers: PublicSeller[] }> {
+  const groups = new Map<string, PublicSeller[]>([['', []]]);
+  for (const seller of sellers) {
+    const team = seller.team_name || '';
+    groups.set(team, [...(groups.get(team) ?? []), seller]);
+  }
+  return [...groups].map(([team, list]) => ({ team, sellers: list }));
+}
+
+function SellerOption({ seller }: { seller: PublicSeller }) {
+  return (
+    <option value={seller.id}>
+      {seller.display_name}
+      {seller.agent_code ? ` (${seller.agent_code})` : ''}
+    </option>
+  );
+}
+
+/**
+ * "Which SMD are you with?" — asked at checkout, and again when a ticket is
+ * assigned or transferred, so every ticket is credited to its holder's SMD.
+ * Leaders from external teams are grouped under their team name so people from
+ * other teams can find their SMD.
  *
  * Renders nothing when the event doesn't track attribution — the backend
- * already returns an empty `sellers` list for `DONT_TRACK`, so there is no
- * second condition to keep in sync here.
+ * already returns an empty `sellers` list for `DONT_TRACK`, and then the answer
+ * is not required either. Otherwise it is required (the backend enforces it).
  */
 export function SellerSelect({
-  event,
+  sellers,
   value,
   onChange,
   disabled,
+  label = 'Your SMD',
+  hint = 'Credits this ticket to the right SMD and team.',
 }: {
-  event: PublicEvent;
+  sellers: PublicSeller[];
   value: number | null;
   onChange: (next: number | null) => void;
   disabled?: boolean;
+  label?: string;
+  hint?: string;
 }) {
-  if (event.sellers.length === 0) return null;
+  if (sellers.length === 0) return null;
 
   return (
-    <PublicField
-      label="Who invited you?"
-      hint="Helps us credit your ticket to the right team."
-    >
+    <PublicField label={label} hint={hint} required>
       <select
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
         disabled={disabled}
         className={PUBLIC_FIELD_CLASS}
       >
-        <option value="">Select a name (optional)</option>
-        {event.sellers.map((seller) => (
-          <option key={seller.id} value={seller.id}>
-            {seller.display_name}
-            {seller.agent_code ? ` (${seller.agent_code})` : ''}
-          </option>
-        ))}
+        <option value="">Select an SMD</option>
+        {groupSellersByTeam(sellers).map(({ team, sellers }) =>
+          team ? (
+            <optgroup key={team} label={team}>
+              {sellers.map((seller) => (
+                <SellerOption key={seller.id} seller={seller} />
+              ))}
+            </optgroup>
+          ) : (
+            sellers.map((seller) => <SellerOption key={seller.id} seller={seller} />)
+          ),
+        )}
       </select>
     </PublicField>
   );

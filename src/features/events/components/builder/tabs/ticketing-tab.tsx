@@ -8,6 +8,7 @@ import {
   Select,
   Text,
 } from '@shared/components';
+import { SellerListEditor } from '../seller-list-editor';
 import { TabForm } from './tab-form';
 import type { TabProps } from './types';
 import { emptyToNull, useTabForm } from './use-tab-form';
@@ -33,7 +34,10 @@ const TRACK_BY_OPTIONS: { value: TrackBy; label: string }[] = [
   { value: 'LEADER', label: 'Leader' },
 ];
 
-/** Attribution mode, capacity, and transfer policy for team ticketing. */
+/**
+ * Attribution mode, capacity, and transfer policy for team ticketing, plus the
+ * seller list (our leaders and external teams) buyers credit their ticket to.
+ */
 export function TicketingTab({ event, saving, onSave }: TabProps) {
   const { form, set, dirty, submit } = useTabForm<TicketingForm>(
     {
@@ -60,89 +64,92 @@ export function TicketingTab({ event, saving, onSave }: TabProps) {
   );
 
   return (
-    <TabForm dirty={dirty} saving={saving} onSubmit={submit}>
-      <FormRowGroup columns={2}>
-        <FormRow>
-          <Label variant="form">Track sales by</Label>
-          <Select
-            value={form.track_by}
-            onChange={(e) => set('track_by', e.target.value as TrackBy)}
-          >
-            {TRACK_BY_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </Select>
-        </FormRow>
-        <FormRow>
-          <Label variant="form">Price display</Label>
-          <Select
-            value={form.price_display_mode}
-            onChange={(e) => set('price_display_mode', e.target.value as PriceDisplayMode)}
-          >
-            <option value="CURRENT_ONLY">Current price only</option>
-            <option value="CURRENT_AND_EXPIRATION">Current price and expiration</option>
-          </Select>
-        </FormRow>
-      </FormRowGroup>
+    <div className="space-y-6">
+      <TabForm dirty={dirty} saving={saving} onSubmit={submit}>
+        <FormRowGroup columns={2}>
+          <FormRow>
+            <Label variant="form">Track sales by</Label>
+            <Select
+              value={form.track_by}
+              onChange={(e) => set('track_by', e.target.value as TrackBy)}
+            >
+              {TRACK_BY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </Select>
+          </FormRow>
+          <FormRow>
+            <Label variant="form">Price display</Label>
+            <Select
+              value={form.price_display_mode}
+              onChange={(e) => set('price_display_mode', e.target.value as PriceDisplayMode)}
+            >
+              <option value="CURRENT_ONLY">Current price only</option>
+              <option value="CURRENT_AND_EXPIRATION">Current price and expiration</option>
+            </Select>
+          </FormRow>
+        </FormRowGroup>
 
-      <FormRowGroup columns={2}>
-        <FormRow>
-          <Label variant="form">Max tickets (blank = unlimited)</Label>
-          <Input
-            type="number"
-            min={0}
-            value={form.max_tickets}
-            onChange={(e) => set('max_tickets', e.target.value)}
-          />
-        </FormRow>
-        <FormRow>
-          <Label variant="form">Per-transaction limit</Label>
-          <Input
-            type="number"
-            min={1}
-            value={form.per_transaction_limit}
-            onChange={(e) => set('per_transaction_limit', e.target.value)}
-          />
-        </FormRow>
-      </FormRowGroup>
+        <FormRowGroup columns={2}>
+          <FormRow>
+            <Label variant="form">Max tickets (blank = unlimited)</Label>
+            <Input
+              type="number"
+              min={0}
+              value={form.max_tickets}
+              onChange={(e) => set('max_tickets', e.target.value)}
+            />
+          </FormRow>
+          <FormRow>
+            <Label variant="form">Per-transaction limit</Label>
+            <Input
+              type="number"
+              min={1}
+              value={form.per_transaction_limit}
+              onChange={(e) => set('per_transaction_limit', e.target.value)}
+            />
+          </FormRow>
+        </FormRowGroup>
 
-      <FormRow>
-        <Label variant="form">Stop transfers at</Label>
-        <DateTimePicker
-          value={form.stop_transfer_at}
-          onChange={(v) => set('stop_transfer_at', v)}
-        />
-        <Text variant="muted" className="text-xs">
-          After this time, ticket ownership can no longer be transferred.
-        </Text>
-      </FormRow>
+        <FormRow>
+          <Label variant="form">Stop transfers at</Label>
+          <DateTimePicker
+            value={form.stop_transfer_at}
+            onChange={(v) => set('stop_transfer_at', v)}
+          />
+          <Text variant="muted" className="text-xs">
+            After this time, ticket ownership can no longer be transferred.
+          </Text>
+        </FormRow>
 
-      <div className="flex flex-col gap-3">
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={form.show_seller_rankings}
-            onChange={(e) => set('show_seller_rankings', e.target.checked)}
-          />
-          Show seller rankings publicly
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={form.allow_transfers}
-            onChange={(e) => set('allow_transfers', e.target.checked)}
-          />
-          Allow ticket transfers
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={form.allow_multiple_transfers}
-            onChange={(e) => set('allow_multiple_transfers', e.target.checked)}
-            disabled={!form.allow_transfers}
-          />
-          Allow a ticket to be transferred more than once
-        </label>
-      </div>
-    </TabForm>
+        <div className="flex flex-col gap-3">
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={form.show_seller_rankings}
+              onChange={(e) => set('show_seller_rankings', e.target.checked)}
+            />
+            Show seller rankings publicly
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={form.allow_transfers}
+              onChange={(e) => set('allow_transfers', e.target.checked)}
+            />
+            Allow ticket transfers
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={form.allow_multiple_transfers}
+              onChange={(e) => set('allow_multiple_transfers', e.target.checked)}
+              disabled={!form.allow_transfers}
+            />
+            Allow a ticket to be transferred more than once
+          </label>
+        </div>
+      </TabForm>
+      <SellerListEditor event={event} />
+    </div>
   );
 }

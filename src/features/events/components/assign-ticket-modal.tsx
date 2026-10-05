@@ -12,6 +12,8 @@ import {
   Modal,
 } from '@shared/components';
 import type { AssignHolderPayload, EventTicket } from '../types/ticket';
+import { useEventSellers } from '../hooks/use-event-sellers';
+import { TicketSellerSelect } from './ticket-seller-select';
 
 interface AssignTicketModalProps {
   open: boolean;
@@ -26,7 +28,8 @@ interface AssignTicketModalProps {
  *
  * Owns the "Add as prospect to my team" toggle — the backend already supports
  * `create_prospect`; this is the logged-in-only UI (a guest purchaser has no
- * team to attach a prospect to).
+ * team to attach a prospect to). Also asks which SMD the holder is with, so a
+ * ticket bought by one SMD for someone else is credited to that person's SMD.
  */
 export function AssignTicketModal({
   open,
@@ -40,6 +43,8 @@ export function AssignTicketModal({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [createProspect, setCreateProspect] = useState(false);
+  const [sellerId, setSellerId] = useState<number | null>(null);
+  const sellers = useEventSellers(ticket?.event, open);
 
   useEffect(() => {
     if (!open || !ticket) return;
@@ -48,6 +53,9 @@ export function AssignTicketModal({
     setEmail(ticket.holder_email);
     setPhone(ticket.holder_phone);
     setCreateProspect(false);
+    // A fresh ticket still carries the buyer's SMD, which may not be the
+    // attendee's — only pre-select once someone has been named.
+    setSellerId(ticket.assignment_status === 'ASSIGNED' ? (ticket.attributed_seller ?? null) : null);
   }, [open, ticket]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -58,6 +66,7 @@ export function AssignTicketModal({
       email: email.trim(),
       phone: phone.trim() || undefined,
       create_prospect: createProspect,
+      attributed_seller_id: sellerId,
     });
   };
 
@@ -92,6 +101,12 @@ export function AssignTicketModal({
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
           </FormRow>
         </FormRowGroup>
+        <TicketSellerSelect
+          sellers={sellers}
+          value={sellerId}
+          onChange={setSellerId}
+          label="Attendee's SMD"
+        />
         <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-white/80">
           <Checkbox
             checked={createProspect}

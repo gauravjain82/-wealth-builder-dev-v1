@@ -6,6 +6,8 @@ import type {
   EventPromoCode,
   EventTrackedSeller,
   EventCustomField,
+  ExternalTeam,
+  ExternalTeamMember,
 } from '../types/config';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -129,5 +131,59 @@ export const configService = {
     return request(`${eventBase(eventId)}/sellers/populate-from-hierarchy/`, {
       method: 'POST',
     });
+  },
+
+  /** Add leaders from the external teams directory; a team id adds all its members. */
+  addExternalSellers(
+    eventId: number,
+    selection: { team_ids?: number[]; member_ids?: number[] },
+  ): Promise<{ created: number; sellers: EventTrackedSeller[] }> {
+    return request(`${eventBase(eventId)}/sellers/add-external/`, {
+      method: 'POST',
+      body: JSON.stringify(selection),
+    });
+  },
+
+  // External teams directory (shared by every event)
+  listExternalTeams(): Promise<ExternalTeam[]> {
+    return request('/api/events/external-teams/');
+  },
+  createExternalTeam(payload: Pick<ExternalTeam, 'name' | 'notes'>): Promise<ExternalTeam> {
+    return request('/api/events/external-teams/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  updateExternalTeam(
+    teamId: number,
+    payload: Partial<Pick<ExternalTeam, 'name' | 'notes'>>,
+  ): Promise<ExternalTeam> {
+    return request(`/api/events/external-teams/${teamId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+  deleteExternalTeam(teamId: number): Promise<void> {
+    return request(`/api/events/external-teams/${teamId}/`, { method: 'DELETE' });
+  },
+  createExternalMember(
+    payload: Pick<ExternalTeamMember, 'team' | 'name' | 'agent_code' | 'level_code'>,
+  ): Promise<ExternalTeamMember> {
+    return request('/api/events/external-team-members/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  updateExternalMember(
+    memberId: number,
+    payload: Partial<Pick<ExternalTeamMember, 'name' | 'agent_code' | 'level_code'>>,
+  ): Promise<ExternalTeamMember> {
+    return request(`/api/events/external-team-members/${memberId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+  deleteExternalMember(memberId: number): Promise<void> {
+    return request(`/api/events/external-team-members/${memberId}/`, { method: 'DELETE' });
   },
 };

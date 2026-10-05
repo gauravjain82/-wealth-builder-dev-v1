@@ -31,6 +31,7 @@ export function MyTicketsTable({ tickets, onAssign, onTransfer, onPdf }: MyTicke
             <th className="px-3 py-2">Ticket</th>
             <th className="px-3 py-2">Assignment</th>
             <th className="px-3 py-2">Holder</th>
+            <th className="px-3 py-2">SMD</th>
             <th className="px-3 py-2">Lifecycle</th>
             <th className="px-3 py-2" />
           </tr>
@@ -45,6 +46,12 @@ export function MyTicketsTable({ tickets, onAssign, onTransfer, onPdf }: MyTicke
                 <Badge variant="outline">{ticket.assignment_status}</Badge>
               </td>
               <td className="px-3 py-2 text-slate-600 dark:text-white/70">{holderLabel(ticket)}</td>
+              <td className="px-3 py-2 text-slate-600 dark:text-white/70">
+                {ticket.attributed_seller_name || '—'}
+                {ticket.attributed_seller_team ? (
+                  <span className="ml-1 text-xs text-slate-500">· {ticket.attributed_seller_team}</span>
+                ) : null}
+              </td>
               <td className="px-3 py-2 text-slate-600 dark:text-white/70">
                 {ticket.lifecycle_status}
               </td>

@@ -66,6 +66,35 @@ export interface EventTrackedSeller {
   level_code: string;
   nearest_upline_name: string;
   matched_user: number | null;
+  /** Set when the seller came from the external teams directory. */
+  external_member: number | null;
+  /** The external team's name; empty for our own leaders. */
+  team_name: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
+/** Rank of a leader from an external team (values match our Level codes). */
+export type ExternalLeaderLevel = 'SMD' | 'CEO-MD';
+
+/** An SMD / CEO-MD from a team outside WealthBuilder. */
+export interface ExternalTeamMember {
+  id: number;
+  team: number;
+  team_name: string;
+  name: string;
+  agent_code: string;
+  level_code: ExternalLeaderLevel;
+  is_active: boolean;
+}
+
+/** A team outside WealthBuilder that sells tickets to our events. */
+export interface ExternalTeam {
+  id: number;
+  name: string;
+  notes: string;
+  /** Active members only. */
+  members: ExternalTeamMember[];
   is_active: boolean;
 }
 

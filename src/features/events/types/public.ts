@@ -47,6 +47,8 @@ export interface PublicSeller {
   display_name: string;
   agent_code: string;
   level_code: string;
+  /** External team name; empty for our own leaders. */
+  team_name: string;
 }
 
 /** The full landing-page payload — one request renders the whole page. */
@@ -164,6 +166,9 @@ export interface PublicOrderTicket {
   holder_name: string;
   transfer_count: number;
   qr_token: string;
+  /** The SMD this ticket is credited to (an id from the event's `sellers`). */
+  attributed_seller_id: number | null;
+  attributed_seller_name: string;
 }
 
 /**
@@ -230,17 +235,27 @@ export interface ClaimResult {
 }
 
 /** Payload for naming the attendee on a claimed ticket. */
-export interface PublicAssignPayload extends ClaimProof {
-  ticket_id: number;
+/** The attendee named on a ticket, plus the SMD they are with. */
+export interface AssignHolderInput {
   first_name: string;
   last_name: string;
   holder_email: string;
   phone?: string;
+  attributed_seller_id?: number | null;
+}
+
+/** Who a ticket is handed to, plus the SMD they are with. */
+export interface TransferRecipientInput {
+  to_email: string;
+  to_name?: string;
+  attributed_seller_id?: number | null;
+}
+
+export interface PublicAssignPayload extends ClaimProof, AssignHolderInput {
+  ticket_id: number;
 }
 
 /** Payload for handing a claimed ticket to someone else. */
-export interface PublicTransferPayload extends ClaimProof {
+export interface PublicTransferPayload extends ClaimProof, TransferRecipientInput {
   ticket_id: number;
-  to_email: string;
-  to_name?: string;
 }
