@@ -59,9 +59,9 @@ configuration** screen and the ledger totals (2026-10-03).
 ## 2. Scope
 
 **In scope**
-- Office section (MD and SMD): effective office, pending submission with Withdraw, submit
+- Office section (every level at or above the Fee Settings level, MD by default): effective office, pending submission with Withdraw, submit
   form, rates, history with actions.
-- Assistant section (SMD): the same, plus the hours editor, the verification deadline and
+- Assistant section (same audience as the office): the same, plus the hours editor, the verification deadline and
   the re-verification notice.
 - Payment method section (MD and SMD): saved method, Stripe setup-session redirect and the
   `?fee_pm=` return.

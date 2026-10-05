@@ -315,8 +315,8 @@ on void.
 
 | Surface | Shown when |
 |---|---|
-| Office section | `can_submit_office` **and** `me.office` present |
-| Assistant section | `can_submit_assistant` **and** `me.assistant` present |
+| Office section | `can_submit_office` **and** `me.office` present; fee wording only when `is_billable` (PF54) |
+| Assistant section | `can_submit_assistant` **and** `me.assistant` present; deadline and routing wording only when `assistant_counts_for_routing` (PF54) |
 | Payment method section | `can_save_payment_method` |
 | Whole Settings block | at least one of the three; otherwise renders nothing (`me/` is not even requested) |
 | Review route, menu "Plug-in Fees › Reviews" | `can_review` (`PluginFeesReviewRoute`, `src/router/plugin-fees-review-route.tsx`); loader while pending, `<Navigate to="/home">` on error or false |

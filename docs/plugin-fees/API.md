@@ -88,7 +88,7 @@ All in `src/features/plugin-fees/types/index.ts`, mirroring the contract:
 
 | Type | Endpoint | Notes |
 |---|---|---|
-| `PluginFeesAccess` | `my-access/` | eight fields |
+| `PluginFeesAccess` | `my-access/` | nine fields, incl. `assistant_counts_for_routing` (PF54) |
 | `PluginFeesMe` | `me/` | `office?`, `assistant?`, `rates?` are **optional** (absent when not allowed / not configured) |
 | `OfficeSubmission`, `AssistantSubmission` | `me/`, write responses | `lease?`/`photo?` optional; `decided_*`, `verified_at`, `reverify_due` nullable |
 | `PluginFeesPaymentMethod` | `me/.payment_method` | `type`, `label`, `saved_at` only when `status: 'saved'` |
@@ -142,7 +142,7 @@ All in `src/features/plugin-fees/types/index.ts`, mirroring the contract:
 | `invoices/{id}/void/` | `{ "note": str }` — required, trimmed, never sent blank |
 | `fee-schedule/` (POST) | `{ effective_from: "YYYY-MM", reason, rates: [{ level_code, with_office, amount_cents }] }` — `reason` required and trimmed; only the rates whose amount differs from the cell's `next_cycle` are sent (1–4); cents parsed from the dollar text, never via floats |
 | `fee-schedule/{id}/` (DELETE) | `{ "reason": str }` — required; sent as a JSON body on the DELETE |
-| `settings/` (PATCH) | `{ reason, …changed fields only }` — any of `go_live_month` (`YYYY-MM` or `null` when cleared), `self_pay_due_day` (1–28), `reverify_window_days` (1–90), `assistant_verification_deadline` (`YYYY-MM-DD` or `null`); `go_live_month` never sent while `go_live_locked` |
+| `settings/` (PATCH) | `{ reason, …changed fields only }` — any of `go_live_month` (`YYYY-MM` or `null` when cleared), `self_pay_due_day` (1–28), `reverify_window_days` (1–90), `assistant_verification_deadline` (`YYYY-MM-DD` or `null`), `submission_min_level` (a level `id`, or `null` for the default); `go_live_month` never sent while `go_live_locked` |
 
 ## 4. Query parameters
 

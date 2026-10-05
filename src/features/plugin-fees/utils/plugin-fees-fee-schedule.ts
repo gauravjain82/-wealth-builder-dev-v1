@@ -78,6 +78,7 @@ const FIELD_LABELS: Record<string, string> = {
   self_pay_due_day: 'Self-pay due day',
   reverify_window_days: 'Re-verification window (days)',
   assistant_verification_deadline: 'Assistant verification deadline',
+  submission_min_level: 'Office & assistant from level',
 };
 
 export function historyFieldLabel(field: string): string {
@@ -89,6 +90,7 @@ export function historyFieldLabel(field: string): string {
  * dates, booleans as Yes/No, absent as `—`.
  */
 export function formatHistoryValue(field: string, value: unknown): string {
+  if (field === 'submission_min_level' && value === null) return 'Default';
   if (value === null || value === undefined || value === '') return '—';
   if (field.endsWith('_cents') && typeof value === 'number') return formatMoney(value);
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';

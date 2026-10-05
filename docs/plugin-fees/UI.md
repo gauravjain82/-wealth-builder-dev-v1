@@ -15,7 +15,7 @@
 
 | Entry | Who | Guard |
 |---|---|---|
-| `/settings` → Office, Assistant, Payment Method for Plug-in Fees sections (after Manage Subscription) | MD, SMD (assistant: SMD only) | none on the route; sections render per `my-access/` |
+| `/settings` → Office, Assistant, Payment Method for Plug-in Fees sections (after Manage Subscription) | Office and Assistant: every level at or above the Fee Settings level (MD and up by default, PF54); Payment Method: MD, SMD | none on the route; sections render per `my-access/` |
 | `/settings?fee_pm=success` / `?fee_pm=cancelled` | Stripe return | — |
 | `/admin/plugin-fees/review` | Hierarchy Assistant | `PluginFeesReviewRoute` (`can_review`) |
 | `/plugin-fees/statement` | MD, SMD | `PluginFeesAccessRoute` (`is_billable`) |
@@ -48,11 +48,16 @@
 
 ### 2.1 Office (Settings)
 
+Shown to every level at or above the Fee Settings submission level (PF54). The fee wording
+is for billed agents (`is_billable`) only.
+
 1. Callout: "The office rate applies only after your office is approved; until then you are
    billed at the no-office rate." plus, when `rates` is present, both rates for
-   `rates.month` formatted as dollars.
+   `rates.month` formatted as dollars. Not billed: "Your office is recorded once approved.
+   It does not change any plug-in fee for your level."
 2. **Approved office** — status badge, address, lease link, photo thumbnail, decided by/at,
-   Withdraw. Otherwise "No approved office — you are billed at the no-office rate".
+   Withdraw. Otherwise "No approved office — you are billed at the no-office rate" (not
+   billed: "No approved office.").
 3. **Awaiting review** (if pending) — the same card with Withdraw.
 4. **Submit form** — address line 1, line 2 (optional), city, state (2 letters, uppercased),
    ZIP, lease (PDF/JPEG/PNG/WebP ≤ 15 MB), photo (JPEG/PNG/WebP ≤ 10 MB). Disabled with an
@@ -61,11 +66,17 @@
 5. **History (n)** — collapsed `<details>`; each submission with its actions (who, what,
    when, note), including rejection notes.
 
-### 2.2 Assistant (Settings, SMD)
+### 2.2 Assistant (Settings)
 
-1. Callout, bold: "Assistant must be verified by *{deadlines.assistant_verification}* to
-   count for *{month after it}* routing." Both come from the payload.
-2. When the effective assistant has `reverify_open`: a warning callout with `reverify_due`.
+Same audience as the office (PF54). The routing wording only when
+`assistant_counts_for_routing` (an SMD); otherwise the intro adds "For your level, an
+assistant does not change any plug-in fee."
+
+1. Callout, bold (routing only): "Assistant must be verified by
+   *{deadlines.assistant_verification}* to count for *{month after it}* routing." Both come
+   from the payload.
+2. When the effective assistant has `reverify_open`: a warning callout with `reverify_due`
+   ("and MD fees reroute…" for routing only; the same for the Withdraw confirmation).
 3. **Verified assistant** — name, phone, email, hours, photo, verified at, re-verify due.
 4. **Awaiting verification** (if pending), with Withdraw.
 5. **Submit form** — name, email, phone (`PhoneField`, E.164), hours editor (day + start +
@@ -369,14 +380,16 @@ change" section.
 4. **Billing settings** — `can_manage`: a form with Go-live month (disabled, with "A
    billing cycle has been approved, so the go-live month can no longer move." while
    `go_live_locked`), Self-pay due day (1–28), Re-verification window (1–90 days),
-   Assistant verification deadline, a required reason and "Save settings" (disabled with
-   "Nothing changed." until an input differs; only the changed fields are sent; a cleared
-   month or date is sent as `null`). Others: the same four values read-only. Both show
-   "Last changed *time*".
+   Assistant verification deadline, "Office & assistant — from level" (a select: "Default
+   (*code*)" plus every `level_options` entry as "CODE — Name", with "Now: *CODE* and every
+   level above" beneath), a required reason and "Save settings" (disabled with "Nothing
+   changed." until an input differs; only the changed fields are sent; a cleared month or
+   date, or "Default", is sent as `null`). Others: the same five values read-only ("Can add
+   an office and an assistant"). Both show "Last changed *time*".
 5. **Change history** — the latest 50 changes, newest first: when, who (and "via
    *source*"), what (Fee / Settings tag + `object_repr`), action (Created / Changed /
    Removed), changes as "Field: old → **new**" (cents fields as dollars, dates as dates,
-   booleans Yes/No, empty `—`), reason.
+   booleans Yes/No, empty `—`; the submission level as its code, "Default" when cleared), reason.
 6. **Price history** — a collapsed "Price history (*n*)" with every `rows` entry: effective
    date, fee, price, status (In force / Superseded / Scheduled), note, set by / at.
 

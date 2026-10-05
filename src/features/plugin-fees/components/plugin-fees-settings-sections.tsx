@@ -116,11 +116,14 @@ export function PluginFeesSettingsSections() {
 
   return (
     <>
-      {canOffice && data.office ? <OfficeSection office={data.office} rates={data.rates} /> : null}
+      {canOffice && data.office ? (
+        <OfficeSection office={data.office} rates={data.rates} billable={billable} />
+      ) : null}
       {canAssistant && data.assistant ? (
         <AssistantSection
           assistant={data.assistant}
           verificationDeadline={data.deadlines.assistant_verification}
+          countsForRouting={Boolean(access.data?.assistant_counts_for_routing)}
         />
       ) : null}
       {canPay && data.payment_method ? (

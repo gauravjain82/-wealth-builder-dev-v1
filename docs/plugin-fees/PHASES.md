@@ -28,6 +28,7 @@ renumber.
 | — | P5–P6 committed (`9cfa5db`); P2–P6 merged to `main` via PR #18 (`e91e5a5`). Not deployed |
 | 2026-10-03 | Backend adds fee configuration (`fee-schedule/`, `settings/`, `config-history/`) and `ledger.totals`; frontend Fee Settings page + ledger totals built on `feature/plugin-fees-config` (uncommitted) |
 | 2026-10-05 | The nine admin menu entries folded into one collapsible "Plug-in Fees" group (PF53) on `main` |
+| 2026-10-05 | Office and assistant opened to every level at or above a Fee Settings level (MD by default), with backend D21; billing unchanged (PF54) |
 
 ## 2. Phases
 
@@ -186,6 +187,7 @@ Built from the backend's endpoint description alone; not run against a server.
 | PF51 | Fee schedule writes put the returned schedule in the cache, then invalidate the schedule, the history, `me/` (the agent's `rates`) and every cycle preview; a settings save also invalidates `me/` (deadlines) | The POST/DELETE answer the whole schedule; `me/.rates` and a cached preview price the next cycle and would be stale | `hooks/use-plugin-fees.ts` |
 | PF52 | `ledger.totals` is typed optional and the tiles are hidden without it; "Other" = `charge_collected + reversal + adjustment` | Older payloads lack it; a zero row would misreport history. The three are folded per the brief to keep six tiles | `components/statement/statement-view.tsx` `LedgerTotalsGrid` |
 | PF53 | The admin entries (overview, reviews, cycles, payments, payouts, SEVC totals, costs, adjustments, fee settings) are children of one "Plug-in Fees" group; the overview child is "Overview" and the review child "Reviews". The group is added only when at least one child is visible, and the sidebar opens any group holding the current page. "My Plug-in Fees" stays a top-level entry | Nine flat entries spread through the sidebar read as unrelated tools (user report, 2026-10-05). Per-entry gates are unchanged; only placement moves. The statement is the agent's own page, not an admin tool, so it stays out of the group. Supersedes the placement in PF41 | `src/config/menu.ts` (`getMenuForUser`); `src/shared/layouts/sidebar.tsx` |
+| PF54 | Who may add an office and an assistant comes from `can_submit_*`, which the backend now derives from a level threshold (`settings.submission_min_level`, rank ≥; the level coded MD when unset) set on Fee Settings — not from hard-coded MD/SMD. Fee and routing wording on Settings follows separate flags: `is_billable` (office, payment method) and the new `assistant_counts_for_routing` (an SMD) | User, 2026-10-05: "anyone MD and above should have both", configurable from the database; billing unchanged (D7 stands, an MD's assistant changes no fee). Telling a non-billed EVC "you are billed at the no-office rate" would be false, so the wording keys on the billing flags, not on submission. The default label comes from `submission_min_level_default`, so "MD" is not hard-coded here | `mlm_platform` IMPACT_ANALYSIS D21; `components/office-section.tsx`, `assistant-section.tsx`, `fee-settings/billing-settings-form.tsx` |
 
 ## 4. Deliberately not built
 

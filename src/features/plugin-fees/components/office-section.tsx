@@ -1,5 +1,6 @@
 /**
- * Settings → Office (MD and SMD). Shows the effective (approved) office, the pending
+ * Settings → Office (every level at or above the configured submission level; the fee
+ * wording only for a billed agent, `billable`). Shows the effective (approved) office, the pending
  * submission with Withdraw, a submit form that is disabled while one is pending, and the
  * collapsed history. Screen states: `docs/plugin-fees/UI.md` §2.1.
  */
@@ -42,9 +43,12 @@ const EMPTY_FORM: OfficeFormState = {
 export function OfficeSection({
   office,
   rates,
+  billable,
 }: {
   office: SubmissionGroup<OfficeSubmission>;
   rates?: PluginFeesRates;
+  /** Billed a plug-in fee (`is_billable`). Otherwise the office changes no fee. */
+  billable: boolean;
 }) {
   const { addToast } = useToastStore();
   const submit = useSubmitOffice();
@@ -132,9 +136,10 @@ export function OfficeSection({
 
       <div className="wb-pf-stack">
         <div className="wb-pf-callout">
-          The office rate applies only after your office is approved; until then you are billed at
-          the no-office rate.
-          {rates ? (
+          {billable
+            ? 'The office rate applies only after your office is approved; until then you are billed at the no-office rate.'
+            : 'Your office is recorded once approved. It does not change any plug-in fee for your level.'}
+          {billable && rates ? (
             <>
               {' '}
               For {formatMonth(rates.month)}: <strong>{formatCents(rates.with_office_cents)}</strong>{' '}
@@ -163,7 +168,9 @@ export function OfficeSection({
             />
           ) : (
             <p className="wb-pf-muted">
-              No approved office — you are billed at the no-office rate{noOfficeRate}.
+              {billable
+                ? `No approved office — you are billed at the no-office rate${noOfficeRate}.`
+                : 'No approved office.'}
             </p>
           )}
         </div>
@@ -307,7 +314,9 @@ export function OfficeSection({
         title={withdrawingApproved ? 'Withdraw your approved office?' : 'Withdraw this submission?'}
         message={
           withdrawingApproved
-            ? `This tells us you no longer have an office. From the next billing cycle you will be billed at the no-office rate${noOfficeRate}.`
+            ? billable
+              ? `This tells us you no longer have an office. From the next billing cycle you will be billed at the no-office rate${noOfficeRate}.`
+              : 'This tells us you no longer have an office.'
             : 'The submission will be removed from the review queue. You can submit again afterwards.'
         }
         confirmText="Withdraw"

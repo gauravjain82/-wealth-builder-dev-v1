@@ -1,5 +1,6 @@
 /**
- * Settings → Assistant (SMD only). Same shape as the office section: the effective
+ * Settings → Assistant (every level at or above the configured submission level; the
+ * routing wording only when the assistant counts for routing — an SMD). Same shape as the office section: the effective
  * (verified) assistant, the pending submission with Withdraw, a submit form disabled
  * while one is pending, and the collapsed history. Screen states:
  * `docs/plugin-fees/UI.md` §2.2.
@@ -32,9 +33,12 @@ const DEFAULT_HOURS: AssistantHours[] = [{ day: 'mon', start: '09:00', end: '17:
 export function AssistantSection({
   assistant,
   verificationDeadline,
+  countsForRouting,
 }: {
   assistant: SubmissionGroup<AssistantSubmission>;
   verificationDeadline?: string;
+  /** `assistant_counts_for_routing`: a verified assistant makes MD fees reach this agent. */
+  countsForRouting: boolean;
 }) {
   const { addToast } = useToastStore();
   const submit = useSubmitAssistant();
@@ -116,7 +120,7 @@ export function AssistantSection({
       </div>
 
       <div className="wb-pf-stack">
-        {verificationDeadline ? (
+        {countsForRouting && verificationDeadline ? (
           <div className="wb-pf-callout wb-pf-callout--strong" role="note">
             Assistant must be verified by {formatDate(verificationDeadline)}
             {routingMonth ? ` to count for ${routingMonth} routing` : ''}.
@@ -125,13 +129,14 @@ export function AssistantSection({
         <p className="wb-pf-muted" style={{ margin: 0 }}>
           You count as having an assistant only while the assistant is verified. Assistants are
           re-verified every quarter.
+          {countsForRouting ? '' : ' For your level, an assistant does not change any plug-in fee.'}
         </p>
 
         {effective?.reverify_open ? (
           <div className="wb-pf-callout wb-pf-callout--warning" role="status">
             Your assistant is due for re-verification by {formatDate(effective.reverify_due)}. If it
-            is not re-verified by then, the status becomes Expired and MD fees reroute from the
-            following month. If anything has changed, submit the updated details below.
+            is not re-verified by then, the status becomes Expired
+            {countsForRouting ? ' and MD fees reroute from the following month' : ''}. If anything has changed, submit the updated details below.
           </div>
         ) : null}
 
@@ -266,7 +271,9 @@ export function AssistantSection({
         title={withdrawingVerified ? 'Withdraw your verified assistant?' : 'Withdraw this submission?'}
         message={
           withdrawingVerified
-            ? 'You will no longer count as having an assistant, and MD fees credited to you reroute up the recruiting line starting the following month.'
+            ? countsForRouting
+              ? 'You will no longer count as having an assistant, and MD fees credited to you reroute up the recruiting line starting the following month.'
+              : 'You will no longer count as having an assistant.'
             : 'The submission will be removed from the verification queue. You can submit again afterwards.'
         }
         confirmText="Withdraw"

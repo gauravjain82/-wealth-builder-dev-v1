@@ -80,8 +80,8 @@ Firebase hosting with the rest of the SPA. Deploy only together with the backend
 
 | Symptom | Likely cause |
 |---|---|
-| No plug-in fee sections on Settings | `my-access/` failed, or the user is not an active MD/SMD; check the network tab |
-| Assistant section missing for an SMD | `can_submit_assistant` false, or `me.assistant` absent |
+| No plug-in fee sections on Settings | `my-access/` failed, or the user is inactive or ranks below the Fee Settings submission level (MD by default); check the network tab |
+| Assistant or Office section missing | `can_submit_*` false (level below the Fee Settings submission level), or `me.assistant` / `me.office` absent |
 | "Waiting for Stripe…" then the 30 s info toast | Stripe webhook late or misconfigured; the method appears on a later `me/` refetch (every 10 min, or reload) |
 | Upload rejected with `file_type_invalid` despite the right extension | The backend sniffs bytes; the file is not really that type |
 | Every upload fails with 400 | Something set `Content-Type` on the multipart request (boundary lost) |

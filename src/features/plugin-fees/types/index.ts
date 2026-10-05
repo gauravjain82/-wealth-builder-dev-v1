@@ -15,6 +15,9 @@ export interface PluginFeesAccess {
   is_billable: boolean;
   can_submit_office: boolean;
   can_submit_assistant: boolean;
+  /** An active SMD: a verified assistant makes MD fees reach them. False for every other
+   * level that may submit an assistant — theirs is recorded and changes no fee. */
+  assistant_counts_for_routing: boolean;
   can_save_payment_method: boolean;
   can_review: boolean;
   can_manage: boolean;
@@ -854,6 +857,14 @@ export interface DeleteFeeRateInput {
   reason: string;
 }
 
+/** An `accounts.Level` row, as the settings screen shows it. */
+export interface PluginFeesLevel {
+  id: number;
+  code: string;
+  name: string | null;
+  rank: number;
+}
+
 /** `GET settings/` */
 export interface PluginFeesBillingSettings {
   /** `YYYY-MM` */
@@ -862,6 +873,14 @@ export interface PluginFeesBillingSettings {
   reverify_window_days: number;
   /** `YYYY-MM-DD` */
   assistant_verification_deadline: string | null;
+  /** The configured lowest level that may submit an office and an assistant; `null` = default. */
+  submission_min_level: PluginFeesLevel | null;
+  /** The level in effect (the default when unset); `null` if none exists. */
+  submission_min_level_effective: PluginFeesLevel | null;
+  /** The default used while unset (the level coded `MD`); `null` if there is none. */
+  submission_min_level_default: PluginFeesLevel | null;
+  /** Every level, lowest rank first. Optional: absent from a backend without D21. */
+  level_options?: PluginFeesLevel[];
   /** True once any cycle is approved: the go-live month can no longer move. */
   go_live_locked: boolean;
   updated_at: string | null;
@@ -874,6 +893,8 @@ export interface UpdateBillingSettingsInput {
   self_pay_due_day?: number;
   reverify_window_days?: number;
   assistant_verification_deadline?: string | null;
+  /** A level id, or `null` to return to the default. */
+  submission_min_level?: number | null;
 }
 
 export type ConfigHistoryObject = 'fee' | 'settings';

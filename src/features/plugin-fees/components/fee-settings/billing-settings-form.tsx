@@ -1,7 +1,8 @@
 /**
  * Billing settings (`GET` / `PATCH settings/`): the go-live month, the self-pay due day
- * (1–28), the assistant re-verification window (1–90 days) and the assistant
- * verification deadline. `:manage` edits; everyone else reads the same values. The PATCH
+ * (1–28), the assistant re-verification window (1–90 days), the assistant
+ * verification deadline, and the lowest level that may submit an office and an
+ * assistant (every level ranked at or above it may; the default is the MD level). `:manage` edits; everyone else reads the same values. The PATCH
  * sends the required reason plus only the fields that changed; a cleared month or date
  * is sent as `null`. Once a cycle is approved (`go_live_locked`) the go-live month is
  * disabled, and a late `409 go_live_locked` lands on that field.
@@ -9,12 +10,12 @@
 
 import { useState, type FormEvent } from 'react';
 
-import { Button, Input, Textarea } from '@/shared/components';
+import { Button, Input, Select, Textarea } from '@/shared/components';
 import { useToastStore } from '@/store';
 
 import { useUpdateBillingSettings } from '../../hooks/use-plugin-fees';
 import { PluginFeesError } from '../../services/plugin-fees-service';
-import type { PluginFeesBillingSettings, UpdateBillingSettingsInput } from '../../types';
+import type { PluginFeesBillingSettings, PluginFeesLevel, UpdateBillingSettingsInput } from '../../types';
 import {
   describeError,
   fieldErrors,
@@ -28,6 +29,21 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const GO_LIVE_LOCKED_NOTE =
   'A billing cycle has been approved, so the go-live month can no longer move.';
+
+/** The select's value for "no level configured": the backend default applies. */
+const DEFAULT_LEVEL = '';
+
+function levelLabel(level: PluginFeesLevel): string {
+  return level.name && level.name !== level.code ? `${level.code} — ${level.name}` : level.code;
+}
+
+/** Who may submit, in words: "MD and every level above", or why nobody may. */
+function submissionLevelText(settings: PluginFeesBillingSettings): string {
+  const effective = settings.submission_min_level_effective;
+  if (!effective) return 'Nobody — no level is set and the default level does not exist';
+  const scope = `${effective.code} and every level above`;
+  return settings.submission_min_level ? scope : `${scope} (default)`;
+}
 
 /** A whole number within `[min, max]`, or null. */
 function parseWhole(value: string, min: number, max: number): number | null {
@@ -58,6 +74,10 @@ export function BillingSettingsView({ settings }: { settings: PluginFeesBillingS
           <span className="wb-pf-detail-label">Assistant verification deadline</span>
           <span className="wb-pf-detail-value">{formatDate(settings.assistant_verification_deadline)}</span>
         </div>
+        <div>
+          <span className="wb-pf-detail-label">Can add an office and an assistant</span>
+          <span className="wb-pf-detail-value">{submissionLevelText(settings)}</span>
+        </div>
       </div>
       {settings.go_live_locked ? <p className="wb-pf-muted" style={{ margin: 0 }}>{GO_LIVE_LOCKED_NOTE}</p> : null}
       <p className="wb-pf-muted" style={{ margin: 0 }}>
@@ -78,6 +98,8 @@ export function BillingSettingsForm({ settings }: { settings: PluginFeesBillingS
   const [dueDay, setDueDay] = useState(String(settings.self_pay_due_day));
   const [windowDays, setWindowDays] = useState(String(settings.reverify_window_days));
   const [deadline, setDeadline] = useState(settings.assistant_verification_deadline ?? '');
+  const savedLevel = settings.submission_min_level ? String(settings.submission_min_level.id) : DEFAULT_LEVEL;
+  const [minLevel, setMinLevel] = useState(savedLevel);
   const [reason, setReason] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -96,6 +118,9 @@ export function BillingSettingsForm({ settings }: { settings: PluginFeesBillingS
   }
   if ((deadline.trim() || null) !== settings.assistant_verification_deadline) {
     changes.assistant_verification_deadline = deadline.trim() || null;
+  }
+  if (minLevel !== savedLevel) {
+    changes.submission_min_level = minLevel === DEFAULT_LEVEL ? null : Number(minLevel);
   }
   const hasChanges = Object.keys(changes).length > 0;
   // Edited at all, valid or not — so an out-of-range value still reaches validation.
@@ -214,6 +239,30 @@ export function BillingSettingsForm({ settings }: { settings: PluginFeesBillingS
           />
           {err('assistant_verification_deadline')}
           <span className="wb-pf-muted">An assistant verified by this date counts for the next month&apos;s routing.</span>
+        </label>
+
+        <label className="wb-pf-field">
+          <span className="wb-pf-field-label">Office &amp; assistant — from level</span>
+          <Select
+            value={minLevel}
+            onChange={(event) => setMinLevel(event.target.value)}
+            aria-invalid={Boolean(errors.submission_min_level)}
+            disabled={update.isPending}
+          >
+            <option value={DEFAULT_LEVEL}>
+              Default{settings.submission_min_level_default ? ` (${settings.submission_min_level_default.code})` : ''}
+            </option>
+            {(settings.level_options ?? []).map((level) => (
+              <option key={level.id} value={String(level.id)}>
+                {levelLabel(level)}
+              </option>
+            ))}
+          </Select>
+          {err('submission_min_level')}
+          <span className="wb-pf-muted">
+            This level and every level ranked above it can add an office and an assistant. Now:{' '}
+            {submissionLevelText(settings)}. Who is billed does not change.
+          </span>
         </label>
 
         <label className="wb-pf-field wb-pf-span-2">
