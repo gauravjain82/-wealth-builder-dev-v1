@@ -98,17 +98,17 @@ const MENU_ITEMS = {
   } as MenuItem,
   // Guidance library and review queue, gated per-user by gms:author (no role holds it).
   GUIDANCE: { label: 'Guidance', icon: '🧭', path: '/admin/guidance' } as MenuItem,
-  // Plug-in fees admin overview (the landing entry of the plug-in fees admin entries),
+  // Plug-in fees admin overview (the first child of the "Plug-in Fees" group),
   // gated per-user by plugin_fees:manage or :review.
   PLUGIN_FEES_OVERVIEW: {
-    label: 'Plug-in Fees',
+    label: 'Overview',
     icon: '📊',
     path: '/admin/plugin-fees',
   } as MenuItem,
   // Plug-in fee office/assistant review queues, gated per-user by plugin_fees:review
   // (the Hierarchy Assistant). No plan grants it.
   PLUGIN_FEES_REVIEW: {
-    label: 'Plug-in Fee Reviews',
+    label: 'Reviews',
     icon: '🗂️',
     path: '/admin/plugin-fees/review',
   } as MenuItem,
@@ -223,6 +223,13 @@ const DATA_INTEGRITY_GROUP: MenuItem = {
   icon: '🩺',
   children: [MENU_ITEMS.LEADER_MISALIGNMENTS, MENU_ITEMS.POLICY_MISALIGNMENTS],
 };
+
+/**
+ * Plug-in fees admin group — like Data Integrity, not plan-based. `getMenuForUser`
+ * builds its children from the per-user plug-in fee grants and adds the group only
+ * when at least one child is visible.
+ */
+const PLUGIN_FEES_GROUP_LABEL = 'Plug-in Fees';
 
 /**
  * Plan-based menu structures
@@ -825,20 +832,14 @@ export function getMenuForUser(
     menuItems.push(cloneMenuItems([MENU_ITEMS.GUIDANCE])[0]);
   }
 
-  // Plug-in fee reviews ride plugin_fees:review, its own per-user grant.
-  if (
-    canReviewPluginFees &&
-    !menuItems.some((item) => item.label === MENU_ITEMS.PLUGIN_FEES_REVIEW.label)
-  ) {
-    menuItems.push(cloneMenuItems([MENU_ITEMS.PLUGIN_FEES_REVIEW])[0]);
-  }
-
-  // The rest of the plug-in fees admin entries follow the review entry, each on its
-  // own grant: cycles (manage, review or payout_approve), payments (manage or review),
-  // payouts (manage, review or payout_approve), SEVC totals (manage or review), costs
-  // and adjustments (manage), fee settings (manage, review or payout_approve — the
-  // cycles audience, so the cycles flag).
+  // The plug-in fees admin entries live in one "Plug-in Fees" group, each child on its
+  // own grant: overview (manage or review), reviews (review), cycles (manage, review or
+  // payout_approve), payments (manage or review), payouts (manage, review or
+  // payout_approve), SEVC totals (manage or review), costs and adjustments (manage), fee
+  // settings (manage, review or payout_approve — the cycles audience, so the cycles flag).
   const pluginFeesAdminEntries = [
+    canViewPluginFeeOverview ? MENU_ITEMS.PLUGIN_FEES_OVERVIEW : null,
+    canReviewPluginFees ? MENU_ITEMS.PLUGIN_FEES_REVIEW : null,
     canViewPluginFeeCycles ? MENU_ITEMS.PLUGIN_FEES_CYCLES : null,
     canViewPluginFeePayments ? MENU_ITEMS.PLUGIN_FEES_PAYMENTS : null,
     canViewPluginFeePayouts ? MENU_ITEMS.PLUGIN_FEES_PAYOUTS : null,
@@ -846,29 +847,16 @@ export function getMenuForUser(
     canManagePluginFees ? MENU_ITEMS.PLUGIN_FEES_COSTS : null,
     canManagePluginFees ? MENU_ITEMS.PLUGIN_FEES_ADJUSTMENTS : null,
     canViewPluginFeeCycles ? MENU_ITEMS.PLUGIN_FEES_SETTINGS : null,
-  ].filter(
-    (entry): entry is MenuItem =>
-      entry !== null && !menuItems.some((item) => item.label === entry.label)
-  );
-  const pluginFeesReviewIdx = menuItems.findIndex(
-    (item) => item.label === MENU_ITEMS.PLUGIN_FEES_REVIEW.label
-  );
-  const pluginFeesInsertAt =
-    pluginFeesReviewIdx >= 0 ? pluginFeesReviewIdx + 1 : menuItems.length;
-  if (pluginFeesAdminEntries.length) {
-    menuItems.splice(pluginFeesInsertAt, 0, ...cloneMenuItems(pluginFeesAdminEntries));
-  }
-  // The overview is the landing entry: it goes first, ahead of the review entry (or of
-  // the other admin entries when there is no review entry).
+  ].filter((entry): entry is MenuItem => entry !== null);
   if (
-    canViewPluginFeeOverview &&
-    !menuItems.some((item) => item.label === MENU_ITEMS.PLUGIN_FEES_OVERVIEW.label)
+    pluginFeesAdminEntries.length &&
+    !menuItems.some((item) => item.label === PLUGIN_FEES_GROUP_LABEL)
   ) {
-    menuItems.splice(
-      pluginFeesReviewIdx >= 0 ? pluginFeesReviewIdx : pluginFeesInsertAt,
-      0,
-      cloneMenuItems([MENU_ITEMS.PLUGIN_FEES_OVERVIEW])[0]
-    );
+    menuItems.push({
+      label: PLUGIN_FEES_GROUP_LABEL,
+      icon: '💼',
+      children: cloneMenuItems(pluginFeesAdminEntries),
+    });
   }
 
   // An MD's or SMD's own plug-in fee statement. Not an admin tool, so it goes just

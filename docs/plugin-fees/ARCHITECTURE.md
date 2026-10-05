@@ -319,7 +319,7 @@ on void.
 | Assistant section | `can_submit_assistant` **and** `me.assistant` present |
 | Payment method section | `can_save_payment_method` |
 | Whole Settings block | at least one of the three; otherwise renders nothing (`me/` is not even requested) |
-| Review route | `can_review` (`PluginFeesReviewRoute`, `src/router/plugin-fees-review-route.tsx`); loader while pending, `<Navigate to="/home">` on error or false |
+| Review route, menu "Plug-in Fees › Reviews" | `can_review` (`PluginFeesReviewRoute`, `src/router/plugin-fees-review-route.tsx`); loader while pending, `<Navigate to="/home">` on error or false |
 | Statement route, menu "My Plug-in Fees", Settings link | `is_billable` (`canSeeOwnStatement`) |
 | Cycles route, menu "Billing Cycles" | `can_manage \|\| can_review \|\| can_approve_payouts` (`canSeeCycles`) |
 | Preview form | `can_manage` (`canPreviewCycles`) |
@@ -335,7 +335,7 @@ on void.
 | Payouts route, menu "Payouts" | `can_manage \|\| can_review \|\| can_approve_payouts` (`canSeePayouts`) |
 | Prepare report, Retry | `can_manage` (`canPreparePayouts`); Retry also needs a failed/held line on a non-draft payout |
 | Approve payout | `can_approve_payouts` (`canApprovePayouts`) and `status === 'draft'` |
-| Overview route, menu "Plug-in Fees" | `can_manage \|\| can_review` (`canSeeOverview`); each card's link only when its own predicate allows |
+| Overview route, menu "Plug-in Fees › Overview" | `can_manage \|\| can_review` (`canSeeOverview`); each card's link only when its own predicate allows |
 | SEVC totals route, menu "SEVC Totals" | `can_manage \|\| can_review` (`canSeeSevcTotals`) |
 | Adjustments route, menu "Adjustments", "Adjust ledger…" | `can_manage` (`canManageAdjustments`) |
 | Void | `can_manage` (`canVoidInvoices`) and status `draft`/`open`/`failed` (`isVoidable`) |

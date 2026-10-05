@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useUIStore } from '@/store';
 import { cn } from '@core/utils';
 import { useRoleBasedMenu } from '@/hooks/use-role-based-menu';
-import type { MenuItem } from '@/config/menu';
+import { menuContainsPath, type MenuItem } from '@/config/menu';
 import { getSidebarMenuIcon } from './menu-icon-map';
 import './sidebar.css';
 
@@ -23,6 +23,14 @@ function MenuItemComponent({ item, isCollapsed, level = 0 }: MenuItemProps) {
   const flyoutRef = useRef<HTMLDivElement>(null);
   const hasChildren = item.children && item.children.length > 0;
   const safeLabel = typeof item.label === 'string' ? item.label : 'Menu Item';
+  const { pathname } = useLocation();
+  const containsActivePath = Boolean(item.children && menuContainsPath(item.children, pathname));
+
+  // Open the group that holds the current page, so the active entry is visible.
+  // Never closes one: a group the user opened stays open while they navigate.
+  useEffect(() => {
+    if (containsActivePath) setIsExpanded(true);
+  }, [containsActivePath]);
 
   // Expanding the sidebar makes the flyout redundant — the accordion takes over.
   useEffect(() => {

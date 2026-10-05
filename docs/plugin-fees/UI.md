@@ -33,15 +33,16 @@
 | `/admin/plugin-fees/review?tab=offices\|assistants&status=…` | overview deep link | read once (PF42) |
 | Settings → "View statement of account →" | `is_billable` | link under the plug-in fee sections |
 | Menu "My Plug-in Fees" 💳 | `is_billable` | inserted just after My Team (under Home if the plan has no My Team) |
-| Menu "Plug-in Fee Reviews" 🗂️ | `can_review` | appended after the other per-user admin entries |
-| Menu "Billing Cycles" 🧾 | `can_manage \|\| can_review \|\| can_approve_payouts` | right after "Plug-in Fee Reviews" (or appended) |
-| Menu "Fee Payments" 💵 | `can_manage \|\| can_review` | after "Billing Cycles" (PF30) |
-| Menu "Plug-in Fees" 📊 (overview) | `can_manage \|\| can_review` | first of the plug-in fees admin entries, before "Plug-in Fee Reviews" (PF41) |
-| Menu "Payouts" 🏦 | `can_manage \|\| can_review \|\| can_approve_payouts` | after "Fee Payments" |
-| Menu "SEVC Totals" 📈 | `can_manage \|\| can_review` | after "Payouts" |
-| Menu "Recognition Costs" 🎖️ | `can_manage` | after "SEVC Totals" |
-| Menu "Adjustments" ⚖️ | `can_manage` | after "Recognition Costs" |
-| Menu "Fee Settings" 🛠️ | `can_manage \|\| can_review \|\| can_approve_payouts` | last of the plug-in fees admin entries, after "Adjustments" (rides the cycles flag — same audience) |
+| Menu group "Plug-in Fees" 💼 | any of the children below | one collapsible group appended after the other per-user admin entries; added only when at least one child is visible, and opens itself when the current page is one of its children (PF53) |
+| ↳ "Overview" 📊 | `can_manage \|\| can_review` | first child (PF41) |
+| ↳ "Reviews" 🗂️ | `can_review` | after "Overview" |
+| ↳ "Billing Cycles" 🧾 | `can_manage \|\| can_review \|\| can_approve_payouts` | after "Reviews" |
+| ↳ "Fee Payments" 💵 | `can_manage \|\| can_review` | after "Billing Cycles" (PF30) |
+| ↳ "Payouts" 🏦 | `can_manage \|\| can_review \|\| can_approve_payouts` | after "Fee Payments" |
+| ↳ "SEVC Totals" 📈 | `can_manage \|\| can_review` | after "Payouts" |
+| ↳ "Recognition Costs" 🎖️ | `can_manage` | after "SEVC Totals" |
+| ↳ "Adjustments" ⚖️ | `can_manage` | after "Recognition Costs" |
+| ↳ "Fee Settings" 🛠️ | `can_manage \|\| can_review \|\| can_approve_payouts` | last child (rides the cycles flag — same audience, PF48) |
 
 ## 2. Screens
 
