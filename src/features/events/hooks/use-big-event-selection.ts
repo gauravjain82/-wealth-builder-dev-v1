@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { eventService } from '../services/event-service';
+import type { BigEventScreen } from '../types/access';
 import type { BigEventListItem } from '../types/event';
 
 // Shared across the top-level Big Event surfaces (Purchases, Check-in, …) so
@@ -14,8 +15,11 @@ interface BigEventSelection {
   error: string | null;
 }
 
-/** Load the event list and track which event the Big Event surfaces target. */
-export function useBigEventSelection(): BigEventSelection {
+/**
+ * Load the events `screen` opens for and track which one the Big Event surfaces
+ * target. A per-event delegate gets only their delegated events here.
+ */
+export function useBigEventSelection(screen: BigEventScreen): BigEventSelection {
   const [events, setEvents] = useState<BigEventListItem[]>([]);
   const [selectedId, setSelectedIdState] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +36,7 @@ export function useBigEventSelection(): BigEventSelection {
     setLoading(true);
     setError(null);
     eventService
-      .list()
+      .list({ surface: screen })
       .then((response) => {
         if (!active) return;
         const list = response.results;
@@ -53,7 +57,7 @@ export function useBigEventSelection(): BigEventSelection {
     return () => {
       active = false;
     };
-  }, []);
+  }, [screen]);
 
   return { events, selectedId, setSelectedId, loading, error };
 }

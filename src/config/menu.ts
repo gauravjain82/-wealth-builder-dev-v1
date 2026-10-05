@@ -1,5 +1,6 @@
 import { Plan } from '@core/types';
 import type { AccountType } from '../features/auth/types';
+import type { BigEventScreen } from '../features/events/types/access';
 
 /**
  * Menu item configuration
@@ -232,6 +233,21 @@ const DATA_INTEGRITY_GROUP: MenuItem = {
 const PLUGIN_FEES_GROUP_LABEL = 'Plug-in Fees';
 
 /**
+ * Big Event group — not plan-based. Each child is added when `/api/events/events/my-access/`
+ * reports its screen open for at least one event, through a platform-wide grant (role,
+ * level or a User Permissions override) or a per-event grant (Big Event → Permissions).
+ * A check-in-only delegate gets the group with just Check-in.
+ */
+const BIG_EVENT_GROUP_LABEL = 'Big Event';
+const BIG_EVENT_ENTRIES: Array<[BigEventScreen, MenuItem]> = [
+  ['builder', MENU_ITEMS.BIG_EVENT_BUILDER],
+  ['purchases', MENU_ITEMS.PURCHASES],
+  ['checkin', MENU_ITEMS.CHECK_IN],
+  ['permissions', MENU_ITEMS.PERMISSIONS],
+  ['recognition', MENU_ITEMS.RECOGNITION_ORDERS],
+];
+
+/**
  * Plan-based menu structures
  * These mirror the old site's getSidebarStructure() function
  */
@@ -424,17 +440,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_SETTINGS,
       ],
     },
-    {
-      label: 'Big Event',
-      icon: '🎪',
-      children: [
-        MENU_ITEMS.BIG_EVENT_BUILDER,
-        MENU_ITEMS.PURCHASES,
-        MENU_ITEMS.CHECK_IN,
-        MENU_ITEMS.PERMISSIONS,
-        MENU_ITEMS.RECOGNITION_ORDERS,
-      ],
-    },
     MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.CALENDAR,
@@ -489,17 +494,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_SETTINGS,
       ],
     },
-    {
-      label: 'Big Event',
-      icon: '🎪',
-      children: [
-        MENU_ITEMS.BIG_EVENT_BUILDER,
-        MENU_ITEMS.PURCHASES,
-        MENU_ITEMS.CHECK_IN,
-        MENU_ITEMS.PERMISSIONS,
-        MENU_ITEMS.RECOGNITION_ORDERS,
-      ],
-    },
     MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.CALENDAR,
@@ -551,17 +545,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
         MENU_ITEMS.BPM_SETTINGS,
-      ],
-    },
-    {
-      label: 'Big Event',
-      icon: '🎪',
-      children: [
-        MENU_ITEMS.BIG_EVENT_BUILDER,
-        MENU_ITEMS.PURCHASES,
-        MENU_ITEMS.CHECK_IN,
-        MENU_ITEMS.PERMISSIONS,
-        MENU_ITEMS.RECOGNITION_ORDERS,
       ],
     },
     MENU_ITEMS.TRAINING_CENTER,
@@ -630,17 +613,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_ASSOCIATE_CHECKIN,
         MENU_ITEMS.BPM_SCHEDULE,
         MENU_ITEMS.BPM_SETTINGS,
-      ],
-    },
-    {
-      label: 'Big Event',
-      icon: '🎪',
-      children: [
-        MENU_ITEMS.BIG_EVENT_BUILDER,
-        MENU_ITEMS.PURCHASES,
-        MENU_ITEMS.CHECK_IN,
-        MENU_ITEMS.PERMISSIONS,
-        MENU_ITEMS.RECOGNITION_ORDERS,
       ],
     },
     MENU_ITEMS.TRAINING_CENTER,
@@ -762,7 +734,9 @@ export function getMenuForUser(
   // plugin_fees:manage or :review: the plug-in fees overview and SEVC totals.
   canViewPluginFeeOverview: boolean = false,
   // plugin_fees:manage, :review or :payout_approve: quarterly payouts.
-  canViewPluginFeePayouts: boolean = false
+  canViewPluginFeePayouts: boolean = false,
+  // The Big Event screens open for at least one event (events my-access `surfaces`).
+  bigEventScreens: Partial<Record<BigEventScreen, boolean>> = {}
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -890,6 +864,24 @@ export function getMenuForUser(
       (entry) => !menuItems.some((item) => item.label === entry.label)
     );
     menuItems = [...cloneMenuItems(newEntries), ...menuItems];
+  }
+
+  // Big Event sits after BPM (before Training Center when a plan has no BPM group),
+  // where every plan listed it before it moved off roles and onto access.
+  const bigEventEntries = BIG_EVENT_ENTRIES.filter(([screen]) => bigEventScreens[screen]).map(
+    ([, entry]) => entry,
+  );
+  if (bigEventEntries.length && !menuItems.some((item) => item.label === BIG_EVENT_GROUP_LABEL)) {
+    const bpmIdx = menuItems.findIndex((item) => item.label === 'BPM');
+    const trainingIdx = menuItems.findIndex(
+      (item) => item.label === MENU_ITEMS.TRAINING_CENTER.label,
+    );
+    const insertAt = bpmIdx >= 0 ? bpmIdx + 1 : trainingIdx >= 0 ? trainingIdx : menuItems.length;
+    menuItems.splice(insertAt, 0, {
+      label: BIG_EVENT_GROUP_LABEL,
+      icon: '🎪',
+      children: cloneMenuItems(bigEventEntries),
+    });
   }
 
   if (!canManageBpmSettings) {

@@ -43,7 +43,8 @@ By family rather than exhaustively — the service method is the searchable name
 
 | Family | Path shape |
 |---|---|
-| Events | `/api/events/events/` and `/api/events/events/{id}/` |
+| Events | `/api/events/events/` and `/api/events/events/{id}/` — also lists and retrieves events delegated to the user |
+| Access | `/api/events/events/my-access/` — which screens open, and for which events (`types/access.ts`) |
 | Pricing tiers | `/api/events/events/{id}/tiers/…` |
 | Speakers | `/api/events/events/{id}/speakers/…` |
 | Product partners | `/api/events/events/{id}/partners/…` |
@@ -121,7 +122,7 @@ check-in record. A single `status` enum cannot express "assigned and refunded", 
 
 | Group | Used by |
 |---|---|
-| `EventFilters` | the event list |
+| `EventFilters` | the event list; `surface` narrows it to the events one screen opens for (`builder`, `purchases`, `checkin`, `recognition`, `emails`, `questions`, `permissions`; anything else is a 400) |
 | `OrderFilters` | orders — status, source, tier, seller |
 | `CheckinFilters` | the attendee list |
 | `BlastRecipientFilter` | the recipient preview |

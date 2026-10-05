@@ -1,3 +1,5 @@
+import type { BigEventScreen } from './access';
+
 export interface BigEventListItem {
   id: number;
   uuid: string;
@@ -83,6 +85,8 @@ export interface EventFilters {
   status?: string;
   search?: string;
   page?: number;
+  /** Only the events this screen opens for — the backend's `?surface=`. */
+  surface?: BigEventScreen;
 }
 
 export interface PaginatedResponse<T> {

@@ -10,6 +10,7 @@ import { getMenuForUser, type MenuItem } from '../config/menu';
 import { useGmsAccess } from '@/features/gms';
 import { useBpmCapabilities } from '@/features/bpm/hooks/use-bpm-capabilities';
 import { usePluginFeesAccess } from '@/features/plugin-fees/hooks/use-plugin-fees';
+import { useEventsAccess } from '@/features/events/hooks/use-events-access';
 import {
   canManageCosts,
   canSeeCycles,
@@ -68,6 +69,10 @@ export function useRoleBasedMenu(): MenuItem[] {
   // Overview (and SEVC totals): :manage or :review. Payouts: also :payout_approve.
   const canViewPluginFeeOverview = canSeeOverview(pluginFeesAccess);
   const canViewPluginFeePayouts = canSeePayouts(pluginFeesAccess);
+  // Big Event screens open through a platform-wide grant or a per-event one, so a
+  // check-in-only delegate sees Big Event → Check-in whatever their role.
+  const { data: eventsAccess } = useEventsAccess();
+  const bigEventScreens = eventsAccess?.surfaces;
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
@@ -91,7 +96,8 @@ export function useRoleBasedMenu(): MenuItem[] {
         canManagePluginFees,
         canViewPluginFeePayments,
         canViewPluginFeeOverview,
-        canViewPluginFeePayouts
+        canViewPluginFeePayouts,
+        bigEventScreens
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -112,7 +118,8 @@ export function useRoleBasedMenu(): MenuItem[] {
       canManagePluginFees,
       canViewPluginFeePayments,
       canViewPluginFeeOverview,
-      canViewPluginFeePayouts
+      canViewPluginFeePayouts,
+      bigEventScreens
     );
   }, [
     user?.hasPromotionAccess,
@@ -133,5 +140,6 @@ export function useRoleBasedMenu(): MenuItem[] {
     canViewPluginFeePayments,
     canViewPluginFeeOverview,
     canViewPluginFeePayouts,
+    bigEventScreens,
   ]);
 }

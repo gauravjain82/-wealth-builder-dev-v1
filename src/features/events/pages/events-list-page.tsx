@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Heading, Input, LoadingState, Select, Text } from '@shared/components';
 import { useToastStore } from '@/store';
 import { eventService } from '../services/event-service';
+import { useEventsAccess } from '../hooks/use-events-access';
 import type { BigEvent, BigEventListItem } from '../types/event';
 import { EventListTable } from '../components/event-list-table';
 import { AddEventModal } from '../components/add-event-modal';
@@ -22,11 +23,16 @@ export default function EventsListPage() {
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
+  const { data: access } = useEventsAccess();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await eventService.list({ status: status || undefined, search: search || undefined });
+      const response = await eventService.list({
+        status: status || undefined,
+        search: search || undefined,
+        surface: 'builder',
+      });
       setEvents(response.results);
     } catch (error) {
       addToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to load events' });
@@ -52,7 +58,8 @@ export default function EventsListPage() {
           </Heading>
           <Text variant="muted">Manage events, tickets, and registrations</Text>
         </div>
-        <Button onClick={() => setAddOpen(true)}>Add New Event</Button>
+        {/* Creating needs events:create; a per-event delegate only edits what they were given. */}
+        {access?.can_create ? <Button onClick={() => setAddOpen(true)}>Add New Event</Button> : null}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

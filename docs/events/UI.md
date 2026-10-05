@@ -33,6 +33,17 @@
 
 The five non-`:eventId` routes are cross-event views; the eight `:eventId` ones are per-event.
 
+**The sidebar's Big Event group follows access, not role.** Each child — Big Event Builder, Purchases,
+Check-in, Permissions, Recognition Orders — shows when `my-access` reports that screen open for at least
+one event, through a platform-wide grant or a per-event one. A user delegated `CHECKIN` on one event sees
+**Big Event → Check-in** and nothing else, whatever their role. See
+[ARCHITECTURE.md §6](ARCHITECTURE.md#6-permissions-and-gating).
+
+The cross-event pages' **event picker lists only the events that page opens for**; with none, it says
+"No events here yet. Events you create, or are given access to, appear here." The events list hides
+**Add New Event** without `events:create`, and `EventSubnav` shows only the tabs open for that event
+(gated tabs stay hidden while access loads, and all show if it fails to load).
+
 ### Public — outside `ProtectedRoute`
 
 | Route | Component | Protection |

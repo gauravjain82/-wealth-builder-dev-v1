@@ -89,7 +89,7 @@ lines: [docs/platform/OPERATIONS.md §2](docs/platform/OPERATIONS.md#2-build-and
 ## Coupled branches
 
 `feature/wb-leaderboards`, `feature/wb-contests`, `feature/wb-gms`,
-`feature/wb-reporting-pipeline`, `feature/bpm-v2` and `feature/bpm-updates-oct` each have a counterpart branch in
+`feature/wb-reporting-pipeline`, `feature/bpm-v2`, `feature/bpm-updates-oct` and `feature/wb-big-event-access` each have a counterpart branch in
 `mlm_platform` and must merge and deploy together. Merging one side alone yields a page that
 renders and then fails every request. `leaderboards`, `contests`, `gms` and `home-v2` are on
 `main` but **not deployed** — their migrations are unapplied and nobody holds the grant.
