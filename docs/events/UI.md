@@ -61,7 +61,7 @@ The largest surface: a shell, a tab registry and eleven tabs.
 
 | Tab | Configures |
 |---|---|
-| Event | name, shortcut, dates |
+| Event | name, shortcut, dates, timezone — a dropdown of IANA zones labelled with today's offset (`utils/timezones.ts`); the backend rejects any other value |
 | Location | venue |
 | Design | branding and imagery |
 | Pricing | pricing tiers |
