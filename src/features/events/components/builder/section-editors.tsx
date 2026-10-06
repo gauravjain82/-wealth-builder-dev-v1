@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowDown, ArrowUp, ImagePlus, Trash2 } from 'lucide-react';
-import { Button, Input, Label, Text, Textarea } from '@shared/components';
+import { Button, Checkbox, Input, Label, Select, Text, Textarea } from '@shared/components';
 import { configService } from '../../services/config-service';
 import { sessionService } from '../../services/session-service';
 import type { EventSession } from '../../types/session';
@@ -9,11 +9,18 @@ import type {
   AgendaItem,
   AgendaSource,
   CtaBandContent,
+  CtaBandSize,
   FaqContent,
   GalleryContent,
+  MarqueeContent,
   PillarsContent,
+  PricingContent,
   RichTextContent,
   SectionType,
+  StatItem,
+  StatSource,
+  StatsContent,
+  TaglineContent,
   TestimonialItem,
   TestimonialsContent,
   VideoContent,
@@ -62,6 +69,14 @@ export function SectionContentEditor({
       return <CtaBandEditor {...props} />;
     case 'rich_text':
       return <RichTextBlockEditor {...props} />;
+    case 'tagline':
+      return <TaglineEditor {...props} />;
+    case 'stats':
+      return <StatsEditor {...props} />;
+    case 'marquee':
+      return <MarqueeEditor {...props} />;
+    case 'pricing':
+      return <PricingContentEditor {...props} />;
     default:
       return null;
   }
@@ -185,6 +200,68 @@ function IconButton({
     >
       {children}
     </button>
+  );
+}
+
+/** A short list of single-line strings (hook lines, words, inclusions…). */
+function StringList({
+  items,
+  onChange,
+  max,
+  maxLength,
+  noun,
+  placeholder,
+}: {
+  items: string[];
+  onChange: (items: string[]) => void;
+  max: number;
+  maxLength: number;
+  noun: string;
+  placeholder?: string;
+}) {
+  return (
+    <div className="space-y-2">
+      {items.map((item, index) => (
+        <div key={index} className="flex items-center gap-1">
+          <Input
+            value={item}
+            maxLength={maxLength}
+            placeholder={placeholder}
+            aria-label={`${noun} ${index + 1}`}
+            onChange={(e) => onChange(replaceAt(items, index, e.target.value))}
+          />
+          <IconButton
+            label="Move up"
+            disabled={index === 0}
+            onClick={() => onChange(move(items, index, -1))}
+          >
+            <ArrowUp className="h-3.5 w-3.5" />
+          </IconButton>
+          <IconButton
+            label="Move down"
+            disabled={index === items.length - 1}
+            onClick={() => onChange(move(items, index, 1))}
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+          </IconButton>
+          <IconButton
+            label={`Remove ${noun.toLowerCase()}`}
+            onClick={() => onChange(items.filter((_, i) => i !== index))}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </IconButton>
+        </div>
+      ))}
+      {items.length < max ? (
+        <Button type="button" variant="secondary" onClick={() => onChange([...items, ''])}>
+          Add {noun.toLowerCase()}
+        </Button>
+      ) : (
+        <Text variant="muted" className="text-xs">
+          Maximum of {max} reached.
+        </Text>
+      )}
+    </div>
   );
 }
 
@@ -636,13 +713,33 @@ function VideoEditor({ content, onChange }: EditorProps<VideoContent>) {
   );
 }
 
+const CTA_SIZES: Array<{ value: CtaBandSize; label: string }> = [
+  { value: 'banner', label: 'Banner — a compact strip' },
+  { value: 'final', label: 'Closing section — full height, large heading' },
+];
+
 function CtaBandEditor({ content, onChange }: EditorProps<CtaBandContent>) {
+  const size: CtaBandSize = content.size ?? 'banner';
   return (
     <div className="grid gap-3">
+      <Field label="Size">
+        <Select
+          value={size}
+          onChange={(e) => onChange({ ...content, size: e.target.value as CtaBandSize })}
+        >
+          {CTA_SIZES.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+      </Field>
       <Field label="Heading" help={'Blank shows "Don\'t miss <event name>".'}>
         <Input
           value={content.heading ?? ''}
-          placeholder="Your next chapter starts in January"
+          placeholder={
+            size === 'final' ? 'Stop watching from the sidelines.' : 'Your next chapter starts in January'
+          }
           onChange={(e) => onChange({ ...content, heading: e.target.value })}
         />
       </Field>
@@ -652,14 +749,349 @@ function CtaBandEditor({ content, onChange }: EditorProps<CtaBandContent>) {
           onChange={(e) => onChange({ ...content, subtext: e.target.value })}
         />
       </Field>
+      {size === 'final' ? (
+        <>
+          <Field label="Paragraphs" help="Shown under the heading, one per line, up to six.">
+            <StringList
+              items={content.body ?? []}
+              onChange={(body) => onChange({ ...content, body })}
+              max={6}
+              maxLength={300}
+              noun="Paragraph"
+              placeholder="The only question left is whether you show up."
+            />
+          </Field>
+          <Field
+            label="Highlight"
+            help="A word or phrase from the paragraphs to show in the accent colour."
+          >
+            <Input
+              value={content.highlight ?? ''}
+              maxLength={60}
+              placeholder="become"
+              onChange={(e) => onChange({ ...content, highlight: e.target.value })}
+            />
+          </Field>
+        </>
+      ) : null}
       <Field
         label="Button label"
-        help="The button links to checkout and only shows while sales are open."
+        help="The button opens checkout and only shows while sales are open."
       >
         <Input
           value={content.button_label ?? ''}
           placeholder="Get your ticket"
           onChange={(e) => onChange({ ...content, button_label: e.target.value })}
+        />
+      </Field>
+      {size === 'final' ? (
+        <Field label="Sign-off" help="A closing line under the button.">
+          <Input
+            value={content.signoff ?? ''}
+            maxLength={160}
+            placeholder="See you in the room, champion."
+            onChange={(e) => onChange({ ...content, signoff: e.target.value })}
+          />
+        </Field>
+      ) : null}
+    </div>
+  );
+}
+
+function TaglineEditor({ content, onChange }: EditorProps<TaglineContent>) {
+  const links = content.links ?? [];
+  return (
+    <div className="space-y-4">
+      <Field label="Hook lines" help="One to four short lines, centred under the hero.">
+        <StringList
+          items={content.lines ?? []}
+          onChange={(lines) => onChange({ ...content, lines })}
+          max={4}
+          maxLength={200}
+          noun="Line"
+          placeholder="Learn the business. Rebuild your mind."
+        />
+      </Field>
+      <label className="flex items-center gap-2 text-sm text-slate-800 dark:text-white/90">
+        <Checkbox
+          checked={Boolean(content.highlight_last)}
+          onChange={(e) => onChange({ ...content, highlight_last: e.target.checked })}
+        />
+        Show the last line in the accent colour
+      </label>
+      <Field
+        label="Highlight words"
+        help="Up to eight short words shown large; the highlight moves from word to word (it stays still for visitors who prefer reduced motion)."
+      >
+        <StringList
+          items={content.words ?? []}
+          onChange={(words) => onChange({ ...content, words })}
+          max={8}
+          maxLength={24}
+          noun="Word"
+          placeholder="CONNECT"
+        />
+      </Field>
+      <Field
+        label="Extra links"
+        help="Up to two outline buttons beside the ticket button. Use a full https:// link, or #anchor for a spot on this page."
+      >
+        <ItemList
+          items={links}
+          onChange={(next) => onChange({ ...content, links: next })}
+          newItem={() => ({ label: '', url: '' })}
+          max={2}
+          noun="Link"
+          renderItem={(link, update) => (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Input
+                value={link.label}
+                maxLength={40}
+                placeholder="See what happens"
+                onChange={(e) => update({ ...link, label: e.target.value })}
+              />
+              <Input
+                value={link.url}
+                maxLength={500}
+                placeholder="https://… or #agenda"
+                onChange={(e) => update({ ...link, url: e.target.value })}
+              />
+            </div>
+          )}
+        />
+      </Field>
+      <Field
+        label="Button label"
+        help="The ticket button's text. Leave blank for the theme default (Claim your seat, or Get your ticket)."
+      >
+        <Input
+          value={content.button_label ?? ''}
+          maxLength={40}
+          placeholder="Claim your seat"
+          onChange={(e) => onChange({ ...content, button_label: e.target.value })}
+        />
+      </Field>
+    </div>
+  );
+}
+
+const STAT_SOURCES: Array<{ value: StatSource; label: string }> = [
+  { value: 'static', label: 'Typed value' },
+  { value: 'tickets_remaining', label: 'Live: tickets remaining' },
+  { value: 'tickets_sold', label: 'Live: tickets sold' },
+];
+
+function StatsEditor({ content, onChange }: EditorProps<StatsContent>) {
+  const blank = (): StatItem => ({ value: '', label: '', source: 'static' });
+  return (
+    <div className="space-y-2">
+      <ItemList
+        items={content.items ?? []}
+        onChange={(items) => onChange({ ...content, items })}
+        newItem={blank}
+        max={4}
+        noun="Stat"
+        renderItem={(item, update) => {
+          const live = item.source !== 'static';
+          return (
+            <div className="grid gap-3 sm:grid-cols-[12rem_8rem_1fr]">
+              <Select
+                value={item.source}
+                aria-label="Value source"
+                onChange={(e) => update({ ...item, source: e.target.value as StatSource })}
+              >
+                {STAT_SOURCES.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+              <Input
+                value={live ? '' : item.value}
+                disabled={live}
+                maxLength={24}
+                aria-label="Value"
+                placeholder={live ? 'Live' : '$5,000+'}
+                onChange={(e) => update({ ...item, value: e.target.value })}
+              />
+              <Input
+                value={item.label}
+                maxLength={80}
+                aria-label="Label"
+                placeholder="What this costs anywhere else"
+                onChange={(e) => update({ ...item, label: e.target.value })}
+              />
+              {live ? (
+                <Text variant="muted" className="text-xs sm:col-span-3">
+                  Shown live from ticket sales; hidden if unavailable
+                  {item.source === 'tickets_remaining'
+                    ? ' (for example when the event has no ticket cap).'
+                    : '.'}
+                  {item.source === 'tickets_sold'
+                    ? ' Adding this publishes your sold-ticket count on the public page.'
+                    : ''}
+                </Text>
+              ) : null}
+            </div>
+          );
+        }}
+      />
+      <Text variant="muted" className="text-xs">
+        Keep at least one stat; remove the section to hide it entirely.
+      </Text>
+    </div>
+  );
+}
+
+function MarqueeEditor({ content, onChange, eventId }: EditorProps<MarqueeContent>) {
+  const items = content.items ?? [];
+  const max = 40;
+  const setItems = (next: MarqueeContent['items']) => onChange({ ...content, items: next });
+  return (
+    <div className="space-y-4">
+      <Field label="Intro" help="One line above the strip.">
+        <Input
+          value={content.intro ?? ''}
+          maxLength={200}
+          placeholder="Past stages have featured some of the greatest minds in business."
+          onChange={(e) => onChange({ ...content, intro: e.target.value })}
+        />
+      </Field>
+      {items.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {items.map((item, index) => (
+            <div key={`${item.photo_blob}-${index}`} className="space-y-1.5">
+              <div className="group relative aspect-[4/5] overflow-hidden rounded-md bg-slate-100 dark:bg-white/5">
+                {item.photo_url ? (
+                  <img src={item.photo_url} alt="" className="h-full w-full object-cover" />
+                ) : null}
+                <div className="absolute right-1 top-1 flex gap-1 rounded bg-black/50 p-0.5 text-white opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                  <IconButton
+                    label="Move left"
+                    disabled={index === 0}
+                    onClick={() => setItems(move(items, index, -1))}
+                  >
+                    <ArrowUp className="h-3.5 w-3.5 -rotate-90 text-white" />
+                  </IconButton>
+                  <IconButton
+                    label="Move right"
+                    disabled={index === items.length - 1}
+                    onClick={() => setItems(move(items, index, 1))}
+                  >
+                    <ArrowDown className="h-3.5 w-3.5 -rotate-90 text-white" />
+                  </IconButton>
+                  <IconButton
+                    label="Remove photo"
+                    onClick={() => setItems(items.filter((_, i) => i !== index))}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-white" />
+                  </IconButton>
+                </div>
+              </div>
+              <Input
+                value={item.name}
+                maxLength={120}
+                placeholder="Name"
+                onChange={(e) => setItems(replaceAt(items, index, { ...item, name: e.target.value }))}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+      {items.length < max ? (
+        <ImagePickButton
+          eventId={eventId}
+          label="Upload photos"
+          multiple
+          onUploaded={(uploads) =>
+            setItems(
+              [
+                ...items,
+                ...uploads.map((u) => ({ name: '', photo_blob: u.blob, photo_url: u.url })),
+              ].slice(0, max),
+            )
+          }
+        />
+      ) : (
+        <Text variant="muted" className="text-xs">
+          Maximum of {max} photos reached.
+        </Text>
+      )}
+      <Text variant="muted" className="text-xs">
+        The strip scrolls slowly and pauses on hover; visitors who prefer reduced motion see a
+        still grid. With no photos the section is hidden.
+      </Text>
+    </div>
+  );
+}
+
+/** Optional value copy for the model-backed Ticket prices section. */
+function PricingContentEditor({ content, onChange }: EditorProps<PricingContent>) {
+  return (
+    <div className="grid gap-3">
+      <Text variant="muted" className="text-xs">
+        Optional. Fill the anchor, inclusions, motto or fine print to show the current price as a
+        single ticket card; the eyebrow and button label only relabel that card. The price itself
+        always comes from the Ticket Price tab.
+      </Text>
+      <Field label="Eyebrow" help="Small label above the card.">
+        <Input
+          value={content.eyebrow ?? ''}
+          maxLength={60}
+          placeholder="Your ticket"
+          onChange={(e) => onChange({ ...content, eyebrow: e.target.value })}
+        />
+      </Field>
+      <Field label="Anchor line">
+        <Input
+          value={content.anchor_text ?? ''}
+          maxLength={200}
+          placeholder="Seeing our keynote speakers live anywhere else runs"
+          onChange={(e) => onChange({ ...content, anchor_text: e.target.value })}
+        />
+      </Field>
+      <Field label="Comparison price" help="Shown struck through. Free text, e.g. $5,000+.">
+        <Input
+          value={content.anchor_price ?? ''}
+          maxLength={24}
+          placeholder="$5,000+"
+          onChange={(e) => onChange({ ...content, anchor_price: e.target.value })}
+        />
+      </Field>
+      <Field label="What's included" help="Up to eight lines, each with a check mark.">
+        <StringList
+          items={content.inclusions ?? []}
+          onChange={(inclusions) => onChange({ ...content, inclusions })}
+          max={8}
+          maxLength={160}
+          noun="Inclusion"
+          placeholder="Every session, every stage — all three days"
+        />
+      </Field>
+      <Field
+        label="Button label"
+        help="Leave blank for the theme default (Claim your seat, or Get your ticket)."
+      >
+        <Input
+          value={content.button_label ?? ''}
+          maxLength={40}
+          placeholder="Claim your seat"
+          onChange={(e) => onChange({ ...content, button_label: e.target.value })}
+        />
+      </Field>
+      <Field label="Motto" help="A bold line under the button.">
+        <Input
+          value={content.motto ?? ''}
+          maxLength={200}
+          onChange={(e) => onChange({ ...content, motto: e.target.value })}
+        />
+      </Field>
+      <Field label="Fine print">
+        <Textarea
+          rows={3}
+          value={content.fine_print ?? ''}
+          maxLength={1000}
+          onChange={(e) => onChange({ ...content, fine_print: e.target.value })}
         />
       </Field>
     </div>

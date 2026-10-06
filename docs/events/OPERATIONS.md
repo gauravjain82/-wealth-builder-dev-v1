@@ -92,7 +92,15 @@ four matter most:
 
 ## 5. Deployment
 
-Ships with any frontend deploy; the `events` backend is in production and there is no coupled branch.
+Ships with any frontend deploy, **except `feature/event-champion-theme`**, which has a counterpart branch
+in `mlm_platform` (migration `events/0010_champion_theme`). Deployed alone, the frontend offers a theme
+and section types the API rejects with 400 on save.
+
+**Firebase CDN for event media** is a backend switch, `EVENTS_MEDIA_CDN`, off by default. Order, from
+`mlm_platform/docs/events/OPERATIONS.md` §3.1: deploy with it off (new uploads are already stamped) → set
+`FIREBASE_MEDIA_TOKEN_SECRET` → run `manage.py stamp_event_media_cdn` (dry run, then `--apply`) → turn
+`EVENTS_MEDIA_CDN` on. Turning it on before the backfill makes every older image and video 403.
+Rollback is turning it off. Rotating the secret breaks every URL until a re-stamp.
 
 Three deployment-time hazards, all about money:
 

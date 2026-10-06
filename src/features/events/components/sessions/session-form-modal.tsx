@@ -212,7 +212,7 @@ export function SessionFormModal({
       onClose={onClose}
       title={session ? 'Edit session' : 'Add session'}
       subtitle={`Times are in the event’s timezone · ${timeZone} (${zone})`}
-      className="max-w-2xl"
+      contentClassName="max-w-2xl"
     >
       <form onSubmit={(e) => void submit(e)} noValidate className="space-y-6">
         <fieldset>

@@ -12,6 +12,8 @@ import {
   toCents,
   type OrderSummary as Summary,
 } from '../../utils/public-pricing';
+import { cn } from '@core/utils';
+
 import type { CheckoutAddOnSpec, PublicEvent } from '../../types/public';
 import { PublicCard } from './public-event-shell';
 
@@ -21,19 +23,34 @@ export function OrderSummaryCard({
   addOns,
   summary,
   tierLabel,
+  variant = 'card',
 }: {
   event: PublicEvent;
   quantity: number;
   addOns: CheckoutAddOnSpec[];
   summary: Summary;
   tierLabel: string;
+  /**
+   * `card`: the sticky sidebar card (checkout page). `inline`: unwrapped,
+   * for the single-column landing form, which is already inside a card.
+   */
+  variant?: 'card' | 'inline';
 }) {
   const { currency } = summary;
   const discounted = summary.discountCents > 0;
+  const inline = variant === 'inline';
 
-  return (
-    <PublicCard className="sticky top-4">
-      <h2 className="text-lg font-semibold">Order Summary</h2>
+  const body = (
+    <>
+      <h2
+        className={cn(
+          'text-lg font-semibold',
+          inline &&
+            'text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-white/60',
+        )}
+      >
+        Order Summary
+      </h2>
 
       <dl className="mt-4 space-y-2 text-sm">
         <Row
@@ -70,18 +87,26 @@ export function OrderSummaryCard({
         ) : null}
       </dl>
 
-      <div className="mt-4 flex items-baseline justify-between border-t border-slate-200 pt-4 dark:border-white/10">
+      <div className="mt-4 flex items-baseline justify-between border-t border-slate-200 pt-4 dark:border-white/10 [[data-event-surface=tokens]_&]:border-[color:var(--event-hairline)]">
         <span className="font-semibold">Total</span>
         <span className="text-2xl font-bold" style={{ color: 'var(--event-brand)' }}>
           {formatMoney(summary.totalCents, currency)}
         </span>
       </div>
 
-      <p className="mt-3 text-xs text-slate-500 dark:text-white/50">
+      <p className="mt-3 text-xs text-slate-500 dark:text-white/50 [[data-event-surface=tokens]_&]:text-[color:var(--event-muted)]">
         You'll receive {quantity === 1 ? 'a ticket' : `${quantity} tickets`} by email.
         Attendee names can be assigned after purchase.
       </p>
-    </PublicCard>
+    </>
+  );
+
+  return inline ? (
+    <div className="border-t border-slate-200 pt-5 dark:border-white/10 [[data-event-surface=tokens]_&]:border-[color:var(--event-hairline)]">
+      {body}
+    </div>
+  ) : (
+    <PublicCard className="sticky top-4">{body}</PublicCard>
   );
 }
 

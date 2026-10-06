@@ -10,10 +10,15 @@ export interface PricingTier {
   is_active: boolean;
 }
 
+/** `keynote` speakers render larger, in their own group. */
+export type SpeakerGroup = 'keynote' | 'speaker';
+
 export interface EventSpeaker {
   id: number;
   name: string;
   title: string;
+  /** Absent from a backend that predates groups; treat as `speaker`. */
+  group?: SpeakerGroup;
   image_blob_name: string | null;
   /** Signed photo URL (null when no photo uploaded). */
   image_url: string | null;

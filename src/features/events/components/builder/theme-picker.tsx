@@ -24,7 +24,7 @@ export function ThemePicker({ value, onChange, accent }: ThemePickerProps) {
     <div
       role="radiogroup"
       aria-label="Page theme"
-      className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
     >
       {EVENT_THEME_LIST.map((theme) => {
         const selected = theme.key === value;
@@ -68,11 +68,68 @@ function ThemeThumbnail({ theme, accent }: { theme: EventThemeDefinition; accent
   const dark = theme.scheme === 'dark';
   const ink = dark ? 'rgba(255,255,255,0.75)' : 'rgba(15,23,42,0.7)';
   const line = dark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.12)';
-  const radius = theme.buttonRadius === '9999px' ? 999 : theme.buttonRadius === '0' ? 0 : 3;
+  const radius =
+    theme.buttonRadius === '9999px' ? 999 : theme.buttonRadius === '0' ? 0 : theme.button === 'metallic' ? 1 : 3;
 
   const cta = (
-    <span className="block h-2 w-8" style={{ background: color, borderRadius: radius }} />
+    <span
+      className="block h-2 w-8"
+      style={{
+        background:
+          theme.button === 'metallic'
+            ? `linear-gradient(180deg, color-mix(in srgb, ${color} 55%, white), ${color} 60%, color-mix(in srgb, ${color} 78%, black))`
+            : color,
+        borderRadius: radius,
+        boxShadow:
+          theme.button === 'metallic'
+            ? `0 0 6px color-mix(in srgb, ${color} 60%, transparent)`
+            : undefined,
+      }}
+    />
   );
+
+  // Champion: full-bleed hero with heavy title bottom-left, then the boxed
+  // countdown band, then hairline cards.
+  if (theme.heading === 'impact') {
+    const hairline = `color-mix(in srgb, ${color} 35%, transparent)`;
+    return (
+      <span className="block h-28" style={{ background: page }} aria-hidden="true">
+        <span
+          className="flex h-14 flex-col justify-end gap-1 p-2"
+          style={{ background: `linear-gradient(to top, ${page}, #3a3226)` }}
+        >
+          <span className="block h-2 w-16 rounded-[1px]" style={{ background: '#fff' }} />
+          <span className="block h-1.5 w-12 rounded-[1px]" style={{ background: '#fff', opacity: 0.85 }} />
+          {cta}
+        </span>
+        <span className="flex justify-center gap-1 py-1.5">
+          {[0, 1, 2, 3].map((i) => (
+            <span
+              key={i}
+              className="flex h-4 w-4 items-center justify-center rounded-[2px]"
+              style={{ background: surface, border: `1px solid ${hairline}` }}
+            >
+              <span className="block h-1.5 w-2 rounded-[1px]" style={{ background: color }} />
+            </span>
+          ))}
+        </span>
+        <span className="grid grid-cols-3 gap-1 px-2">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="block h-5"
+              style={{
+                background: surface,
+                border: `1px solid ${hairline}`,
+                borderTopColor: color,
+                borderRadius: 2,
+              }}
+            />
+          ))}
+        </span>
+      </span>
+    );
+  }
 
   return (
     <span className="block h-28 p-2" style={{ background: page }} aria-hidden="true">

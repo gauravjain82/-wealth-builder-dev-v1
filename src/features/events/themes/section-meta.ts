@@ -17,6 +17,8 @@ export interface SectionMeta {
   sourceTab?: string;
   /** Heading shown when the section's title is blank (empty = no heading). */
   defaultTitle: string;
+  /** Model-backed, but also carries optional content edited on the Page tab. */
+  hasContent?: boolean;
 }
 
 export const SECTION_META: Record<SectionType, SectionMeta> = {
@@ -29,10 +31,20 @@ export const SECTION_META: Record<SectionType, SectionMeta> = {
   },
   pricing: {
     label: 'Ticket prices',
-    description: 'Current and upcoming pricing tiers.',
+    description:
+      'Current and upcoming pricing tiers. Add value copy below to show the current price as a single ticket card.',
     modelBacked: true,
     sourceTab: 'Ticket Price',
     defaultTitle: 'Tickets',
+    hasContent: true,
+  },
+  checkout: {
+    label: 'Ticket checkout',
+    description:
+      'The purchase form, right on the page — visitors buy without leaving it. Ticket buttons elsewhere on the page scroll to it.',
+    modelBacked: true,
+    sourceTab: 'Ticket Price',
+    defaultTitle: 'Get Your Ticket',
   },
   speakers: {
     label: 'Speakers',
@@ -131,11 +143,33 @@ export const SECTION_META: Record<SectionType, SectionMeta> = {
     modelBacked: false,
     defaultTitle: '',
   },
+  tagline: {
+    label: 'Tagline',
+    description:
+      'Short hook lines, a strip of highlight words, and the ticket button with up to two extra links.',
+    modelBacked: false,
+    defaultTitle: '',
+  },
+  stats: {
+    label: 'Stats',
+    description: 'One to four big numbers — typed in, or live from ticket sales.',
+    modelBacked: false,
+    defaultTitle: '',
+  },
+  marquee: {
+    label: 'Photo strip',
+    description: 'A scrolling strip of photos with names, e.g. past speakers.',
+    modelBacked: false,
+    defaultTitle: '',
+  },
 };
 
 /** Picker order for "Add section": content sections first, then the rest. */
 export const ADDABLE_SECTION_ORDER: SectionType[] = [
+  'tagline',
   'pillars',
+  'stats',
+  'marquee',
   'testimonials',
   'faq',
   'agenda',
@@ -145,6 +179,7 @@ export const ADDABLE_SECTION_ORDER: SectionType[] = [
   'rich_text',
   'about',
   'pricing',
+  'checkout',
   'speakers',
   'add_ons',
   'partners',
@@ -165,8 +200,33 @@ const EMPTY_CONTENT: { [K in keyof SectionContentMap]: () => SectionContentMap[K
   }),
   gallery: () => ({ images: [] }),
   video: () => ({ url: '', caption: '' }),
-  cta_band: () => ({ heading: '', subtext: '', button_label: '' }),
+  cta_band: () => ({
+    heading: '',
+    subtext: '',
+    button_label: '',
+    size: 'banner',
+    body: [],
+    highlight: '',
+    signoff: '',
+  }),
   rich_text: () => ({ body: '' }),
+  // Starter copy matches the Champion default layout, so a new section looks finished.
+  tagline: () => ({
+    lines: [
+      'The weekend that changes everything.',
+      'Learn the business. Rebuild your mind.',
+      "Become who you're meant to be.",
+    ],
+    highlight_last: true,
+    words: ['CONNECT', 'LEARN', 'GROW', 'BELIEVE', 'BUILD', 'CELEBRATE'],
+    links: [],
+  }),
+  stats: () => ({
+    items: [
+      { source: 'tickets_remaining', label: "Seats left · when it's full, it's full", value: '' },
+    ],
+  }),
+  marquee: () => ({ intro: '', items: [] }),
 };
 
 /** Starting content for a newly added section (`{}` for model-backed). */

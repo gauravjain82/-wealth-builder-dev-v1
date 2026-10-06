@@ -108,6 +108,12 @@ export interface PublicEvent {
   current_tier: CurrentTier | null;
   sales_state: SalesState;
   /**
+   * Paid tickets sold. Present only when an enabled `stats` section has a
+   * `tickets_sold` item — the organizer adding that stat is the opt-in to
+   * disclose it. Absent otherwise; never default it to 0.
+   */
+  tickets_sold?: number;
+  /**
    * Enabled landing sections in order (the theme default when uncustomised).
    * Optional so the page still renders against a backend that predates it.
    */
@@ -148,6 +154,12 @@ export interface CheckoutPayload {
   add_ons?: CheckoutAddOnSpec[];
   /** Keyed by custom-field id (as a string). */
   custom_field_values?: Record<string, string | number | boolean>;
+  /**
+   * The buyer ticked "I agree to the refund policy". The server rejects the
+   * checkout (400, field error on this key) when the event has a refund policy
+   * and this is not `true`.
+   */
+  refund_policy_accepted?: boolean;
 }
 
 /** Server response to checkout — carries the PaymentIntent client secret. */

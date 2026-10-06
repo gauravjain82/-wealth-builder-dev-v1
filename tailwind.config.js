@@ -72,10 +72,30 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        // Public event pages (Champion theme). Colours come from the CSS
+        // variables the event shell sets, so these follow `brand_color`.
+        // Always apply via `motion-safe:` — they loop forever.
+        "event-glow": {
+          "0%, 100%": {
+            boxShadow:
+              "0 0 22px -8px var(--event-brand-glow), inset 0 1px 0 rgba(255,255,255,0.45)",
+          },
+          "50%": {
+            boxShadow:
+              "0 0 40px -4px var(--event-brand-glow), inset 0 1px 0 rgba(255,255,255,0.45)",
+          },
+        },
+        // Seamless strip: render the item list twice and translate by half.
+        "event-marquee": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "event-glow": "event-glow 3.2s ease-in-out infinite",
+        "event-marquee": "event-marquee var(--event-marquee-duration, 40s) linear infinite",
       },
     },
   },

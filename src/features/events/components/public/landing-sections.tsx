@@ -15,9 +15,13 @@ import type {
   FaqContent,
   GalleryContent,
   LandingSection,
+  MarqueeContent,
   PillarsContent,
+  PricingContent,
   RichTextContent,
   SectionType,
+  StatsContent,
+  TaglineContent,
   TestimonialsContent,
   VideoContent,
 } from '../../types/landing';
@@ -32,6 +36,7 @@ import {
   TestimonialsSection,
   VideoSection,
 } from './content-sections';
+import { InlineCheckoutSection } from './inline-checkout-section';
 import {
   AboutSection,
   AddOnsPreviewSection,
@@ -42,6 +47,11 @@ import {
 import { PartnersSection } from './partners-section';
 import { PricingTiersSection } from './pricing-tiers-section';
 import { QuestionSection } from './question-section';
+import {
+  MarqueeSection,
+  StatsSection,
+  TaglineSection,
+} from './showcase-sections';
 import { SpeakersSection } from './speakers-section';
 
 type Renderer = (event: PublicEvent, section: LandingSection) => ReactNode;
@@ -49,7 +59,14 @@ type Renderer = (event: PublicEvent, section: LandingSection) => ReactNode;
 /** Section type → renderer (Strategy). Add a type: one entry here. */
 const RENDERERS: Record<SectionType, Renderer> = {
   about: (event, s) => <AboutSection event={event} title={s.title} />,
-  pricing: (event, s) => <PricingTiersSection event={event} title={s.title} />,
+  pricing: (event, s) => (
+    <PricingTiersSection
+      event={event}
+      title={s.title}
+      content={s.content as PricingContent}
+    />
+  ),
+  checkout: (event, s) => <InlineCheckoutSection event={event} title={s.title} />,
   speakers: (event, s) => (
     <SpeakersSection speakers={event.speakers} title={s.title} />
   ),
@@ -111,6 +128,26 @@ const RENDERERS: Record<SectionType, Renderer> = {
   rich_text: (_e, s) => (
     <RichTextSection
       content={s.content as unknown as RichTextContent}
+      title={s.title}
+    />
+  ),
+  tagline: (event, s) => (
+    <TaglineSection
+      content={s.content as unknown as TaglineContent}
+      title={s.title}
+      event={event}
+    />
+  ),
+  stats: (event, s) => (
+    <StatsSection
+      content={s.content as unknown as StatsContent}
+      title={s.title}
+      event={event}
+    />
+  ),
+  marquee: (_e, s) => (
+    <MarqueeSection
+      content={s.content as unknown as MarqueeContent}
       title={s.title}
     />
   ),

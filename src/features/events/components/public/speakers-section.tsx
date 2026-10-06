@@ -3,10 +3,19 @@
  *
  * Each card leads with the speaker's signed photo (`image_url`); speakers
  * without a photo fall back to a monogram in the event's brand color.
+ *
+ * When any speaker is in the `keynote` group the lineup splits in two: a
+ * "Keynote speakers" group of large cards, then a "Speakers" group of compact
+ * ones. Rows are centred so a short last row sits in the middle. Without
+ * keynotes the single grid is unchanged.
  */
 
+import type { ReactNode } from 'react';
+
+import { cn } from '@core/utils';
+
 import type { EventSpeaker } from '../../types/config';
-import { PublicCard, PublicSection } from './public-event-shell';
+import { Eyebrow, PublicCard, PublicSection } from './public-event-shell';
 import { Reveal } from './reveal';
 
 export function SpeakersSection({
@@ -18,6 +27,39 @@ export function SpeakersSection({
   title?: string;
 }) {
   if (speakers.length === 0) return null;
+
+  const keynotes = speakers.filter((s) => s.group === 'keynote');
+  if (keynotes.length > 0) {
+    const rest = speakers.filter((s) => s.group !== 'keynote');
+    return (
+      <PublicSection title={title || undefined}>
+        <SpeakerGroup label="Keynote speakers">
+          {keynotes.map((speaker, index) => (
+            <Reveal
+              key={speaker.id}
+              delay={(index % 3) * 100}
+              className="w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc((100%-2rem)/3)]"
+            >
+              <SpeakerCard speaker={speaker} />
+            </Reveal>
+          ))}
+        </SpeakerGroup>
+        {rest.length > 0 ? (
+          <SpeakerGroup label="Speakers" className="mt-12">
+            {rest.map((speaker, index) => (
+              <Reveal
+                key={speaker.id}
+                delay={(index % 4) * 80}
+                className="w-[calc(50%-0.5rem)] sm:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3rem)/4)]"
+              >
+                <CompactSpeakerCard speaker={speaker} />
+              </Reveal>
+            ))}
+          </SpeakerGroup>
+        ) : null}
+      </PublicSection>
+    );
+  }
 
   return (
     <PublicSection title={title || 'Speakers'}>
@@ -32,6 +74,52 @@ export function SpeakersSection({
   );
 }
 
+/** An eyebrow label over a centred, wrapping row of cards. */
+function SpeakerGroup({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={className}>
+      <Eyebrow className="mb-4 text-center">{label}</Eyebrow>
+      <div className="flex flex-wrap justify-center gap-4">{children}</div>
+    </div>
+  );
+}
+
+/** Photo, name and title only — the smaller cards in the "Speakers" group. */
+function CompactSpeakerCard({ speaker }: { speaker: EventSpeaker }) {
+  return (
+    <PublicCard className="h-full overflow-hidden p-0 text-center">
+      {speaker.image_url ? (
+        <img
+          src={speaker.image_url}
+          alt={speaker.name}
+          loading="lazy"
+          className="aspect-[4/5] w-full object-cover object-top"
+        />
+      ) : (
+        <div className="flex justify-center pt-5">
+          <Avatar name={speaker.name} />
+        </div>
+      )}
+      <div className="p-3">
+        <div className="text-sm font-bold">{speaker.name}</div>
+        {speaker.title ? (
+          <div className="mt-0.5 text-xs text-slate-600 dark:text-white/60">
+            {speaker.title}
+          </div>
+        ) : null}
+      </div>
+    </PublicCard>
+  );
+}
+
 function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
   return (
     <PublicCard className="h-full overflow-hidden p-0">
@@ -40,7 +128,10 @@ function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
           src={speaker.image_url}
           alt={speaker.name}
           loading="lazy"
-          className="aspect-[4/3] w-full object-cover object-top"
+          className={cn(
+            'w-full object-cover object-top',
+            speaker.group === 'keynote' ? 'aspect-[4/5]' : 'aspect-[4/3]',
+          )}
         />
       ) : null}
       <div className="p-5">

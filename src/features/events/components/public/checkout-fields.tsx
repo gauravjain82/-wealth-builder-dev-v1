@@ -14,7 +14,13 @@ import type {
   PublicSeller,
 } from '../../types/public';
 import type { EventCustomField } from '../../types/config';
-import { PUBLIC_FIELD_CLASS } from '../../utils/public-brand';
+import { cn } from '@core/utils';
+
+import {
+  PUBLIC_FIELD_CLASS,
+  PUBLIC_SECONDARY_BUTTON_CLASS,
+  TOKEN_FIELD_CLASS,
+} from '../../utils/public-brand';
 import { PublicCard, PublicField } from './public-event-shell';
 
 /** Quantity stepper, capped by the server-computed `max_per_order`. */
@@ -232,7 +238,7 @@ export function AddOnsPicker({
             <div className="min-w-0 flex-1">
               <div className="font-medium">{addOn.product_name}</div>
               {addOn.description ? (
-                <p className="text-xs text-slate-600 dark:text-white/60">
+                <p className="text-xs text-slate-600 dark:text-white/60 [[data-event-surface=tokens]_&]:text-[color:var(--event-muted)]">
                   {addOn.description}
                 </p>
               ) : null}
@@ -250,7 +256,10 @@ export function AddOnsPicker({
               onChange={(e) => setQuantity(addOn.id, Number(e.target.value))}
               disabled={disabled || soldOut}
               aria-label={`Quantity of ${addOn.product_name}`}
-              className="w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-white/20 dark:bg-black/30 dark:text-white"
+              className={cn(
+                'w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-white/20 dark:bg-black/30 dark:text-white',
+                TOKEN_FIELD_CLASS,
+              )}
             >
               {Array.from({ length: max + 1 }, (_, i) => i).map((value) => (
                 <option key={value} value={value}>
@@ -315,7 +324,7 @@ function CustomFieldInput({
           checked={Boolean(value)}
           onChange={(e) => onChange(e.target.checked)}
           disabled={disabled}
-          className="mt-0.5 h-4 w-4"
+          className="mt-0.5 h-4 w-4 [[data-event-surface=tokens]_&]:accent-[var(--event-brand)]"
         />
         <span>
           {field.name}
@@ -414,7 +423,7 @@ export function PromoCodeInput({
               type="button"
               onClick={onClear}
               disabled={disabled}
-              className="shrink-0 rounded-lg border border-slate-300 px-4 text-sm hover:bg-slate-100 dark:border-white/20 dark:hover:bg-white/10"
+              className={cn('shrink-0', PUBLIC_SECONDARY_BUTTON_CLASS)}
             >
               Remove
             </button>
@@ -423,7 +432,7 @@ export function PromoCodeInput({
               type="button"
               onClick={onApply}
               disabled={disabled || checking || !code.trim()}
-              className="shrink-0 rounded-lg border border-slate-300 px-4 text-sm hover:bg-slate-100 disabled:opacity-50 dark:border-white/20 dark:hover:bg-white/10"
+              className={cn('shrink-0', PUBLIC_SECONDARY_BUTTON_CLASS)}
             >
               {checking ? 'Checking…' : 'Apply'}
             </button>

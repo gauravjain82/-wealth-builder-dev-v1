@@ -109,6 +109,11 @@ From `EVENTS_CONTEXT.md` §"Key Design Decisions (Resolved)", verified against t
 | E11 | One discount model: `discount_type` (`FLAT`/`PERCENTAGE`/`FIXED_PRICE`) + `discount_value`, plus `max_uses`/`current_uses` | Three promo shapes in one model rather than three models |
 | E12 | Invoice numbers are `{shortcut}-{padded counter}`, generated atomically | Human-readable and per-event, and the atomic counter is what makes them usable as half of E7's credential |
 | **E13** | **Big Event navigation follows access, from either layer, not role** — the sidebar group, the event pickers and `EventSubnav` read `my-access`; the event list includes delegated events | Chosen over the plan-based group Broker and above had (2026-10-05). The plan menu hid the group from an Agent or Leader delegated `CHECKIN`, and the picker's list required `events:view`, so a delegate the backend would serve had no way in but a hand-typed URL. Conversely a Broker with no events grant saw a group whose pages failed. The screen-to-grant map lives once, in the backend's `events.permissions.SURFACES` |
+| **E14** | **`champion` is the default theme for new events only** (2026-10-06) | Chosen over moving existing events onto it. The model default changes; stored values do not, so no live page changes look on deploy. Mirrors backend `docs/events/PHASES.md` E18 |
+| **E15** | **The purchase form can sit on the landing page (`checkout` section), and every ticket CTA then scrolls to `#tickets`** (2026-10-06) | Chosen over restyling the separate checkout route only — the reference purchase page (bscpro) works because hero, urgency and form are one scroll. The route stays for shared links; one `CheckoutForm` serves both, so they cannot drift. Stripe.js loads on approach, not with the page |
+| **E16** | **A live stat with no value is hidden, not shown as `0`; `tickets_sold` is absent unless an enabled stats section asks for it** (2026-10-06) | Sales volume is commercially sensitive, so adding the stat is the organizer's opt-in (backend E20). Same rule as module masking: absent means "not disclosed", not zero |
+| **E17** | **Public event media is served as Firebase Storage download URLs with a deterministic token**, behind `EVENTS_MEDIA_CDN` (2026-10-06) | Chosen over a stored CDN URL per blob field (≈10 fields plus JSON content). Signed URLs expire, so browsers and the CDN could not cache a hero video across days. Backend E19 |
+| **E18** | **Refund-policy agreement required on both checkout hosts and enforced by the server** (2026-10-06) | Chosen over a browser-only gate, which a crafted request could skip. When the event has a refund policy, `CheckoutForm` sends `refund_policy_accepted: true` and the backend returns a 400 field error keyed `refund_policy_accepted` without it; the form shows that error under the checkbox (UI §2.3). Resolves former Outstanding item 6 |
 
 ## 4. Deliberately not built
 
@@ -123,7 +128,8 @@ From `EVENTS_CONTEXT.md` §"Key Design Decisions (Resolved)", verified against t
 - **A capability guard on the authenticated routes.** Authorization is `authz` plus per-event
   `EventPermission`.
 - **Print styles.** Check-in exports `xlsx`/`pdf` server-side instead.
-- **Per-event branding in CSS.** The Design tab stores it as data.
+- **Per-event branding in CSS.** A theme key plus an accent colour, stored as data — UI §7.
+- **YouTube as a hero background.** An embedded player shows its own title and controls over the hero; the background is an uploaded MP4/WebM served from the CDN.
 
 ## 5. Outstanding
 

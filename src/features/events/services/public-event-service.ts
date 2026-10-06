@@ -30,32 +30,46 @@ const PUBLIC_BASE = '/api/events/public';
 /** Thrown for non-2xx responses, carrying the HTTP status for callers to branch on. */
 export class PublicApiError extends Error {
   readonly status: number;
+  /**
+   * DRF field errors keyed by field name (`{field: "msg, msg"}`), so a form can
+   * show an error next to the input it belongs to — e.g. checkout's
+   * `refund_policy_accepted`. Empty for `detail`-style errors.
+   */
+  readonly fieldErrors: Record<string, string>;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, fieldErrors: Record<string, string> = {}) {
     super(message);
     this.name = 'PublicApiError';
     this.status = status;
+    this.fieldErrors = fieldErrors;
   }
 }
 
-/** Extract the most useful message from a DRF error body. */
-async function parseError(response: Response): Promise<string> {
+/** Extract the most useful message, plus any per-field errors, from a DRF error body. */
+async function parseError(
+  response: Response,
+): Promise<{ message: string; fieldErrors: Record<string, string> }> {
   const fallback = `Request failed (${response.status})`;
   const data = (await response.json().catch(() => null)) as unknown;
-  if (!data || typeof data !== 'object') return fallback;
+  if (!data || typeof data !== 'object') return { message: fallback, fieldErrors: {} };
+
+  const fieldErrors: Record<string, string> = {};
+  for (const [field, value] of Object.entries(data as Record<string, unknown>)) {
+    if (field === 'detail') continue;
+    if (Array.isArray(value)) fieldErrors[field] = value.map(String).join(', ');
+    else if (typeof value === 'string') fieldErrors[field] = value;
+  }
 
   if ('detail' in data) {
     const detail = (data as { detail?: unknown }).detail;
-    if (Array.isArray(detail)) return detail.join(', ');
-    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) return { message: detail.join(', '), fieldErrors };
+    if (typeof detail === 'string') return { message: detail, fieldErrors };
   }
 
-  const firstFieldError = Object.entries(data as Record<string, unknown>).find(
-    ([, value]) => Array.isArray(value) || typeof value === 'string',
-  );
-  if (!firstFieldError) return fallback;
-  const [field, value] = firstFieldError;
-  return Array.isArray(value) ? `${field}: ${value.join(', ')}` : `${field}: ${value}`;
+  const firstFieldError = Object.entries(fieldErrors)[0];
+  if (!firstFieldError) return { message: fallback, fieldErrors };
+  const [field, text] = firstFieldError;
+  return { message: `${field}: ${text}`, fieldErrors };
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -67,7 +81,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (!response.ok) {
-    throw new PublicApiError(await parseError(response), response.status);
+    const { message, fieldErrors } = await parseError(response);
+    throw new PublicApiError(message, response.status, fieldErrors);
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;

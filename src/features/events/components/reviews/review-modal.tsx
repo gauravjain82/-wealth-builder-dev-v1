@@ -54,7 +54,7 @@ export function ReviewModal({ open, targetName, existing, onClose, onSubmit }: R
       onClose={onClose}
       title={existing ? 'Edit your review' : 'Leave a review'}
       subtitle={targetName}
-      className="max-w-lg"
+      contentClassName="max-w-lg"
     >
       <form onSubmit={(e) => void submit(e)} className="space-y-5" noValidate>
         <div className="pt-1">

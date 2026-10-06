@@ -8,7 +8,7 @@
  * builder never shows an empty shell on the public page.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Plus, Quote, X } from 'lucide-react';
 
@@ -28,9 +28,11 @@ import type {
 } from '../../types/landing';
 import type { PublicEvent } from '../../types/public';
 import { resolveVideo, type VideoSource } from '../../utils/public-video';
-import { PublicCard, PublicSection } from './public-event-shell';
+import { scrollToAnchor, ticketsHref } from '../../utils/ticket-links';
+import { PublicCard, PublicSection, SectionTitle } from './public-event-shell';
 import { Reveal } from './reveal';
 import { RichText } from './rich-text';
+import { TicketCta } from './ticket-cta';
 import { VideoModal } from './video-modal';
 
 interface SectionProps<C> {
@@ -450,11 +452,22 @@ export function VideoSection({ content, title }: SectionProps<VideoContent>) {
   );
 }
 
-/** Closing call to action; blank fields fall back to sensible copy. */
+/**
+ * Closing call to action; blank fields fall back to sensible copy.
+ *
+ * `banner` (the default, and every row saved before sizes existed) is the
+ * compact brand-filled strip. `final` is a full-height closing section: a huge
+ * heading, body paragraphs with the `highlight` phrase in the accent colour,
+ * the ticket button and a sign-off line.
+ */
 export function CtaBandSection({
   content,
   event,
 }: SectionProps<CtaBandContent> & { event: PublicEvent }) {
+  if (content.size === 'final') {
+    return <FinalCtaSection content={content} event={event} />;
+  }
+
   const heading = content.heading || `Don't miss ${event.name}`;
   const subtext = content.subtext || '';
 
@@ -483,16 +496,117 @@ export function CtaBandSection({
           </p>
         ) : null}
         {event.sales_state.is_open ? (
-          <Link
-            to={`/event/${event.shortcut}/checkout`}
-            className="mt-8 inline-block bg-white px-7 py-3 text-sm font-semibold text-slate-900 shadow-lg transition motion-safe:hover:-translate-y-px"
-            style={{ borderRadius: 'var(--event-btn-radius)' }}
-          >
+          <BannerTicketLink event={event}>
             {content.button_label || 'Get your ticket'}
-          </Link>
+          </BannerTicketLink>
         ) : null}
       </div>
     </PublicSection>
+  );
+}
+
+/** The banner's white button: `#tickets` when checkout is inline, else the checkout route. */
+function BannerTicketLink({
+  event,
+  children,
+}: {
+  event: PublicEvent;
+  children: ReactNode;
+}) {
+  const className =
+    'mt-8 inline-block bg-white px-7 py-3 text-sm font-semibold text-slate-900 shadow-lg transition motion-safe:hover:-translate-y-px';
+  const style = { borderRadius: 'var(--event-btn-radius)' };
+  const href = ticketsHref(event);
+  if (href.startsWith('#')) {
+    return (
+      <a
+        href={href}
+        onClick={(e) => scrollToAnchor(e, href.slice(1))}
+        className={className}
+        style={style}
+      >
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link to={href} className={className} style={style}>
+      {children}
+    </Link>
+  );
+}
+
+function FinalCtaSection({
+  content,
+  event,
+}: {
+  content: CtaBandContent;
+  event: PublicEvent;
+}) {
+  const heading = content.heading || `Don't miss ${event.name}`;
+  const body = (content.body ?? []).filter((p) => p.trim());
+  if (content.subtext) body.unshift(content.subtext);
+
+  return (
+    <PublicSection>
+      <div
+        className="flex min-h-[80vh] flex-col items-center justify-center px-2 py-20 text-center"
+        style={{
+          background:
+            'radial-gradient(ellipse 70% 55% at 50% 0%, color-mix(in srgb, var(--event-brand) 16%, transparent), transparent 70%)',
+        }}
+      >
+        <SectionTitle
+          title={heading}
+          size="display"
+          align="center"
+          className="mx-auto max-w-5xl"
+        />
+        {body.length > 0 ? (
+          <div className="mx-auto mt-8 max-w-2xl space-y-4">
+            {body.map((paragraph, index) => (
+              <p key={index} className="text-base font-semibold sm:text-lg">
+                <Highlighted text={paragraph} phrase={content.highlight} />
+              </p>
+            ))}
+          </div>
+        ) : null}
+        <TicketCta
+          event={event}
+          label={content.button_label}
+          whenClosed="hide"
+          className="mt-8"
+        />
+        {content.signoff ? (
+          <p className={cn('mt-6 text-lg', MUTED)}>{content.signoff}</p>
+        ) : null}
+      </div>
+    </PublicSection>
+  );
+}
+
+/** `text` with each case-insensitive occurrence of `phrase` in the accent colour. */
+function Highlighted({ text, phrase }: { text: string; phrase?: string }) {
+  const needle = phrase?.trim();
+  if (!needle) return <>{text}</>;
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, index) =>
+        part.toLowerCase() === needle.toLowerCase() ? (
+          <span
+            key={index}
+            className="font-extrabold uppercase"
+            style={{ color: 'var(--event-brand)' }}
+          >
+            {part}
+          </span>
+        ) : (
+          part
+        ),
+      )}
+    </>
   );
 }
 
