@@ -4,8 +4,8 @@
 |---|---|
 | **Module** | `admin` |
 | **Source** | `src/features/admin/` |
-| **Routes** | 12 under `/admin/*` |
-| **Backend module** | `accounts`, `authz`, `audit`, `content`, `misalignments`, `tracker` |
+| **Routes** | 13 under `/admin/*` |
+| **Backend module** | `accounts`, `authz`, `audit`, `content`, `misalignments`, `promotion`, `tracker` |
 | **API prefix** | six — see [API.md](API.md) |
 | **Status** | Production |
 | **Doc version** | 1.0 |
@@ -13,7 +13,7 @@
 
 ## 1. Purpose
 
-`admin` is not one feature. It is **ten independent administrative sub-features** that share a
+`admin` is not one feature. It is **eleven independent administrative sub-features** that share a
 directory, a route prefix and nothing else. Each answers a different operational question — who
 may do what, what content appears on which page, which products exist, where the data has gone
 wrong — and each talks to a different backend app.
@@ -30,7 +30,7 @@ parent folder.
 
 ## 2. Scope
 
-**In scope** — ten sub-features:
+**In scope** — eleven sub-features:
 
 | Sub-feature | Answers | LOC |
 |---|---|---|
@@ -44,6 +44,7 @@ parent folder.
 | `training-center` | Training Center sections and items. | 344 |
 | `file-vault` | File Vault sections and items. | 290 |
 | `mission-ring-proof` | Review submitted mission-ring proof. | 187 |
+| `promotion` | Which skills, videos and quizzes make up each promotion track, in what order? | 1395 |
 
 **Explicitly out of scope** — three screens live under `/admin/*` but belong to other modules,
 and are documented there:
@@ -59,11 +60,11 @@ what the reader sees.
 
 | | |
 |---|---|
-| Routes | 12 |
-| Sub-features | 10 (one is an engine with no route) |
+| Routes | 13 |
+| Sub-features | 11 (one is an engine with no route) |
 | Pages | 11 |
 | Services | 10 |
-| Backend apps consumed | 6 |
+| Backend apps consumed | 7 |
 | LOC (ts/tsx) | 8188 |
 | Doc tier | Full |
 

@@ -22,6 +22,7 @@
 | ~1 | ≤ 2026-06 | Shipped | The dashboard: skills, routes, quizzes |
 | ~2 | 2026-06-26 | Shipped | Menu gating on `wb.hasPromotionAccess` |
 | ~3 | — | Shipped | The team view |
+| 4 | 2026-10-06 | Built, not deployed | Content editing moves to `/admin/promotion` |
 
 ## 2. Phases
 
@@ -48,6 +49,14 @@ components: skills, quiz, route and stats.
 sorts.
 
 **Decisions.** PR6.
+
+### 4 — content editing moves into the app (2026-10-06)
+
+**What shipped.** Skills, videos and quizzes became editable at `/admin/promotion` (the `admin`
+module, [phase 10](../admin/PHASES.md#10--promotion-management-2026-10-06)). This module gave up
+two things: `getEmbedVideoUrl` moved out of `quiz-panel.tsx` into `video-url.ts`, so the admin
+preview converts a link exactly as the player does, and `DASHBOARD_QUERY_KEY` is now exported so
+an admin save refreshes the dashboard.
 
 ## 3. Decision log
 

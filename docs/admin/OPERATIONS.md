@@ -42,7 +42,7 @@ No client-side flags. Five gating mechanisms across twelve routes:
 
 | Gate | Routes | Granted by | Takes effect |
 |---|---|---|---|
-| `AdminRoute` (`isAdmin`) | functions, user-permissions, level-permissions, file-vault, training-center, home-content | the profile | **next sign-in** — the flag is cached at login |
+| `AdminRoute` (`isAdmin`) | functions, user-permissions, level-permissions, file-vault, training-center, home-content, promotion | the profile | **next sign-in** — the flag is cached at login |
 | `products:read` | products | this module's user-permissions screen | next page load |
 | `wbreporting:read` / `:manage` | reporting-pipeline | " | next page load |
 | misalignments grant | both data-integrity screens | " | next page load |
@@ -93,6 +93,7 @@ Two ordering hazards:
 |---|---|---|
 | A screen opens, then every action 403s | the gate and the permission disagree — typically stale `isAdmin`, or one of the two unguarded routes | sign out and back in; or confirm the grant. See [ARCHITECTURE.md §6](ARCHITECTURE.md#6-permissions-and-gating) |
 | A newly granted admin cannot see the admin screens | `isAdmin` is cached at login | sign out and back in. The fix belongs in `auth` |
+| `/admin/promotion` opens but shows an error, or saves fail with "No permission promotion:manage" | the route checks the cached `isAdmin` flag; the API checks `promotion:manage`, seeded only to the ADMIN / SUPER_ADMIN / SUPERADMIN roles | grant `promotion:manage` on the user-permissions screen. On a backend without migration `promotion/0002` the grant does not exist yet |
 | `/admin/invite-agents` opens for a non-admin | it has **no client guard** | expected. The API refuses them; the screen is simply not hidden |
 | A granted capability does nothing | the feature reads a different permission than the one granted | the feature's `my-access` response, not the grant list |
 | An uploaded file is missing from an item | the upload happens after create; it failed or was never staged | `uploadItemFile` needs an item id — see [UI.md §4](UI.md#4-interaction-rules) |
