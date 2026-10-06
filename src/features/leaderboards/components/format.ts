@@ -24,18 +24,16 @@ export const SCOPE_LABELS: Record<string, string> = {
   super_team: 'Super Team',
 };
 
-/**
- * The director title behind a row's `level_code`, shown under the name. Falls back to
- * the raw code so an unmapped level still reads as something rather than nothing.
- */
-export const LEVEL_LABELS: Record<string, string> = {
-  SMD: 'Senior Marketing Director',
-  MD: 'Marketing Director',
-};
-
-export function levelLabel(code: string | null | undefined): string {
-  if (!code) return '';
-  return LEVEL_LABELS[code] ?? code;
+/** Up to two initials for an avatar placeholder — "Tray & Christy Meeks" → "TC". */
+export function initials(name: string): string {
+  const letters = name
+    .split(/\s+/)
+    .map((part) => part.replace(/[^\p{L}\p{N}]/gu, ''))
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join('');
+  return letters || '?';
 }
 
 /**

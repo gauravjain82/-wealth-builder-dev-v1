@@ -17,7 +17,6 @@
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/shared/components/ui/button';
-import { HelpAction } from '@/features/gms';
 import { useLeaderboard } from '../hooks/use-leaderboards';
 import type {
   LeaderRow,
@@ -126,19 +125,13 @@ export function LeaderboardPanel({
 
   return (
     <section className="wb-lb-expanded" aria-label="Wealth Builders Leaderboards">
-      <header className="wb-lb-expanded__header">
-        <h2 className="wb-lb-expanded__title">Wealth Builders Leaderboards</h2>
-        <div className="wb-lb-expanded__status-group">
-          <span className="wb-lb-expanded__dot" aria-hidden="true" />
-          <span className="wb-lb-expanded__status">
-            {data ? `${data.start} through ${data.end}` : 'Loading…'}
-          </span>
-          <HelpAction toolKey="leaderboards" />
-        </div>
-      </header>
-
+      {/* The title sits between the two control columns rather than above them, which
+          saves the header row's height. The date range and help action that shared
+          that row were dropped with it: the range select already names the period. */}
       <div className="wb-lb-expanded__controls">
-        <div className="wb-lb-expanded__controls-col">
+        <h2 className="wb-lb-expanded__title">Wealth Builders Leaderboards</h2>
+
+        <div className="wb-lb-expanded__controls-col wb-lb-expanded__controls-col--left">
           <label className="wb-lb-expanded__field">
             <span className="sr-only">Date range</span>
             <select

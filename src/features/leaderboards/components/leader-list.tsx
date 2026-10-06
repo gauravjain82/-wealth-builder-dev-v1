@@ -10,8 +10,10 @@
  * screen, so the number itself is the affordance rather than a separate icon.
  */
 
+import { useState } from 'react';
+
 import type { LeaderRow, LeaderboardMetric } from '../types';
-import { formatMetricValue, levelLabel } from './format';
+import { formatMetricValue, initials } from './format';
 
 interface LeaderListProps {
   title: string;
@@ -19,7 +21,7 @@ interface LeaderListProps {
   metric: LeaderboardMetric;
   /** Pad to five slots for Full Report alignment. */
   reserveSlots?: boolean;
-  /** Drop the director-title subtitle — the Full Report's narrow columns show one line per row. */
+  /** Drop the avatar and subtitle — the Full Report's narrow columns show one line per row. */
   compact?: boolean;
   /** Opens the proof detail for one leader. Omit to render values as plain text. */
   onSelect?: (row: LeaderRow) => void;
@@ -66,23 +68,20 @@ export function LeaderList({
         {visibleRows.map((row) => (
           <li key={`${row.agent_id}-${row.rank}`} className="wb-lb-panel__row">
             <span className="wb-lb-panel__rank">#{row.rank}</span>
+            {!compact && <LeaderAvatar name={row.name || row.agent_id} photoUrl={row.photo_url} />}
             <span className="wb-lb-panel__identity">
               <span className="wb-lb-panel__name" title={row.name}>
                 {row.name || row.agent_id}
               </span>
-              {!compact && (
-                <span className="wb-lb-panel__meta">
-                  {levelLabel(row.level_code)}
-                  {levelLabel(row.level_code) && ' · '}
-                  {row.member_count} members
-                  {row.contributes_to_label && row.contributes_to_name && (
-                    <>
-                      {' · '}
-                      <span title={`Contributes to ${row.contributes_to_name}`}>
-                        → {row.contributes_to_label}
-                      </span>
-                    </>
-                  )}
+              {/* The director title and member count were dropped to keep rows to one
+                  line; the panel title already says SMD or MD. Super Base and Super
+                  Team still say whom an MD contributes to, which no other line does. */}
+              {!compact && row.contributes_to_label && row.contributes_to_name && (
+                <span
+                  className="wb-lb-panel__meta"
+                  title={`Contributes to ${row.contributes_to_name}`}
+                >
+                  → {row.contributes_to_label}
                 </span>
               )}
             </span>
@@ -124,6 +123,22 @@ export function LeaderList({
         <p className="wb-lb-panel__empty wb-lb-panel__empty--overlay">{emptyMessage}</p>
       )}
     </div>
+  );
+}
+
+/**
+ * The leader's photo, over their initials. The initials stay underneath, so a photo
+ * that is missing, slow or fails to load (a signed URL can expire) still leaves a face.
+ */
+function LeaderAvatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className="wb-lb-panel__avatar" aria-hidden="true">
+      {initials(name)}
+      {photoUrl && !failed && (
+        <img src={photoUrl} alt="" loading="lazy" onError={() => setFailed(true)} />
+      )}
+    </span>
   );
 }
 

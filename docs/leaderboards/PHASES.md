@@ -127,6 +127,8 @@ frontend consequences are expanded.
 | L13 | The query string is an entry point, not a binding | Seeding state from `?metric=` lets the home card expand onto the tab the reader was already looking at. Writing every change back would add history entries for a tab click; the cost is that a board state is not shareable by link | `pages/leaderboards-page.tsx:9`, assigned here |
 | L14 | The personal list is positive-only, and is not a reconciliation of the gauge above it | "Positive Personal list" is what the contract asks for. A net-negative member is dropped from the list but still counted in the gauge, so visible rows can sum to less than the number above them | `WB_LEADERBOARDS_PROGRESS.md` Phase 9 "Known, deliberate", assigned here |
 
+| L15 | The expanded board's title sits centred in the controls row; the date-range status, the help action, and each row's director title and member count are dropped; rows gain a profile photo | Asked for on 2026-10-07 to shorten the card: the title row is gone, and every row is one line. The range select already names the period, and the panel title already says SMD or MD. Photos come from the backend (`photo_url`, one query per response via `wbreporting/services/photos.py`) — the client has no other source for them | user request 2026-10-07; branch `feature/wb-contest-showcase` in both repos |
+
 ## 4. Deliberately not built
 
 - **Replacing `/home` with Home v2.** Decision L7 puts that after a QA comparison of the two

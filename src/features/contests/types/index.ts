@@ -174,6 +174,36 @@ export interface StandingsResponse {
   leader_count?: number;
 }
 
+/** One person on the featured-contest card, at the tier that places them there. */
+export interface ShowcaseEntry {
+  agent_id: number;
+  /** `""` when the display settings hide agency codes. */
+  agency_code: string;
+  name: string;
+  /** The profile thumbnail, or null when the person has none. */
+  photo_url: string | null;
+  tier_id: number;
+  tier_name: string;
+  /** A whole number; the hardest running tier's progress, or 100 for a qualifier. */
+  progress: number | null;
+  qualified: boolean;
+}
+
+/**
+ * The featured-contest card (dtez's `wb_contests_showcase.php`), ranked server-side
+ * over everyone the viewer may see — no standings page holds all of them.
+ */
+export interface ShowcaseResponse {
+  contest: ContestSummary;
+  /** Hardest qualified tier first, then name. At most ten. */
+  qualifiers: ShowcaseEntry[];
+  /** Highest progress on the hardest running tier first. At most ten. */
+  closest: ShowcaseEntry[];
+  /** Over everyone, not the ten shown. */
+  qualified_count: number;
+  in_progress_count: number;
+}
+
 export interface ProofColumn {
   key: string;
   label: string;
