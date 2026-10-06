@@ -9,13 +9,15 @@ interface UserPickerProps {
   selectedUser: UserSearchResult | null;
   onSelect: (user: UserSearchResult) => void;
   onClear: () => void;
+  /** Restrict results to agents (users with an agency code), hiding prospects. */
+  agentsOnly?: boolean;
 }
 
 /**
  * Debounced user search box. On selecting a result it collapses to a summary
  * chip; clearing it reopens the search field. Reused by both admin pages.
  */
-export function UserPicker({ selectedUser, onSelect, onClear }: UserPickerProps) {
+export function UserPicker({ selectedUser, onSelect, onClear, agentsOnly }: UserPickerProps) {
   const { addToast } = useToastStore();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<UserSearchResult[]>([]);
@@ -35,7 +37,7 @@ export function UserPicker({ selectedUser, onSelect, onClear }: UserPickerProps)
     setLoading(true);
     const handle = setTimeout(async () => {
       try {
-        const data = await searchUsers(trimmed);
+        const data = await searchUsers(trimmed, { agentsOnly });
         if (!cancelled) {
           setResults(toArray(data).slice(0, 20));
           setOpen(true);
@@ -56,7 +58,7 @@ export function UserPicker({ selectedUser, onSelect, onClear }: UserPickerProps)
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [query, selectedUser, addToast]);
+  }, [query, selectedUser, addToast, agentsOnly]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
