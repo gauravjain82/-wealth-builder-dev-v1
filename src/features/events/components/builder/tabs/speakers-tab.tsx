@@ -15,6 +15,16 @@ const api: ConfigListApi<EventSpeaker> = {
 const FIELDS: FieldSpec<EventSpeaker>[] = [
   { key: 'name', label: 'Name', type: 'text' },
   { key: 'title', label: 'Title', type: 'text', placeholder: 'CEO, Acme Inc.' },
+  {
+    key: 'group',
+    label: 'Group',
+    type: 'select',
+    options: [
+      { value: 'speaker', label: 'Speaker' },
+      { value: 'keynote', label: 'Keynote' },
+    ],
+    help: 'Keynote speakers show first, with larger cards.',
+  },
   { key: 'description', label: 'Bio', type: 'textarea', colSpan: 2 },
   { key: 'website', label: 'Website', type: 'text', placeholder: 'https://…' },
   { key: 'instagram', label: 'Instagram', type: 'text' },
@@ -32,7 +42,7 @@ export function SpeakersTab({ event }: TabProps) {
       titleField="name"
       itemNoun="speaker"
       image={{ urlField: 'image_url', label: 'Photo', help: 'Square headshot works best.' }}
-      defaults={{ sort_order: '0' }}
+      defaults={{ sort_order: '0', group: 'speaker' }}
       description="Speakers appear on the public event page in sort order."
     />
   );

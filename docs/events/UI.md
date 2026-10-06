@@ -82,9 +82,23 @@ CRUD shape because each is its own REST collection.
 
 ### 2.2 Public landing — `pages/public/event-landing-page.tsx`
 
-Built from `components/public/`: `EventHero`, `EventCountdown`, `PricingTiersSection`,
-`SpeakersSection`, `PartnersSection`, `LocationSection`, `QuestionSection`, inside
-`PublicEventShell`.
+`EventHero`, then the event's landing sections in the organizer's order (`landing-sections.tsx`
+maps each `section_type` to a renderer), inside `PublicEventShell`. The layout comes from the Page tab,
+or the theme's default when the page was never customised.
+
+| Section type | Renderer | Notes |
+|---|---|---|
+| `tagline` | `TaglineSection` (`showcase-sections.tsx`) | hook lines, a word strip whose highlight cycles (static under reduced motion), ticket CTA + up to two links. The CTA reads `content.button_label`; blank → `TicketCta`'s theme default |
+| `stats` | `StatsSection` | 1–4 tiles. Live items read `sales_state.tickets_remaining` / `tickets_sold`; **an absent live value hides the tile**, never shows `0`. Sold out shows "Sold out" |
+| `marquee` | `MarqueeSection` | scrolling photo strip; a static grid under reduced motion; nothing when empty |
+| `checkout` | `InlineCheckoutSection` | the purchase form inline at `#tickets` — see §2.3 |
+| `pricing` | `PricingTiersSection` | with value copy in its content: one value card (struck comparison price, inclusions, motto). The price is still `current_tier` from the server. `eyebrow` (blank → "Your ticket") and `button_label` (blank → theme default) relabel the card but **do not by themselves switch to it** — only anchor, inclusions, motto or fine print do |
+| `cta_band` | `CtaBandSection` | `size: 'final'` is a full-height closing call; `banner` (and rows saved before sizes) unchanged |
+| `speakers` | `SpeakersSection` | when any speaker is `keynote`, a large-card keynote group, then the rest |
+
+**Every ticket CTA goes through `TicketsLink`/`ticketsHref`** (`utils/ticket-links.ts`): when the layout
+has an enabled `checkout` section it scrolls to `#tickets`, otherwise it links to the checkout route.
+`TicketCta` adds the `sales_state` check, so a closed sale shows its reason instead of a button.
 
 Sales state is a **server answer** with a reason: `OPEN`, `NOT_STARTED`, `ENDED`, `SOLD_OUT`, `NO_TIER`.
 The page renders the reason rather than inferring it from dates.
@@ -92,6 +106,16 @@ The page renders the reason rather than inferring it from dates.
 ### 2.3 Public checkout — `pages/public/event-checkout-page.tsx`
 
 Five stages, driven by `use-event-checkout`: `form → creating → paying → confirming → done`.
+
+The form is `CheckoutForm` (`components/public/checkout-form.tsx`), **shared with the inline
+`checkout` landing section** — one form, two hosts (`layout: 'page' | 'inline'`). The inline host
+requests Stripe.js only once the section is within ~800px of the viewport, or on submit
+(`utils/stripe-loader.ts`). When the event has a refund policy, both hosts require an "I agree to the
+refund policy" checkbox, and the payload carries `refund_policy_accepted: true`. **The server enforces
+it** (PHASES E18): a checkout without it gets a 400 field error keyed `refund_policy_accepted`, which
+`PublicApiError.fieldErrors` carries through `use-event-checkout` and the form shows under the checkbox
+instead of in the banner (the banner keeps it if other fields failed too). Loading and error states
+use the theme this tab last saw for the event (sessionStorage), else classic.
 
 | Element | Note |
 |---|---|
@@ -185,7 +209,26 @@ place to start, since it is the one surface used by people who are not staff and
 
 ## 7. Styling and theming
 
-No module stylesheet — Tailwind plus `shared/components/ui` throughout, including on the public pages.
-That means the public event pages inherit the app's theme rather than carrying event-specific branding
-in CSS; per-event branding comes from the **Design tab** as data (imagery and colours on the event
-record), not from stylesheets.
+No module stylesheet — Tailwind plus `shared/components/ui` throughout. The public pages are themed
+**as data**: `BigEvent.theme` picks an entry in `themes/registry.ts`, and `brand_color` overrides its
+accent. Nothing is per-event CSS.
+
+| Theme | Scheme | Look |
+|---|---|---|
+| `classic` | follows the app | the original page |
+| `bold_dark` | dark | crimson, Fraunces + DM Sans, pill buttons |
+| `minimal_light` | light | Playfair + Inter, square buttons |
+| **`champion`** — default for new events | dark | black and warm-black bands, metallic gold buttons with glow, League Spartan uppercase + Montserrat, countdown in its own band |
+
+`PublicEventShell` turns the theme into CSS variables (`--event-brand`, its `-light`/`-deep`/`-glow`/`-ink`
+mixes, `--event-hairline`, and for token themes `--event-page|band|surface|text|muted`) and
+`data-event-theme`. Sections draw with the shared primitives — `PublicSection`, `SectionTitle`,
+`Eyebrow`, `PublicCard`, `BrandButton`, `BrandLink`, `TicketsLink` — so a new section is themed in all
+four looks without per-theme code. The accent is hex-validated (`utils/public-brand.ts`), which also
+keeps CSS injection out of `color-mix`.
+
+Motion (glow pulse, marquee, word cycle, scroll reveal) is `motion-safe` only.
+
+**Media.** Every public image and the hero MP4/WebM come back as `*_url` fields. With the backend's
+`EVENTS_MEDIA_CDN` on they are permanent Firebase Storage download URLs, cached for a year; off, they are
+24-hour signed URLs. The client treats both the same way.

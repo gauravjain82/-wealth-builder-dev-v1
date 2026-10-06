@@ -44,7 +44,7 @@ export function PricingTab({ event }: TabProps) {
       titleField="label"
       itemNoun="pricing tier"
       defaults={{ sort_order: '0' }}
-      description="Define one or more pricing tiers. The active tier is resolved by date at checkout; leave 'Active from' blank for the default tier."
+      description="Define one or more pricing tiers. The active tier is resolved by date at checkout; leave 'Active from' blank for the default tier. Value copy for the public ticket card (comparison price, inclusions, fine print) is edited on the Page tab, under Ticket prices."
     />
   );
 }

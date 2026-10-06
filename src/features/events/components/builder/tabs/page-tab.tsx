@@ -95,7 +95,8 @@ export function PageTab({ event }: TabProps) {
     update(arrayMove(sections, from, to));
   };
 
-  // Model-backed sections render shared event data, so each may appear once.
+  // Model-backed sections (including the inline checkout) render shared event
+  // data, so each may appear once; content sections may repeat.
   const addable = useMemo(() => {
     const present = new Set(sections.map((s) => s.section_type));
     return ADDABLE_SECTION_ORDER.filter((t) => !SECTION_META[t].modelBacked || !present.has(t));
@@ -384,7 +385,7 @@ function SortableSectionRow({
               />
             </div>
           )}
-          {!meta.modelBacked && (
+          {(!meta.modelBacked || meta.hasContent) && (
             <SectionContentEditor
               type={section.section_type}
               content={section.content}

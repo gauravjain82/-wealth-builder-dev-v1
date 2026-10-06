@@ -8,7 +8,7 @@
  */
 
 import { useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import { usePublicEvent } from '../../hooks/use-public-event';
 import { EventHero } from '../../components/public/event-hero';
@@ -16,6 +16,7 @@ import { LandingSections } from '../../components/public/landing-sections';
 import {
   PublicAlert,
   PublicEventShell,
+  TicketsLink,
 } from '../../components/public/public-event-shell';
 
 export default function EventLandingPage() {
@@ -60,17 +61,11 @@ export default function EventLandingPage() {
       hero={<EventHero event={event} />}
       headerAction={
         event.sales_state.is_open ? (
-          <Link
-            to={`/event/${event.shortcut}/checkout`}
-            style={{
-              backgroundColor: 'var(--event-brand)',
-              color: 'var(--event-brand-contrast)',
-              borderRadius: 'var(--event-btn-radius)',
-            }}
-            className="px-4 py-2 text-sm font-semibold hover:opacity-90"
-          >
+          // Scrolls to the inline form when the layout has one (`#tickets`),
+          // else links to the checkout route.
+          <TicketsLink event={event} className="px-4 py-2">
             Get Tickets
-          </Link>
+          </TicketsLink>
         ) : null
       }
     >

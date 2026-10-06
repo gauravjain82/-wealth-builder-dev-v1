@@ -15,7 +15,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 
-import { publicEventService } from '../services/public-event-service';
+import { PublicApiError, publicEventService } from '../services/public-event-service';
 import type {
   CheckoutPayload,
   CheckoutResult,
@@ -38,6 +38,12 @@ const POLL_TIMEOUT_MS = 45_000;
 interface UseEventCheckoutResult {
   stage: CheckoutStage;
   error: string | null;
+  /**
+   * Field errors from the last failed `submit()` (DRF 400 body), keyed by
+   * payload field. The form renders the ones it owns inline — currently
+   * `refund_policy_accepted` — and the banner shows `error` for the rest.
+   */
+  fieldErrors: Record<string, string>;
   /** Set once the order exists; carries the Stripe client secret. */
   order: CheckoutResult | null;
   /** Set once polling sees a settled order; carries the issued tickets. */
@@ -58,6 +64,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export function useEventCheckout(shortcut: string): UseEventCheckoutResult {
   const [stage, setStage] = useState<CheckoutStage>('form');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [order, setOrder] = useState<CheckoutResult | null>(null);
   const [settled, setSettled] = useState<PublicOrderStatus | null>(null);
 
@@ -69,6 +76,7 @@ export function useEventCheckout(shortcut: string): UseEventCheckoutResult {
     async (payload: CheckoutPayload): Promise<string | null> => {
       setStage('creating');
       setError(null);
+      setFieldErrors({});
       try {
         const created = await publicEventService.checkout(shortcut, payload);
         setOrder(created);
@@ -82,6 +90,7 @@ export function useEventCheckout(shortcut: string): UseEventCheckoutResult {
         return created.client_secret;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Checkout failed.');
+        setFieldErrors(err instanceof PublicApiError ? err.fieldErrors : {});
         setStage('form');
         return null;
       }
@@ -133,6 +142,7 @@ export function useEventCheckout(shortcut: string): UseEventCheckoutResult {
   const reset = useCallback(() => {
     setStage('form');
     setError(null);
+    setFieldErrors({});
     setOrder(null);
     setSettled(null);
     orderRef.current = null;
@@ -141,6 +151,7 @@ export function useEventCheckout(shortcut: string): UseEventCheckoutResult {
   return {
     stage,
     error,
+    fieldErrors,
     order,
     settled,
     submit,

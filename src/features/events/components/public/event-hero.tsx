@@ -8,6 +8,10 @@
  *                 transparent header (Bold Dark);
  * - `split`     — copy beside the media on a white page (Minimal Light).
  * All three share the media, actions, countdown and sales notice below.
+ * `immersive` with the `impact` heading style (Champion) goes full-viewport
+ * with heavy uppercase type and a metallic CTA, and themes with
+ * `countdown: 'band'` move the countdown out of the hero into its own band
+ * directly underneath (`CountdownBand`).
  *
  * Media precedence: an uploaded *video* in "Video background" plays muted on
  * loop (with a sound toggle) using the event banner as its poster; otherwise
@@ -16,7 +20,9 @@
  *
  * The CTA's label and enabled state come from the server-computed
  * `sales_state`, so the button never invites a click that checkout would
- * reject (sold out, window closed, no tier configured).
+ * reject (sold out, window closed, no tier configured). It scrolls to the
+ * inline purchase form when the layout has a `checkout` section, and links
+ * to the checkout route otherwise (`TicketsLink`).
  */
 
 import { useRef, useState } from 'react';
@@ -35,7 +41,8 @@ import {
   type VideoSource,
 } from '../../utils/public-video';
 import type { PublicEvent } from '../../types/public';
-import { EventCountdown } from './event-countdown';
+import { CountdownBand, EventCountdown } from './event-countdown';
+import { TicketsLink } from './public-event-shell';
 import { VideoModal } from './video-modal';
 
 /** CTA label per sales reason; `OPEN` is handled separately (it shows a price). */
@@ -79,6 +86,9 @@ export function EventHero({ event }: { event: PublicEvent }) {
       ) : (
         <CardHero {...props} />
       )}
+      {theme.countdown === 'band' && event.show_countdown ? (
+        <CountdownBand beginAt={event.begin_at} />
+      ) : null}
       <VideoModal
         source={playing}
         title={`${event.name} video`}
@@ -110,20 +120,34 @@ function CardHero({ event, dateLine, venueLine, onPlay }: HeroLayoutProps) {
   );
 }
 
-/** Bold Dark: full-bleed media behind oversized display type. */
+/**
+ * Bold Dark / Champion: full-bleed media behind oversized display type, copy
+ * anchored bottom-left. With the `impact` heading style it fills the viewport,
+ * sets the title in heavy uppercase, and fades into the page token colour.
+ */
 function ImmersiveHero({
   event,
   dateLine,
   venueLine,
   onPlay,
 }: HeroLayoutProps) {
+  const impact = useEventTheme().heading === 'impact';
   return (
-    <section className="relative isolate flex min-h-[min(88svh,56rem)] items-end overflow-hidden bg-black text-white">
+    <section
+      className={cn(
+        'relative isolate flex items-end overflow-hidden bg-black text-white',
+        impact ? 'min-h-[100svh]' : 'min-h-[min(88svh,56rem)]',
+      )}
+    >
       {hasHeroMedia(event) ? (
         <HeroMedia
           event={event}
           className="absolute inset-0 -z-20 h-full"
-          soundButtonClass="bottom-6 right-4 z-20 sm:right-8"
+          soundButtonClass={
+            impact
+              ? 'bottom-5 right-4 z-20 border border-[color:var(--event-hairline-strong)] bg-black/55 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] sm:bottom-8 sm:right-8'
+              : 'bottom-6 right-4 z-20 sm:right-8'
+          }
         />
       ) : (
         // No media: an accent glow keeps the hero from reading as empty.
@@ -136,31 +160,69 @@ function ImmersiveHero({
           aria-hidden="true"
         />
       )}
-      <div
-        className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0a0a0b] via-black/55 to-black/30"
-        aria-hidden="true"
-      />
+      {impact ? (
+        <div
+          className="absolute inset-0 -z-10"
+          style={{
+            background:
+              'linear-gradient(to top, var(--event-page, #000) 0%, rgba(0,0,0,0.55) 38%, rgba(0,0,0,0.35) 100%)',
+          }}
+          aria-hidden="true"
+        />
+      ) : (
+        <div
+          className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0a0a0b] via-black/55 to-black/30"
+          aria-hidden="true"
+        />
+      )}
 
-      <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-32 sm:pb-20">
-        <p
-          className="text-xs font-bold uppercase tracking-[0.18em] sm:text-sm"
-          style={{ color: 'var(--event-brand)' }}
-        >
-          {dateLine}
-        </p>
-        <h1
-          className={cn(
-            'mt-4 max-w-4xl text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl',
-            DISPLAY_FONT_CLASS,
-          )}
-        >
-          {event.name}
-        </h1>
-        {venueLine ? (
-          <p className="mt-4 text-base text-white/75 sm:text-lg">{venueLine}</p>
-        ) : null}
-        <HeroBody event={event} onPlay={onPlay} tone="dark" />
-      </div>
+      {impact ? (
+        <div className="mx-auto w-full max-w-6xl px-4 pb-20 pt-32 sm:px-8 sm:pb-24">
+          <h1
+            className={cn(
+              'max-w-3xl text-[clamp(2.5rem,8vw,4.75rem)] font-black uppercase leading-[0.92] tracking-[-0.01em]',
+              DISPLAY_FONT_CLASS,
+            )}
+          >
+            {event.name}
+          </h1>
+          <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold text-white/90 sm:text-lg">
+            <span>{dateLine}</span>
+            {venueLine ? (
+              <>
+                <span
+                  className="hidden h-5 w-px sm:inline-block"
+                  style={{ backgroundColor: 'var(--event-brand)' }}
+                  aria-hidden="true"
+                />
+                <span className="w-full sm:w-auto">{venueLine}</span>
+              </>
+            ) : null}
+          </p>
+          <HeroBody event={event} onPlay={onPlay} tone="dark" />
+        </div>
+      ) : (
+        <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-32 sm:pb-20">
+          <p
+            className="text-xs font-bold uppercase tracking-[0.18em] sm:text-sm"
+            style={{ color: 'var(--event-brand)' }}
+          >
+            {dateLine}
+          </p>
+          <h1
+            className={cn(
+              'mt-4 max-w-4xl text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl',
+              DISPLAY_FONT_CLASS,
+            )}
+          >
+            {event.name}
+          </h1>
+          {venueLine ? (
+            <p className="mt-4 text-base text-white/75 sm:text-lg">{venueLine}</p>
+          ) : null}
+          <HeroBody event={event} onPlay={onPlay} tone="dark" />
+        </div>
+      )}
     </section>
   );
 }
@@ -213,9 +275,10 @@ function HeroBody({
   onPlay: (() => void) | null;
   tone: Tone;
 }) {
+  const theme = useEventTheme();
   return (
     <>
-      {event.show_countdown ? (
+      {event.show_countdown && theme.countdown !== 'band' ? (
         <div className="mt-8">
           <EventCountdown beginAt={event.begin_at} tone={tone} />
         </div>
@@ -235,36 +298,41 @@ function HeroActions({
   onPlay: (() => void) | null;
   tone: Tone;
 }) {
+  const theme = useEventTheme();
+  const metallic = theme.button === 'metallic';
   const { sales_state: sales, current_tier: tier } = event;
   const radius = { borderRadius: 'var(--event-btn-radius)' };
   const secondary = cn(
-    'inline-flex items-center gap-2 border px-5 py-3 text-sm font-medium transition',
-    tone === 'dark'
-      ? 'border-white/30 text-white hover:bg-white/10'
-      : 'border-slate-300 text-slate-800 hover:bg-slate-100',
+    'inline-flex items-center gap-2 border transition',
+    metallic
+      ? 'border-[color:var(--event-hairline-strong)] bg-black/30 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white hover:bg-white/10'
+      : 'px-5 py-3 text-sm font-medium',
+    !metallic &&
+      (tone === 'dark'
+        ? 'border-white/30 text-white hover:bg-white/10'
+        : 'border-slate-300 text-slate-800 hover:bg-slate-100'),
   );
 
   return (
     <div className="mt-8 flex flex-wrap items-center gap-3">
       {sales.is_open ? (
-        <Link
-          to={`/event/${event.shortcut}/checkout`}
-          style={{
-            ...radius,
-            backgroundColor: 'var(--event-brand)',
-            color: 'var(--event-brand-contrast)',
-          }}
-          className="px-6 py-3 text-sm font-semibold shadow-lg transition hover:opacity-90 motion-safe:hover:-translate-y-px"
+        <TicketsLink
+          event={event}
+          size="lg"
+          glow
+          className={metallic ? undefined : 'shadow-lg motion-safe:hover:-translate-y-px'}
         >
-          {tier
-            ? `Get Tickets — ${formatPrice(tier.price, event.payment_currency)}`
-            : 'Get Tickets'}
-        </Link>
+          {theme.ctaLabel ??
+            (tier
+              ? `Get Tickets — ${formatPrice(tier.price, event.payment_currency)}`
+              : 'Get Tickets')}
+        </TicketsLink>
       ) : (
         <span
           style={radius}
           className={cn(
             'cursor-not-allowed px-6 py-3 text-sm font-semibold',
+            metallic && 'px-9 py-4 font-extrabold uppercase tracking-[0.14em]',
             tone === 'dark'
               ? 'bg-white/15 text-white/60'
               : 'bg-slate-100 text-slate-500',

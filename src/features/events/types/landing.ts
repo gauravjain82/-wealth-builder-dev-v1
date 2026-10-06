@@ -13,11 +13,23 @@ export type ModelBackedSectionType =
   | 'location'
   | 'refund_policy'
   | 'questions'
-  | 'contact';
+  | 'contact'
+  /** Inline purchase form (renders the checkout on the landing page). */
+  | 'checkout';
 
 /** Sections whose data is stored on the section itself (may repeat). */
 export type ContentSectionType =
-  'pillars' | 'testimonials' | 'faq' | 'agenda' | 'gallery' | 'video' | 'cta_band' | 'rich_text';
+  | 'pillars'
+  | 'testimonials'
+  | 'faq'
+  | 'agenda'
+  | 'gallery'
+  | 'video'
+  | 'cta_band'
+  | 'rich_text'
+  | 'tagline'
+  | 'stats'
+  | 'marquee';
 
 export type SectionType = ModelBackedSectionType | ContentSectionType;
 
@@ -83,10 +95,85 @@ export interface VideoContent {
   caption: string;
 }
 
+/** `banner`: the compact strip. `final`: a full-height closing call. */
+export type CtaBandSize = 'banner' | 'final';
+
 export interface CtaBandContent {
   heading: string;
   subtext: string;
   button_label: string;
+  /** Absent on rows saved before sizes existed; treat as `banner`. */
+  size?: CtaBandSize;
+  /** Extra paragraphs, shown under the heading in the `final` size. */
+  body?: string[];
+  /** A word or phrase in `body` rendered in the accent colour. */
+  highlight?: string;
+  /** Closing line under the button. */
+  signoff?: string;
+}
+
+/**
+ * Optional value framing for the model-backed `pricing` section. Prices still
+ * come from the server (`current_tier`); this is copy only.
+ */
+export interface PricingContent {
+  /** Small label above the card; blank → "Your ticket". */
+  eyebrow?: string;
+  /** Ticket button text; blank → the theme's default ("Claim your seat"). */
+  button_label?: string;
+  /** e.g. "Seeing these speakers anywhere else runs $5,000+". */
+  anchor_text?: string;
+  /** Struck-through comparison figure, e.g. "$5,000+". Free text, never computed. */
+  anchor_price?: string;
+  inclusions?: string[];
+  /** Bold one-liner under the button. */
+  motto?: string;
+  fine_print?: string;
+}
+
+/** Hook lines under the hero, a rotating word strip and secondary links. */
+export interface TaglineContent {
+  /** 1–4 lines; the last renders in the accent colour when `highlight_last`. */
+  lines: string[];
+  highlight_last: boolean;
+  /** 0–8 short words, e.g. CONNECT · LEARN · GROW. */
+  words: string[];
+  /** 0–2 links beside the primary ticket CTA; `url` is http(s) or `#anchor`. */
+  links: { label: string; url: string }[];
+  /** Primary ticket button text; blank → the theme's default. */
+  button_label?: string;
+}
+
+/**
+ * Where a stat's value comes from. `tickets_remaining` reads
+ * `sales_state.tickets_remaining`; `tickets_sold` reads `PublicEvent.tickets_sold`,
+ * which the server only includes when an enabled stats section asks for it.
+ * A live stat whose value is absent is hidden, never shown as 0.
+ */
+export type StatSource = 'static' | 'tickets_remaining' | 'tickets_sold';
+
+export interface StatItem {
+  /** Shown for `static`; ignored for live sources. */
+  value: string;
+  label: string;
+  source: StatSource;
+}
+
+export interface StatsContent {
+  items: StatItem[];
+}
+
+export interface MarqueeItem {
+  name: string;
+  photo_blob: string;
+  /** CDN URL (read-only; ignored on save). */
+  photo_url?: string | null;
+}
+
+/** A scrolling strip of past speakers or logos. */
+export interface MarqueeContent {
+  intro: string;
+  items: MarqueeItem[];
 }
 
 export interface RichTextContent {
@@ -103,6 +190,9 @@ export interface SectionContentMap {
   video: VideoContent;
   cta_band: CtaBandContent;
   rich_text: RichTextContent;
+  tagline: TaglineContent;
+  stats: StatsContent;
+  marquee: MarqueeContent;
 }
 
 export interface LandingSection {

@@ -14,6 +14,12 @@
 import { useState } from 'react';
 import { CardElement, useElements, useStripe } from '@stripe/react-stripe-js';
 
+import type { ReactNode } from 'react';
+
+import { cn } from '@core/utils';
+
+import { useEventTheme } from '../../themes/theme-context';
+import type { ThemeTokens } from '../../themes/registry';
 import { formatMoney } from '../../utils/public-pricing';
 import { BrandButton, PublicAlert, PublicCard } from './public-event-shell';
 
@@ -29,6 +35,24 @@ const CARD_ELEMENT_OPTIONS = {
   },
 } as const;
 
+/**
+ * The card iframe can't read our CSS variables, so token themes pass their
+ * literal palette (which is why `ThemeTokens` are hex).
+ */
+function tokenCardOptions(tokens: ThemeTokens) {
+  return {
+    style: {
+      base: {
+        fontSize: '15px',
+        color: tokens.text,
+        iconColor: tokens.muted,
+        '::placeholder': { color: tokens.muted },
+      },
+      invalid: { color: '#f87171' },
+    },
+  };
+}
+
 interface StripePaymentStepProps {
   /** PaymentIntent client secret returned by the checkout endpoint. */
   clientSecret: string;
@@ -42,6 +66,8 @@ interface StripePaymentStepProps {
   /** Called when Stripe declines or errors. */
   onFailed: (message: string) => void;
   onBack: () => void;
+  /** Render without the surrounding card (when already inside one). */
+  bare?: boolean;
 }
 
 export function StripePaymentStep({
@@ -53,7 +79,9 @@ export function StripePaymentStep({
   onSucceeded,
   onFailed,
   onBack,
+  bare = false,
 }: StripePaymentStepProps) {
+  const { tokens } = useEventTheme();
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -101,15 +129,22 @@ export function StripePaymentStep({
     }
   };
 
-  return (
-    <PublicCard>
+  const content: ReactNode = (
+    <>
       <h2 className="text-lg font-semibold">Payment</h2>
-      <p className="mt-1 text-sm text-slate-600 dark:text-white/70">
+      <p className="mt-1 text-sm text-slate-600 dark:text-white/70 [[data-event-surface=tokens]_&]:text-[color:var(--event-muted)]">
         Paying {formatMoney(amountCents, currency)} — your card is charged by Stripe.
       </p>
 
-      <div className="mt-4 rounded-lg border border-slate-300 bg-white p-3 dark:border-white/20">
-        <CardElement options={CARD_ELEMENT_OPTIONS} />
+      <div
+        className={cn(
+          'mt-4 rounded-lg border p-3',
+          tokens
+            ? 'rounded-sm border-[color:var(--event-hairline)] bg-[var(--event-surface)] py-3.5'
+            : 'border-slate-300 bg-white dark:border-white/20',
+        )}
+      >
+        <CardElement options={tokens ? tokenCardOptions(tokens) : CARD_ELEMENT_OPTIONS} />
       </div>
 
       {cardError ? (
@@ -119,7 +154,7 @@ export function StripePaymentStep({
       ) : null}
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
-        <BrandButton onClick={handlePay} disabled={!stripe || submitting}>
+        <BrandButton onClick={() => void handlePay()} disabled={!stripe || submitting}>
           {submitting ? 'Processing…' : `Pay ${formatMoney(amountCents, currency)}`}
         </BrandButton>
         <button
@@ -135,6 +170,10 @@ export function StripePaymentStep({
       <p className="mt-4 text-xs text-slate-500 dark:text-white/50">
         Card details are entered directly into Stripe and never reach our servers.
       </p>
-    </PublicCard>
+    </>
   );
+
+  // Same element type in both branches' children, so toggling `bare` never
+  // happens mid-payment; the CardElement iframe is not remounted on re-render.
+  return bare ? <div>{content}</div> : <PublicCard>{content}</PublicCard>;
 }
