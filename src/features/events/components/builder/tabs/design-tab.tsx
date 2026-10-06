@@ -62,6 +62,9 @@ export function DesignTab({ event, saving, onSave }: TabProps) {
     await onSave({});
   };
 
+  // Blob fields are blank-not-null on the model, so clearing is an empty string.
+  const removeFor = (field: string) => () => onSave({ [field]: '' });
+
   return (
     <div className="space-y-6">
       <TabForm dirty={dirty} saving={saving} onSubmit={submit}>
@@ -144,7 +147,7 @@ export function DesignTab({ event, saving, onSave }: TabProps) {
         <div>
           <Text className="text-sm font-medium">Images &amp; media</Text>
           <Text variant="muted" className="text-xs">
-            Uploads save immediately — no need to press Save changes.
+            Uploads and removals save immediately — no need to press Save changes.
           </Text>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -154,6 +157,7 @@ export function DesignTab({ event, saving, onSave }: TabProps) {
               label={img.label}
               currentUrl={(event[img.urlKey] as string | null) ?? null}
               onUpload={uploadFor(img.field)}
+              onRemove={removeFor(img.field)}
               help={img.help}
               accept={img.accept}
             />

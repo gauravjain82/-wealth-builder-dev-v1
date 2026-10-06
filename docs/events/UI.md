@@ -63,7 +63,7 @@ The largest surface: a shell, a tab registry and eleven tabs.
 |---|---|
 | Event | name, shortcut, dates, timezone — a dropdown of IANA zones labelled with today's offset (`utils/timezones.ts`); the backend rejects any other value |
 | Location | venue |
-| Design | branding and imagery |
+| Design | branding and imagery. Each image slot uploads, replaces and **removes** on the spot — Remove PATCHes the `*_blob_name` field to `""` (the model column is blank, not null) after a confirm |
 | Pricing | pricing tiers |
 | Ticketing | ticket settings |
 | Payments | payment config, including `stripe_account_id` |

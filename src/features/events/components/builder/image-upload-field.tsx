@@ -8,6 +8,8 @@ interface ImageUploadFieldProps {
   currentUrl: string | null;
   /** Uploads the picked file and persists it; should refresh the event. */
   onUpload: (file: File) => Promise<void>;
+  /** Clears the stored blob; should refresh the event. Omit to hide Remove. */
+  onRemove?: () => Promise<void>;
   accept?: string;
   help?: string;
 }
@@ -23,11 +25,13 @@ export function ImageUploadField({
   label,
   currentUrl,
   onUpload,
+  onRemove,
   accept = 'image/*',
   help,
 }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   // Blob URLs carry no extension, so remember whether the picked file was a video.
   const [localIsVideo, setLocalIsVideo] = useState(false);
@@ -53,6 +57,22 @@ export function ImageUploadField({
     }
   };
 
+  const remove = async () => {
+    if (!onRemove || !window.confirm(`Remove the ${label.toLowerCase()}?`)) return;
+    setError(null);
+    setRemoving(true);
+    try {
+      await onRemove();
+      setLocalPreview(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Remove failed');
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  const busy = uploading || removing;
+
   return (
     <div className="flex flex-col gap-1.5">
       <Label variant="form">{label}</Label>
@@ -67,9 +87,16 @@ export function ImageUploadField({
           )}
         </div>
         <div className="flex flex-col gap-1">
-          <Button type="button" variant="secondary" onClick={pick} disabled={uploading}>
-            {uploading ? 'Uploading…' : preview ? 'Replace' : 'Upload'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="secondary" onClick={pick} disabled={busy}>
+              {uploading ? 'Uploading…' : preview ? 'Replace' : 'Upload'}
+            </Button>
+            {onRemove && preview && (
+              <Button type="button" variant="ghost" onClick={() => void remove()} disabled={busy}>
+                {removing ? 'Removing…' : 'Remove'}
+              </Button>
+            )}
+          </div>
           {help && (
             <Text variant="muted" className="text-xs">
               {help}
@@ -83,7 +110,11 @@ export function ImageUploadField({
         type="file"
         accept={accept}
         className="hidden"
-        onChange={(e) => void onFile(e.target.files?.[0])}
+        onChange={(e) => {
+          void onFile(e.target.files?.[0]);
+          // Reset so re-picking the same file after Remove still fires onChange.
+          e.target.value = '';
+        }}
       />
     </div>
   );
