@@ -60,6 +60,7 @@ import type {
   PluginFeesStatement,
   RecognitionCost,
   ResolveFollowUpInput,
+  SetSelfPayAllowedInput,
   RetryPayoutLineInput,
   ReviewQuery,
   ScheduleFeeChangeInput,
@@ -343,6 +344,14 @@ export function fetchFollowUps(
 
 export function resolveFollowUp(input: ResolveFollowUpInput): Promise<FollowUp> {
   return postJson(`/follow-ups/${input.id}/resolve/`, { note: input.note });
+}
+
+/**
+ * Admin enables or withdraws pay-by-invoice for an agent. Enabling needs a follow-up
+ * with exhausted retries (`409 retries_not_exhausted`).
+ */
+export function setSelfPayAllowed(input: SetSelfPayAllowedInput): Promise<PluginFeesPaymentMethod> {
+  return postJson(`/agents/${input.agentId}/self-pay/`, { allowed: input.allowed, note: input.note });
 }
 
 export function fetchBalances(signal?: AbortSignal): Promise<SmdBalance[]> {

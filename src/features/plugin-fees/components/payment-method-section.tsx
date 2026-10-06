@@ -1,8 +1,10 @@
 /**
  * Settings → How you pay plug-in fees (MD and SMD).
  *
- * Two choices (D19b):
- * - `automatic` (default): the saved bank account or card is charged on the 1st.
+ * Every agent is charged automatically: the saved bank account or card is charged on
+ * the 1st. The choice is only shown once an admin has enabled pay-by-invoice
+ * (`self_pay_allowed`), which they do after an automatic charge failed all its retries:
+ * - `automatic`: as above.
  * - `self_pay`: no automatic charge; each month the agent gets a payment link and
  *   chooses bank, card or Klarna there. Klarna is only ever the agent's choice (D19).
  *
@@ -88,6 +90,7 @@ export function PaymentMethodSection({
   const [redirecting, setRedirecting] = useState(false);
   const saved = paymentMethod.status === 'saved';
   const automatic = paymentMethod.preference === 'automatic';
+  const canChoose = paymentMethod.self_pay_allowed;
   const dueDay = ordinal(paymentMethod.self_pay_due_day);
 
   const handleSave = async () => {
@@ -128,37 +131,44 @@ export function PaymentMethodSection({
       </div>
 
       <div className="wb-pf-stack">
-        <fieldset className="wb-pf-choice" disabled={setPreference.isPending}>
-          <legend className="wb-pf-subheading">Payment choice</legend>
-          <label className="wb-pf-choice-option">
-            <input
-              type="radio"
-              name="wb-pf-preference"
-              checked={automatic}
-              onChange={() => handlePreference('automatic')}
-            />
-            <span>
-              <strong>Charge me automatically on the 1st</strong>
-              <span className="wb-pf-muted"> — from the bank account or card saved below.</span>
-            </span>
-          </label>
-          <label className="wb-pf-choice-option">
-            <input
-              type="radio"
-              name="wb-pf-preference"
-              checked={!automatic}
-              onChange={() => handlePreference('self_pay')}
-            />
-            <span>
-              <strong>I&apos;ll pay each month myself</strong>
-              <span className="wb-pf-muted">
-                {' '}
-                — you&apos;ll get a payment link on the 1st, due by the {dueDay}. Pay by bank, card,
-                or Klarna (pay over time, subject to Klarna&apos;s approval and fees).
+        {canChoose ? (
+          <fieldset className="wb-pf-choice" disabled={setPreference.isPending}>
+            <legend className="wb-pf-subheading">Payment choice</legend>
+            <label className="wb-pf-choice-option">
+              <input
+                type="radio"
+                name="wb-pf-preference"
+                checked={automatic}
+                onChange={() => handlePreference('automatic')}
+              />
+              <span>
+                <strong>Charge me automatically on the 1st</strong>
+                <span className="wb-pf-muted"> — from the bank account or card saved below.</span>
               </span>
-            </span>
-          </label>
-        </fieldset>
+            </label>
+            <label className="wb-pf-choice-option">
+              <input
+                type="radio"
+                name="wb-pf-preference"
+                checked={!automatic}
+                onChange={() => handlePreference('self_pay')}
+              />
+              <span>
+                <strong>I&apos;ll pay each month myself</strong>
+                <span className="wb-pf-muted">
+                  {' '}
+                  — you&apos;ll get a payment link on the 1st, due by the {dueDay}. Pay by bank, card,
+                  or Klarna (pay over time, subject to Klarna&apos;s approval and fees).
+                </span>
+              </span>
+            </label>
+          </fieldset>
+        ) : (
+          <p className="wb-pf-muted" style={{ margin: 0 }}>
+            <strong>Charged automatically on the 1st</strong> from the bank account or card saved
+            below.
+          </p>
+        )}
 
         {automatic && !saved ? (
           <div className="wb-pf-callout wb-pf-callout--warning">

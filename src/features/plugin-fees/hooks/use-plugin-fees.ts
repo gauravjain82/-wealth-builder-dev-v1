@@ -50,6 +50,7 @@ import {
   scheduleFeeChange,
   sendCycle,
   setPaymentPreference,
+  setSelfPayAllowed,
   submitAssistant,
   submitOffice,
   updateBillingSettings,
@@ -407,6 +408,16 @@ export function useResolveFollowUp() {
         queryClient.invalidateQueries({ queryKey: pluginFeesKeys.followUpsAll }),
         queryClient.invalidateQueries({ queryKey: pluginFeesKeys.paymentsAll }),
       ]),
+  });
+}
+
+/** Enabling or withdrawing pay-by-invoice changes the follow-ups' `self_pay_allowed`. */
+export function useSetSelfPayAllowed() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setSelfPayAllowed,
+    ...NO_RETRY,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: pluginFeesKeys.followUpsAll }),
   });
 }
 
