@@ -9,7 +9,7 @@
 | **API prefix** | `/api/accounts/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 (§6 re-read at `743afe1`, 2026-09-30, parity phase 21 audit) |
+| **Verified against** | commit `7e3b7f1` — 2026-09-27 (§6 re-read at `743afe1`, 2026-09-30, parity phase 21 audit; §2.3 re-read at `71df1e3`, 2026-10-07) |
 
 ## 1. Routes and entry points
 
@@ -72,7 +72,28 @@ string literals in the config, mapped to components by
 `shared/layouts/menu-icon-map.tsx` where a component is wanted.
 
 A route added to `router/index.tsx` without a matching `menu.ts` entry is reachable but
-invisible. Both edits belong in the same commit.
+invisible. Both edits belong in the same commit — unless the page is meant to be reached from
+somewhere else, as `/leaderboards`, `/contests` and `/welcome-videos` are (decision P8).
+
+**Order** (decision P8). Top level, for every plan; `[…]` is injected only with its grant, and
+a plan drops what it does not list (New Agent has no Calendar):
+
+Home · [Home (new)] · Insight Center · Onboarding Game · Licensing · 10 Systematic Tools ·
+My Team · [My Plug-in Fees] · Promotion · Matchup · BPM · [Big Event] · Training Center ·
+Training Schedule · Calendar · File Vault · Help Desk · then Invite Agents, Terminated Users,
+Admin and the capability-gated admin entries. [Products], [Reporting Pipeline] and [Contest
+Settings], in that order, are the last children of Admin; a holder of their grant whose plan has
+no Admin group gets them at top level instead.
+
+My Team, for the plans that list each: Org Chart · Prospect Tracker · Mission Tracker ·
+Associate Tracker · Licensing Tracker · Production Tracker · Team Promotion Tracker · Builders ·
+[Builder AI]. Builder AI is a nested group with its own children (all six for an owner,
+Baseshop and Invitations for a builder), so the sidebar renders three levels there. The
+collapsed-rail flyout closes on a link click only, so the nested toggle can open.
+
+Not in the menu: **Leaderboards** and **Contests** — the Full Report actions on their Home v2
+cards open `/leaderboards?view=report` and `/contests`; **Welcome Videos** — a section of File
+Vault, and still the `/welcome-videos` route the `/home` card links to.
 
 ## 3. States
 

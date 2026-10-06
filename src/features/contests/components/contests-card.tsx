@@ -36,6 +36,8 @@ interface ContestsCardProps {
    * off on `/home-v2` (decision C24); see `useContestBoard`.
    */
   prefetchOtherContests?: boolean;
+  /** Opens the standalone `/contests` page. Contests has no sidebar entry, so this is the way in. */
+  onOpenFullReport?: () => void;
 }
 
 /**
@@ -45,6 +47,7 @@ interface ContestsCardProps {
 export function ContestsCard({
   withChrome = true,
   prefetchOtherContests = false,
+  onOpenFullReport,
 }: ContestsCardProps) {
   const board = useContestBoard({ prefetchOtherContests });
   const { contests, activeContestId, contest, filters, dialogs } = board;
@@ -96,6 +99,11 @@ export function ContestsCard({
           >
             Help
           </button>
+          {onOpenFullReport ? (
+            <button type="button" className="wb-ct-pill" onClick={onOpenFullReport}>
+              Full Report
+            </button>
+          ) : null}
         </div>
       </div>
 

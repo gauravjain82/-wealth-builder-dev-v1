@@ -95,7 +95,7 @@ that reading.
 **Downstream (imports this module)**
 - `src/features/home-v2/` — mounts `LeaderboardsCard`.
 - `src/router/leaderboards-route.tsx` — the guard imports `useLeaderboardAccess`.
-- `src/hooks/use-role-based-menu.ts` — same hook, for the menu entries.
+- `src/hooks/use-role-based-menu.ts` — same hook, for the Home (new) entry. Leaderboards has none.
 - `src/features/contests/` — shares the `homev2:read` grant, read through its own hook.
 
 **Backend**

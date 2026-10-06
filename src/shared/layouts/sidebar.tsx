@@ -173,7 +173,13 @@ function MenuItemComponent({ item, isCollapsed, level = 0 }: MenuItemProps) {
             style={{ top: flyoutAt.top, left: flyoutAt.left }}
           >
             <div className="sidebar__flyout-title">{safeLabel}</div>
-            <div onClick={() => setFlyoutAt(null)}>
+            {/* Close on a link, not on a nested group's toggle (Builder AI under
+                My Team), which has to stay open to show its own children. */}
+            <div
+              onClick={(event) => {
+                if ((event.target as HTMLElement).closest('a')) setFlyoutAt(null);
+              }}
+            >
               {item.children?.map((child, index) => (
                 <MenuItemComponent
                   key={`${typeof child.label === 'string' ? child.label : 'item'}-${index}`}

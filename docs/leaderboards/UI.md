@@ -20,7 +20,8 @@
 **Embedded entry point.** `LeaderboardsCard` is mounted by `src/features/home-v2/` inside the
 Home v2 page. It is the preferred integration: one metric, a short preview, and an expand
 action that navigates to `/leaderboards` carrying the metric. There is no separate route for
-it.
+it. There is no sidebar entry either: Home v2's Full Report action is the way to the page
+([platform decision P8](../platform/PHASES.md#3-decision-log)).
 
 Query-string handling (`pages/leaderboards-page.tsx:33-43`):
 

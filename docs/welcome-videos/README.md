@@ -10,7 +10,7 @@
 | **Status** | Not yet merged — branch `feature/wb-welcome-videos`, coupled to `mlm_platform` |
 | **Doc version** | 1.0 |
 | **Doc tier** | **Lite** — `README.md` + [UI.md](UI.md) |
-| **Verified against** | branch `feature/wb-welcome-videos` off `e91e5a5` — 2026-10-01 |
+| **Verified against** | branch `feature/wb-welcome-videos` off `e91e5a5` — 2026-10-01 (§2, §5, §8 re-read at `71df1e3`, 2026-10-07) |
 
 ## 1. Purpose
 
@@ -25,7 +25,7 @@ backend catalogue the drip sends from, so the website and the messages cannot di
 
 ## 2. Scope
 
-**In scope** — the library page, the per-video deep link, the sidebar entry for every role, a
+**In scope** — the library page, the per-video deep link, the File Vault section for every role, a
 shortcut card in the new-agent block of `/home`, and a share dialog embedded where leaders add
 agency codes and work prospects.
 
@@ -72,8 +72,8 @@ only with a backend deploy.
 
 **Upstream** — `@/store` (toasts), `@/shared/components` (loading and error states, `Card`).
 
-**Downstream** — `src/router/index.tsx` (two routes), `src/config/menu.ts` (`WELCOME_VIDEOS`, in
-every plan), `src/features/home/pages/home-page.tsx` (`WelcomeVideosHomeCard`), and
+**Downstream** — `src/router/index.tsx` (two routes), `src/features/file-vault/pages/file-vault-page.tsx`
+(`WelcomeVideosLibrary`, as a section), `src/features/home/pages/home-page.tsx` (`WelcomeVideosHomeCard`), and
 `ShareWelcomeVideosModal` in the prospect tracker, its list modal and matchup — see
 [UI.md §1](UI.md#1-routes-and-entry-points).
 
@@ -87,4 +87,5 @@ Recorded in the backend log, `mlm_platform/docs/notifications/PHASES.md` §3:
 
 ## 8. Where to start reading
 
-`pages/welcome-videos-page.tsx`, then `utils/vimeo.ts` for how an unlisted link becomes an embed.
+`components/welcome-videos-library.tsx` (the page and the File Vault section both render it), then
+`utils/vimeo.ts` for how an unlisted link becomes an embed.

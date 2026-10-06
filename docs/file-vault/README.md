@@ -21,6 +21,9 @@ because all the complexity lives in [admin](../admin/), which manages the conten
 ## 2. Scope
 
 **In scope** — the `/file-vault` reader page, its sidebar and content pane, and opening a document.
+The sidebar also carries a client-side **Welcome Videos** section after the CMS sections; it is not
+CMS content and renders [welcome-videos](../welcome-videos/)' `WelcomeVideosLibrary` in place of the
+file list ([platform decision P8](../platform/PHASES.md#3-decision-log)).
 
 **Out of scope** — managing sections and items ([admin](../admin/)'s `/admin/file-vault`, via
 `ContentPageAdminShell`), and role access, which is applied **server-side**.

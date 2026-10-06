@@ -22,7 +22,8 @@
 full-width "Contests" section below the leaderboard, in a clipping `clamp(480px, 70vh, 760px)`
 wrapper (`home-v2-page.tsx:109-130`). The `<CanvaVideoCard title="Event & Contests">` media card
 above it stays; the contest card does not replace it. That is the primary placement; the route is
-the optional one.
+the optional one. There is no sidebar entry: the card's **Full Report** pill (`onOpenFullReport`,
+passed by Home v2) opens `/contests` ([platform decision P8](../platform/PHASES.md#3-decision-log)).
 
 The two denial targets differ deliberately: a reader who lands on the settings URL is returned to the
 card they *can* use, not to a dead end.

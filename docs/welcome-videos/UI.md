@@ -9,7 +9,7 @@
 | **API prefix** | `/api/notifications/` |
 | **Status** | Not yet merged |
 | **Doc version** | 1.0 |
-| **Verified against** | branch `feature/wb-welcome-videos` off `e91e5a5` — 2026-10-01 |
+| **Verified against** | branch `feature/wb-welcome-videos` off `e91e5a5` — 2026-10-01 (§1 re-read at `71df1e3`, 2026-10-07) |
 
 ## 1. Routes and entry points
 
@@ -19,7 +19,9 @@
 | `/welcome-videos/:videoKey` | `ProtectedRoute` only | `WelcomeVideosPage`, player open on that video |
 
 Entry points:
-- **Sidebar** — "Welcome Videos" 🎬, directly after Home, in every plan's menu.
+- **File Vault** — a "Welcome Videos" 🎬 section, last in the File Vault sidebar, for every role. It
+  renders `WelcomeVideosLibrary` in place of the file list; the player opens from local state, not
+  the URL. There is no main-sidebar entry ([platform decision P8](../platform/PHASES.md#3-decision-log)).
 - **`/home`** — `WelcomeVideosHomeCard`, in the new-agent-only block above "Start your onboarding
   process". Static; it makes no request.
 - **`ShareWelcomeVideosModal`**, embedded where leaders work with agents:

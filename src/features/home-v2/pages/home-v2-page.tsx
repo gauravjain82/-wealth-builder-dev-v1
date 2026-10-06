@@ -125,7 +125,7 @@ export default function HomeV2Page() {
                 overflow: 'hidden',
               }}
             >
-              <ContestsCard />
+              <ContestsCard onOpenFullReport={() => navigate('/contests')} />
             </div>
           </div>
         </section>

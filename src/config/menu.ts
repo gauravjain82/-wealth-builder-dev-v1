@@ -28,8 +28,6 @@ const MENU_ITEMS = {
   HOME: { label: 'Home', icon: '🏠', path: '/home' } as MenuItem,
   INSIGHT_CENTER: { label: 'Insight Center', icon: '💡', path: '/insight-center' } as MenuItem,
   ONBOARDING_GAME: { label: 'Onboarding Game', icon: '🎮', path: '/onboarding-game' } as MenuItem,
-  // Every role: leaders show these to agents and share the links.
-  WELCOME_VIDEOS: { label: 'Welcome Videos', icon: '🎬', path: '/welcome-videos' } as MenuItem,
   PROMOTION: { label: 'Promotion', icon: '🏆', path: '/promotion/dashboard' } as MenuItem,
   
   // Tools
@@ -86,11 +84,10 @@ const MENU_ITEMS = {
   } as MenuItem,
   // Product catalog management (gated per-user by products:read)
   PRODUCTS: { label: 'Products', icon: '📦', path: '/admin/products' } as MenuItem,
-  // WB Leaderboards + Home v2 (gated per-user by homev2:read — a named rollout
-  // list, not a role, so no plan grants either of these)
+  // Home v2 (gated per-user by homev2:read — a named rollout list, not a role, so
+  // no plan grants it). Leaderboards and Contests have no entry of their own: their
+  // cards on Home v2 link to the full pages.
   HOME_V2: { label: 'Home (new)', icon: '✨', path: '/home-v2' } as MenuItem,
-  LEADERBOARDS: { label: 'Leaderboards', icon: '🏅', path: '/leaderboards' } as MenuItem,
-  CONTESTS: { label: 'Contests', icon: '🏆', path: '/contests' } as MenuItem,
   // Contest configuration, gated per-user by wbreporting:manage (not homev2:read).
   CONTEST_SETTINGS: {
     label: 'Contest Settings',
@@ -199,8 +196,9 @@ const MENU_ITEMS = {
 
 /**
  * Builder AI group — visibility is not plan-based. It is injected by
- * `getMenuForUser` for any user the backend `/api/builderai/my-access/` endpoint
- * reports `can_view: true` for (owners, active builders, and pending invitees).
+ * `getMenuForUser` as the last child of My Team for any user the backend
+ * `/api/builderai/my-access/` endpoint reports `can_view: true` for (owners,
+ * active builders, and pending invitees).
  */
 const BUILDER_AI_GROUP: MenuItem = {
   label: 'Builder AI',
@@ -234,6 +232,12 @@ const DATA_INTEGRITY_GROUP: MenuItem = {
  */
 const PLUGIN_FEES_GROUP_LABEL = 'Plug-in Fees';
 
+/** Every plan has a My Team group; Builder AI nests in it and My Plug-in Fees follows it. */
+const MY_TEAM_LABEL = 'My Team';
+
+/** The Admin and Super Admin plans' Admin group; Products, Reporting Pipeline and Contest Settings nest in it. */
+const ADMIN_GROUP_LABEL = 'Admin';
+
 /**
  * Big Event group — not plan-based. Each child is added when `/api/events/events/my-access/`
  * reports its screen open for at least one event, through a platform-wide grant (role,
@@ -257,10 +261,8 @@ const BIG_EVENT_ENTRIES: Array<[BigEventScreen, MenuItem]> = [
 export const PLAN_MENUS = {
   [Plan.NewAgent]: [
     MENU_ITEMS.HOME,
-    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -277,6 +279,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.PROSPECT_TRACKER,
       ],
     },
+    MENU_ITEMS.PROMOTION,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -300,10 +303,8 @@ export const PLAN_MENUS = {
   
   [Plan.Agent]: [
     MENU_ITEMS.HOME,
-    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -318,11 +319,12 @@ export const PLAN_MENUS = {
       label: 'My Team',
       icon: '👥',
       children: [
-        MENU_ITEMS.PROSPECT_TRACKER,
         MENU_ITEMS.ORG_CHART,
+        MENU_ITEMS.PROSPECT_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
       ],
     },
+    MENU_ITEMS.PROMOTION,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -347,10 +349,8 @@ export const PLAN_MENUS = {
   
   [Plan.Leader]: [
     MENU_ITEMS.HOME,
-    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -369,12 +369,13 @@ export const PLAN_MENUS = {
         MENU_ITEMS.PROSPECT_TRACKER,
         MENU_ITEMS.MISSION_TRACKER,
         MENU_ITEMS.ASSOCIATE_TRACKER,
-        MENU_ITEMS.BUILDERS,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
         MENU_ITEMS.TEAM_PROMOTION,
+        MENU_ITEMS.BUILDERS,
       ],
     },
+    MENU_ITEMS.PROMOTION,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -400,10 +401,8 @@ export const PLAN_MENUS = {
   
   [Plan.Broker]: [
     MENU_ITEMS.HOME,
-    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -422,12 +421,13 @@ export const PLAN_MENUS = {
         MENU_ITEMS.PROSPECT_TRACKER,
         MENU_ITEMS.MISSION_TRACKER,
         MENU_ITEMS.ASSOCIATE_TRACKER,
-        MENU_ITEMS.BUILDERS,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
         MENU_ITEMS.TEAM_PROMOTION,
+        MENU_ITEMS.BUILDERS,
       ],
     },
+    MENU_ITEMS.PROMOTION,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -454,10 +454,8 @@ export const PLAN_MENUS = {
   // Senior Broker uses same menu as Broker
   [Plan.SeniorBroker]: [
     MENU_ITEMS.HOME,
-    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -476,12 +474,13 @@ export const PLAN_MENUS = {
         MENU_ITEMS.PROSPECT_TRACKER,
         MENU_ITEMS.MISSION_TRACKER,
         MENU_ITEMS.ASSOCIATE_TRACKER,
-        MENU_ITEMS.BUILDERS,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
         MENU_ITEMS.TEAM_PROMOTION,
+        MENU_ITEMS.BUILDERS,
       ],
     },
+    MENU_ITEMS.PROMOTION,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -507,10 +506,8 @@ export const PLAN_MENUS = {
   
   [Plan.Admin]: [
     MENU_ITEMS.HOME,
-    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -529,12 +526,13 @@ export const PLAN_MENUS = {
         MENU_ITEMS.PROSPECT_TRACKER,
         MENU_ITEMS.MISSION_TRACKER,
         MENU_ITEMS.ASSOCIATE_TRACKER,
-        MENU_ITEMS.BUILDERS,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
         MENU_ITEMS.TEAM_PROMOTION,
+        MENU_ITEMS.BUILDERS,
       ],
     },
+    MENU_ITEMS.PROMOTION,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -576,10 +574,8 @@ export const PLAN_MENUS = {
 
   [Plan.SuperAdmin]: [
     MENU_ITEMS.HOME,
-    MENU_ITEMS.WELCOME_VIDEOS,
     MENU_ITEMS.INSIGHT_CENTER,
     MENU_ITEMS.ONBOARDING_GAME,
-    MENU_ITEMS.PROMOTION,
     {
       label: 'Licensing',
       icon: '📜',
@@ -598,12 +594,13 @@ export const PLAN_MENUS = {
         MENU_ITEMS.PROSPECT_TRACKER,
         MENU_ITEMS.MISSION_TRACKER,
         MENU_ITEMS.ASSOCIATE_TRACKER,
-        MENU_ITEMS.BUILDERS,
         MENU_ITEMS.LICENSING_TRACKER,
         MENU_ITEMS.PRODUCTION_TRACKER,
         MENU_ITEMS.TEAM_PROMOTION,
+        MENU_ITEMS.BUILDERS,
       ],
     },
+    MENU_ITEMS.PROMOTION,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -664,6 +661,14 @@ export function getMenuForPlan(plan: unknown): MenuItem[] {
 export function menuContainsPath(items: MenuItem[], path: string): boolean {
   return items.some(
     (item) => item.path === path || (item.children ? menuContainsPath(item.children, path) : false),
+  );
+}
+
+/** True if an item labelled `label` appears anywhere in the (possibly nested) menu. */
+function menuContainsLabel(items: MenuItem[], label: string): boolean {
+  return items.some(
+    (item) =>
+      item.label === label || (item.children ? menuContainsLabel(item.children, label) : false),
   );
 }
 
@@ -747,8 +752,8 @@ export function getMenuForUser(
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
 
   // Builder AI is gated by backend access (owner / active builder / pending
-  // invitee), not by plan — inject it just under Home for anyone allowed.
-  if (canAccessBuilderAI && !menuItems.some((item) => item.label === BUILDER_AI_GROUP.label)) {
+  // invitee), not by plan — nest it at the end of My Team for anyone allowed.
+  if (canAccessBuilderAI && !menuContainsLabel(menuItems, BUILDER_AI_GROUP.label)) {
     const builderAiGroup = cloneMenuItems([BUILDER_AI_GROUP])[0];
 
     // Company Owner & Builder are separate things: a Company Owner sees the
@@ -763,8 +768,14 @@ export function getMenuForUser(
       );
     }
 
-    const homeIdx = menuItems.findIndex((item) => item.label === MENU_ITEMS.HOME.label);
-    menuItems.splice(homeIdx >= 0 ? homeIdx + 1 : 0, 0, builderAiGroup);
+    const myTeam = menuItems.find((item) => item.label === MY_TEAM_LABEL && item.children);
+    if (myTeam?.children) {
+      myTeam.children.push(builderAiGroup);
+    } else {
+      // Every plan has My Team today; fall back to just under Home if one stops.
+      const homeIdx = menuItems.findIndex((item) => item.label === MENU_ITEMS.HOME.label);
+      menuItems.splice(homeIdx >= 0 ? homeIdx + 1 : 0, 0, builderAiGroup);
+    }
   }
 
   // Data Integrity is gated by backend access (misalignments:read), not by
@@ -776,32 +787,29 @@ export function getMenuForUser(
     menuItems.push(cloneMenuItems([DATA_INTEGRITY_GROUP])[0]);
   }
 
-  // Product Management is gated by backend access (products:read), not by plan —
-  // inject it only for users the backend authorizes.
-  if (
-    canAccessProducts &&
-    !menuItems.some((item) => item.label === MENU_ITEMS.PRODUCTS.label)
-  ) {
-    menuItems.push(cloneMenuItems([MENU_ITEMS.PRODUCTS])[0]);
-  }
+  // Products, Reporting Pipeline and Contest Settings are admin tools on per-user
+  // grants, not plan: each goes at the end of the Admin group, in this order, or at top
+  // level for a holder whose plan has no Admin group.
+  const addAdminEntry = (entry: MenuItem) => {
+    if (menuContainsLabel(menuItems, entry.label)) return;
+    const copy = cloneMenuItems([entry])[0];
+    const adminGroup = menuItems.find((item) => item.label === ADMIN_GROUP_LABEL && item.children);
+    if (adminGroup?.children) {
+      adminGroup.children.push(copy);
+    } else {
+      menuItems.push(copy);
+    }
+  };
 
-  // Reporting Pipeline is gated by backend access (wbreporting:read or :manage),
-  // not by plan — inject it only for users the backend authorizes.
-  if (
-    canAccessReportingPipeline &&
-    !menuItems.some((item) => item.label === MENU_ITEMS.REPORTING_PIPELINE.label)
-  ) {
-    menuItems.push(cloneMenuItems([MENU_ITEMS.REPORTING_PIPELINE])[0]);
-  }
+  // Product Management: products:read.
+  if (canAccessProducts) addAdminEntry(MENU_ITEMS.PRODUCTS);
+
+  // Reporting Pipeline: wbreporting:read or :manage.
+  if (canAccessReportingPipeline) addAdminEntry(MENU_ITEMS.REPORTING_PIPELINE);
 
   // Contest configuration rides wbreporting:manage, the same gate as the pipeline
   // screen and every other reporting configuration model.
-  if (
-    canManageReporting &&
-    !menuItems.some((item) => item.label === MENU_ITEMS.CONTEST_SETTINGS.label)
-  ) {
-    menuItems.push(cloneMenuItems([MENU_ITEMS.CONTEST_SETTINGS])[0]);
-  }
+  if (canManageReporting) addAdminEntry(MENU_ITEMS.CONTEST_SETTINGS);
 
   // Guidance authoring rides gms:author, its own per-user grant.
   if (
@@ -845,7 +853,7 @@ export function getMenuForUser(
     isPluginFeesBillable &&
     !menuItems.some((item) => item.label === MENU_ITEMS.PLUGIN_FEES_STATEMENT.label)
   ) {
-    const myTeamIdx = menuItems.findIndex((item) => item.label === 'My Team');
+    const myTeamIdx = menuItems.findIndex((item) => item.label === MY_TEAM_LABEL);
     const homeIdx = menuItems.findIndex((item) => item.label === MENU_ITEMS.HOME.label);
     const anchorIdx = myTeamIdx >= 0 ? myTeamIdx : homeIdx;
     menuItems.splice(
@@ -855,20 +863,17 @@ export function getMenuForUser(
     );
   }
 
-  // Home v2 and Leaderboards are gated by backend access (homev2:read), not by
-  // plan. They are injected at the top because Home v2 is a home page: burying it
-  // under the admin entries would read as an admin tool, which it is not.
-  if (canAccessLeaderboards) {
-    const newEntries = [
-      MENU_ITEMS.HOME_V2,
-      MENU_ITEMS.LEADERBOARDS,
-      // Contests ride the same homev2:read rollout (decision C11): the card lives on
-      // Home v2, so anyone who can open that page can read the standalone view too.
-      MENU_ITEMS.CONTESTS,
-    ].filter(
-      (entry) => !menuItems.some((item) => item.label === entry.label)
-    );
-    menuItems = [...cloneMenuItems(newEntries), ...menuItems];
+  // Home v2 is gated by backend access (homev2:read), not by plan. It goes just
+  // under Home because it is a home page: burying it under the admin entries would
+  // read as an admin tool, which it is not. Leaderboards and Contests ride the same
+  // grant but have no menu entry; the Full Report links on their Home v2 cards open
+  // `/leaderboards` and `/contests`.
+  if (
+    canAccessLeaderboards &&
+    !menuItems.some((item) => item.label === MENU_ITEMS.HOME_V2.label)
+  ) {
+    const homeIdx = menuItems.findIndex((item) => item.label === MENU_ITEMS.HOME.label);
+    menuItems.splice(homeIdx >= 0 ? homeIdx + 1 : 0, 0, cloneMenuItems([MENU_ITEMS.HOME_V2])[0]);
   }
 
   // Big Event sits after BPM (before Training Center when a plan has no BPM group),

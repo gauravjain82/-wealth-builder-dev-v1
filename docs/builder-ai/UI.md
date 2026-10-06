@@ -24,7 +24,8 @@
 | `/builder-ai/invitations` | `BuilderAiRoute` | `InvitationsPage` |
 | `/team/builders/daily-six/:agencyCode` | **none — public** | the Daily Six view |
 
-The menu shows all seven to an owner and only Baseshop plus Invitations to a non-owner builder
+The menu group is nested as the last child of **My Team**
+([platform decision P8](../platform/PHASES.md#3-decision-log)). It shows all six entries to an owner and only Baseshop plus Invitations to a non-owner builder
 (`use-role-based-menu.ts:22`). The **guard does not enforce that split** — a non-owner who types
 `/builder-ai/company` reaches the page, and the backend decides what it returns.
 

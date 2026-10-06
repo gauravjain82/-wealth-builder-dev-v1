@@ -121,6 +121,7 @@ unapplied migrations.
 | P5 | Theme as a class on `documentElement`, not a React context | CSS can then respond without a re-render, and a module stylesheet can theme itself | `hooks/use-theme.ts` |
 | P6 | Rollout by backend capability, not plan, role or build flag | A named rollout list is not a role. Putting it in the backend makes granting it an access-console action rather than a release | `router/leaderboards-route.tsx:10` |
 | P7 | Route guards decide rendering only; the backend re-checks every request | A guard the client controls cannot be authorization. Making that explicit stops anyone treating a hidden control as a protected one | `router/leaderboards-route.tsx:18` |
+| P8 | **Sidebar order and structure fixed by product** (2026-10-07): Promotion moves below My Team; Builder AI nests inside My Team, last; Leaderboards and Contests leave the menu; Welcome Videos moves into File Vault; Products, Reporting Pipeline and Contest Settings move inside Admin | Chosen over separate top-level entries for every surface. The leaderboard and contest pages stay one click away through the Full Report action on their Home v2 cards (the contests card gained one for this), and the routes and guards are unchanged, so nothing becomes unreachable. Welcome Videos keeps its `/welcome-videos` route for the `/home` card | product request, 2026-10-07; `src/config/menu.ts` |
 
 ## 4. Deliberately not built
 

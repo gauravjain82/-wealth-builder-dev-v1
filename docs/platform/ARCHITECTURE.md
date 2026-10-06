@@ -9,7 +9,7 @@
 | **API prefix** | `/api/accounts/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `04cbcf3` — 2026-09-29 (§1, §2 route guards, §3.3, §4 re-read; the rest `7e3b7f1`) |
+| **Verified against** | commit `04cbcf3` — 2026-09-29 (§1, §2 route guards, §4 re-read; §3.3 at `71df1e3`, 2026-10-07; the rest `7e3b7f1`) |
 
 ## 1. Layering
 
@@ -122,10 +122,15 @@ The canonical implementation is
 `useRoleBasedMenu` (`src/hooks/use-role-based-menu.ts`) takes the plan from `useAuth`,
 calls `getMenuForUser` to filter `config/menu.ts` by plan and role, then injects entries for
 each capability the backend reports — Builder AI, misalignments, products, the reporting
-pipeline, leaderboards, contest settings, guidance, and the Big Event group, whose children
+pipeline, Home (new), contest settings, guidance, and the Big Event group, whose children
 follow `GET /api/events/events/my-access/` ([events §6](../events/ARCHITECTURE.md#6-permissions-and-gating)). Five `my-access` endpoints are read on
 every authenticated page load (`builderai`, `misalignments`, `tracker/products`, `gms`,
 `wbreporting`), one request each; their long `staleTime` is what keeps that cheap.
+
+Not every entry is appended: Home (new) goes just under Home, Builder AI is pushed as the last
+child of My Team, Products, Reporting Pipeline and Contest Settings end the Admin group (top
+level when the plan has no Admin group), My Plug-in Fees follows My Team, and Big Event follows BPM. The resulting
+order is in [UI.md §2.3](UI.md#23-navigation).
 
 ## 4. Server state and caching
 

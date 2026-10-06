@@ -109,7 +109,8 @@ Because a contest is a promise, two properties matter more here than in a normal
   `clamp(480px, 70vh, 760px)` wrapper (`home-v2-page.tsx:109-130`). The "Event & Contests"
   `CanvaVideoCard` above it stays.
 - `src/router/contests-route.tsx`, `contest-settings-route.tsx` — two guards, two different gates.
-- `src/hooks/use-role-based-menu.ts` — the menu entry, beside Home v2 and Leaderboards.
+- `src/hooks/use-role-based-menu.ts` — Contest Settings only, inside the Admin group; `/contests` has no menu entry and is
+  opened from the card's Full Report pill.
 
 **Backend** — `wbreporting`: 12 paths from this module, plus `my-access` from the shared access module.
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ErrorState, LoadingState } from '@/shared/components';
 import { useToastStore } from '@/store';
 import FullscreenViewer from '@/features/systematic-tools/components/fullscreen-viewer';
+import { WelcomeVideosLibrary } from '@/features/welcome-videos';
 import { FileVaultSidebar } from '../components/file-vault-sidebar';
 import { FileVaultContent } from '../components/file-vault-content';
 import { useFileVault } from '../hooks/use-file-vault';
@@ -17,25 +18,31 @@ const EMPTY_SECTION: FileVaultSection = {
   items: [],
 };
 
+/**
+ * Welcome Videos is a File Vault section, not a sidebar entry. It is not CMS content:
+ * the entry is added here, after the CMS sections, and renders the welcome-video
+ * library in place of the file list.
+ */
+const WELCOME_VIDEOS_ID = '__welcome-videos__';
+const WELCOME_VIDEOS_ENTRY = { id: WELCOME_VIDEOS_ID, icon: '🎬', label: 'Welcome Videos' };
+
 export default function FileVaultPage() {
   const { data, isLoading, isError, error, refetch } = useFileVault();
   const { addToast } = useToastStore();
   const [query, setQuery] = useState('');
   const [activeId, setActiveId] = useState('');
   const [viewer, setViewer] = useState<FileVaultViewerTarget | null>(null);
+  const [openVideoKey, setOpenVideoKey] = useState<string | null>(null);
 
-  const vaultData = data?.sections ?? [];
+  const vaultData = useMemo(() => data?.sections ?? [], [data]);
+  const sidebarSections = useMemo(() => [...vaultData, WELCOME_VIDEOS_ENTRY], [vaultData]);
+  const showWelcomeVideos = activeId === WELCOME_VIDEOS_ID;
 
   useEffect(() => {
-    if (!vaultData.length) {
-      setActiveId('');
-      return;
+    if (!sidebarSections.some((section) => section.id === activeId)) {
+      setActiveId(sidebarSections[0].id);
     }
-
-    if (!vaultData.some((section) => section.id === activeId)) {
-      setActiveId(vaultData[0].id);
-    }
-  }, [vaultData, activeId]);
+  }, [sidebarSections, activeId]);
 
   const activeSection = useMemo(
     () => vaultData.find((section) => section.id === activeId) || vaultData[0] || EMPTY_SECTION,
@@ -49,15 +56,14 @@ export default function FileVaultPage() {
   }, [activeSection, query]);
 
   const handleLeftKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (!vaultData.length) return;
-
-    const index = vaultData.findIndex((section) => section.id === activeId);
+    const count = sidebarSections.length;
+    const index = sidebarSections.findIndex((section) => section.id === activeId);
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      setActiveId(vaultData[(index + 1) % vaultData.length].id);
+      setActiveId(sidebarSections[(index + 1) % count].id);
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
-      setActiveId(vaultData[(index - 1 + vaultData.length) % vaultData.length].id);
+      setActiveId(sidebarSections[(index - 1 + count) % count].id);
     }
   };
 
@@ -96,20 +102,31 @@ export default function FileVaultPage() {
     <div className="file-vault-page">
       <div className="file-vault-shell">
         <FileVaultSidebar
-          sections={vaultData}
+          sections={sidebarSections}
           activeId={activeId}
           onSelect={setActiveId}
           onKeyDown={handleLeftKeyDown}
         />
 
-        <FileVaultContent
-          activeSection={activeSection}
-          query={query}
-          onQueryChange={setQuery}
-          filteredItems={filteredItems}
-          searchEnabled={data?.config.search_enabled ?? true}
-          onOpenItem={(item) => void handleOpenItem(item)}
-        />
+        {showWelcomeVideos ? (
+          <main className="file-vault-content">
+            <WelcomeVideosLibrary
+              titleAs="h2"
+              openKey={openVideoKey}
+              onPlay={(video) => setOpenVideoKey(video.key)}
+              onClose={() => setOpenVideoKey(null)}
+            />
+          </main>
+        ) : (
+          <FileVaultContent
+            activeSection={activeSection}
+            query={query}
+            onQueryChange={setQuery}
+            filteredItems={filteredItems}
+            searchEnabled={data?.config.search_enabled ?? true}
+            onOpenItem={(item) => void handleOpenItem(item)}
+          />
+        )}
       </div>
 
       <FullscreenViewer
