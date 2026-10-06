@@ -2,6 +2,9 @@
  * Payment follow-ups (D19a): opened when automatic retries are exhausted or a self-pay
  * invoice goes overdue. `:review` and `:manage` read; only `:manage` resolves, with a
  * required note. A follow-up also resolves itself when its invoice is paid.
+ *
+ * `:manage` also enables pay-by-invoice (bank, card or Klarna) for an agent whose
+ * automatic retries are exhausted, and withdraws it. Agents cannot choose it themselves.
  * Screens: `docs/plugin-fees/UI.md` §2.9.
  */
 
@@ -11,7 +14,7 @@ import { Link } from 'react-router-dom';
 import { Button, ConfirmationDialog, ErrorState, NonIdealState, Select, Textarea } from '@/shared/components';
 import { useToastStore } from '@/store';
 
-import { useFollowUps, useResolveFollowUp } from '../../hooks/use-plugin-fees';
+import { useFollowUps, useResolveFollowUp, useSetSelfPayAllowed } from '../../hooks/use-plugin-fees';
 import { PluginFeesError } from '../../services/plugin-fees-service';
 import type { FollowUp, FollowUpStatusFilter } from '../../types';
 import {
@@ -83,12 +86,65 @@ function ResolveDialog({
   );
 }
 
+function SelfPayDialog({
+  followUp,
+  loading,
+  onConfirm,
+  onClose,
+}: {
+  followUp: FollowUp | null;
+  loading: boolean;
+  onConfirm: (note: string) => void | Promise<void>;
+  onClose: () => void;
+}) {
+  const [note, setNote] = useState('');
+  useEffect(() => {
+    if (followUp) setNote('');
+  }, [followUp]);
+  if (!followUp) return null;
+  const enabling = !followUp.self_pay_allowed;
+  const name = followUp.agent.name || 'This agent';
+
+  return (
+    <ConfirmationDialog
+      open
+      title={enabling ? 'Enable pay-by-invoice' : 'Withdraw pay-by-invoice'}
+      message={
+        enabling
+          ? `${name} will no longer be charged automatically. From the next month they get a payment link and pay by bank, card or Klarna. They can switch back to automatic in their settings. This does not change the failed invoice; they can still pay it with Pay now.`
+          : `${name} goes back to being charged automatically on the 1st and can no longer choose to pay each month themselves.`
+      }
+      confirmText={enabling ? 'Enable' : 'Withdraw'}
+      confirmVariant="default"
+      confirmDisabled={!note.trim()}
+      loading={loading}
+      onConfirm={() => onConfirm(note.trim())}
+      onClose={onClose}
+    >
+      <label className="block space-y-1 text-sm">
+        <span className="text-slate-700 dark:text-white/80">Reason (required)</span>
+        <Textarea
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          rows={3}
+          required
+          aria-required="true"
+          placeholder={enabling ? 'e.g. Card declined 4 times; agent asked to pay with Klarna' : 'e.g. Caught up, back on autopay'}
+          disabled={loading}
+        />
+      </label>
+    </ConfirmationDialog>
+  );
+}
+
 export function FollowUpsSection({ canResolve }: { canResolve: boolean }) {
   const { addToast } = useToastStore();
   const [status, setStatus] = useState<FollowUpStatusFilter>('open');
   const [resolving, setResolving] = useState<FollowUp | null>(null);
+  const [changingSelfPay, setChangingSelfPay] = useState<FollowUp | null>(null);
   const followUps = useFollowUps(status);
   const resolve = useResolveFollowUp();
+  const selfPay = useSetSelfPayAllowed();
   const items = followUps.data ?? [];
 
   const onResolve = async (note: string) => {
@@ -110,6 +166,24 @@ export function FollowUpsSection({ canResolve }: { canResolve: boolean }) {
           error instanceof PluginFeesError && error.code === 'note_required'
             ? 'A note is required to resolve a follow-up.'
             : describeError(error, 'Failed to resolve the follow-up.'),
+      });
+    }
+  };
+
+  const onSelfPay = async (note: string) => {
+    if (!changingSelfPay) return;
+    const allowed = !changingSelfPay.self_pay_allowed;
+    try {
+      await selfPay.mutateAsync({ agentId: changingSelfPay.agent.id, allowed, note });
+      addToast({
+        type: 'success',
+        message: allowed ? 'Pay-by-invoice enabled. The agent has been emailed.' : 'Pay-by-invoice withdrawn.',
+      });
+      setChangingSelfPay(null);
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: describeError(error, 'Could not change pay-by-invoice for this agent.'),
       });
     }
   };
@@ -216,17 +290,30 @@ export function FollowUpsSection({ canResolve }: { canResolve: boolean }) {
                     <td>{item.note ? <span className="wb-pf-note-cell">{item.note}</span> : '—'}</td>
                     {canResolve ? (
                       <td>
-                        {open ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setResolving(item)}
-                            disabled={resolve.isPending}
-                          >
-                            Resolve…
-                          </Button>
-                        ) : null}
+                        <div className="wb-pf-row">
+                          {open ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setResolving(item)}
+                              disabled={resolve.isPending}
+                            >
+                              Resolve…
+                            </Button>
+                          ) : null}
+                          {item.self_pay_allowed || item.reason === 'retries_exhausted' ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setChangingSelfPay(item)}
+                              disabled={selfPay.isPending}
+                            >
+                              {item.self_pay_allowed ? 'Withdraw pay-by-invoice…' : 'Enable pay-by-invoice…'}
+                            </Button>
+                          ) : null}
+                        </div>
                       </td>
                     ) : null}
                   </tr>
@@ -243,6 +330,14 @@ export function FollowUpsSection({ canResolve }: { canResolve: boolean }) {
           loading={resolve.isPending}
           onConfirm={onResolve}
           onClose={() => setResolving(null)}
+        />
+      ) : null}
+      {canResolve ? (
+        <SelfPayDialog
+          followUp={changingSelfPay}
+          loading={selfPay.isPending}
+          onConfirm={onSelfPay}
+          onClose={() => setChangingSelfPay(null)}
         />
       ) : null}
     </section>

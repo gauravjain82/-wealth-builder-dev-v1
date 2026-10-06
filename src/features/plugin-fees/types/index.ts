@@ -117,6 +117,8 @@ export type PaymentMethodType = 'us_bank_account' | 'card';
 /**
  * How the agent pays (D19b): `automatic` charges the saved method on the 1st;
  * `self_pay` sends a payment link (bank, card or Klarna) due by `self_pay_due_day`.
+ * `self_pay` is only available while an admin has enabled it (`self_pay_allowed`),
+ * which they can do once an automatic charge failed all its retries.
  */
 export type PaymentPreference = 'automatic' | 'self_pay';
 
@@ -128,6 +130,8 @@ export type PaymentPreference = 'automatic' | 'self_pay';
 export interface PluginFeesPaymentMethod {
   status: 'none' | 'pending_verification' | 'saved' | 'failed';
   preference: PaymentPreference;
+  /** An admin enabled pay-by-invoice after automatic payments failed. */
+  self_pay_allowed: boolean;
   self_pay_due_day: number;
   type?: PaymentMethodType;
   label?: string;
@@ -561,10 +565,19 @@ export interface FollowUp {
   resolved_by: string | null;
   /** The resolution note; says so when the follow-up resolved itself on payment. */
   note: string;
+  /** Whether the agent currently has pay-by-invoice enabled. */
+  self_pay_allowed: boolean;
 }
 
 export interface ResolveFollowUpInput {
   id: number;
+  note: string;
+}
+
+/** `POST agents/{id}/self-pay/` (`:manage`). */
+export interface SetSelfPayAllowedInput {
+  agentId: number;
+  allowed: boolean;
   note: string;
 }
 
