@@ -41,6 +41,7 @@ const PermissionsPage = lazy(() => import('@/features/events/pages/permissions-p
 const ExternalTeamsPage = lazy(() => import('@/features/events/pages/external-teams-page'));
 const EventBuilderPage = lazy(() => import('@/features/events/pages/event-builder-page'));
 const EventOrdersPage = lazy(() => import('@/features/events/pages/event-orders-page'));
+const EventExternalTicketsPage = lazy(() => import('@/features/events/pages/event-external-tickets-page'));
 const EventMyTicketsPage = lazy(() => import('@/features/events/pages/event-my-tickets-page'));
 const EventCheckinPage = lazy(() => import('@/features/events/pages/event-checkin-page'));
 const EventSessionsPage = lazy(() => import('@/features/events/pages/event-sessions-page'));
@@ -525,6 +526,10 @@ const router = createBrowserRouter([
       {
         path: 'events/:eventId/orders',
         element: lazyLoad(EventOrdersPage),
+      },
+      {
+        path: 'events/:eventId/external-tickets',
+        element: lazyLoad(EventExternalTicketsPage),
       },
       {
         path: 'events/:eventId/my-tickets',
