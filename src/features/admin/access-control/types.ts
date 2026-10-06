@@ -60,9 +60,17 @@ export interface UserPermissionItem {
   user: number;
   permission: number;
   permission_label: string;
+  permission_resource: string;
+  permission_action: string;
+  user_name: string | null;
+  user_email: string | null;
+  user_agency_code: string | null;
   effect: PermissionEffect;
   reason: string;
+  /** Protected grants cannot be revoked or turned into a DENY from the console. */
+  is_protected: boolean;
   granted_by: number | null;
+  granted_by_name: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -72,6 +80,41 @@ export interface CreateUserPermissionPayload {
   permission: number;
   effect: PermissionEffect;
   reason?: string;
+}
+
+/** Filters for the cross-user override listing. */
+export interface UserPermissionQuery {
+  user?: number;
+  resource?: string;
+  action?: string;
+  effect?: PermissionEffect | '';
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/** `POST /api/authz/user-permissions/bulk-grant/` */
+export interface BulkGrantPayload {
+  users: number[];
+  permissions: number[];
+  effect: PermissionEffect;
+  reason?: string;
+  dry_run?: boolean;
+}
+
+export interface BulkGrantResult {
+  created: number;
+  updated: number;
+  unchanged: number;
+  skipped_protected: number[];
+  dry_run: boolean;
+}
+
+/** `POST /api/authz/user-permissions/bulk-revoke/` */
+export interface BulkRevokeResult {
+  deleted: number;
+  skipped_protected: number[];
+  not_found: number[];
 }
 
 export type UpdateUserPermissionPayload = Partial<Omit<CreateUserPermissionPayload, 'user'>>;

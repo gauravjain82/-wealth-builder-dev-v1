@@ -1,4 +1,7 @@
 import type {
+  BulkGrantPayload,
+  BulkGrantResult,
+  BulkRevokeResult,
   CreateFunctionPayload,
   CreateUserPermissionPayload,
   FunctionItem,
@@ -8,6 +11,7 @@ import type {
   UpdateUserPermissionPayload,
   UserFunctionItem,
   UserPermissionItem,
+  UserPermissionQuery,
   UserSearchResult,
 } from '../types';
 
@@ -147,8 +151,39 @@ export function listUserPermissions(
   userId: number,
 ): Promise<PaginatedResponse<UserPermissionItem> | UserPermissionItem[]> {
   return request<PaginatedResponse<UserPermissionItem> | UserPermissionItem[]>(
-    `/api/authz/user-permissions/?user=${userId}`,
+    `/api/authz/user-permissions/?user=${userId}&page_size=200`,
   );
+}
+
+/** Lists overrides across all users, filtered and paginated server-side. */
+export function queryUserPermissions(
+  query: UserPermissionQuery,
+): Promise<PaginatedResponse<UserPermissionItem> | UserPermissionItem[]> {
+  const qs = new URLSearchParams();
+  if (query.user) qs.set('user', String(query.user));
+  if (query.resource) qs.set('permission__resource', query.resource);
+  if (query.action) qs.set('permission__action', query.action);
+  if (query.effect) qs.set('effect', query.effect);
+  if (query.search?.trim()) qs.set('search', query.search.trim());
+  qs.set('page', String(query.page ?? 1));
+  qs.set('page_size', String(query.pageSize ?? 50));
+  return request<PaginatedResponse<UserPermissionItem> | UserPermissionItem[]>(
+    `/api/authz/user-permissions/?${qs.toString()}`,
+  );
+}
+
+export function bulkGrantUserPermissions(payload: BulkGrantPayload): Promise<BulkGrantResult> {
+  return request<BulkGrantResult>('/api/authz/user-permissions/bulk-grant/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function bulkRevokeUserPermissions(ids: number[]): Promise<BulkRevokeResult> {
+  return request<BulkRevokeResult>('/api/authz/user-permissions/bulk-revoke/', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  });
 }
 
 export function createUserPermission(
@@ -178,10 +213,15 @@ export function deleteUserPermission(id: number): Promise<void> {
 
 export function searchUsers(
   query: string,
+  options: { agentsOnly?: boolean } = {},
 ): Promise<PaginatedResponse<UserSearchResult> | UserSearchResult[]> {
-  const qs = query.trim() ? `?search=${encodeURIComponent(query.trim())}` : '';
+  const qs = new URLSearchParams();
+  if (query.trim()) qs.set('search', query.trim());
+  // Only people with an agency code are agents; everyone else is a prospect.
+  if (options.agentsOnly) qs.set('has_agency_code', 'true');
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
   return request<PaginatedResponse<UserSearchResult> | UserSearchResult[]>(
-    `/api/accounts/users/${qs}`,
+    `/api/accounts/users/${suffix}`,
   );
 }
 
