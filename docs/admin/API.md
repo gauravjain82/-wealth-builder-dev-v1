@@ -60,6 +60,23 @@ The **reader-facing** counterparts are `/api/content/home-page/`,
 `/api/content/file-vault/`, `/api/content/training-center/` and their `items/` and
 `progress/` sub-paths, consumed by `home`, `file-vault` and `training-center`.
 
+### `promotion` — Promotion Management
+
+All require `promotion:manage`. Consumed by
+`promotion/services/promotion-admin-service.ts`.
+
+| Method | Path | Use |
+|---|---|---|
+| GET | `/api/promotion/admin/tracks/` | the whole tree — tracks → skills → videos (with `watched_count`) → quiz questions |
+| POST · PATCH · DELETE | `/api/promotion/admin/skills/` · `skills/{id}/` | a PATCH with a new `track` moves the skill |
+| POST · PATCH · DELETE | `/api/promotion/admin/modules/` · `modules/{id}/` | a video. A PATCH with a new `skill` moves it |
+| POST · PATCH · DELETE | `/api/promotion/admin/questions/` · `questions/{id}/` | ≥ 2 non-blank options; `correct_index` must point at one |
+| POST | `/api/promotion/admin/{skills,modules,questions}/reorder/` | `{"ids": [...]}` — every sibling under one parent, in the new order |
+
+A create, or a move to a new parent, without an explicit `order` is appended last. Deletes
+cascade to agents' progress (`UserModuleProgress`, `UserSkillCheck`). Routes are on the same
+prefix (`routes/`, `route-items/`) and still edited in Django admin.
+
 ### `misalignments`
 
 | Method | Path | Sub-feature |

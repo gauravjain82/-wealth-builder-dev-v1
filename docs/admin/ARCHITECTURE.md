@@ -28,6 +28,7 @@ small feature with its own subset of the standard shape:
 | `training-center` | pages, services | consumes the engine |
 | `file-vault` | pages, services | consumes the engine |
 | `mission-ring-proof` | one page + index | lazy-exported |
+| `promotion` | pages, components, hooks, services, types | uses React Query; reorder is optimistic. Imports `DASHBOARD_QUERY_KEY` and `getEmbedVideoUrl` from `src/features/promotion/` |
 
 **Three sub-features use React Query and six do not.** `products`, `misalignments` and
 `wb-pipeline` — the three with a `hooks/` directory and a `my-access` endpoint — follow the
@@ -134,6 +135,7 @@ Split, by sub-feature:
 | `products` | React Query | `useProductsAccess` and siblings |
 | `misalignments` | React Query | `useMisalignmentsAccess` and siblings |
 | `wb-pipeline` | React Query | `usePipelineAccess` and siblings |
+| `promotion` | React Query | `['promotion-admin', 'tracks']` — the whole tree. Every save also invalidates the learner's `promotion-dashboard` and `promotion-team` keys |
 | everything else | `useEffect` + `useState` | none |
 
 The three `my-access` hooks are the ones with long `staleTime`, because
@@ -163,7 +165,7 @@ property and it is real, not a documentation artefact:
 
 | Mechanism | Routes | Gate |
 |---|---|---|
-| `AdminRoute` | functions, user-permissions, level-permissions, file-vault, training-center, home-content | the **cached `isAdmin` flag** from the session |
+| `AdminRoute` | functions, user-permissions, level-permissions, file-vault, training-center, home-content, promotion | the **cached `isAdmin` flag** from the session |
 | `ProductsRoute` | products | `products:read` at runtime |
 | `WbPipelineRoute` | reporting-pipeline | `wbreporting:read` / `:manage` at runtime |
 | `MisalignmentsRoute` | both data-integrity screens | a per-user grant at runtime |

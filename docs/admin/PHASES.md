@@ -110,6 +110,15 @@ Gated on `wbreporting:read` / `:manage` — **the same `my-access` endpoint** `l
 **What shipped.** The company selector became a `Combobox`, and companies can be created from
 inside the product form rather than on a separate screen.
 
+### 10 — Promotion Management (2026-10-06)
+
+**What shipped.** `/admin/promotion`: skills, videos and quizzes for the Promotion dashboard,
+edited in the app instead of Django admin. Drag to reorder; move a skill or video from its edit
+form. Backend counterpart on `mlm_platform` `feature/promotion-admin` — **merge and deploy
+together**; the page fails every request against a backend without the reorder endpoints.
+
+**Decisions.** AD7, AD8, AD9.
+
 ## 3. Decision log
 
 | ID | Decision | Rationale | Source |
@@ -119,6 +128,9 @@ inside the product form rather than on a separate screen.
 | AD3 | Upload a file **after** the item exists, staging it in the form | `uploadItemFile` needs an item id, and inventing one client-side would mean a second source of truth. Cost: the form must hold the file across the create call, which is what `StagedFilePicker` is for | `content-pages/types.ts:130`; `StagedFilePicker` |
 | AD4 | Drag ordering instead of a `sort_order` input | A numeric field makes the user compute the order the UI could just show. `sort_order` became optional in the payload and the inputs were replaced with drag handles and an explanatory line | commit 2026-08-31 "Remove sort_order from ItemFormModal and SectionFormModal" |
 | AD5 | Data integrity reports diagnose; they do not repair | A repair tool would need to choose which of two contradictory records wins, and that is a business decision per case. Reporting makes the inconsistency visible without guessing | `misalignments/` — all endpoints are GET |
+| AD7 | **Promotion's admin endpoints require `promotion:manage`**, seeded to ADMIN / SUPER_ADMIN / SUPERADMIN by migration | They were `IsAuthenticated` only — any signed-in agent could edit or delete promotion content. A deliberate exception to AD1: closing an open endpoint must not lock out the admins already using it, and it follows Training Center's `content/0006` seed. Further grants go through the access console as usual | `mlm_platform` `promotion/permissions.py`, `promotion/migrations/0002_promotion_manage_permission.py` |
+| AD8 | **Promotion does not use the content engine** | Its tree is three levels deep (skill → video → quiz question), has no role access and no file upload — the engine's two-level section/item shape would fit none of it | `promotion/pages/admin-promotion-page.tsx` |
+| AD9 | **Move by editing the parent, not by dragging across lists** | Cross-list drag on nested sortable lists is fiddly on touch and easy to trigger by accident; a select is explicit and also reaches skills in other tracks. Drag stays for ordering within one parent | `promotion/components/video-form-modal.tsx`, `skill-form-modal.tsx` |
 | AD6 | `home-content` does not use the content engine | The home page is a fixed set of named slots — hero, carousels, video, register URL — not an ordered list of sections and items. Forcing it through the engine would mean modelling slots as a one-item section each | `home-content/pages/`, compared with `file-vault/pages/admin-file-vault-page.tsx:82` |
 
 ## 4. Deliberately not built

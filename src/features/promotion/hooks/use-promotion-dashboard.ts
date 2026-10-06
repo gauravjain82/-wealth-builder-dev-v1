@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { promotionService } from "../services/promotion-service";
 import type { PromotionDashboard } from "../types";
 
-const DASHBOARD_QUERY_KEY = ["promotion-dashboard"] as const;
+export const DASHBOARD_QUERY_KEY = ["promotion-dashboard"] as const;
 
 interface UpdateItemVariables {
   id: number;

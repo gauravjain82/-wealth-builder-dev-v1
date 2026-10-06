@@ -140,6 +140,7 @@ const FileVaultPage = lazy(() => import('@/features/file-vault/pages/file-vault-
 const AdminFileVaultPage = lazy(() => import('@/features/admin/file-vault/pages/admin-file-vault-page'));
 const AdminTrainingCenterPage = lazy(() => import('@/features/admin/training-center/pages/admin-training-center-page'));
 const AdminHomeContentPage = lazy(() => import('@/features/admin/home-content/pages/admin-home-content-page'));
+const AdminPromotionPage = lazy(() => import('@/features/admin/promotion/pages/admin-promotion-page'));
 const TrackMyLicensePage = lazy(() => import('@/features/licensing/track-my-license/pages/track-my-license-page'));
 const LicensingDocumentsPage = lazy(() => import('@/features/licensing/licensing-documents/pages/licensing-documents-page'));
 const CrashCoursePage = lazy(() => import('@/features/licensing/crash-course/pages/crash-course-page'));
@@ -749,6 +750,11 @@ const router = createBrowserRouter([
       {
         path: 'admin/home-content',
         element: <AdminRoute>{lazyLoad(AdminHomeContentPage)}</AdminRoute>,
+      },
+      {
+        // Promotion skills, videos and quizzes. The backend requires promotion:manage.
+        path: 'admin/promotion',
+        element: <AdminRoute>{lazyLoad(AdminPromotionPage)}</AdminRoute>,
       },
       {
         path: 'terminated-users',

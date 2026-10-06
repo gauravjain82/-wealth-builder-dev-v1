@@ -39,6 +39,9 @@ React Query properly, including optimistic updates.
 - **Rank changes themselves.** The backend promotes; this module reports readiness.
 - **The training catalogue.** [training-center](../README.md#lite) is separate.
 - **Production numbers.** Route items may read from a data source, but [team](../team/) owns production.
+- **Editing the content.** Skills, videos and quizzes are edited at `/admin/promotion`, documented
+  in [admin](../admin/UI.md#29-promotion-management--promotionpagesadmin-promotion-pagetsx).
+  Routes are still edited in Django admin.
 
 ## 3. At a glance
 

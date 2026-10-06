@@ -4,7 +4,7 @@
 |---|---|
 | **Module** | `admin` |
 | **Source** | `src/features/admin/` |
-| **Routes** | 12 under `/admin/*` |
+| **Routes** | 13 under `/admin/*` |
 | **Backend module** | six apps |
 | **API prefix** | six |
 | **Status** | Production |
@@ -21,6 +21,7 @@
 | `/admin/file-vault` | `AdminRoute` | `AdminFileVaultPage` | file-vault |
 | `/admin/training-center` | `AdminRoute` | `AdminTrainingCenterPage` | training-center |
 | `/admin/home-content` | `AdminRoute` | `AdminHomeContentPage` | home-content |
+| `/admin/promotion` | `AdminRoute` | `AdminPromotionPage` | promotion |
 | `/admin/products` | `ProductsRoute` | `ProductsListPage` | products |
 | `/admin/reporting-pipeline` | `WbPipelineRoute` | `WbPipelinePage` | wb-pipeline |
 | `/admin/data-integrity/leader-misalignments` | `MisalignmentsRoute` | `LeaderMisalignmentsPage` | misalignments |
@@ -97,6 +98,27 @@ see [leaderboards](../leaderboards/README.md#4-domain-vocabulary) on `uncoded_me
 
 One page reviewing submitted proof. The smallest sub-feature at 187 lines.
 
+### 2.9 Promotion Management — `promotion/pages/admin-promotion-page.tsx`
+
+The content agents work through on `/promotion/dashboard`, edited in place of Django admin.
+One tab per promotion track; under it, the track's skills in dashboard order, each expandable
+to its videos.
+
+| Element | Does |
+|---|---|
+| Track tabs | switch track. The count is the track's skill total |
+| Skill row | drag grip, name, Skill/Action tag, video count and **pending** count (videos with no link), **+ Video**, edit, delete |
+| Video row | drag grip, position, title, subtitle · duration, link (opens in a new tab) or a **No link** chip, quiz chip, edit, delete |
+| `SkillFormModal` | name, type, **track** — changing the track moves the skill |
+| `VideoFormModal` | title, subtitle, link with an inline **Preview**, duration, **skill** (grouped by track) — changing it moves the video |
+| `QuizEditorModal` | the video's questions, drag-ordered; add/edit with 2–6 options and a radio for the correct one |
+
+Moving is done from the edit form, not by dragging between lists: dragging only reorders within
+one parent. A moved skill or video goes to the end of its new parent.
+
+Delete confirmations state what the backend cascade erases — a video's `watched_count`, and for
+a skill the sum across its videos plus manual completion ticks.
+
 ## 3. States
 
 | State | Trigger | What the user sees |
@@ -115,7 +137,8 @@ One page reviewing submitted proof. The smallest sub-feature at 187 lines.
 
 - **Stage the file, upload after create.** `uploadItemFile` needs an item id. A new engine
   consumer that uploads on selection loses the file.
-- **Reorder sends the whole id list**, not a moved-item delta.
+- **Reorder sends the whole id list**, not a moved-item delta. Promotion's reorder endpoints
+  reject a list that is not every sibling under one parent.
 - **Role access is set separately on sections and items.** Neither implies the other.
 - **Confirm every destructive action.** `ConfirmationDialog` on delete, throughout.
 - **Report every mutation with a toast.** These screens have no other feedback channel.
