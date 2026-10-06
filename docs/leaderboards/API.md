@@ -77,7 +77,11 @@ Three properties of the contract the client depends on:
 2. **`DetailRow` is `Record<string, …>`, and an absent key is meaningful.** Protected fields
    are typed optional rather than nullable precisely because "not permitted" arrives as an
    absent key, not a `null`. An absent key renders `—`.
-3. **`percent` is nullable.** A goal of zero has no percentage; the gauge must handle `null`
+3. **`LeaderRow.photo_url` is optional and nullable.** Null means the leader has no
+   photo; the key is absent from a backend older than `feature/wb-contest-showcase`.
+   Either way the avatar shows initials, and an image that fails to load (an expired
+   signed URL) falls back to them too.
+4. **`percent` is nullable.** A goal of zero has no percentage; the gauge must handle `null`
    rather than dividing.
 
 ## 4. Query parameters

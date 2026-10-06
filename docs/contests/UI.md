@@ -18,12 +18,12 @@
 | `/contests` | `ContestsRoute` (`can_view_contests`) | `ContestsPage` → `ContestsBoard` | `/home` |
 | `/admin/contest-settings` | `ContestSettingsRoute` (`can_manage`) | `ContestSettingsPage` → `ContestSettings` | **`/contests`** |
 
-**Embedded entry point.** `ContestsCard` is mounted by `src/features/home-v2/` as its own
-full-width "Contests" section below the leaderboard, in a clipping `clamp(480px, 70vh, 760px)`
-wrapper (`home-v2-page.tsx:109-130`). The `<CanvaVideoCard title="Event & Contests">` media card
-above it stays; the contest card does not replace it. That is the primary placement; the route is
-the optional one. There is no sidebar entry: the card's **Full Report** pill (`onOpenFullReport`,
-passed by Home v2) opens `/contests` ([platform decision P8](../platform/PHASES.md#3-decision-log)).
+**Embedded entry point.** `ContestShowcase` (§2.0) is mounted by `src/features/home-v2/` as
+its own full-width "Contests" section below the leaderboard (C31). It is content-sized and needs no
+wrapper. The `<CanvaVideoCard title="Event & Contests">` media card above it stays. There is no
+sidebar entry: the showcase's **View all** (`onViewAll`, passed by Home v2) opens `/contests`
+([platform decision P8](../platform/PHASES.md#3-decision-log)). `ContestsCard` (§2.1) is still
+exported but no longer mounted anywhere.
 
 The two denial targets differ deliberately: a reader who lands on the settings URL is returned to the
 card they *can* use, not to a dead end.
@@ -31,6 +31,24 @@ card they *can* use, not to a dead end.
 Neither surface reads the query string.
 
 ## 2. Screens
+
+### 2.0 The featured-contest showcase — `components/contest-showcase.tsx`
+
+dtez's `wb_contests_showcase.php`, on `/home-v2` (C31). It features `contests[0]` — the
+list's dtez order (C26) — and reads `GET contest-board/{id}/showcase/`. With more than one
+readable contest the title is a `<select>` (`.wb-ct-sc__picker`) over the same list; picking one
+refetches the showcase and the flyer for it. The choice is not remembered (C25).
+
+| Row | Content |
+|---|---|
+| Banner | "Featured contest", the contest name (a picker when there are several), `period_label · Top 10 closest`, a **View all** pill. The image flyer is the background when `has_visible_flyer` and `flyer_kind === 'image'` (via `useFlyer`); otherwise a gold gradient |
+| Two boards | `mode` (default `closest`): "Closest to qualifying", ranks 1–5 and 6–10. `qualifiers` does the same with qualifiers; `mixed` puts five qualifiers left and five closest (not already shown) right |
+| Row | `#rank`, avatar (`photo_url` over initials), name, `agency_code · tier_name`, then `N% complete` — or a green ✓ "qualified". A null progress renders `—`, never `0%` |
+| Footer | a dot and `N qualified · M in progress` (over everyone, not the ten shown), "Updated from WB contest results" |
+
+States: loading ("Loading showcase results…"), no contest ("No contest is running right now."),
+error (the message, `role="alert"`, red dot), and an empty board ("No matching people yet.").
+Below a 620 px container the boards stack.
 
 ### 2.1 The card — `components/contests-card.tsx`
 

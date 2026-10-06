@@ -21,6 +21,7 @@ import type {
   PersonOption,
   ProfileResponse,
   ProofResponse,
+  ShowcaseResponse,
   StandingsQuery,
   StandingsResponse,
   ThresholdMetric,
@@ -192,6 +193,15 @@ export function fetchAgentProfile(
 ): Promise<ProfileResponse> {
   return getJson<ProfileResponse>(
     `/contest-board/${input.contestId}/agents/${input.agentId}/`,
+    new URLSearchParams(),
+    signal
+  );
+}
+
+/** The featured-contest card: the top ten closest to qualifying and top qualifiers. */
+export function fetchShowcase(contestId: number, signal?: AbortSignal): Promise<ShowcaseResponse> {
+  return getJson<ShowcaseResponse>(
+    `/contest-board/${contestId}/showcase/`,
     new URLSearchParams(),
     signal
   );

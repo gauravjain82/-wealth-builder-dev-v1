@@ -155,16 +155,30 @@
   color: #facc15;
 }
 
+/* Initials underneath, the photo over them when there is one. */
 .wb-lb-panel__avatar {
+  position: relative;
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  overflow: hidden;
+  border: 1px solid rgb(250 204 21 / 0.55);
   border-radius: 999px;
-  background: rgb(250 204 21 / 0.18);
-  font-size: 0.75rem;
+  background: rgb(250 204 21 / 0.12);
+  color: #fde68a;
+  font-size: 0.6875rem;
   font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.wb-lb-panel__avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .wb-lb-panel__identity {
@@ -240,46 +254,30 @@
   backdrop-filter: blur(12px);
 }
 
-.wb-lb-expanded__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
 .wb-lb-expanded__title {
+  grid-area: title;
+  align-self: center;
   font-size: 1.5rem;
   font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
   color: #facc15;
 }
 
-.wb-lb-expanded__status-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8125rem;
-}
-
-.wb-lb-expanded__status {
-  opacity: 0.75;
-}
-
-/* The freshness indicator: the board is showing live figures for the stated range. */
-.wb-lb-expanded__dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 999px;
-  background: #22c55e;
-  box-shadow: 0 0 6px rgb(34 197 94 / 0.7);
-}
-
+/* Range controls | title | stats and scope. The title is first in the DOM, so it is
+   the first thing read, and the grid places it in the middle. The side columns take
+   their content's width so the scope buttons stay on one row; the title gets the rest. */
 .wb-lb-expanded__controls {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-areas: 'left title right';
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 1rem 1.5rem;
+  align-items: start;
+}
+
+.wb-lb-expanded__controls-col--left {
+  grid-area: left;
   align-items: flex-start;
-  justify-content: space-between;
 }
 
 .wb-lb-expanded__controls-col {
@@ -289,7 +287,12 @@
 }
 
 .wb-lb-expanded__controls-col--right {
+  grid-area: right;
   align-items: flex-end;
+}
+
+.wb-lb-expanded__controls-col--right .wb-lb-expanded__control-group {
+  justify-content: flex-end;
 }
 
 .wb-lb-expanded__dates {
@@ -355,13 +358,35 @@
   justify-content: flex-end;
 }
 
+/* Too narrow for three columns: the title takes its own row above the controls. */
+@container (max-width: 1000px) {
+  .wb-lb-expanded__controls {
+    grid-template-areas:
+      'title title'
+      'left right';
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
 @container (max-width: 660px) {
   .wb-lb-expanded__panels {
     grid-template-columns: 1fr;
   }
 
+  .wb-lb-expanded__controls {
+    grid-template-areas:
+      'title'
+      'left'
+      'right';
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .wb-lb-expanded__controls-col--right {
     align-items: flex-start;
+  }
+
+  .wb-lb-expanded__controls-col--right .wb-lb-expanded__control-group {
+    justify-content: flex-start;
   }
 }
 

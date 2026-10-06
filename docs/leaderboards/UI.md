@@ -51,12 +51,13 @@ the 750 ms warm target. The payload is a different, smaller endpoint, not a trim
 
 | Element | Source of truth | Notes |
 |---|---|---|
+| Title | static | centred between the range controls and the stats/scope buttons — no header row of its own, no date-range status, no help action (L15) |
 | Range selector | `visible_ranges` | falls back to a single "Current month" option |
 | Custom start / end + Apply | local draft state | see §4 |
 | Scope buttons | `visible_scopes` | Net Base absent while switched off; fallback `['smd_base']` |
 | Metric tabs, row 1 | `general_metrics` minus the milestone keys | the four additive metrics |
 | Metric tabs, row 2 | the milestone keys within `general_metrics` | rendered only when present |
-| Two Top-5 panels | `smd`, `md` | `LeaderList` |
+| Two Top-5 panels | `smd`, `md` | `LeaderList`: rank, avatar (`photo_url` over initials), name, value. No director title or member count (L15); a Super Base / Super Team MD still shows "→ label" |
 | Viewer summary | `viewer` | the reader's own totals and ratios |
 
 The milestone split (`leaderboard-panel.tsx:42`) is worth understanding: `MILESTONE_KEYS` is

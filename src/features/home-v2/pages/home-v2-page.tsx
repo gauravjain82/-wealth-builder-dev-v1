@@ -14,16 +14,16 @@
  * compared on QA. That replacement is out of scope here.
  *
  * The "Event & Contests" slot is a Canva media card (like Recognition), the two
- * sitting side by side as on `/home`. The live contest standings are a separate
- * full-width block below, styled like the leaderboard rather than replacing the media
- * card.
+ * sitting side by side as on `/home`. The live contest is a separate full-width block
+ * below the leaderboard — the featured-contest showcase, not the standings grid, which
+ * stays on `/contests` — rather than replacing the media card.
  */
 
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { VideoHero, CanvaVideoCard, PerformanceTable } from '@/features/home/components';
-import { ContestsCard } from '@/features/contests';
+import { ContestShowcase } from '@/features/contests';
 import { LeaderboardPanel } from '@/features/leaderboards';
 import { useHomePageContent } from '@/features/home/hooks/use-home-content';
 import type { HomeMediaType, HomePageSlot } from '@/features/home/services/home-content-service';
@@ -109,24 +109,11 @@ export default function HomeV2Page() {
         <section className="px-4 pb-8" aria-label="Contests">
           <div className="max-w-7xl mx-auto">
             {/*
-              The live contest standings are their own full-width block, like the
-              leaderboard — not the Event & Contests media card above. ContestsCard
-              sets no height of its own (see the containment contract in contests.css),
-              so this wrapper gives it a bounded height. It is a flex column that clips
-              overflow, so only the card's own `.wb-ct-scroll` shows a scrollbar — never
-              a second one on the wrapper.
+              The featured-contest showcase (dtez's wb_contests_showcase.php): content-
+              sized, so unlike the standings card it needs no bounded wrapper. The full
+              grid, filters and proofs are on /contests, which "View all" opens.
             */}
-            <div
-              style={{
-                height: 'clamp(480px, 70vh, 760px)',
-                display: 'flex',
-                flexDirection: 'column',
-                minHeight: 0,
-                overflow: 'hidden',
-              }}
-            >
-              <ContestsCard onOpenFullReport={() => navigate('/contests')} />
-            </div>
+            <ContestShowcase onViewAll={() => navigate('/contests')} />
           </div>
         </section>
 

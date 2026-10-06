@@ -46,6 +46,7 @@ one; it needs only authentication.
 | GET | `/my-access/` | `fetchWbReportingAccess` (`@shared/wbreporting-access`) | `useContestAccess`, a selector over `useWbReportingAccess` |
 | GET | `/contest-board/` | `fetchContests` | `useContests` |
 | GET | `/contest-board/{id}/standings/` | `fetchStandings` | `useStandings` |
+| GET | `/contest-board/{id}/showcase/` | `fetchShowcase` | `useShowcase` — key `['contests', 'showcase', id]`. Returns `ShowcaseResponse`: `qualifiers` and `closest` (at most ten each, each entry with `photo_url`, `tier_name`, `progress`, `qualified`) and `qualified_count` / `in_progress_count`. Ranked server-side over `scope=all` (C31). Requires `mlm_platform` `feature/wb-contest-showcase` |
 | GET | `/contest-board/{id}/proof/` | `fetchProof` | `useProof` |
 | GET | `/contest-board/{id}/agents/{agentId}/` | `fetchAgentProfile` | `useAgentProfile` |
 | GET | `/contest-board/{id}/flyer/` | `fetchFlyer` | `useFlyer` |

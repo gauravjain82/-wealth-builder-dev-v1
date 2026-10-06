@@ -29,6 +29,7 @@ import {
   fetchEditorOptions,
   fetchFlyer,
   fetchProof,
+  fetchShowcase,
   fetchStandings,
   personLabel,
   removeFlyer,
@@ -243,6 +244,15 @@ export function useAgentProfile(input: { contestId: number; agentId: number } | 
     queryFn: ({ signal }) => fetchAgentProfile(input!, signal),
     enabled: input !== null,
     retry: false,
+  });
+}
+
+/** The featured-contest card's rankings for one contest. */
+export function useShowcase(contestId: number | null) {
+  return useQuery({
+    queryKey: [KEY, 'showcase', contestId],
+    queryFn: ({ signal }) => fetchShowcase(contestId!, signal),
+    enabled: contestId !== null,
   });
 }
 

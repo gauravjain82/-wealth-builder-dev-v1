@@ -1581,3 +1581,337 @@ div.wb-ct-modal .wb-ct-modal-title {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding-top: 0.5rem;
 }
+
+/* --- featured-contest showcase (`/home-v2`) -------------------------------
+ *
+ * dtez's `wb_contests_showcase.php`. Unlike the standings card this is content-sized:
+ * ten rows and a banner, so the containment contract above does not apply and the
+ * host gives it no height.
+ */
+
+.wb-ct-sc {
+  container-type: inline-size;
+  overflow: hidden;
+  border: 1px solid #343a34;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #171a18, #111411);
+  box-shadow: 0 18px 55px rgb(0 0 0 / 0.53);
+  color: #f4f5f2;
+}
+
+.wb-ct-sc__banner {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-height: 84px;
+  padding: 15px 18px;
+  background: linear-gradient(115deg, #3b3212, #171a18 60%, #0c0e0c);
+  background-position: center 35%;
+  background-size: cover;
+}
+
+/* The text block takes the banner's width, so the contest picker's `max-width: 100%`
+   resolves against the banner rather than a shrink-wrapped block. */
+.wb-ct-sc__banner > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Darkens the flyer from the left so the title stays legible over any image. */
+.wb-ct-sc__banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    90deg,
+    rgb(9 11 9 / 0.95) 0%,
+    rgb(9 11 9 / 0.72) 53%,
+    rgb(9 11 9 / 0.42) 100%
+  );
+}
+
+.wb-ct-sc__eyebrow {
+  margin: 0 0 4px;
+  color: #efc84a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.wb-ct-sc__title {
+  margin: 0;
+  padding-right: 6rem;
+  color: #fff;
+  font-size: clamp(19px, 3vw, 27px);
+  font-weight: 700;
+  line-height: 1.05;
+  text-shadow: 0 2px 12px #000;
+}
+
+/* The contest picker keeps the title's size and weight, with a caret and a faint
+   border so it reads as a control rather than a heading. */
+.wb-ct-sc__picker {
+  /* Fit the chosen name, not the longest option, so it never truncates. */
+  field-sizing: content;
+  max-width: 100%;
+  padding: 2px 34px 2px 8px;
+  margin-left: -8px;
+  border: 1px solid rgb(239 200 74 / 0.35);
+  border-radius: 8px;
+  appearance: none;
+  background: rgb(9 11 9 / 0.45)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23efc84a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 10px center;
+  color: inherit;
+  font: inherit;
+  text-overflow: ellipsis;
+  text-shadow: inherit;
+  cursor: pointer;
+}
+
+.wb-ct-sc__picker:hover,
+.wb-ct-sc__picker:focus-visible {
+  border-color: #efc84a;
+  outline: none;
+}
+
+/* Native option lists ignore the banner; give them the card's own dark surface. */
+.wb-ct-sc__picker option {
+  background: #171a18;
+  color: #f4f5f2;
+}
+
+.wb-ct-sc__meta {
+  margin: 5px 0 0;
+  color: #d4d8d4;
+  font-size: 11px;
+}
+
+.wb-ct-sc__view-all {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  padding: 6px 10px;
+  border: 1px solid #8c741d;
+  border-radius: 999px;
+  background: rgb(13 16 14 / 0.8);
+  color: #efc84a;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wb-ct-sc__view-all:hover,
+.wb-ct-sc__view-all:focus-visible {
+  background: rgb(239 200 74 / 0.15);
+}
+
+.wb-ct-sc__boards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px;
+}
+
+.wb-ct-sc__board {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #292e29;
+  border-radius: 10px;
+  background: #0d100e;
+}
+
+.wb-ct-sc__board:only-child {
+  grid-column: 1 / -1;
+}
+
+.wb-ct-sc__board-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 2px 8px;
+}
+
+.wb-ct-sc__board-head h3 {
+  margin: 0;
+  color: #efc84a;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wb-ct-sc__board-head span {
+  color: #9da39e;
+  font-size: 10px;
+}
+
+.wb-ct-sc__list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-ct-sc__rank {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 5px 7px;
+  border: 1px solid #292d28;
+  border-radius: 8px;
+  background: #090b09;
+}
+
+.wb-ct-sc__place {
+  color: #efc84a;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.wb-ct-sc__person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Initials underneath, the photo over them when there is one. */
+.wb-ct-sc__avatar {
+  position: relative;
+  display: grid;
+  flex: 0 0 34px;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid #8c741d;
+  border-radius: 50%;
+  background: #282d28;
+  color: #ffe376;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.wb-ct-sc__avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wb-ct-sc__identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wb-ct-sc__name,
+.wb-ct-sc__row-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-ct-sc__name {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wb-ct-sc__row-meta {
+  margin-top: 2px;
+  color: #9da39e;
+  font-size: 10px;
+}
+
+.wb-ct-sc__value {
+  text-align: right;
+}
+
+.wb-ct-sc__value strong {
+  display: block;
+  color: #ffe08a;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-ct-sc__rank--qualified .wb-ct-sc__value strong {
+  color: #9ee7b8;
+}
+
+.wb-ct-sc__value span {
+  display: block;
+  color: #9da39e;
+  font-size: 9px;
+}
+
+.wb-ct-sc__empty {
+  display: grid;
+  place-items: center;
+  min-height: 90px;
+  margin: 0;
+  padding: 16px;
+  border: 1px dashed #303530;
+  border-radius: 8px;
+  color: #9da39e;
+  text-align: center;
+}
+
+.wb-ct-sc__foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px 11px;
+  color: #9da39e;
+  font-size: 10px;
+}
+
+.wb-ct-sc__dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: #777;
+}
+
+.wb-ct-sc__dot--ok {
+  background: #4fb875;
+}
+
+.wb-ct-sc__dot--error {
+  background: #dc6262;
+}
+
+@container (max-width: 620px) {
+  .wb-ct-sc__boards {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 8px;
+  }
+
+  .wb-ct-sc__banner {
+    min-height: 76px;
+    padding: 12px;
+  }
+
+  .wb-ct-sc__view-all {
+    top: 9px;
+    right: 9px;
+  }
+
+  .wb-ct-sc__foot {
+    flex-wrap: wrap;
+    padding-inline: 10px;
+  }
+}

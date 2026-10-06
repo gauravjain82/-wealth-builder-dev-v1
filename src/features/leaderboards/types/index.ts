@@ -55,6 +55,11 @@ export interface LeaderRow {
   contributes_to_name: string | null;
   /** "Super Base" or "Super Team" — only set in those two scopes, for MDs. */
   contributes_to_label: string | null;
+  /**
+   * The leader's profile thumbnail; null when they have none. Optional because a
+   * backend without `feature/wb-contest-showcase` omits it — either way, initials show.
+   */
+  photo_url?: string | null;
 }
 
 /** The compact home-card payload. Carries no proof rows by design. */
