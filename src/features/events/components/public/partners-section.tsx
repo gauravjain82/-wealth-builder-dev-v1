@@ -29,10 +29,18 @@ const LEVEL_BADGE: Record<EventProductPartner['level'], string> = {
   DIAMOND: 'bg-cyan-100 text-cyan-900 dark:bg-cyan-400/15 dark:text-cyan-200',
   GOLD: 'bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-200',
   SILVER: 'bg-slate-200 text-slate-800 dark:bg-white/10 dark:text-white/80',
-  BRONZE: 'bg-orange-100 text-orange-900 dark:bg-orange-400/15 dark:text-orange-200',
+  BRONZE:
+    'bg-orange-100 text-orange-900 dark:bg-orange-400/15 dark:text-orange-200',
 };
 
-export function PartnersSection({ partners }: { partners: EventProductPartner[] }) {
+export function PartnersSection({
+  partners,
+  title,
+}: {
+  partners: EventProductPartner[];
+  /** Heading override from the page layout. */
+  title?: string;
+}) {
   if (partners.length === 0) return null;
 
   const groups = LEVEL_ORDER.map((level) => ({
@@ -41,7 +49,7 @@ export function PartnersSection({ partners }: { partners: EventProductPartner[] 
   })).filter((group) => group.members.length > 0);
 
   return (
-    <PublicSection title="Product Partners">
+    <PublicSection title={title || 'Product Partners'}>
       <div className="space-y-6">
         {groups.map(({ level, members }) => (
           <div key={level}>
@@ -58,6 +66,14 @@ export function PartnersSection({ partners }: { partners: EventProductPartner[] 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {members.map((partner) => (
                 <PublicCard key={partner.id}>
+                  {partner.logo_url ? (
+                    <img
+                      src={partner.logo_url}
+                      alt={`${partner.company_name} logo`}
+                      loading="lazy"
+                      className="mb-3 h-12 w-auto max-w-[180px] object-contain"
+                    />
+                  ) : null}
                   <div className="font-semibold">{partner.company_name}</div>
                   {partner.description ? (
                     <p className="mt-2 text-sm text-slate-700 dark:text-white/70">

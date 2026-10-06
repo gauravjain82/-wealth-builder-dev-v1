@@ -10,6 +10,8 @@ export interface ConfigListApi<T> {
   create: (eventId: number, payload: Partial<T>) => Promise<T>;
   update: (eventId: number, itemId: number, payload: Partial<T>) => Promise<T>;
   remove: (eventId: number, itemId: number) => Promise<void>;
+  /** Per-row image upload, for resources that have one. */
+  upload?: (eventId: number, itemId: number, file: File) => Promise<T>;
 }
 
 /**
@@ -81,5 +83,14 @@ export function useConfigList<T extends { id: number }>(
     [api, eventId, reload],
   );
 
-  return { items, loading, error, busy, reload, create, update, remove };
+  const uploadImage = useCallback(
+    async (itemId: number, file: File): Promise<void> => {
+      if (!api.upload) throw new Error('This resource does not support uploads');
+      await api.upload(eventId, itemId, file);
+      await reload();
+    },
+    [api, eventId, reload],
+  );
+
+  return { items, loading, error, busy, reload, create, update, remove, uploadImage };
 }

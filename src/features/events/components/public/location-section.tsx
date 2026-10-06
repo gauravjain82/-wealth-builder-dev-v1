@@ -9,9 +9,17 @@
 import { formatPrice } from '../../utils/public-pricing';
 import type { PublicEvent } from '../../types/public';
 import { PublicCard, PublicSection } from './public-event-shell';
+import { RichText } from './rich-text';
 
 /** Venue details, with a map link and the optional room-booking URL. */
-export function LocationSection({ event }: { event: PublicEvent }) {
+export function LocationSection({
+  event,
+  title,
+}: {
+  event: PublicEvent;
+  /** Heading override from the page layout. */
+  title?: string;
+}) {
   const hasContent =
     event.venue_name ||
     event.location_name ||
@@ -24,7 +32,7 @@ export function LocationSection({ event }: { event: PublicEvent }) {
   );
 
   return (
-    <PublicSection title="Location">
+    <PublicSection title={title || 'Location'}>
       <PublicCard>
         {event.location_banner_url ? (
           <img
@@ -88,28 +96,35 @@ export function LocationSection({ event }: { event: PublicEvent }) {
 }
 
 /**
- * Free-text "about" / "notes" blocks.
+ * Rich-text "about" / "notes" blocks.
  *
- * These fields accept raw HTML from the builder's textarea. They are rendered as
- * plain text (`whitespace-pre-line`) rather than via `dangerouslySetInnerHTML`:
- * organizer input is not sanitized anywhere in the pipeline, so injecting it
- * into this unauthenticated page would be a stored-XSS vector.
+ * Rendered through {@link RichText}: HTML is sanitized server-side on write and
+ * on every public read, and legacy plain text stays escaped text.
  */
-export function AboutSection({ event }: { event: PublicEvent }) {
+export function AboutSection({
+  event,
+  title,
+}: {
+  event: PublicEvent;
+  /** Heading override from the page layout. */
+  title?: string;
+}) {
   if (!event.about && !event.notes) return null;
 
   return (
-    <PublicSection title="About This Event">
+    <PublicSection title={title || 'About This Event'}>
       <PublicCard className="space-y-4">
         {event.about ? (
-          <p className="whitespace-pre-line text-sm text-slate-700 dark:text-white/80">
-            {event.about}
-          </p>
+          <RichText
+            value={event.about}
+            className="text-sm text-slate-700 dark:text-white/80"
+          />
         ) : null}
         {event.notes ? (
-          <p className="whitespace-pre-line text-sm text-slate-600 dark:text-white/60">
-            {event.notes}
-          </p>
+          <RichText
+            value={event.notes}
+            className="text-sm text-slate-600 dark:text-white/60"
+          />
         ) : null}
       </PublicCard>
     </PublicSection>
@@ -117,33 +132,50 @@ export function AboutSection({ event }: { event: PublicEvent }) {
 }
 
 /** Read-only preview of purchasable extras; selection happens at checkout. */
-export function AddOnsPreviewSection({ event }: { event: PublicEvent }) {
+export function AddOnsPreviewSection({
+  event,
+  title,
+}: {
+  event: PublicEvent;
+  /** Heading override from the page layout. */
+  title?: string;
+}) {
   if (event.add_ons.length === 0) return null;
 
   return (
     <PublicSection
-      title="Add-Ons"
+      title={title || 'Add-Ons'}
       description="Available to add to your order at checkout."
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {event.add_ons.map((addOn) => (
-          <PublicCard key={addOn.id}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="font-semibold">{addOn.product_name}</div>
-              <div className="shrink-0 font-semibold">
-                {formatPrice(addOn.unit_price, event.payment_currency)}
+          <PublicCard key={addOn.id} className="overflow-hidden p-0">
+            {addOn.image_url ? (
+              <img
+                src={addOn.image_url}
+                alt={addOn.product_name}
+                loading="lazy"
+                className="aspect-[4/3] w-full object-cover"
+              />
+            ) : null}
+            <div className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="font-semibold">{addOn.product_name}</div>
+                <div className="shrink-0 font-semibold">
+                  {formatPrice(addOn.unit_price, event.payment_currency)}
+                </div>
               </div>
+              {addOn.description ? (
+                <p className="mt-2 text-sm text-slate-700 dark:text-white/70">
+                  {addOn.description}
+                </p>
+              ) : null}
+              {addOn.stock !== null ? (
+                <p className="mt-2 text-xs text-slate-500 dark:text-white/50">
+                  {Math.max(0, addOn.stock - addOn.sold)} remaining
+                </p>
+              ) : null}
             </div>
-            {addOn.description ? (
-              <p className="mt-2 text-sm text-slate-700 dark:text-white/70">
-                {addOn.description}
-              </p>
-            ) : null}
-            {addOn.stock !== null ? (
-              <p className="mt-2 text-xs text-slate-500 dark:text-white/50">
-                {Math.max(0, addOn.stock - addOn.sold)} remaining
-              </p>
-            ) : null}
           </PublicCard>
         ))}
       </div>
@@ -152,13 +184,28 @@ export function AddOnsPreviewSection({ event }: { event: PublicEvent }) {
 }
 
 /** Organizer contact block, gated on the builder's `show_email` toggle. */
-export function ContactSection({ event }: { event: PublicEvent }) {
+export function ContactSection({
+  event,
+  title,
+}: {
+  event: PublicEvent;
+  /** Heading override from the page layout. */
+  title?: string;
+}) {
   if (!event.show_email || !event.contact_email) return null;
 
   return (
-    <PublicSection title="Questions?">
-      <PublicCard>
-        <p className="text-sm">
+    <PublicSection title={title || 'Questions?'}>
+      <PublicCard className="overflow-hidden p-0">
+        {event.contact_banner_url ? (
+          <img
+            src={event.contact_banner_url}
+            alt=""
+            loading="lazy"
+            className="h-40 w-full object-cover"
+          />
+        ) : null}
+        <p className="p-5 text-sm">
           Contact the organizer at{' '}
           <a
             href={`mailto:${event.contact_email}`}
@@ -174,15 +221,23 @@ export function ContactSection({ event }: { event: PublicEvent }) {
 }
 
 /** Refund policy, shown on both the landing page and checkout. */
-export function RefundPolicySection({ event }: { event: PublicEvent }) {
+export function RefundPolicySection({
+  event,
+  title,
+}: {
+  event: PublicEvent;
+  /** Heading override from the page layout. */
+  title?: string;
+}) {
   if (!event.refund_policy) return null;
 
   return (
-    <PublicSection title="Refund Policy">
+    <PublicSection title={title || 'Refund Policy'}>
       <PublicCard>
-        <p className="whitespace-pre-line text-sm text-slate-700 dark:text-white/70">
-          {event.refund_policy}
-        </p>
+        <RichText
+          value={event.refund_policy}
+          className="text-sm text-slate-700 dark:text-white/70"
+        />
       </PublicCard>
     </PublicSection>
   );

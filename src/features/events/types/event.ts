@@ -1,3 +1,4 @@
+import type { EventThemeKey } from '../themes/registry';
 import type { BigEventScreen } from './access';
 
 export interface BigEventListItem {
@@ -35,7 +36,11 @@ export interface BigEvent extends BigEventListItem {
   location_details: string;
   book_room_url: string;
   // Design (inlined)
+  /** @deprecated never rendered; superseded by `theme`. */
   design_type: 'SIMPLE' | 'BIG';
+  /** Public-page theme key (see themes/registry.ts). */
+  theme: EventThemeKey;
+  /** Accent override; blank = the theme's default accent. */
   brand_color: string;
   disable_banner_bg_color: boolean;
   logo_blob_name: string | null;

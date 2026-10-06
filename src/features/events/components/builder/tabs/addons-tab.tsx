@@ -9,9 +9,9 @@ const api: ConfigListApi<EventAddOn> = {
   create: configService.createAddOn,
   update: configService.updateAddOn,
   remove: configService.deleteAddOn,
+  upload: configService.uploadAddOnImage,
 };
 
-// Add-on image (image_blob_name) upload is deferred — see speakers-tab note.
 const FIELDS: FieldSpec<EventAddOn>[] = [
   { key: 'product_name', label: 'Product name', type: 'text', placeholder: 'Event T-shirt' },
   { key: 'unit_price', label: 'Unit price', type: 'price', placeholder: '25.00' },
@@ -45,6 +45,7 @@ export function AddOnsTab({ event }: TabProps) {
       fields={FIELDS}
       titleField="product_name"
       itemNoun="add-on"
+      image={{ urlField: 'image_url', label: 'Image' }}
       defaults={{ product_type: 'MERCHANDISE' }}
       description="Optional extras attendees can buy alongside tickets."
     />

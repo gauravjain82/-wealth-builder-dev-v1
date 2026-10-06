@@ -1,4 +1,5 @@
 import { FormRow, Label, Text, Textarea } from '@shared/components';
+import { RichTextEditor } from '../rich-text-editor';
 import { TabForm } from './tab-form';
 import type { TabProps } from './types';
 import { useTabForm } from './use-tab-form';
@@ -11,9 +12,9 @@ interface PoliciesForm {
 /**
  * Refund policy and confirmation-email copy (inline BigEvent fields).
  *
- * These are rich-text fields; a WYSIWYG editor is deferred, so they use plain
- * textareas (consistent with the About/Notes fields on the Event tab) and accept
- * HTML.
+ * The refund policy uses the rich-text editor (sanitized server-side). The
+ * confirmation email stays a raw HTML textarea: it is email markup, not page
+ * copy, and is never rendered on the public site.
  */
 export function PoliciesTab({ event, saving, onSave }: TabProps) {
   const { form, set, dirty, submit } = useTabForm<PoliciesForm>(
@@ -28,14 +29,13 @@ export function PoliciesTab({ event, saving, onSave }: TabProps) {
     <TabForm dirty={dirty} saving={saving} onSubmit={submit}>
       <FormRow>
         <Label variant="form">Refund policy</Label>
-        <Textarea
-          rows={5}
+        <RichTextEditor
           value={form.refund_policy}
-          onChange={(e) => set('refund_policy', e.target.value)}
+          onChange={(html) => set('refund_policy', html)}
           placeholder="Describe your refund and cancellation policy…"
         />
         <Text variant="muted" className="text-xs">
-          Shown on the public event page and at checkout. HTML is supported.
+          Shown on the public event page and at checkout.
         </Text>
       </FormRow>
 

@@ -27,6 +27,7 @@ export const TAB_REGISTRY: TabDefinition[] = [
   { id: 'addons', label: 'Add-Ons', implemented: true },
   { id: 'promos', label: 'Promo Codes', implemented: true },
   { id: 'design', label: 'Design', implemented: true },
+  { id: 'page', label: 'Page Layout', implemented: true },
 ];
 
 /** Fields required before an event can be published (mirrors the backend). */

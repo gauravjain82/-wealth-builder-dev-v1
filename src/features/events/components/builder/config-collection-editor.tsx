@@ -14,6 +14,7 @@ import {
 } from '@shared/components';
 import { useToastStore } from '@/store';
 import { useConfigList, type ConfigListApi } from '../../hooks/use-config-list';
+import { ImageUploadField } from './image-upload-field';
 
 /** Input kinds the schema-driven editor knows how to render and serialize. */
 export type FieldType =
@@ -41,6 +42,14 @@ export interface FieldSpec<T> {
   help?: string;
 }
 
+/** Optional per-row image (photo/logo), uploaded via `api.upload`. */
+export interface ImageSpec<T> {
+  /** Field holding the signed preview URL, e.g. `image_url`. */
+  urlField: keyof T & string;
+  label: string;
+  help?: string;
+}
+
 type DraftValue = string | boolean | string[];
 type Draft = Record<string, DraftValue>;
 
@@ -55,6 +64,8 @@ interface ConfigCollectionEditorProps<T extends { id: number }> {
   /** Singular noun used in buttons/toasts, e.g. "speaker". */
   itemNoun: string;
   description?: string;
+  /** Adds a per-row image upload (requires `api.upload`). */
+  image?: ImageSpec<T>;
 }
 
 /** Seed a draft from an existing item (or blanks for a new one). */
@@ -250,8 +261,12 @@ export function ConfigCollectionEditor<T extends { id: number }>({
   defaults,
   itemNoun,
   description,
+  image,
 }: ConfigCollectionEditorProps<T>) {
-  const { items, loading, error, busy, create, update, remove } = useConfigList<T>(eventId, api);
+  const { items, loading, error, busy, create, update, remove, uploadImage } = useConfigList<T>(
+    eventId,
+    api,
+  );
   const addToast = useToastStore((s) => s.addToast);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -309,18 +324,40 @@ export function ConfigCollectionEditor<T extends { id: number }>({
               className="rounded-lg border border-slate-200 p-4 dark:border-white/10"
             >
               {isEditing ? (
-                <ItemForm
-                  fields={fields}
-                  initial={seedDraft(fields, item, defaults)}
-                  busy={busy}
-                  submitLabel="Save"
-                  onSubmit={(draft) => handleUpdate(item.id, draft)}
-                  onCancel={() => setEditingId(null)}
-                />
+                <div className="space-y-4">
+                  {image && (
+                    <ImageUploadField
+                      label={image.label}
+                      help={image.help}
+                      currentUrl={(item[image.urlField] as string | null) ?? null}
+                      onUpload={async (file) => {
+                        await uploadImage(item.id, file);
+                        notify(`${image.label} uploaded`);
+                      }}
+                    />
+                  )}
+                  <ItemForm
+                    fields={fields}
+                    initial={seedDraft(fields, item, defaults)}
+                    busy={busy}
+                    submitLabel="Save"
+                    onSubmit={(draft) => handleUpdate(item.id, draft)}
+                    onCancel={() => setEditingId(null)}
+                  />
+                </div>
               ) : (
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium text-slate-900 dark:text-white">
-                    {String(item[titleField] ?? '') || `Untitled ${itemNoun}`}
+                  <span className="flex min-w-0 items-center gap-3">
+                    {image && item[image.urlField] ? (
+                      <img
+                        src={String(item[image.urlField])}
+                        alt=""
+                        className="h-9 w-9 shrink-0 rounded-md object-cover"
+                      />
+                    ) : null}
+                    <span className="truncate text-sm font-medium text-slate-900 dark:text-white">
+                      {String(item[titleField] ?? '') || `Untitled ${itemNoun}`}
+                    </span>
                   </span>
                   <div className="flex gap-2">
                     <Button
@@ -356,7 +393,12 @@ export function ConfigCollectionEditor<T extends { id: number }>({
       </div>
 
       {adding ? (
-        <div className="rounded-lg border border-dashed border-slate-300 p-4 dark:border-white/15">
+        <div className="space-y-3 rounded-lg border border-dashed border-slate-300 p-4 dark:border-white/15">
+          {image && (
+            <Text variant="muted" className="text-xs">
+              Save the {itemNoun} first, then click Edit to add the {image.label.toLowerCase()}.
+            </Text>
+          )}
           <ItemForm
             fields={fields}
             initial={seedDraft(fields, null, defaults)}

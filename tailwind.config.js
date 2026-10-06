@@ -1,6 +1,15 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ["class"],
+  // Class-based dark mode (the app toggles `.dark` on <html>), extended so a
+  // public event theme can force a scheme for its subtree with
+  // `data-color-scheme="light" | "dark"` regardless of the visitor's setting.
+  darkMode: [
+    "variant",
+    [
+      "&:is(.dark *):not([data-color-scheme=light] *)",
+      "&:is([data-color-scheme=dark] *)",
+    ],
+  ],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",

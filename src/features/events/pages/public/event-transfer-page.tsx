@@ -60,6 +60,7 @@ export default function EventTransferPage() {
       eventName={event?.name ?? claim?.event_name}
       logoUrl={event?.logo_url}
       brand={event?.brand_color}
+      theme={event?.theme}
       shortcut={shortcut}
       narrow
     >

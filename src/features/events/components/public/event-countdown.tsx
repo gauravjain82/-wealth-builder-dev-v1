@@ -8,6 +8,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { cn } from '@core/utils';
+
 import { parseDate } from '../../utils/public-dates';
 
 interface Remaining {
@@ -34,10 +36,22 @@ function breakdown(msLeft: number): Remaining {
   };
 }
 
-export function EventCountdown({ beginAt }: { beginAt: string | null }) {
+/** `dark` sits on hero media; `light` on a white page (split hero). */
+type CountdownTone = 'dark' | 'light';
+
+export function EventCountdown({
+  beginAt,
+  tone = 'dark',
+}: {
+  beginAt: string | null;
+  tone?: CountdownTone;
+}) {
   // A timestamp, not a Date: `parseDate` returns a fresh object each render,
   // which would re-fire the interval effect on every parent re-render.
-  const targetMs = useMemo(() => parseDate(beginAt)?.getTime() ?? null, [beginAt]);
+  const targetMs = useMemo(
+    () => parseDate(beginAt)?.getTime() ?? null,
+    [beginAt],
+  );
   const [msLeft, setMsLeft] = useState(() =>
     targetMs === null ? 0 : targetMs - Date.now(),
   );
@@ -57,25 +71,54 @@ export function EventCountdown({ beginAt }: { beginAt: string | null }) {
   const { days, hours, minutes, seconds } = breakdown(msLeft);
 
   return (
-    <div className="flex flex-wrap gap-3" aria-label="Time until the event starts">
-      <CountdownUnit value={days} label={days === 1 ? 'Day' : 'Days'} />
-      <CountdownUnit value={hours} label="Hours" />
-      <CountdownUnit value={minutes} label="Minutes" />
-      <CountdownUnit value={seconds} label="Seconds" />
+    <div
+      className="flex flex-wrap gap-3"
+      aria-label="Time until the event starts"
+    >
+      <CountdownUnit
+        value={days}
+        label={days === 1 ? 'Day' : 'Days'}
+        tone={tone}
+      />
+      <CountdownUnit value={hours} label="Hours" tone={tone} />
+      <CountdownUnit value={minutes} label="Minutes" tone={tone} />
+      <CountdownUnit value={seconds} label="Seconds" tone={tone} />
     </div>
   );
 }
 
-function CountdownUnit({ value, label }: { value: number; label: string }) {
+function CountdownUnit({
+  value,
+  label,
+  tone,
+}: {
+  value: number;
+  label: string;
+  tone: CountdownTone;
+}) {
   return (
-    <div className="min-w-[72px] rounded-xl border border-white/20 bg-black/30 px-3 py-2 text-center backdrop-blur">
+    <div
+      className={cn(
+        'min-w-[72px] rounded-xl border px-3 py-2 text-center',
+        tone === 'dark'
+          ? 'border-white/20 bg-black/30 backdrop-blur'
+          : 'border-slate-200 bg-slate-50',
+      )}
+    >
       <div
         className="text-2xl font-bold tabular-nums"
         style={{ color: 'var(--event-brand)' }}
       >
         {String(value).padStart(2, '0')}
       </div>
-      <div className="text-[11px] uppercase tracking-wide text-white/70">{label}</div>
+      <div
+        className={cn(
+          'text-[11px] uppercase tracking-wide',
+          tone === 'dark' ? 'text-white/70' : 'text-slate-500',
+        )}
+      >
+        {label}
+      </div>
     </div>
   );
 }

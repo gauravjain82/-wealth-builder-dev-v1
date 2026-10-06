@@ -12,7 +12,14 @@ import type { PublicEvent } from '../../types/public';
 import type { PricingTier } from '../../types/config';
 import { PublicCard, PublicSection } from './public-event-shell';
 
-export function PricingTiersSection({ event }: { event: PublicEvent }) {
+export function PricingTiersSection({
+  event,
+  title,
+}: {
+  event: PublicEvent;
+  /** Heading override from the page layout. */
+  title?: string;
+}) {
   const { current_tier: current, pricing_tiers: tiers } = event;
   if (!current && tiers.length === 0) return null;
 
@@ -20,7 +27,7 @@ export function PricingTiersSection({ event }: { event: PublicEvent }) {
   const others = showAll ? tiers.filter((tier) => tier.id !== current?.id) : [];
 
   return (
-    <PublicSection title="Tickets">
+    <PublicSection title={title || 'Tickets'}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {current ? (
           <PublicCard className="border-2">

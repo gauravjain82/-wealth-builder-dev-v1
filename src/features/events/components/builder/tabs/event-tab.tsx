@@ -7,8 +7,8 @@ import {
   Input,
   Label,
   Select,
-  Textarea,
 } from '@shared/components';
+import { RichTextEditor } from '../rich-text-editor';
 import { timezoneOptions } from '../../../utils/timezones';
 import { TabForm } from './tab-form';
 import type { TabProps } from './types';
@@ -147,19 +147,20 @@ export function EventTab({ event, saving, onSave }: TabProps) {
 
       <FormRow>
         <Label variant="form">About</Label>
-        <Textarea
-          rows={4}
+        <RichTextEditor
           value={form.about}
-          onChange={(e) => set('about', e.target.value)}
+          onChange={(html) => set('about', html)}
+          placeholder="What is this event about? Who is it for?"
+          minHeightClass="min-h-[160px]"
         />
       </FormRow>
 
       <FormRow>
         <Label variant="form">Notes</Label>
-        <Textarea
-          rows={3}
+        <RichTextEditor
           value={form.notes}
-          onChange={(e) => set('notes', e.target.value)}
+          onChange={(html) => set('notes', html)}
+          placeholder="Extra details: dress code, what to bring…"
         />
       </FormRow>
 

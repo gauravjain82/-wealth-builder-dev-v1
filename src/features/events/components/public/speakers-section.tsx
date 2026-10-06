@@ -1,23 +1,31 @@
 /**
  * Speaker lineup for the landing page.
  *
- * Speaker images live in `image_blob_name` and the public serializer does not
- * yet sign them (the upload endpoint only handles the event's own blob fields —
- * see the Phase 1c note about config-model images). Until per-model upload
- * endpoints exist, each speaker falls back to a monogram avatar.
+ * Each card leads with the speaker's signed photo (`image_url`); speakers
+ * without a photo fall back to a monogram in the event's brand color.
  */
 
 import type { EventSpeaker } from '../../types/config';
 import { PublicCard, PublicSection } from './public-event-shell';
+import { Reveal } from './reveal';
 
-export function SpeakersSection({ speakers }: { speakers: EventSpeaker[] }) {
+export function SpeakersSection({
+  speakers,
+  title,
+}: {
+  speakers: EventSpeaker[];
+  /** Heading override from the page layout. */
+  title?: string;
+}) {
   if (speakers.length === 0) return null;
 
   return (
-    <PublicSection title="Speakers">
+    <PublicSection title={title || 'Speakers'}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {speakers.map((speaker) => (
-          <SpeakerCard key={speaker.id} speaker={speaker} />
+        {speakers.map((speaker, index) => (
+          <Reveal key={speaker.id} delay={(index % 3) * 100}>
+            <SpeakerCard speaker={speaker} />
+          </Reveal>
         ))}
       </div>
     </PublicSection>
@@ -26,31 +34,41 @@ export function SpeakersSection({ speakers }: { speakers: EventSpeaker[] }) {
 
 function SpeakerCard({ speaker }: { speaker: EventSpeaker }) {
   return (
-    <PublicCard>
-      <div className="flex items-center gap-3">
-        <Avatar name={speaker.name} />
-        <div className="min-w-0">
-          <div className="truncate font-semibold">{speaker.name}</div>
-          {speaker.title ? (
-            <div className="truncate text-xs text-slate-600 dark:text-white/60">
-              {speaker.title}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {speaker.description ? (
-        <p className="mt-3 text-sm text-slate-700 dark:text-white/70">
-          {speaker.description}
-        </p>
+    <PublicCard className="h-full overflow-hidden p-0">
+      {speaker.image_url ? (
+        <img
+          src={speaker.image_url}
+          alt={speaker.name}
+          loading="lazy"
+          className="aspect-[4/3] w-full object-cover object-top"
+        />
       ) : null}
+      <div className="p-5">
+        <div className="flex items-center gap-3">
+          {speaker.image_url ? null : <Avatar name={speaker.name} />}
+          <div className="min-w-0">
+            <div className="truncate font-semibold">{speaker.name}</div>
+            {speaker.title ? (
+              <div className="truncate text-xs text-slate-600 dark:text-white/60">
+                {speaker.title}
+              </div>
+            ) : null}
+          </div>
+        </div>
 
-      <SpeakerLinks speaker={speaker} />
+        {speaker.description ? (
+          <p className="mt-3 whitespace-pre-line text-sm text-slate-700 dark:text-white/70">
+            {speaker.description}
+          </p>
+        ) : null}
+
+        <SpeakerLinks speaker={speaker} />
+      </div>
     </PublicCard>
   );
 }
 
-/** Initials-based avatar stand-in while speaker images aren't served publicly. */
+/** Initials-based avatar for speakers without a photo. */
 function Avatar({ name }: { name: string }) {
   const initials = name
     .split(/\s+/)
@@ -61,8 +79,11 @@ function Avatar({ name }: { name: string }) {
 
   return (
     <div
-      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-slate-950"
-      style={{ backgroundColor: 'var(--event-brand)' }}
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold"
+      style={{
+        backgroundColor: 'var(--event-brand)',
+        color: 'var(--event-brand-contrast)',
+      }}
       aria-hidden="true"
     >
       {initials || '?'}
