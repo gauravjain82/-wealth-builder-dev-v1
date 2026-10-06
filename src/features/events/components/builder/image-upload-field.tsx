@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Button, Label, Text } from '@shared/components';
+import { isVideoFileUrl } from '../../utils/public-video';
 
 interface ImageUploadFieldProps {
   label: string;
@@ -12,7 +13,7 @@ interface ImageUploadFieldProps {
 }
 
 /**
- * Single-image upload control for a BigEvent blob field.
+ * Single-image (or short video) upload control for a BigEvent blob field.
  *
  * Shows the current signed preview (or an instant local preview of a freshly
  * picked file) and delegates the actual upload to `onUpload`. The parent is
@@ -28,9 +29,12 @@ export function ImageUploadField({
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  // Blob URLs carry no extension, so remember whether the picked file was a video.
+  const [localIsVideo, setLocalIsVideo] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const preview = localPreview ?? currentUrl;
+  const previewIsVideo = localPreview ? localIsVideo : isVideoFileUrl(currentUrl);
 
   const pick = () => inputRef.current?.click();
 
@@ -38,6 +42,7 @@ export function ImageUploadField({
     if (!file) return;
     setError(null);
     setLocalPreview(URL.createObjectURL(file));
+    setLocalIsVideo(file.type.startsWith('video/'));
     setUploading(true);
     try {
       await onUpload(file);
@@ -53,7 +58,9 @@ export function ImageUploadField({
       <Label variant="form">{label}</Label>
       <div className="flex items-center gap-4">
         <div className="flex h-20 w-32 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/5">
-          {preview ? (
+          {preview && previewIsVideo ? (
+            <video src={preview} muted loop autoPlay playsInline className="h-full w-full object-cover" />
+          ) : preview ? (
             <img src={preview} alt={label} className="h-full w-full object-contain" />
           ) : (
             <span className="text-xs text-slate-400">No image</span>

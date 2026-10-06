@@ -12,6 +12,7 @@ import { PartnersTab } from './tabs/partners-tab';
 import { AddOnsTab } from './tabs/addons-tab';
 import { PromosTab } from './tabs/promos-tab';
 import { DesignTab } from './tabs/design-tab';
+import { PageTab } from './tabs/page-tab';
 import type { TabProps } from './tabs/types';
 
 interface BuilderTabContentProps {
@@ -36,6 +37,7 @@ const TAB_COMPONENTS: Record<string, ComponentType<TabProps>> = {
   addons: AddOnsTab,
   promos: PromosTab,
   design: DesignTab,
+  page: PageTab,
 };
 
 /** Renders the active builder tab, or a placeholder for pending (1c) tabs. */

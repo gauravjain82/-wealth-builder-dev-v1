@@ -9,6 +9,8 @@
  * Decimal fields arrive from DRF as strings and are typed as such.
  */
 
+import type { EventThemeKey } from '../themes/registry';
+import type { LandingSection } from './landing';
 import type {
   EventAddOn,
   EventCustomField,
@@ -72,7 +74,11 @@ export interface PublicEvent {
   location_phone: string;
   location_details: string;
   book_room_url: string;
+  /** @deprecated never rendered; superseded by `theme`. */
   design_type: 'SIMPLE' | 'BIG';
+  /** Public-page theme key (see themes/registry.ts). */
+  theme: EventThemeKey;
+  /** Accent override; blank = the theme's default accent. */
   brand_color: string;
   disable_banner_bg_color: boolean;
   event_video_url: string;
@@ -101,6 +107,11 @@ export interface PublicEvent {
   sellers: PublicSeller[];
   current_tier: CurrentTier | null;
   sales_state: SalesState;
+  /**
+   * Enabled landing sections in order (the theme default when uncustomised).
+   * Optional so the page still renders against a backend that predates it.
+   */
+  sections?: LandingSection[];
 }
 
 /** Result of a promo-code preview. Invalid codes come back as 200 + `valid:false`. */

@@ -176,6 +176,7 @@ function CheckoutForEvent({
       eventName={event.name}
       logoUrl={event.logo_url}
       brand={event.brand_color}
+      theme={event.theme}
       shortcut={event.shortcut}
     >
       <div className="mb-6">
@@ -333,6 +334,7 @@ function CheckoutComplete({
       eventName={event.name}
       logoUrl={event.logo_url}
       brand={event.brand_color}
+      theme={event.theme}
       shortcut={event.shortcut}
       narrow
     >

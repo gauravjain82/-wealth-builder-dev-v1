@@ -9,9 +9,9 @@ const api: ConfigListApi<EventProductPartner> = {
   create: configService.createPartner,
   update: configService.updatePartner,
   remove: configService.deletePartner,
+  upload: configService.uploadPartnerLogo,
 };
 
-// Partner logo (logo_blob_name) upload is deferred — see speakers-tab note.
 const FIELDS: FieldSpec<EventProductPartner>[] = [
   { key: 'company_name', label: 'Company name', type: 'text' },
   {
@@ -39,6 +39,7 @@ export function PartnersTab({ event }: TabProps) {
       fields={FIELDS}
       titleField="company_name"
       itemNoun="partner"
+      image={{ urlField: 'logo_url', label: 'Logo', help: 'PNG with a transparent background.' }}
       defaults={{ level: 'GOLD', sort_order: '0' }}
       description="Sponsors and product partners, grouped by level on the public page."
     />

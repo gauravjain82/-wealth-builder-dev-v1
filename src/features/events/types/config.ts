@@ -15,6 +15,8 @@ export interface EventSpeaker {
   name: string;
   title: string;
   image_blob_name: string | null;
+  /** Signed photo URL (null when no photo uploaded). */
+  image_url: string | null;
   description: string;
   website: string;
   instagram: string;
@@ -28,6 +30,8 @@ export interface EventProductPartner {
   company_name: string;
   level: 'DIAMOND' | 'GOLD' | 'SILVER' | 'BRONZE';
   logo_blob_name: string | null;
+  /** Signed logo URL (null when no logo uploaded). */
+  logo_url: string | null;
   description: string;
   website: string;
   sort_order: number;
@@ -42,6 +46,8 @@ export interface EventAddOn {
   product_type: 'MERCHANDISE' | 'MEAL' | 'EXPERIENCE' | 'OTHER';
   stock: number | null;
   image_blob_name: string | null;
+  /** Signed image URL (null when no image uploaded). */
+  image_url: string | null;
   is_active: boolean;
   sold: number;
 }

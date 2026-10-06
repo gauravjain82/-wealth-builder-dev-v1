@@ -2,25 +2,17 @@
  * Public event landing page — `/event/:shortcut`.
  *
  * A standalone route (no auth, no `MainLayout`). Purely compositional: it
- * fetches once via `usePublicEvent` and hands slices of that payload to
- * section components, each of which self-hides when its data is empty.
+ * fetches once via `usePublicEvent`, renders the themed hero, then the
+ * organizer's ordered sections (`LandingSections`), each of which self-hides
+ * when its data is empty.
  */
 
+import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { usePublicEvent } from '../../hooks/use-public-event';
 import { EventHero } from '../../components/public/event-hero';
-import {
-  AboutSection,
-  AddOnsPreviewSection,
-  ContactSection,
-  LocationSection,
-  RefundPolicySection,
-} from '../../components/public/location-section';
-import { PartnersSection } from '../../components/public/partners-section';
-import { PricingTiersSection } from '../../components/public/pricing-tiers-section';
-import { QuestionSection } from '../../components/public/question-section';
-import { SpeakersSection } from '../../components/public/speakers-section';
+import { LandingSections } from '../../components/public/landing-sections';
 import {
   PublicAlert,
   PublicEventShell,
@@ -29,6 +21,7 @@ import {
 export default function EventLandingPage() {
   const { shortcut } = useParams<{ shortcut: string }>();
   const { event, loading, error, notFound, reload } = usePublicEvent(shortcut);
+  useDocumentMeta(event?.name, event?.about);
 
   if (loading) return <PublicStatus message="Loading event…" />;
 
@@ -58,37 +51,68 @@ export default function EventLandingPage() {
 
   return (
     <PublicEventShell
+      animated
       eventName={event.name}
       logoUrl={event.logo_url}
       brand={event.brand_color}
+      theme={event.theme}
       shortcut={event.shortcut}
+      hero={<EventHero event={event} />}
       headerAction={
         event.sales_state.is_open ? (
           <Link
             to={`/event/${event.shortcut}/checkout`}
-            style={{ backgroundColor: 'var(--event-brand)' }}
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-950 hover:opacity-90"
+            style={{
+              backgroundColor: 'var(--event-brand)',
+              color: 'var(--event-brand-contrast)',
+              borderRadius: 'var(--event-btn-radius)',
+            }}
+            className="px-4 py-2 text-sm font-semibold hover:opacity-90"
           >
             Get Tickets
           </Link>
         ) : null
       }
     >
-      <EventHero event={event} />
-      <AboutSection event={event} />
-      <PricingTiersSection event={event} />
-      <SpeakersSection speakers={event.speakers} />
-      <AddOnsPreviewSection event={event} />
-      <PartnersSection partners={event.partners} />
-      <LocationSection event={event} />
-      <RefundPolicySection event={event} />
-      <QuestionSection
-        shortcut={event.shortcut}
-        contactEmail={event.show_email ? event.contact_email : undefined}
-      />
-      <ContactSection event={event} />
+      <LandingSections event={event} />
     </PublicEventShell>
   );
+}
+
+/**
+ * Title + meta description for the browser tab, bookmarks and JS-rendering
+ * crawlers. (Link-preview bots that don't run JS need server-side OG tags,
+ * which this SPA cannot provide.)
+ */
+function useDocumentMeta(name: string | undefined, about: string | undefined) {
+  useEffect(() => {
+    if (!name) return;
+    const previousTitle = document.title;
+    document.title = name;
+
+    // `about` may be rich-text HTML; parse it inertly to get plain text.
+    const text = about
+      ? (new DOMParser().parseFromString(about, 'text/html').body.textContent ?? '')
+      : '';
+    const description = text.replace(/\s+/g, ' ').trim().slice(0, 160);
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    const created = !meta;
+    const previousDescription = meta?.content;
+    if (description) {
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'description';
+        document.head.appendChild(meta);
+      }
+      meta.content = description;
+    }
+
+    return () => {
+      document.title = previousTitle;
+      if (created) meta?.remove();
+      else if (meta && previousDescription !== undefined) meta.content = previousDescription;
+    };
+  }, [name, about]);
 }
 
 /** Full-page status message for the load/not-found states. */

@@ -1,21 +1,16 @@
-import {
-  Checkbox,
-  Divider,
-  FormRow,
-  FormRowGroup,
-  Input,
-  Label,
-  Select,
-  Text,
-} from '@shared/components';
+import { ExternalLink } from 'lucide-react';
+import { Button, Checkbox, Divider, FormRow, Input, Label, Text } from '@shared/components';
 import { eventService } from '../../../services/event-service';
+import { getEventTheme, type EventThemeKey } from '../../../themes/registry';
+import { accentColor } from '../../../utils/public-brand';
 import { ImageUploadField } from '../image-upload-field';
+import { ThemePicker } from '../theme-picker';
 import { TabForm } from './tab-form';
 import type { TabProps } from './types';
 import { useTabForm } from './use-tab-form';
 
 interface DesignForm {
-  design_type: 'SIMPLE' | 'BIG';
+  theme: EventThemeKey;
   brand_color: string;
   disable_banner_bg_color: boolean;
   event_video_url: string;
@@ -28,6 +23,7 @@ const IMAGE_FIELDS: {
   label: string;
   urlKey: keyof TabProps['event'];
   help?: string;
+  accept?: string;
 }[] = [
   { field: 'logo_blob_name', label: 'Logo', urlKey: 'logo_url' },
   { field: 'event_banner_blob_name', label: 'Event banner', urlKey: 'event_banner_url' },
@@ -37,15 +33,22 @@ const IMAGE_FIELDS: {
     field: 'video_bg_banner_blob_name',
     label: 'Video background',
     urlKey: 'video_bg_banner_url',
+    accept: 'image/*,video/mp4,video/webm',
+    help: 'A short MP4/WebM loops silently behind the hero (event banner is its poster).',
   },
   { field: 'flyer_blob_name', label: 'Flyer', urlKey: 'flyer_url' },
 ];
 
-/** Branding, layout style, banners, and media for the public landing page. */
+/**
+ * Theme, branding, banners, and media for the public landing page.
+ *
+ * `design_type` (Simple/Big) is no longer edited: it was never rendered and is
+ * superseded by `theme`.
+ */
 export function DesignTab({ event, saving, onSave }: TabProps) {
   const { form, set, dirty, submit } = useTabForm<DesignForm>(
     {
-      design_type: event.design_type ?? 'SIMPLE',
+      theme: getEventTheme(event.theme).key,
       brand_color: event.brand_color ?? '',
       disable_banner_bg_color: event.disable_banner_bg_color,
       event_video_url: event.event_video_url ?? '',
@@ -62,35 +65,60 @@ export function DesignTab({ event, saving, onSave }: TabProps) {
   return (
     <div className="space-y-6">
       <TabForm dirty={dirty} saving={saving} onSubmit={submit}>
-        <FormRowGroup columns={2}>
-          <FormRow>
-            <Label variant="form">Layout style</Label>
-            <Select
-              value={form.design_type}
-              onChange={(e) => set('design_type', e.target.value as DesignForm['design_type'])}
+        <FormRow>
+          <div className="flex items-center justify-between gap-3">
+            <Label variant="form">Page theme</Label>
+            {event.shortcut && (
+              <a
+                href={`/event/${event.shortcut}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+              >
+                Open public page <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+          </div>
+          <ThemePicker
+            value={form.theme}
+            onChange={(key) => set('theme', key)}
+            accent={accentColor(form.brand_color, '') || undefined}
+          />
+          <Text variant="muted" className="text-xs">
+            Themes change the look only — your content stays the same when you switch. Save,
+            then open the public page to see it (only published events are public).
+          </Text>
+        </FormRow>
+
+        <FormRow>
+          <Label variant="form">Accent color</Label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={accentColor(form.brand_color, getEventTheme(form.theme).defaultAccent)}
+              onChange={(e) => set('brand_color', e.target.value)}
+              className="h-9 w-12 cursor-pointer rounded border border-slate-200 dark:border-white/10"
+              aria-label="Accent color picker"
+            />
+            <Input
+              value={form.brand_color}
+              onChange={(e) => set('brand_color', e.target.value)}
+              placeholder={`Theme default (${getEventTheme(form.theme).defaultAccent})`}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => set('brand_color', '')}
+              disabled={!form.brand_color}
             >
-              <option value="SIMPLE">Simple</option>
-              <option value="BIG">Big</option>
-            </Select>
-          </FormRow>
-          <FormRow>
-            <Label variant="form">Brand color</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={form.brand_color || '#000000'}
-                onChange={(e) => set('brand_color', e.target.value)}
-                className="h-9 w-12 cursor-pointer rounded border border-slate-200 dark:border-white/10"
-                aria-label="Brand color picker"
-              />
-              <Input
-                value={form.brand_color}
-                onChange={(e) => set('brand_color', e.target.value)}
-                placeholder="#1A73E8"
-              />
-            </div>
-          </FormRow>
-        </FormRowGroup>
+              Use theme accent
+            </Button>
+          </div>
+          <Text variant="muted" className="text-xs">
+            Buttons, highlights and the countdown use this color. Leave blank to use the
+            theme&apos;s own accent.
+          </Text>
+        </FormRow>
 
         <FormRow>
           <Label variant="form">Event video URL</Label>
@@ -127,6 +155,7 @@ export function DesignTab({ event, saving, onSave }: TabProps) {
               currentUrl={(event[img.urlKey] as string | null) ?? null}
               onUpload={uploadFor(img.field)}
               help={img.help}
+              accept={img.accept}
             />
           ))}
         </div>

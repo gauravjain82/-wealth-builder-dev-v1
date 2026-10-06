@@ -9,6 +9,7 @@ import type {
   ExternalTeam,
   ExternalTeamMember,
 } from '../types/config';
+import type { LandingLayout, LandingSection } from '../types/landing';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -39,9 +40,12 @@ async function parseError(response: Response): Promise<string> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // FormData bodies must not get a JSON Content-Type (the browser sets the
+  // multipart boundary itself).
+  const isJson = init?.body !== undefined && !(init.body instanceof FormData);
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: { ...authHeaders(init?.body !== undefined), ...init?.headers },
+    headers: { ...authHeaders(isJson), ...init?.headers },
   });
   if (!response.ok) throw new Error(await parseError(response));
   if (response.status === 204) return undefined as T;
@@ -68,6 +72,15 @@ function crudFor<T>(base: (eventId: number) => string) {
     delete(eventId: number, itemId: number): Promise<void> {
       return request(`${base(eventId)}${itemId}/`, { method: 'DELETE' });
     },
+    /** Upload the row's image (speakers/partners/add-ons); returns the updated row. */
+    upload(eventId: number, itemId: number, file: File): Promise<T> {
+      const formData = new FormData();
+      formData.append('file', file);
+      return request(`${base(eventId)}${itemId}/upload/`, {
+        method: 'POST',
+        body: formData,
+      });
+    },
   };
 }
 
@@ -82,7 +95,31 @@ const promoCodes = crudFor<EventPromoCode>((id) => `${eventBase(id)}/promo-codes
 const customFields = crudFor<EventCustomField>((id) => `${eventBase(id)}/custom-fields/`);
 const sellers = crudFor<EventTrackedSeller>((id) => `${eventBase(id)}/sellers/`);
 
+const landingBase = (id: number) => `${eventBase(id)}/landing-sections/`;
+
 export const configService = {
+  // Landing-page layout (whole-layout read / replace / reset + image upload)
+  getLandingLayout(eventId: number): Promise<LandingLayout> {
+    return request(landingBase(eventId));
+  },
+  saveLandingLayout(
+    eventId: number,
+    sections: Pick<LandingSection, 'id' | 'section_type' | 'title' | 'is_enabled' | 'content'>[],
+  ): Promise<LandingLayout> {
+    return request(landingBase(eventId), {
+      method: 'PUT',
+      body: JSON.stringify({ sections }),
+    });
+  },
+  resetLandingLayout(eventId: number): Promise<LandingLayout> {
+    return request(landingBase(eventId), { method: 'DELETE' });
+  },
+  uploadLandingImage(eventId: number, file: File): Promise<{ blob_name: string; url: string | null }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request(`${landingBase(eventId)}upload/`, { method: 'POST', body: formData });
+  },
+
   // Pricing Tiers
   listPricingTiers: pricingTiers.list,
   createPricingTier: pricingTiers.create,
@@ -94,18 +131,21 @@ export const configService = {
   createSpeaker: speakers.create,
   updateSpeaker: speakers.update,
   deleteSpeaker: speakers.delete,
+  uploadSpeakerImage: speakers.upload,
 
   // Partners
   listPartners: partners.list,
   createPartner: partners.create,
   updatePartner: partners.update,
   deletePartner: partners.delete,
+  uploadPartnerLogo: partners.upload,
 
   // Add-Ons
   listAddOns: addOns.list,
   createAddOn: addOns.create,
   updateAddOn: addOns.update,
   deleteAddOn: addOns.delete,
+  uploadAddOnImage: addOns.upload,
 
   // Promo Codes
   listPromoCodes: promoCodes.list,

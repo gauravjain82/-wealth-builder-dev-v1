@@ -9,10 +9,9 @@ const api: ConfigListApi<EventSpeaker> = {
   create: configService.createSpeaker,
   update: configService.updateSpeaker,
   remove: configService.deleteSpeaker,
+  upload: configService.uploadSpeakerImage,
 };
 
-// Speaker photo (image_blob_name) upload is deferred — the generic /upload/
-// endpoint only writes BigEvent blob fields, not config-model images.
 const FIELDS: FieldSpec<EventSpeaker>[] = [
   { key: 'name', label: 'Name', type: 'text' },
   { key: 'title', label: 'Title', type: 'text', placeholder: 'CEO, Acme Inc.' },
@@ -32,6 +31,7 @@ export function SpeakersTab({ event }: TabProps) {
       fields={FIELDS}
       titleField="name"
       itemNoun="speaker"
+      image={{ urlField: 'image_url', label: 'Photo', help: 'Square headshot works best.' }}
       defaults={{ sort_order: '0' }}
       description="Speakers appear on the public event page in sort order."
     />

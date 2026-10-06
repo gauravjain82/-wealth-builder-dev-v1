@@ -15,9 +15,11 @@ import { BrandButton, PublicAlert, PublicCard, PublicField, PublicSection } from
 interface QuestionSectionProps {
   shortcut: string;
   contactEmail?: string;
+  /** Heading override from the page layout. */
+  title?: string;
 }
 
-export function QuestionSection({ shortcut, contactEmail }: QuestionSectionProps) {
+export function QuestionSection({ shortcut, contactEmail, title }: QuestionSectionProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -51,7 +53,7 @@ export function QuestionSection({ shortcut, contactEmail }: QuestionSectionProps
   };
 
   return (
-    <PublicSection title="Have a Question?">
+    <PublicSection title={title || 'Have a Question?'}>
       <PublicCard>
         {sent ? (
           <PublicAlert
