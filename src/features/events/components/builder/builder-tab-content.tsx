@@ -8,6 +8,7 @@ import { PricingTab } from './tabs/pricing-tab';
 import { CustomFieldsTab } from './tabs/custom-fields-tab';
 import { PoliciesTab } from './tabs/policies-tab';
 import { SpeakersTab } from './tabs/speakers-tab';
+import { SessionsTab } from './tabs/sessions-tab';
 import { PartnersTab } from './tabs/partners-tab';
 import { AddOnsTab } from './tabs/addons-tab';
 import { PromosTab } from './tabs/promos-tab';
@@ -32,6 +33,7 @@ const TAB_COMPONENTS: Record<string, ComponentType<TabProps>> = {
   pricing: PricingTab,
   fields: CustomFieldsTab,
   policies: PoliciesTab,
+  sessions: SessionsTab,
   speakers: SpeakersTab,
   partners: PartnersTab,
   addons: AddOnsTab,

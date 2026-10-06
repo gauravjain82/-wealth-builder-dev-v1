@@ -14,7 +14,13 @@ export function CheckinStatsCards({ stats }: CheckinStatsCardsProps) {
       value: String(stats.expected),
       hint: `${stats.assigned} named · ${stats.unassigned} unassigned`,
     },
-    { label: 'Arrived', value: String(stats.arrived), hint: `${rate}% of expected` },
+    {
+      label: 'Arrived',
+      value: String(stats.arrived),
+      hint: stats.arrived_via_session
+        ? `${rate}% of expected · ${stats.arrived_via_session} via a session scan`
+        : `${rate}% of expected`,
+    },
     { label: 'Not yet arrived', value: String(stats.remaining) },
     {
       label: 'Unassigned tickets',

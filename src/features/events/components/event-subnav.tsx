@@ -12,9 +12,11 @@ const LINKS: Array<{ suffix: string; label: string; screen: BigEventScreen | nul
   { suffix: 'orders', label: 'Purchases', screen: 'purchases' },
   { suffix: 'my-tickets', label: 'My tickets', screen: null },
   { suffix: 'checkin', label: 'Check-in', screen: 'checkin' },
+  { suffix: 'sessions', label: 'Sessions', screen: 'checkin' },
   { suffix: 'recognition', label: 'Recognition', screen: 'recognition' },
   { suffix: 'emails', label: 'Emails', screen: 'emails' },
   { suffix: 'questions', label: 'Questions', screen: 'questions' },
+  { suffix: 'reviews', label: 'Reviews', screen: 'builder' },
   { suffix: 'access', label: 'Access', screen: 'permissions' },
 ];
 

@@ -13,6 +13,7 @@ const EMPTY_STATS: CheckinStats = {
   expected: 0,
   arrived: 0,
   remaining: 0,
+  arrived_via_session: 0,
   assigned: 0,
   unassigned: 0,
 };

@@ -22,6 +22,7 @@ export const TAB_REGISTRY: TabDefinition[] = [
   { id: 'pricing', label: 'Ticket Price', implemented: true },
   { id: 'fields', label: 'Custom Fields', implemented: true },
   { id: 'policies', label: 'Policies', implemented: true },
+  { id: 'sessions', label: 'Sessions', implemented: true },
   { id: 'speakers', label: 'Speakers', implemented: true },
   { id: 'partners', label: 'Product Partners', implemented: true },
   { id: 'addons', label: 'Add-Ons', implemented: true },

@@ -290,9 +290,24 @@ export function AgendaSection({ content, title }: SectionProps<AgendaContent>) {
                 {item.time}
               </div>
               <div>
-                <div className="font-semibold">{item.title}</div>
-                {item.speaker ? (
-                  <div className={cn('text-xs', MUTED)}>{item.speaker}</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold">{item.title}</span>
+                  {item.note ? (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--event-brand) 15%, transparent)',
+                        color: 'var(--event-brand)',
+                      }}
+                    >
+                      {item.note}
+                    </span>
+                  ) : null}
+                </div>
+                {item.speaker || item.location ? (
+                  <div className={cn('text-xs', MUTED)}>
+                    {[item.speaker, item.location].filter(Boolean).join(' · ')}
+                  </div>
                 ) : null}
                 {item.description ? (
                   <p className={cn('mt-1 whitespace-pre-line text-sm', MUTED)}>
