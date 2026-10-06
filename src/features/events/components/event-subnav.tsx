@@ -10,6 +10,8 @@ interface EventSubnavProps {
 const LINKS: Array<{ suffix: string; label: string; screen: BigEventScreen | null }> = [
   { suffix: 'builder', label: 'Builder', screen: 'builder' },
   { suffix: 'orders', label: 'Purchases', screen: 'purchases' },
+  // Folded under Purchases access (owner decision D6) — no separate surface.
+  { suffix: 'external-tickets', label: 'External tickets', screen: 'purchases' },
   { suffix: 'my-tickets', label: 'My tickets', screen: null },
   { suffix: 'checkin', label: 'Check-in', screen: 'checkin' },
   { suffix: 'sessions', label: 'Sessions', screen: 'checkin' },
