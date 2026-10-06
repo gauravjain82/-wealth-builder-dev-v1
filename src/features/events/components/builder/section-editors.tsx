@@ -1,10 +1,13 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowDown, ArrowUp, ImagePlus, Trash2 } from 'lucide-react';
 import { Button, Input, Label, Text, Textarea } from '@shared/components';
 import { configService } from '../../services/config-service';
+import { sessionService } from '../../services/session-service';
+import type { EventSession } from '../../types/session';
 import type {
   AgendaContent,
   AgendaItem,
+  AgendaSource,
   CtaBandContent,
   FaqContent,
   GalleryContent,
@@ -375,7 +378,116 @@ function FaqEditor({ content, onChange }: EditorProps<FaqContent>) {
   );
 }
 
-function AgendaEditor({ content, onChange }: EditorProps<AgendaContent>) {
+const AGENDA_SOURCES: Array<{ value: AgendaSource; label: string; hint: string }> = [
+  { value: 'manual', label: 'Write it here', hint: 'Type the schedule by hand.' },
+  {
+    value: 'sessions',
+    label: 'Show sessions',
+    hint: 'List the sessions marked “Show on public agenda”.',
+  },
+];
+
+function AgendaEditor({ content, onChange, eventId }: EditorProps<AgendaContent>) {
+  const source: AgendaSource = content.source ?? 'manual';
+  return (
+    <div className="space-y-4">
+      <fieldset>
+        <legend className="mb-2 text-sm font-medium text-slate-900 dark:text-white">
+          What should this agenda show?
+        </legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {AGENDA_SOURCES.map((option) => (
+            <label
+              key={option.value}
+              className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 ${
+                source === option.value
+                  ? 'border-primary bg-primary/5'
+                  : 'border-slate-200 dark:border-white/15'
+              }`}
+            >
+              <input
+                type="radio"
+                name={`agenda-source-${eventId}`}
+                value={option.value}
+                checked={source === option.value}
+                onChange={() => onChange({ ...content, source: option.value })}
+                className="mt-1"
+              />
+              <span>
+                <span className="block text-sm font-medium text-slate-900 dark:text-white">
+                  {option.label}
+                </span>
+                <span className="block text-xs text-slate-500 dark:text-white/50">{option.hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      {source === 'sessions' ? (
+        <SessionAgendaPreview eventId={eventId} hasManualDays={(content.days ?? []).length > 0} />
+      ) : (
+        <ManualAgendaEditor content={content} onChange={onChange} />
+      )}
+    </div>
+  );
+}
+
+/** What the public agenda will list when it shows sessions. */
+function SessionAgendaPreview({ eventId, hasManualDays }: { eventId: number; hasManualDays: boolean }) {
+  const [sessions, setSessions] = useState<EventSession[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    sessionService
+      .list(eventId)
+      .then((rows) => !cancelled && setSessions(rows.filter((s) => s.is_active && s.show_on_agenda)))
+      .catch(() => !cancelled && setSessions([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId]);
+
+  return (
+    <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-white/10 dark:bg-white/5">
+      {sessions === null ? (
+        <Text variant="muted" className="text-sm">Loading sessions…</Text>
+      ) : sessions.length === 0 ? (
+        <Text className="text-sm text-amber-700 dark:text-amber-300">
+          No sessions are marked “Show on public agenda” yet, so this section will be hidden. Add or
+          edit them in the builder’s Sessions tab.
+        </Text>
+      ) : (
+        <>
+          <p className="text-slate-800 dark:text-white/90">
+            <strong>{sessions.length}</strong> session{sessions.length === 1 ? '' : 's'} will be
+            listed, grouped by day, in the event’s timezone.
+          </p>
+          <ul className="list-inside list-disc text-xs text-slate-600 dark:text-white/60">
+            {sessions.slice(0, 6).map((s) => (
+              <li key={s.id}>{s.title}</li>
+            ))}
+            {sessions.length > 6 ? <li>…and {sessions.length - 6} more</li> : null}
+          </ul>
+          <Text variant="muted" className="text-xs">
+            Choose which ones appear with “Show on public agenda” in the Sessions tab.
+          </Text>
+        </>
+      )}
+      {hasManualDays ? (
+        <Text variant="muted" className="text-xs">
+          Your hand-written agenda is kept — switch back to “Write it here” to use it again.
+        </Text>
+      ) : null}
+    </div>
+  );
+}
+
+function ManualAgendaEditor({
+  content,
+  onChange,
+}: {
+  content: AgendaContent;
+  onChange: (next: AgendaContent) => void;
+}) {
   const blankItem = (): AgendaItem => ({ time: '', title: '', description: '', speaker: '' });
   const days = content.days ?? [];
   return (

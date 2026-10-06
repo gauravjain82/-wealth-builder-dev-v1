@@ -18,6 +18,10 @@ export interface CheckinAttendee {
   checked_in_at: string | null;
   checked_in_by_name: string;
   checkin_notes: string;
+  /** `SESSION` when a session scan checked them in (they skipped registration). */
+  checkin_source: 'DESK' | 'SESSION' | null;
+  /** Title of that session, for `SESSION`. */
+  checkin_via_session: string;
 }
 
 /**
@@ -33,6 +37,8 @@ export interface CheckinStats {
   expected: number;
   arrived: number;
   remaining: number;
+  /** Checked in implicitly by a session scan rather than at registration. */
+  arrived_via_session: number;
   assigned: number;
   unassigned: number;
 }

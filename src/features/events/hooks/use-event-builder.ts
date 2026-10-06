@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { BigEvent, BigEventPayload } from '../types/event';
 import { eventService } from '../services/event-service';
-import { PUBLISH_REQUIRED_FIELDS } from '../components/builder/tab-registry';
+import { PUBLISH_REQUIRED_FIELDS, TAB_REGISTRY } from '../components/builder/tab-registry';
 
 /**
  * Loads a single event for the builder and exposes a tab-scoped save.
@@ -16,7 +16,11 @@ export function useEventBuilder(eventId: number) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('event');
+  // `?tab=<id>` deep-links a builder tab (e.g. the session door's "Open the agenda").
+  const [activeTab, setActiveTab] = useState(() => {
+    const requested = new URLSearchParams(window.location.search).get('tab');
+    return TAB_REGISTRY.some((tab) => tab.id === requested) ? (requested as string) : 'event';
+  });
 
   useEffect(() => {
     let cancelled = false;

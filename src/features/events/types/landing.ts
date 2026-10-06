@@ -49,9 +49,21 @@ export interface AgendaItem {
   title: string;
   description: string;
   speaker: string;
+  /** Room or venue, e.g. "Grand Ballroom". */
+  location?: string;
+  /** A short tag such as "Qualifiers only". */
+  note?: string;
 }
 
+/**
+ * `manual`: the hand-written `days`. `sessions`: the public page lists the
+ * event's sessions marked "Show on public agenda" instead — `days` is kept, so
+ * switching back loses nothing.
+ */
+export type AgendaSource = 'manual' | 'sessions';
+
 export interface AgendaContent {
+  source?: AgendaSource;
   days: { label: string; items: AgendaItem[] }[];
 }
 

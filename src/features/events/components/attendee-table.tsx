@@ -84,7 +84,17 @@ export function AttendeeTable({
                 </td>
                 <td className="px-3 py-2">
                   {attendee.checked_in ? (
-                    <Badge variant="success">{arrivalTime(attendee.checked_in_at)}</Badge>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Badge variant="success">{arrivalTime(attendee.checked_in_at)}</Badge>
+                      {attendee.checkin_source === 'SESSION' ? (
+                        <Badge
+                          variant="info"
+                          title="Skipped registration — checked in by a session scan"
+                        >
+                          via {attendee.checkin_via_session || 'session'}
+                        </Badge>
+                      ) : null}
+                    </div>
                   ) : (
                     <span className="text-slate-400 dark:text-white/40">—</span>
                   )}

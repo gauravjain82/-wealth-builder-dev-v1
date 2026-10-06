@@ -43,6 +43,11 @@ const EventBuilderPage = lazy(() => import('@/features/events/pages/event-builde
 const EventOrdersPage = lazy(() => import('@/features/events/pages/event-orders-page'));
 const EventMyTicketsPage = lazy(() => import('@/features/events/pages/event-my-tickets-page'));
 const EventCheckinPage = lazy(() => import('@/features/events/pages/event-checkin-page'));
+const EventSessionsPage = lazy(() => import('@/features/events/pages/event-sessions-page'));
+const EventReviewsPage = lazy(() => import('@/features/events/pages/event-reviews-page'));
+const SessionSelfCheckinPage = lazy(
+  () => import('@/features/events/pages/session-self-checkin-page'),
+);
 const EventRecognitionPage = lazy(() => import('@/features/events/pages/event-recognition-page'));
 const EventEmailsPage = lazy(() => import('@/features/events/pages/event-emails-page'));
 const EventQuestionsPage = lazy(() => import('@/features/events/pages/event-questions-page'));
@@ -529,6 +534,14 @@ const router = createBrowserRouter([
         element: lazyLoad(EventCheckinPage),
       },
       {
+        path: 'events/:eventId/sessions',
+        element: lazyLoad(EventSessionsPage),
+      },
+      {
+        path: 'events/:eventId/reviews',
+        element: lazyLoad(EventReviewsPage),
+      },
+      {
         path: 'events/:eventId/recognition',
         element: lazyLoad(EventRecognitionPage),
       },
@@ -783,6 +796,14 @@ const router = createBrowserRouter([
   {
     path: '/event/ticket/:qrToken',
     element: lazyLoad(EventTicketPage),
+    errorElement: <RouteErrorFallback />,
+  },
+  // Where a phone lands after scanning a session room's QR code. Signed-in, but
+  // outside the app layout (a focused phone page); must stay in step with
+  // `events.services.email.session_checkin_url`.
+  {
+    path: '/events/session-checkin/:token',
+    element: <ProtectedRoute>{lazyLoad(SessionSelfCheckinPage)}</ProtectedRoute>,
     errorElement: <RouteErrorFallback />,
   },
   // Unauthenticated, and must stay in step with `bpm.services.qr.guest_pass_url`,
