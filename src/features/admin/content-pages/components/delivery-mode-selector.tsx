@@ -5,6 +5,8 @@ type DeliveryModeSelectorProps = {
   onChange: (mode: DeliveryMode) => void;
   disabled?: boolean;
   prompt?: string;
+  linkHint?: string;
+  uploadHint?: string;
 };
 
 export function DeliveryModeSelector({
@@ -12,6 +14,8 @@ export function DeliveryModeSelector({
   onChange,
   disabled,
   prompt = 'How should users access this document?',
+  linkHint = 'Google Drive, Vimeo, etc.',
+  uploadHint = 'PDF, image, or document',
 }: DeliveryModeSelectorProps) {
   return (
     <div className="space-y-2">
@@ -19,8 +23,8 @@ export function DeliveryModeSelector({
       <div className="grid grid-cols-2 gap-2">
         {(
           [
-            { id: 'link' as const, label: 'External link', hint: 'Google Drive, Vimeo, etc.' },
-            { id: 'upload' as const, label: 'Upload file', hint: 'PDF, image, or document' },
+            { id: 'link' as const, label: 'External link', hint: linkHint },
+            { id: 'upload' as const, label: 'Upload file', hint: uploadHint },
           ] as const
         ).map((option) => {
           const selected = value === option.id;
