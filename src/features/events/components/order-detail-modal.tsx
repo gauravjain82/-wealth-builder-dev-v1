@@ -94,6 +94,8 @@ export function OrderDetailModal({
   const [saving, setSaving] = useState(false);
   const [sellers, setSellers] = useState<EventTrackedSeller[]>([]);
   const [confirm, setConfirm] = useState<'refund' | 'cancel' | null>(null);
+  /** The ticket whose details are open below its row (one at a time). */
+  const [openTicketId, setOpenTicketId] = useState<number | null>(null);
   const [form, setForm] = useState({
     purchaser_first_name: '',
     purchaser_last_name: '',
@@ -107,6 +109,8 @@ export function OrderDetailModal({
     if (!open || !order) return;
     setEditing(false);
     setConfirm(null);
+    // A one-ticket order opens with that ticket's details showing.
+    setOpenTicketId(order.tickets.length === 1 ? order.tickets[0].id : null);
     setForm({
       purchaser_first_name: order.purchaser_first_name,
       purchaser_last_name: order.purchaser_last_name,
@@ -165,28 +169,14 @@ export function OrderDetailModal({
 
   const imported = order?.source === 'EXTERNAL';
 
-  /**
-   * What a ticket row adds beyond the order summary above: only the parts that
-   * differ — its number when the order has several tickets, its partner
-   * confirmation when it isn't the purchase's own, its SMD when credited
-   * differently. For a one-ticket order this is usually empty.
-   */
-  const ticketDetails = (ticket: EventTicket): string => {
-    if (!order) return '';
-    return [
-      order.tickets.length > 1 ? ticket.ticket_number : '',
-      isPartnerTicket(ticket) &&
-      ticket.external_reference &&
-      ticket.external_reference !== order.external_order_reference
-        ? `BSCPro ${ticket.external_reference}`
-        : '',
-      ticket.attributed_seller_name && ticket.attributed_seller_name !== order.attributed_seller_name
-        ? `SMD ${ticket.attributed_seller_name}`
-        : '',
+  /** The row's second line: our ticket number and, for an imported ticket, its partner confirmation. */
+  const ticketLine = (ticket: EventTicket): string =>
+    [
+      ticket.ticket_number,
+      isPartnerTicket(ticket) && ticket.external_reference ? `BSCPro ${ticket.external_reference}` : '',
     ]
       .filter(Boolean)
       .join(' · ');
-  };
   const canRefund = order?.status === 'PAID' || order?.status === 'COMP';
   const canCancel = order?.status === 'PENDING';
 
@@ -320,11 +310,17 @@ export function OrderDetailModal({
             )}
 
             <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>
-                Edit
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                title="Change the purchaser's details, the SMD credited and the notes"
+                onClick={() => setEditing(true)}
+              >
+                Edit order
               </Button>
               <Button type="button" variant="outline" size="sm" onClick={() => void runResend()}>
-                Re-email
+                Email order to purchaser
               </Button>
               <Button type="button" variant="outline" size="sm" onClick={() => void runPdf()}>
                 Print / PDF
@@ -342,7 +338,12 @@ export function OrderDetailModal({
             </div>
 
             <div>
-              <Text className="mb-2 font-medium">Tickets</Text>
+              <Text className="mb-1 font-medium">Tickets</Text>
+              {order.tickets.length > 1 ? (
+                <Text variant="muted" className="mb-2 text-xs">
+                  Click a ticket to see its details and actions.
+                </Text>
+              ) : null}
               {order.tickets.length === 0 ? (
                 <Text variant="muted" className="text-sm">
                   Tickets are issued after payment confirms.
@@ -351,72 +352,108 @@ export function OrderDetailModal({
                 <>
                 <ul className="divide-y divide-slate-100 dark:divide-white/10">
                   {order.tickets.map((ticket) => (
-                    <li key={ticket.id} className="space-y-2 py-3 text-sm">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <span
-                            className={
-                              attendeeName(ticket)
-                                ? 'font-medium text-slate-900 dark:text-white'
-                                : 'italic text-slate-500 dark:text-white/50'
-                            }
-                          >
-                            {attendeeName(ticket) || 'Not assigned'}
+                    <li key={ticket.id} className="py-1 text-sm">
+                      <button
+                        type="button"
+                        className="flex w-full items-start justify-between gap-3 rounded-md px-2 py-2 text-left hover:bg-slate-50 dark:hover:bg-white/5"
+                        aria-expanded={openTicketId === ticket.id}
+                        onClick={() =>
+                          setOpenTicketId((current) => (current === ticket.id ? null : ticket.id))
+                        }
+                      >
+                        <span className="flex items-start gap-2">
+                          <span aria-hidden className="mt-0.5 text-slate-400 dark:text-white/40">
+                            {openTicketId === ticket.id ? '▾' : '▸'}
                           </span>
-                          {ticketDetails(ticket) ? (
-                            <div className="text-xs text-slate-500 dark:text-white/50">
-                              {ticketDetails(ticket)}
-                            </div>
-                          ) : null}
-                        </div>
+                          <span>
+                            <span
+                              className={
+                                attendeeName(ticket)
+                                  ? 'font-medium text-slate-900 dark:text-white'
+                                  : 'italic text-slate-500 dark:text-white/50'
+                              }
+                            >
+                              {attendeeName(ticket) || 'Not assigned'}
+                            </span>
+                            <span className="block text-xs text-slate-500 dark:text-white/50">
+                              {ticketLine(ticket)}
+                            </span>
+                          </span>
+                        </span>
                         <Badge
                           variant={TICKET_STATUS_TONE[shownStatus(ticket)]}
                           className="shrink-0 px-3 py-1 text-sm shadow-sm"
                         >
                           {TICKET_STATUS_LABEL[shownStatus(ticket)]}
                         </Badge>
-                      </div>
-                      <div className="flex flex-wrap justify-end gap-1">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onAssign(ticket)}
-                        >
-                          Assign
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          // A BSCPro ticket keeps its confirmation and QR, so it
-                          // changes hands by naming the new attendee (hand-over);
-                          // a WB ticket's ownership moves (transfer).
-                          onClick={() =>
-                            isPartnerTicket(ticket) && onHandOver
-                              ? onHandOver(ticket)
-                              : onTransfer(ticket)
-                          }
-                          disabled={ticket.lifecycle_status !== 'ACTIVE'}
-                        >
-                          Transfer
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            void orderService.openTicketPdf(ticket.id).catch((err: unknown) =>
-                              addToast({
-                                type: 'error',
-                                message: err instanceof Error ? err.message : 'PDF failed',
-                              }),
-                            )
-                          }
-                        >
-                          PDF
-                        </Button>
-                      </div>
+                      </button>
+                      {openTicketId === ticket.id ? (
+                        <div className="mx-2 mb-2 mt-1 space-y-3 rounded-lg border border-slate-200 p-3 dark:border-white/10">
+                          <div className="grid gap-1">
+                            <Fact label="Attendee name" value={`${ticket.holder_first_name} ${ticket.holder_last_name}`.trim() || 'Not assigned'} />
+                            <Fact label="Attendee email" value={ticket.holder_email || '—'} />
+                            <Fact label="Attendee phone" value={ticket.holder_phone || '—'} />
+                            <Fact label="Ticket number" value={ticket.ticket_number} />
+                            {isPartnerTicket(ticket) ? (
+                              <Fact
+                                label="BSCPro confirmation"
+                                value={ticket.external_reference || '—'}
+                              />
+                            ) : null}
+                            <Fact label="Status" value={TICKET_STATUS_LABEL[shownStatus(ticket)]} />
+                            <Fact label="SMD" value={ticket.attributed_seller_name || 'None credited'} />
+                            <Fact label="WB account" value={ticket.holder_user ? 'Linked' : 'Not linked'} />
+                            <Fact label="Checked in" value={ticket.is_checked_in ? 'Yes' : 'No'} />
+                            {ticket.transfer_count > 0 ? (
+                              <Fact
+                                label="Transfers"
+                                value={`${ticket.transfer_count} time${ticket.transfer_count === 1 ? '' : 's'}`}
+                              />
+                            ) : null}
+                          </div>
+                          <div className="flex flex-wrap justify-end gap-1">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onAssign(ticket)}
+                            >
+                              Assign
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              // A BSCPro ticket keeps its confirmation and QR, so it
+                              // changes hands by naming the new attendee (hand-over);
+                              // a WB ticket's ownership moves (transfer).
+                              onClick={() =>
+                                isPartnerTicket(ticket) && onHandOver
+                                  ? onHandOver(ticket)
+                                  : onTransfer(ticket)
+                              }
+                              disabled={ticket.lifecycle_status !== 'ACTIVE'}
+                            >
+                              Transfer
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                void orderService.openTicketPdf(ticket.id).catch((err: unknown) =>
+                                  addToast({
+                                    type: 'error',
+                                    message: err instanceof Error ? err.message : 'PDF failed',
+                                  }),
+                                )
+                              }
+                            >
+                              Ticket PDF
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -427,6 +464,10 @@ export function OrderDetailModal({
                   <p>
                     * <strong>Transfer</strong> — give the ticket to someone else; they are emailed it
                     {imported ? ' (the ticket, QR and BSCPro confirmation stay the same)' : ''}.
+                  </p>
+                  <p>
+                    * <strong>Edit order</strong> and <strong>Email order to purchaser</strong> act on
+                    the whole invoice — the email goes to the purchaser with a QR card for every ticket.
                   </p>
                 </div>
                 </>
