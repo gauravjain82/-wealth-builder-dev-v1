@@ -156,12 +156,6 @@ const MENU_ITEMS = {
     icon: '🛠️',
     path: '/admin/plugin-fees/settings',
   } as MenuItem,
-  // The agent's own plug-in fee statement; an active MD or SMD (my-access is_billable).
-  PLUGIN_FEES_STATEMENT: {
-    label: 'My Plug-in Fees',
-    icon: '💳',
-    path: '/plugin-fees/statement',
-  } as MenuItem,
   // WB reporting pipeline operations (gated per-user by wbreporting:read/manage)
   REPORTING_PIPELINE: {
     label: 'Reporting Pipeline',
@@ -232,7 +226,7 @@ const DATA_INTEGRITY_GROUP: MenuItem = {
  */
 const PLUGIN_FEES_GROUP_LABEL = 'Plug-in Fees';
 
-/** Every plan has a My Team group; Builder AI nests in it and My Plug-in Fees follows it. */
+/** Every plan has a My Team group; Builder AI nests in it. */
 const MY_TEAM_LABEL = 'My Team';
 
 /** The Admin and Super Admin plans' Admin group; Products, Reporting Pipeline and Contest Settings nest in it. */
@@ -732,8 +726,6 @@ export function getMenuForUser(
   canManageBpmSettings: boolean = false,
   // plugin_fees:review (the Hierarchy Assistant), reported by plug-in fees my-access.
   canReviewPluginFees: boolean = false,
-  // An active MD or SMD (my-access is_billable): their own statement of account.
-  isPluginFeesBillable: boolean = false,
   // plugin_fees:manage, :review or :payout_approve: the billing cycles screen, and the
   // fee settings screen (the same audience).
   canViewPluginFeeCycles: boolean = false,
@@ -844,23 +836,6 @@ export function getMenuForUser(
       icon: '💼',
       children: cloneMenuItems(pluginFeesAdminEntries),
     });
-  }
-
-  // An MD's or SMD's own plug-in fee statement. Not an admin tool, so it goes just
-  // after My Team (or under Home, if a plan has no My Team) rather than among the
-  // admin entries.
-  if (
-    isPluginFeesBillable &&
-    !menuItems.some((item) => item.label === MENU_ITEMS.PLUGIN_FEES_STATEMENT.label)
-  ) {
-    const myTeamIdx = menuItems.findIndex((item) => item.label === MY_TEAM_LABEL);
-    const homeIdx = menuItems.findIndex((item) => item.label === MENU_ITEMS.HOME.label);
-    const anchorIdx = myTeamIdx >= 0 ? myTeamIdx : homeIdx;
-    menuItems.splice(
-      anchorIdx >= 0 ? anchorIdx + 1 : menuItems.length,
-      0,
-      cloneMenuItems([MENU_ITEMS.PLUGIN_FEES_STATEMENT])[0]
-    );
   }
 
   // Home v2 is gated by backend access (homev2:read), not by plan. It goes just

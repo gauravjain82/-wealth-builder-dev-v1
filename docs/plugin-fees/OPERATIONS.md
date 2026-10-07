@@ -31,8 +31,8 @@ No client-side flags. Visibility comes from `my-access/`:
 - Settings sections appear for active MDs/SMDs as soon as the backend is deployed.
 - The review page and menu entry appear only for holders of `plugin_fees:review`, granted in
   the backend access console. Nobody holds it today.
-- "My Plug-in Fees" (the statement) and the Settings link appear for every active MD/SMD
-  (`is_billable`) once the backend is deployed.
+- The statement's Settings link ("View statement of account →") appears for every active
+  MD/SMD (`is_billable`) once the backend is deployed. The statement has no sidebar entry (PF56).
 - Fee Payments (dashboard + follow-ups): `plugin_fees:manage` or `:review`; Send now and
   Resolve need `:manage`. SMD balances (on Billing Cycles): `:manage`, `:review` or
   `:payout_approve`. Pay now appears for any active MD/SMD on an invoice the backend marks

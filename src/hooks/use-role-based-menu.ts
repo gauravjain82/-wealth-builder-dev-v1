@@ -15,7 +15,6 @@ import {
   canManageCosts,
   canSeeCycles,
   canSeeOverview,
-  canSeeOwnStatement,
   canSeePayments,
   canSeePayouts,
   canSeeReviews,
@@ -59,9 +58,8 @@ export function useRoleBasedMenu(): MenuItem[] {
   // Plug-in fee reviews are for the Hierarchy Assistant (plugin_fees:review).
   const { data: pluginFeesAccess } = usePluginFeesAccess();
   const canReviewPluginFees = canSeeReviews(pluginFeesAccess);
-  // The same payload: own statement (active MD/SMD), billing cycles (and fee settings,
-  // the same audience: canSeeFeeSettings), costs.
-  const isPluginFeesBillable = canSeeOwnStatement(pluginFeesAccess);
+  // The same payload: billing cycles (and fee settings, the same audience:
+  // canSeeFeeSettings), costs. The own statement has no menu entry (PF56).
   const canViewPluginFeeCycles = canSeeCycles(pluginFeesAccess);
   const canManagePluginFees = canManageCosts(pluginFeesAccess);
   // Payments dashboard: :manage or :review (not :payout_approve, so not the cycles flag).
@@ -91,7 +89,6 @@ export function useRoleBasedMenu(): MenuItem[] {
         canAuthorGuidance,
         canManageBpmSettings,
         canReviewPluginFees,
-        isPluginFeesBillable,
         canViewPluginFeeCycles,
         canManagePluginFees,
         canViewPluginFeePayments,
@@ -113,7 +110,6 @@ export function useRoleBasedMenu(): MenuItem[] {
       canAuthorGuidance,
       canManageBpmSettings,
       canReviewPluginFees,
-      isPluginFeesBillable,
       canViewPluginFeeCycles,
       canManagePluginFees,
       canViewPluginFeePayments,
@@ -134,7 +130,6 @@ export function useRoleBasedMenu(): MenuItem[] {
     canAuthorGuidance,
     canManageBpmSettings,
     canReviewPluginFees,
-    isPluginFeesBillable,
     canViewPluginFeeCycles,
     canManagePluginFees,
     canViewPluginFeePayments,

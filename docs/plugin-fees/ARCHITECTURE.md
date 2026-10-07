@@ -337,7 +337,7 @@ on void.
 | Payment method section | `can_save_payment_method` |
 | Whole Settings block | at least one of the three; otherwise renders nothing (`me/` is not even requested) |
 | Review route, menu "Plug-in Fees › Reviews" | `can_review` (`PluginFeesReviewRoute`, `src/router/plugin-fees-review-route.tsx`); loader while pending, `<Navigate to="/home">` on error or false |
-| Statement route, menu "My Plug-in Fees", Settings link | `is_billable` (`canSeeOwnStatement`) |
+| Statement route, Settings link (no menu entry, PF56) | `is_billable` (`canSeeOwnStatement`) |
 | Cycles route, menu "Billing Cycles" | `can_manage \|\| can_review \|\| can_approve_payouts` (`canSeeCycles`) |
 | Preview form | `can_manage` (`canPreviewCycles`) |
 | Approve button | `can_approve_payouts` (`canApproveCycles`) and report `status === 'generated'` |
@@ -361,7 +361,7 @@ on void.
 
 All P3 routes use `PluginFeesAccessRoute({ allow })` — the same loader / redirect as the
 review guard, which is now a thin wrapper over it. Menu entries arrive through positional
-booleans appended to `getMenuForUser` (`canReviewPluginFees`, `isPluginFeesBillable`,
+booleans appended to `getMenuForUser` (`canReviewPluginFees`,
 `canViewPluginFeeCycles`, `canManagePluginFees`, `canViewPluginFeePayments`, and for P5/P6
 `canViewPluginFeeOverview`, `canViewPluginFeePayouts` — PF41), computed in
 `use-role-based-menu.ts` with the same predicates and listed in its `useMemo` deps.

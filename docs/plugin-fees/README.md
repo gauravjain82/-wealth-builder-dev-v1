@@ -148,7 +148,7 @@ configuration** screen and the ledger totals (2026-10-03).
 - `src/features/settings/pages/settings-page.tsx:1548` — renders `PluginFeesSettingsSections`.
 - `src/router/plugin-fees-review-route.tsx` — `PluginFeesAccessRoute` (predicate guard) and
   `PluginFeesReviewRoute`; `src/router/index.tsx` — the eleven routes.
-- `src/hooks/use-role-based-menu.ts` — `my-access/` feeds ten menu entries (seven
+- `src/hooks/use-role-based-menu.ts` — `my-access/` feeds nine menu entries (six
   positional flags) through the predicates in `utils/plugin-fees-access.ts`.
 - `@/shared/components` — `UserAutocompleteDropdown` (cost SMD / recipient pickers);
   `ConfirmationDialog` gained `confirmDisabled`.
