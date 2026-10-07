@@ -94,6 +94,9 @@ const MENU_ITEMS = {
     icon: '🎛️',
     path: '/admin/contest-settings',
   } as MenuItem,
+  // Code of Honor committee review and admin rules/values, gated per-user by the
+  // code_of_honor:* access-console permissions. Members use the card on Home v2.
+  CODE_OF_HONOR: { label: 'Code of Honor', icon: '🏅', path: '/code-of-honor/committee' } as MenuItem,
   // Guidance library and review queue, gated per-user by gms:author (no role holds it).
   GUIDANCE: { label: 'Guidance', icon: '🧭', path: '/admin/guidance' } as MenuItem,
   // Plug-in fees admin overview (the first child of the "Plug-in Fees" group),
@@ -741,7 +744,9 @@ export function getMenuForUser(
   // plugin_fees:manage, :review or :payout_approve: quarterly payouts.
   canViewPluginFeePayouts: boolean = false,
   // The Big Event screens open for at least one event (events my-access `surfaces`).
-  bigEventScreens: Partial<Record<BigEventScreen, boolean>> = {}
+  bigEventScreens: Partial<Record<BigEventScreen, boolean>> = {},
+  // code_of_honor:review or a manage permission (Code of Honor my-access).
+  canManageCodeOfHonor: boolean = false
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -805,6 +810,9 @@ export function getMenuForUser(
   // Contest configuration rides wbreporting:manage, the same gate as the pipeline
   // screen and every other reporting configuration model.
   if (canManageReporting) addAdminEntry(MENU_ITEMS.CONTEST_SETTINGS);
+
+  // Code of Honor committee/admin page: any code_of_honor:* access-console grant.
+  if (canManageCodeOfHonor) addAdminEntry(MENU_ITEMS.CODE_OF_HONOR);
 
   // Guidance authoring rides gms:author, its own per-user grant.
   if (

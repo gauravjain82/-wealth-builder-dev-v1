@@ -4,6 +4,7 @@ import { ProtectedRoute } from './protected-route';
 import { AdminRoute } from './admin-route';
 import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
+import { CodeOfHonorRoute } from './code-of-honor-route';
 import { WbPipelineRoute } from './wb-pipeline-route';
 import { ContestSettingsRoute } from './contest-settings-route';
 import { GuidanceRoute } from './guidance-route';
@@ -79,6 +80,9 @@ const PolicyMisalignmentsPage = lazy(
 );
 const LeaderboardsPage = lazy(
   () => import('@/features/leaderboards/pages/leaderboards-page')
+);
+const CodeOfHonorCommitteePage = lazy(
+  () => import('@/features/code-of-honor/pages/code-of-honor-committee-page')
 );
 const ContestsPage = lazy(() => import('@/features/contests/pages/contests-page'));
 const ContestSettingsPage = lazy(
@@ -342,6 +346,12 @@ const router = createBrowserRouter([
         // Admin-only Data Integrity report; gated per-user by misalignments:read.
         path: 'admin/data-integrity/policy-misalignments',
         element: <MisalignmentsRoute>{lazyLoad(PolicyMisalignmentsPage)}</MisalignmentsRoute>,
+      },
+      {
+        // Code of Honor committee review + admin rules/values; gated per-user by the
+        // code_of_honor:* access-console permissions (my-access can_review/can_manage).
+        path: 'code-of-honor/committee',
+        element: <CodeOfHonorRoute>{lazyLoad(CodeOfHonorCommitteePage)}</CodeOfHonorRoute>,
       },
       {
         // The next home page. Behind homev2:read — a named rollout list, not a
