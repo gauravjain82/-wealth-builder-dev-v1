@@ -34,7 +34,7 @@ export { ReportsPanel } from './components/reports-panel';
 export { MyTicketsTable } from './components/my-tickets-table';
 
 // Components — check-in
-export { CheckinStatsCards } from './components/checkin-stats-cards';
+export { CheckinProgress } from './components/checkin-progress';
 export { CheckinScanBox } from './components/checkin-scan-box';
 export { CheckinCameraScanner } from './components/checkin-camera-scanner';
 export { CheckinPurchaseList } from './components/checkin-purchase-list';
