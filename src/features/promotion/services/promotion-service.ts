@@ -2,6 +2,7 @@ import type {
   PromotionDashboard,
   PromotionDashboardResponse,
   QuizQuestion,
+  QuizSubmitResult,
   TeamResponse,
   TeamSort,
 } from "../types";
@@ -58,7 +59,7 @@ export const promotionService = {
     request<QuizQuestion[]>(`modules/${id}/questions/`),
   watch: (id: number) => request(`modules/${id}/watch/`, { method: "POST" }),
   submitQuiz: (id: number, answers: Record<string, number>) =>
-    request<{ score: number; total: number }>(`modules/${id}/quiz/`, {
+    request<QuizSubmitResult>(`modules/${id}/quiz/`, {
       method: "POST",
       body: JSON.stringify({ answers }),
     }),
