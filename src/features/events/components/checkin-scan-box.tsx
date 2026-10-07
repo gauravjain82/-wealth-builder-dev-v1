@@ -5,10 +5,13 @@ import { CheckinSuccessFlash } from './checkin-success-flash';
 import { DoorRefusalPanel } from './door/door-refusal-panel';
 import { DoorSuccessDetails } from './door/door-success-details';
 import { LinkProfilePanel } from './door/link-profile-panel';
+import { DoorAssignModal } from './door/door-assign-modal';
+import { useToastStore } from '@/store';
 import { isCameraScanSupported } from '../utils/checkin-scan';
 import { doorErrorOf } from '../services/door-service';
 import { credentialLabel, type DoorErrorBody, type LinkAccountResult } from '../types/door';
 import type { CheckinPayload, CheckinScanResult } from '../types/checkin';
+import type { AssignHolderPayload, EventTicket } from '../types/ticket';
 
 interface CheckinScanBoxProps {
   eventId: number;
@@ -16,6 +19,9 @@ interface CheckinScanBoxProps {
   onScan: (payload: CheckinPayload) => Promise<CheckinScanResult>;
   /** A ticket was linked to a profile (and admitted) — refresh the list. */
   onLinked?: () => void;
+  /** The viewer may name attendees (purchase managers): an unnamed scan offers Assign. */
+  canAssign?: boolean;
+  onAssign?: (ticketId: number, payload: AssignHolderPayload) => Promise<EventTicket>;
 }
 
 type ScanOutcome =
@@ -39,6 +45,9 @@ function outcomeClass(outcome: ScanOutcome): string {
     : 'border-emerald-300 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10';
 }
 
+/** The door's "nobody is named on this ticket" warning — answered once Assign succeeds. */
+const UNNAMED_WARNING = /^No attendee is named/i;
+
 function arrivalTime(value: string | null): string {
   if (!value) return '';
   const date = new Date(value);
@@ -56,14 +65,17 @@ function arrivalTime(value: string | null): string {
  * The server works out what the scan was; refusals that need a decision
  * (several possible tickets, a profile with no linked ticket) open
  * `DoorRefusalPanel`, and an admitted ticket with no account offers
- * "Link profile QR".
+ * "Link profile QR". An admitted unnamed ticket offers Assign to purchase managers.
  */
-export function CheckinScanBox({ eventId, onScan, onLinked }: CheckinScanBoxProps) {
+export function CheckinScanBox({ eventId, onScan, onLinked, canAssign = false, onAssign }: CheckinScanBoxProps) {
   const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
   const [linking, setLinking] = useState<CheckinScanResult | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
+  const [assigning, setAssigning] = useState<CheckinScanResult | null>(null);
+  const [assignBusy, setAssignBusy] = useState(false);
+  const addToast = useToastStore((state) => state.addToast);
   const [flash, setFlash] = useState({ n: 0, caption: '' });
   const inputRef = useRef<HTMLInputElement>(null);
   // Remounts the refusal panel per refusal so a stale link error never lingers.
@@ -102,6 +114,34 @@ export function CheckinScanBox({ eventId, onScan, onLinked }: CheckinScanBoxProp
   const submit = (raw: string, fromCamera = false) => {
     const scan = raw.trim();
     if (scan) void run({ scan }, fromCamera);
+  };
+
+  const handleAssign = async (payload: AssignHolderPayload) => {
+    if (!assigning || !onAssign) return;
+    setAssignBusy(true);
+    try {
+      const ticket = await onAssign(assigning.id, payload);
+      const holderName = `${ticket.holder_first_name} ${ticket.holder_last_name}`.trim();
+      addToast({ type: 'success', message: `${holderName || ticket.ticket_number} assigned.` });
+      // The scanned line now names them; nothing is left to ask for.
+      setOutcome((current) =>
+        current?.kind === 'ok' && current.attendee.id === assigning.id
+          ? {
+              kind: 'ok',
+              attendee: {
+                ...current.attendee,
+                holder_name: holderName,
+                warnings: current.attendee.warnings?.filter((w) => !UNNAMED_WARNING.test(w)),
+              },
+            }
+          : current,
+      );
+      setAssigning(null);
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Assign failed' });
+    } finally {
+      setAssignBusy(false);
+    }
   };
 
   const handleLinked = (result: LinkAccountResult) => {
@@ -223,16 +263,23 @@ export function CheckinScanBox({ eventId, onScan, onLinked }: CheckinScanBoxProp
                     credential={outcome.attendee.credential}
                     warnings={outcome.attendee.warnings}
                   />
-                  {outcome.attendee.can_link_account && linking?.id !== outcome.attendee.id ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setLinking(outcome.attendee)}
-                    >
-                      Link profile QR
-                    </Button>
-                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    {canAssign && onAssign && !outcome.attendee.holder_name ? (
+                      <Button type="button" size="sm" onClick={() => setAssigning(outcome.attendee)}>
+                        Assign
+                      </Button>
+                    ) : null}
+                    {outcome.attendee.can_link_account && linking?.id !== outcome.attendee.id ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setLinking(outcome.attendee)}
+                      >
+                        Link profile QR
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
               )}
             </div>
@@ -248,6 +295,14 @@ export function CheckinScanBox({ eventId, onScan, onLinked }: CheckinScanBoxProp
             onCancel={() => setLinking(null)}
           />
         ) : null}
+        <DoorAssignModal
+          eventId={eventId}
+          attendee={assigning}
+          purchaserName={assigning?.purchaser_name}
+          submitting={assignBusy}
+          onClose={() => setAssigning(null)}
+          onSubmit={handleAssign}
+        />
       </CardContent>
     </Card>
   );

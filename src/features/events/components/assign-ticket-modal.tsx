@@ -19,6 +19,11 @@ interface AssignTicketModalProps {
   open: boolean;
   ticket: EventTicket | null;
   submitting: boolean;
+  /**
+   * A purchase manager (the Purchases page): a new prospect joins the team of
+   * the SMD chosen below, not the manager's own.
+   */
+  manager?: boolean;
   onClose: () => void;
   onSubmit: (payload: AssignHolderPayload) => Promise<void>;
 }
@@ -35,6 +40,7 @@ export function AssignTicketModal({
   open,
   ticket,
   submitting,
+  manager = false,
   onClose,
   onSubmit,
 }: AssignTicketModalProps) {
@@ -112,7 +118,7 @@ export function AssignTicketModal({
             checked={createProspect}
             onChange={(e) => setCreateProspect(e.target.checked)}
           />
-          Add as prospect to my team
+          {manager ? "Add as a prospect on the SMD's team" : 'Add as prospect to my team'}
         </label>
         <FormActions>
           <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>

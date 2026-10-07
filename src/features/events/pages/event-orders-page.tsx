@@ -372,6 +372,7 @@ export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: nu
         open={Boolean(assignTicket)}
         ticket={assignTicket}
         submitting={ticketBusy}
+        manager
         onClose={() => setAssignTicket(null)}
         onSubmit={handleAssign}
       />

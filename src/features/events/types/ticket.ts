@@ -41,7 +41,12 @@ export interface AssignHolderPayload {
   last_name: string;
   email: string;
   phone?: string;
+  /** Managers only: the account picked in the people search (blanks are filled from it). */
+  to_user_id?: number;
+  /** Owner: add to my team. Manager: add as a prospect on the credited SMD's team. */
   create_prospect?: boolean;
+  /** Managers only: save the typed details onto a picked prospect. */
+  update_contact?: boolean;
   /** The SMD the holder is with — re-credits the ticket. */
   attributed_seller_id?: number | null;
 }
