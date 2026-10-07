@@ -28,11 +28,13 @@ const MENU_ITEMS = {
   HOME: { label: 'Home', icon: '🏠', path: '/home' } as MenuItem,
   INSIGHT_CENTER: { label: 'Insight Center', icon: '💡', path: '/insight-center' } as MenuItem,
   ONBOARDING_GAME: { label: 'Onboarding Game', icon: '🎮', path: '/onboarding-game' } as MenuItem,
-  PROMOTION: { label: 'Promotion', icon: '🏆', path: '/promotion/dashboard' } as MenuItem,
+  // Promotions is a child of the Training Center group (TRAINING_CENTER_GROUP).
+  PROMOTION: { label: 'Promotions', icon: '🏆', path: '/promotion/dashboard' } as MenuItem,
   
   // Tools
   SYSTEMATIC_TOOLS: { label: '10 Systematic Tools', icon: '🛠️', path: '/systematic-tools' } as MenuItem,
-  TRAINING_CENTER: { label: 'Training Center', icon: '🎓', path: '/training-center' } as MenuItem,
+  // The Training Center group's first child; the group itself is TRAINING_CENTER_GROUP.
+  TRAINING_CENTER: { label: 'Training', icon: '🎓', path: '/training-center' } as MenuItem,
   TRAINING_SCHEDULE: { label: 'Training Schedule', icon: '📅', path: '/training-schedule' } as MenuItem,
   CALENDAR: { label: 'Calendar', icon: '📆', path: '/calendar' } as MenuItem,
   FILE_VAULT: { label: 'File Vault', icon: '📁', path: '/file-vault' } as MenuItem,
@@ -253,6 +255,17 @@ const BIG_EVENT_ENTRIES: Array<[BigEventScreen, MenuItem]> = [
 ];
 
 /**
+ * Training Center group — every plan lists it straight after My Team. Promotions nests
+ * here; for a New Agent without `hasPromotionAccess`, `getMenuForUser` removes that child
+ * and the group keeps Training.
+ */
+const TRAINING_CENTER_GROUP: MenuItem = {
+  label: 'Training Center',
+  icon: '🎓',
+  children: [MENU_ITEMS.TRAINING_CENTER, MENU_ITEMS.PROMOTION],
+};
+
+/**
  * Plan-based menu structures
  * These mirror the old site's getSidebarStructure() function
  */
@@ -277,7 +290,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.PROSPECT_TRACKER,
       ],
     },
-    MENU_ITEMS.PROMOTION,
+    TRAINING_CENTER_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -293,7 +306,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_SETTINGS,
       ],
     },
-    MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.FILE_VAULT,
     MENU_ITEMS.HELP_DESK,
@@ -322,7 +334,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.PRODUCTION_TRACKER,
       ],
     },
-    MENU_ITEMS.PROMOTION,
+    TRAINING_CENTER_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -338,7 +350,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_SETTINGS,
       ],
     },
-    MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.CALENDAR,
     MENU_ITEMS.FILE_VAULT,
@@ -373,7 +384,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BUILDERS,
       ],
     },
-    MENU_ITEMS.PROMOTION,
+    TRAINING_CENTER_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -389,7 +400,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_SETTINGS,
       ],
     },
-    MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.CALENDAR,
     MENU_ITEMS.FILE_VAULT,
@@ -425,7 +435,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BUILDERS,
       ],
     },
-    MENU_ITEMS.PROMOTION,
+    TRAINING_CENTER_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -441,7 +451,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_SETTINGS,
       ],
     },
-    MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.CALENDAR,
     MENU_ITEMS.FILE_VAULT,
@@ -478,7 +487,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BUILDERS,
       ],
     },
-    MENU_ITEMS.PROMOTION,
+    TRAINING_CENTER_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -494,7 +503,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_SETTINGS,
       ],
     },
-    MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.CALENDAR,
     MENU_ITEMS.FILE_VAULT,
@@ -530,7 +538,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BUILDERS,
       ],
     },
-    MENU_ITEMS.PROMOTION,
+    TRAINING_CENTER_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -546,7 +554,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_SETTINGS,
       ],
     },
-    MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.CALENDAR,
     MENU_ITEMS.FILE_VAULT,
@@ -599,7 +606,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BUILDERS,
       ],
     },
-    MENU_ITEMS.PROMOTION,
+    TRAINING_CENTER_GROUP,
     MENU_ITEMS.MATCHUP,
     {
       label: 'BPM',
@@ -615,7 +622,6 @@ export const PLAN_MENUS = {
         MENU_ITEMS.BPM_SETTINGS,
       ],
     },
-    MENU_ITEMS.TRAINING_CENTER,
     MENU_ITEMS.TRAINING_SCHEDULE,
     MENU_ITEMS.CALENDAR,
     MENU_ITEMS.FILE_VAULT,
@@ -861,17 +867,14 @@ export function getMenuForUser(
     menuItems.splice(homeIdx >= 0 ? homeIdx + 1 : 0, 0, cloneMenuItems([MENU_ITEMS.HOME_V2])[0]);
   }
 
-  // Big Event sits after BPM (before Training Center when a plan has no BPM group),
-  // where every plan listed it before it moved off roles and onto access.
+  // Big Event sits after BPM (or at the end when a plan has no BPM group), where every
+  // plan listed it before it moved off roles and onto access.
   const bigEventEntries = BIG_EVENT_ENTRIES.filter(([screen]) => bigEventScreens[screen]).map(
     ([, entry]) => entry,
   );
   if (bigEventEntries.length && !menuItems.some((item) => item.label === BIG_EVENT_GROUP_LABEL)) {
     const bpmIdx = menuItems.findIndex((item) => item.label === 'BPM');
-    const trainingIdx = menuItems.findIndex(
-      (item) => item.label === MENU_ITEMS.TRAINING_CENTER.label,
-    );
-    const insertAt = bpmIdx >= 0 ? bpmIdx + 1 : trainingIdx >= 0 ? trainingIdx : menuItems.length;
+    const insertAt = bpmIdx >= 0 ? bpmIdx + 1 : menuItems.length;
     menuItems.splice(insertAt, 0, {
       label: BIG_EVENT_GROUP_LABEL,
       icon: '🎪',
@@ -884,7 +887,7 @@ export function getMenuForUser(
   }
 
   if (normalizedPlan === Plan.NewAgent && !hasPromotionAccess) {
-    menuItems = menuItems.filter((item) => item.label !== MENU_ITEMS.PROMOTION.label);
+    menuItems = removeMenuItemByPath(menuItems, MENU_ITEMS.PROMOTION.path as string);
   }
 
   return menuItems;

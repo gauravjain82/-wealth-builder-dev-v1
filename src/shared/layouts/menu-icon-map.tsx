@@ -64,6 +64,8 @@ const ICON_MAP: Record<string, IconSpec> = {
   'Guest Check-In': { icon: IconChecklist, color: '#32CD32' },
   'BPM Schedule': { icon: IconCalendarEvent, color: '#1E90FF' },
   'Training Center': { icon: IconTarget, color: '#32CD32' },
+  Training: { icon: IconTarget, color: '#32CD32' },
+  Promotions: { icon: IconTrophy, color: '#FFD700' },
   'Training Schedule': { icon: IconCalendarEvent, color: '#32CD32' },
   Calendar: { icon: IconCalendar, color: '#1E90FF' },
   'File Vault': { icon: IconFolder, color: '#C0C0C0' },

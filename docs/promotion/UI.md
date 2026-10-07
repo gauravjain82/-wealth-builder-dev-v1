@@ -18,7 +18,8 @@
 | `/promotion/dashboard` | `ProtectedRoute` only | `PromotionDashboardPage` |
 | `/promotion/team` | " | `TeamPromotionPage` |
 
-The menu entry is gated on the cached `wb.hasPromotionAccess` flag, but the routes are not — so a user
+The menu entry is **Training Center → Promotions** (`src/config/menu.ts` `TRAINING_CENTER_GROUP`, straight
+after My Team). It is gated on the cached `wb.hasPromotionAccess` flag, but the routes are not — so a user
 without the flag can still reach them by URL, and the API decides what they get.
 
 ## 2. Screens

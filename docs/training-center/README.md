@@ -20,6 +20,10 @@ counter-example to [licensing](../licensing/) — the same problem solved proper
 
 ## 2. Scope
 
+**Menu** — the sidebar's Training Center is a group straight after My Team: **Training** opens
+`/training-center`, **Promotions** opens [promotion](../promotion/)'s dashboard (`src/config/menu.ts`
+`TRAINING_CENTER_GROUP`).
+
 **In scope** — the reader page, its sidebar, the module grid, the stats, and the player overlay.
 
 **Out of scope** — content management ([admin](../admin/)'s `/admin/training-center`, via the shared

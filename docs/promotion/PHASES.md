@@ -23,6 +23,7 @@
 | ~2 | 2026-06-26 | Shipped | Menu gating on `wb.hasPromotionAccess` |
 | ~3 | — | Shipped | The team view |
 | 4 | 2026-10-06 | Built, not deployed | Content editing moves to `/admin/promotion` |
+| 5 | 2026-10-08 | Built | Promotions moves into the Training Center menu group |
 
 ## 2. Phases
 
@@ -58,6 +59,16 @@ two things: `getEmbedVideoUrl` moved out of `quiz-panel.tsx` into `video-url.ts`
 preview converts a link exactly as the player does, and `DASHBOARD_QUERY_KEY` is now exported so
 an admin save refreshes the dashboard.
 
+### 5 — Promotions moves under Training Center (2026-10-08)
+
+**What shipped.** The top-level Promotion entry became **Promotions**, the second child of a new
+Training Center group (`TRAINING_CENTER_GROUP` in `src/config/menu.ts`); the first child, **Training**,
+is the old Training Center link. The group takes Promotion's old slot, straight after My Team, in every
+plan. A New Agent without `hasPromotionAccess` loses only the Promotions child
+(`removeMenuItemByPath`), so the group stays with Training. Routes are unchanged.
+
+**Decisions.** PR9.
+
 ## 3. Decision log
 
 | ID | Decision | Rationale | Source |
@@ -70,6 +81,7 @@ an admin save refreshes the dashboard.
 | **PR6** | **A team member's routes omit `is_selected`** | A leader needs to see progress, not which path somebody privately chose. Expressed in the type as `Omit<PromotionRoute, 'id' \| 'is_selected'>`, so the omission is structural rather than a rendering decision | `types.ts` `TeamMember` |
 | PR7 | `RankCode` is an **open** union — `'TA' \| 'A' \| 'MD' \| string` | A new rank should not fail to compile. Cost: no exhaustiveness checking, and an unmapped code falls through to "Next Level" | `types.ts:3`; `promotion-ranks.ts` |
 | PR8 | `updateRouteItem` sends **no body** for a check item | The absence of a value is the signal that it is a toggle rather than a measurement — one endpoint for both item types | `services/promotion-service.ts` |
+| PR9 | Promotions is a **child of the Training Center group**, not a top-level entry | Product request: promotion work is training, so both sit together straight after My Team. The access gate removes the child by path, so the group never disappears with it | `src/config/menu.ts` `TRAINING_CENTER_GROUP` |
 
 ## 4. Deliberately not built
 

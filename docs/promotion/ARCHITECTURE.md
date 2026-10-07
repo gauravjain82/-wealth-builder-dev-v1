@@ -127,7 +127,7 @@ Nothing is in the query string, so a filtered team view is not shareable.
 
 **No route guard.** Both routes are under `ProtectedRoute` only.
 
-The menu entry is gated on **`wb.hasPromotionAccess`**, a coarse flag cached in `localStorage` at login by
+The menu entry — **Promotions**, a child of the Training Center group — is gated on **`wb.hasPromotionAccess`**, a coarse flag cached in `localStorage` at login by
 [auth](../auth/ARCHITECTURE.md#6-permissions-and-gating). So:
 
 - the flag is **stale until the next sign-in**;
