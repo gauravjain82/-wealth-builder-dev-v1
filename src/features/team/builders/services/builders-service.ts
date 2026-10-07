@@ -1,3 +1,5 @@
+import { BUILDER_PROGRAM, type TeamProgram } from '../team-programs';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export interface BuilderPace {
@@ -150,19 +152,25 @@ export async function updateBuilderEnrollment(payload: {
   return (await response.json()) as BuilderEnrollment;
 }
 
-export async function fetchResultsLeaderboard(): Promise<ResultsLeaderboardEntry[]> {
-  const response = await fetch(`${API_BASE_URL}/api/tracker/builders/leaderboard/results/`, {
+export async function fetchResultsLeaderboard(
+  program: TeamProgram = BUILDER_PROGRAM
+): Promise<ResultsLeaderboardEntry[]> {
+  const response = await fetch(`${API_BASE_URL}/api/tracker/${program.leaderboardSegment}/leaderboard/results/`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw await parseError(response, 'Failed to fetch results leaderboard');
   return asList<ResultsLeaderboardEntry>(await response.json());
 }
 
-export async function fetchActivityLeaderboard(paceId: number): Promise<ActivityLeaderboardEntry[]> {
+export async function fetchActivityLeaderboard(
+  paceId: number,
+  program: TeamProgram = BUILDER_PROGRAM
+): Promise<ActivityLeaderboardEntry[]> {
   const params = new URLSearchParams({ pace: String(paceId) });
-  const response = await fetch(`${API_BASE_URL}/api/tracker/builders/leaderboard/activity/?${params.toString()}`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/tracker/${program.leaderboardSegment}/leaderboard/activity/?${params.toString()}`,
+    { headers: getAuthHeaders() }
+  );
   if (!response.ok) throw await parseError(response, 'Failed to fetch activity leaderboard');
   return asList<ActivityLeaderboardEntry>(await response.json());
 }

@@ -7,6 +7,8 @@ interface ResultsLeaderboardProps {
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  /** Singular program name used in the description, e.g. "Builder". */
+  programLabel?: string;
 }
 
 const RESULT_WEIGHTS = [
@@ -35,11 +37,12 @@ export function ResultsLeaderboard({
   loading,
   error,
   onRefresh,
+  programLabel = 'Builder',
 }: ResultsLeaderboardProps) {
   return (
     <LeaderboardShell
       title="Results Leaderboard - Top 20"
-      description="Ranked on all four Builder numbers at once. Each metric is scored against the top performer in that category, then weighted equally. One score, one rank."
+      description={`Ranked on all four ${programLabel} numbers at once. Each metric is scored against the top performer in that category, then weighted equally. One score, one rank.`}
       loading={loading}
       error={error}
       onPaceChange={() => undefined}

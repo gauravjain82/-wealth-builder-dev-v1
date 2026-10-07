@@ -33,6 +33,9 @@ export interface AssociateTrackerRecord {
   registration_base_15k: number;
   net_license_amount: number | string;
   is_net_licensed: boolean;
+  is_producer: boolean;
+  /** Start of the current Producer stint (from audit history); null when not a producer. */
+  producer_since?: string | null;
   is_key_player: boolean;
   is_training: boolean;
   /**
@@ -195,6 +198,42 @@ export async function fetchAssociateTracker(userId: number): Promise<AssociateTr
   }
 
   return (await response.json()) as AssociateTrackerRecord;
+}
+
+/** One audited field change on an associate tracker (newest first from the API). */
+export interface AssociateFieldChange {
+  changed_at: string;
+  field: string;
+  old: unknown;
+  new: unknown;
+  action: 'CREATE' | 'UPDATE' | 'DELETE';
+  actor_id: number | null;
+  actor_name: string;
+  source: string;
+}
+
+export interface AssociateFieldHistory {
+  user_id: number;
+  producer_since: string | null;
+  results: AssociateFieldChange[];
+}
+
+/** Change history of audited tracker fields (currently `is_producer`) for one person. */
+export async function fetchAssociateFieldHistory(
+  userId: number,
+  fields: string[] = ['is_producer']
+): Promise<AssociateFieldHistory> {
+  const params = new URLSearchParams({ field: fields.join(',') });
+  const response = await fetch(
+    `${API_BASE_URL}/api/tracker/trackers/associate/${userId}/history/?${params.toString()}`,
+    { headers: getAuthHeaders() }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch tracker history: ${response.statusText}`);
+  }
+
+  return (await response.json()) as AssociateFieldHistory;
 }
 
 export async function updateAssociateTracker(

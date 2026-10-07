@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/features/auth';
+import { isSmdOrAbove } from '@/features/team/associate-tracker/smd-access';
 import {
   Button,
   Checkbox,
@@ -24,6 +26,10 @@ import {
   updateTrackerUserProfile,
   uploadTrackerUserPhoto,
 } from '@/features/team/services/tracker-user-profile-service';
+import {
+  fetchAssociateFieldHistory,
+  type AssociateFieldHistory,
+} from '@/features/team/associate-tracker/services/associate-tracker-service';
 
 interface TrackerUserProfileModalProps {
   open: boolean;
@@ -238,6 +244,12 @@ function yesNo(value: boolean | null | undefined): string {
   return value ? 'Yes' : 'No';
 }
 
+function formatChangeDate(value: string | null | undefined): string {
+  if (!value) return '-';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString();
+}
+
 interface LabeledFieldProps {
   label: string;
   className?: string;
@@ -277,6 +289,29 @@ export function TrackerUserProfileModal({
   // The form as last loaded from the server; Save sends only what differs from it.
   const [loadedForm, setLoadedForm] = useState<ProfileFormState>(EMPTY_FORM);
   const queryClient = useQueryClient();
+  const { user: viewer } = useAuth();
+  const showProducer = isSmdOrAbove(viewer);
+  const [producerHistory, setProducerHistory] = useState<AssociateFieldHistory | null>(null);
+
+  // SMD-only Producer history from the audit table. Optional: a failure just
+  // leaves the section empty rather than failing the whole profile.
+  useEffect(() => {
+    if (!open || userId == null || !showProducer) return;
+
+    let active = true;
+    setProducerHistory(null);
+    fetchAssociateFieldHistory(userId, ['is_producer'])
+      .then((history) => {
+        if (active) setProducerHistory(history);
+      })
+      .catch(() => {
+        if (active) setProducerHistory(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [open, userId, showProducer]);
   const [confirmTerminateOpen, setConfirmTerminateOpen] = useState(false);
   const addToast = useToastStore((state) => state.addToast);
 
@@ -660,6 +695,7 @@ export function TrackerUserProfileModal({
                 <div className="text-xs font-semibold uppercase text-slate-600 dark:text-white/70">Associate</div>
                 {snapshots?.associate ? (
                   <div className="grid grid-cols-2 gap-2 text-xs">
+                    {showProducer && <div>Producer: {yesNo(snapshots.associate.is_producer)}</div>}
                     <div>Builder: {yesNo(snapshots.associate.is_key_player)}</div>
                     <div>Training: {yesNo(snapshots.associate.is_training)}</div>
                     <div>Big Event 2nd: {yesNo(snapshots.associate.big_event_2nd)}</div>
@@ -667,6 +703,30 @@ export function TrackerUserProfileModal({
                   </div>
                 ) : (
                   <div className="text-xs text-slate-600 dark:text-white/60">No associate record.</div>
+                )}
+                {showProducer && producerHistory && (
+                  <div className="border-t border-slate-200 pt-2 text-xs dark:border-white/10">
+                    <div className="mb-1 font-semibold text-slate-600 dark:text-white/70">
+                      Producer history
+                      {producerHistory.producer_since && (
+                        <span className="ml-2 font-normal">
+                          (since {formatChangeDate(producerHistory.producer_since)})
+                        </span>
+                      )}
+                    </div>
+                    {producerHistory.results.length === 0 ? (
+                      <div className="text-slate-600 dark:text-white/60">Never marked as Producer.</div>
+                    ) : (
+                      <ul className="max-h-32 space-y-1 overflow-auto">
+                        {producerHistory.results.map((change) => (
+                          <li key={`${change.changed_at}-${String(change.new)}`}>
+                            {formatChangeDate(change.changed_at)} · {change.new ? 'Enabled' : 'Disabled'} · by{' '}
+                            {change.actor_name}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 )}
               </div>
 
