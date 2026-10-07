@@ -184,6 +184,7 @@ const MENU_ITEMS = {
   LEVEL_PERMISSIONS: { label: 'Level Permissions', icon: '📊', path: '/admin/level-permissions' } as MenuItem,
   FILE_VAULT_ADMIN: { label: 'File Vault', icon: '📁', path: '/admin/file-vault' } as MenuItem,
   TRAINING_CENTER_ADMIN: { label: 'Training Center', icon: '🎓', path: '/admin/training-center' } as MenuItem,
+  SYSTEMATIC_TOOLS_ADMIN: { label: '10 Systematic Tools', icon: '🛠️', path: '/admin/systematic-tools' } as MenuItem,
   HOME_CONTENT_ADMIN: { label: 'Home Content', icon: '🎬', path: '/admin/home-content' } as MenuItem,
   PROMOTION_ADMIN: { label: 'Promotion Management', icon: '🎞️', path: '/admin/promotion' } as MenuItem,
 };
@@ -558,6 +559,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.FUNCTIONS,
         MENU_ITEMS.FILE_VAULT_ADMIN,
         MENU_ITEMS.TRAINING_CENTER_ADMIN,
+        MENU_ITEMS.SYSTEMATIC_TOOLS_ADMIN,
         MENU_ITEMS.HOME_CONTENT_ADMIN,
         MENU_ITEMS.PROMOTION_ADMIN,
         MENU_ITEMS.USER_PERMISSIONS,
@@ -626,6 +628,7 @@ export const PLAN_MENUS = {
         MENU_ITEMS.FUNCTIONS,
         MENU_ITEMS.FILE_VAULT_ADMIN,
         MENU_ITEMS.TRAINING_CENTER_ADMIN,
+        MENU_ITEMS.SYSTEMATIC_TOOLS_ADMIN,
         MENU_ITEMS.HOME_CONTENT_ADMIN,
         MENU_ITEMS.PROMOTION_ADMIN,
         MENU_ITEMS.USER_PERMISSIONS,

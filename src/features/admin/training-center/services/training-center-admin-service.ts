@@ -130,11 +130,12 @@ export async function updateTrainingCenterItemRoles(
   });
 }
 
-export async function reorderTrainingCenterItems(ids: number[]): Promise<void> {
+/** `sectionId` lets the backend reject ids from another section. */
+export async function reorderTrainingCenterItems(ids: number[], sectionId?: number): Promise<void> {
   await request(`${BASE}/items/reorder/`, {
     method: 'POST',
     headers: getJsonHeaders(),
-    body: JSON.stringify({ ids }),
+    body: JSON.stringify(sectionId ? { section: sectionId, ids } : { ids }),
   });
 }
 

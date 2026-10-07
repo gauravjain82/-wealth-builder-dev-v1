@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button, Input } from '@/shared/components';
 import { RoleAccessPicker } from './role-access-picker';
-import type { ContentSectionAdmin, ContentSectionFormPayload } from '../types';
+import { VisibleToPicker } from './visible-to-picker';
+import type { ContentSectionAdmin, ContentSectionFormPayload, RoleOption } from '../types';
 
 type ContentSectionFormModalProps = {
   open: boolean;
@@ -12,6 +13,13 @@ type ContentSectionFormModalProps = {
   defaultIcon?: string;
   keyPlaceholder?: string;
   labelPlaceholder?: string;
+  /** Show the editable key. Off when the backend derives it from the name. */
+  showKeyField?: boolean;
+  nameLabel?: string;
+  activeLabel?: string;
+  /** `chips` = raw role toggles (default); `presets` = "Visible to" presets + Custom. */
+  rolePicker?: 'chips' | 'presets';
+  roleOptions?: RoleOption[];
 };
 
 export function ContentSectionFormModal({
@@ -23,6 +31,11 @@ export function ContentSectionFormModal({
   defaultIcon = '📁',
   keyPlaceholder = 'presentations',
   labelPlaceholder = 'Presentations',
+  showKeyField = true,
+  nameLabel = 'Label',
+  activeLabel = 'Active',
+  rolePicker = 'chips',
+  roleOptions,
 }: ContentSectionFormModalProps) {
   const [sectionKey, setSectionKey] = useState('');
   const [label, setLabel] = useState('');
@@ -77,18 +90,20 @@ export function ContentSectionFormModal({
         </h2>
 
         <div className="space-y-4">
+          {showKeyField && (
+            <div>
+              <label className="mb-1 block text-sm text-white/70">Key</label>
+              <Input
+                value={sectionKey}
+                onChange={(event) => setSectionKey(event.target.value)}
+                placeholder={keyPlaceholder}
+                required
+                disabled={Boolean(section)}
+              />
+            </div>
+          )}
           <div>
-            <label className="mb-1 block text-sm text-white/70">Key</label>
-            <Input
-              value={sectionKey}
-              onChange={(event) => setSectionKey(event.target.value)}
-              placeholder={keyPlaceholder}
-              required
-              disabled={Boolean(section)}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm text-white/70">Label</label>
+            <label className="mb-1 block text-sm text-white/70">{nameLabel}</label>
             <Input
               value={label}
               onChange={(event) => setLabel(event.target.value)}
@@ -101,7 +116,7 @@ export function ContentSectionFormModal({
             <Input value={icon} onChange={(event) => setIcon(event.target.value)} />
           </div>
           <p className="text-xs text-white/60">
-            New entries are added to the end. Use the ↑ ↓ buttons in the list to reorder.
+            New entries are added to the end. Drag them in the list (or use ↑ ↓) to reorder.
           </p>
           <label className="flex items-center gap-2 text-sm text-white/80">
             <input
@@ -109,13 +124,17 @@ export function ContentSectionFormModal({
               checked={isActive}
               onChange={(event) => setIsActive(event.target.checked)}
             />
-            Active
+            {activeLabel}
           </label>
-          <RoleAccessPicker
-            value={roles}
-            onChange={setRoles}
-            hint="Leave empty to allow all authenticated roles."
-          />
+          {rolePicker === 'presets' ? (
+            <VisibleToPicker value={roles} onChange={setRoles} roleOptions={roleOptions} />
+          ) : (
+            <RoleAccessPicker
+              value={roles}
+              onChange={setRoles}
+              hint="Leave empty to allow all authenticated roles."
+            />
+          )}
         </div>
 
         {errorMessage && <p className="mt-4 text-sm text-red-400">{errorMessage}</p>}

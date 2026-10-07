@@ -126,11 +126,12 @@ export async function updateFileVaultItemRoles(
   });
 }
 
-export async function reorderFileVaultItems(ids: number[]): Promise<void> {
+/** `sectionId` lets the backend reject ids from another section. */
+export async function reorderFileVaultItems(ids: number[], sectionId?: number): Promise<void> {
   await request(`${BASE}/items/reorder/`, {
     method: 'POST',
     headers: getJsonHeaders(),
-    body: JSON.stringify({ ids }),
+    body: JSON.stringify(sectionId ? { section: sectionId, ids } : { ids }),
   });
 }
 

@@ -17,6 +17,9 @@ export const CONTENT_ROLES = [
 
 export type ContentRole = (typeof CONTENT_ROLES)[number];
 
+/** A role that can be picked in a "Visible to" control. */
+export type RoleOption = { name: string; label: string };
+
 export type ContentSectionAdmin = {
   id: number;
   section_key: string;
@@ -126,7 +129,8 @@ export type ContentAdminApi<
   updateItem: (id: number, payload: Record<string, unknown>) => Promise<TItem>;
   deleteItem: (id: number) => Promise<void>;
   updateItemRoles: (id: number, roles: string[]) => Promise<TItem>;
-  reorderItems: (ids: number[]) => Promise<void>;
+  /** `sectionId` scopes the reorder to one section; older services may ignore it. */
+  reorderItems: (ids: number[], sectionId: number) => Promise<void>;
   uploadItemFile: (
     id: number,
     file: File,

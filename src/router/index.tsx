@@ -140,6 +140,7 @@ const PublicEducationPage = lazy(() => import('@/features/education/pages/public
 const FileVaultPage = lazy(() => import('@/features/file-vault/pages/file-vault-page'));
 const AdminFileVaultPage = lazy(() => import('@/features/admin/file-vault/pages/admin-file-vault-page'));
 const AdminTrainingCenterPage = lazy(() => import('@/features/admin/training-center/pages/admin-training-center-page'));
+const AdminSystematicToolsPage = lazy(() => import('@/features/admin/systematic-tools/pages/admin-systematic-tools-page'));
 const AdminHomeContentPage = lazy(() => import('@/features/admin/home-content/pages/admin-home-content-page'));
 const AdminPromotionPage = lazy(() => import('@/features/admin/promotion/pages/admin-promotion-page'));
 const TrackMyLicensePage = lazy(() => import('@/features/licensing/track-my-license/pages/track-my-license-page'));
@@ -751,6 +752,10 @@ const router = createBrowserRouter([
       {
         path: 'admin/training-center',
         element: <AdminRoute>{lazyLoad(AdminTrainingCenterPage)}</AdminRoute>,
+      },
+      {
+        path: 'admin/systematic-tools',
+        element: <AdminRoute>{lazyLoad(AdminSystematicToolsPage)}</AdminRoute>,
       },
       {
         path: 'admin/home-content',

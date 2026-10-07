@@ -29,7 +29,7 @@ const LARGE_FILE_WARNING = {
 
 const DEFAULT_RESOURCE_TYPES = ['link', 'video', 'pdf', 'doc', 'ppt', 'image'];
 
-type ContentItemFormModalProps<TItem extends ContentItemAdmin> = {
+export type ContentItemFormModalProps<TItem extends ContentItemAdmin> = {
   open: boolean;
   sectionId: number;
   item?: TItem | null;
@@ -320,7 +320,7 @@ export function ContentItemFormModal<TItem extends ContentItemAdmin>({
           </div>
 
           <p className="text-xs text-white/60">
-            New entries are added to the end of this section. Use the ↑ ↓ buttons to reorder.
+            New entries are added to the end of this section. Drag them (or use ↑ ↓) to reorder.
           </p>
 
           {pdfLike && (
