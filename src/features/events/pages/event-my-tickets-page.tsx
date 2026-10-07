@@ -90,12 +90,12 @@ export default function EventMyTicketsPage() {
       await orderService.handOverTicket(handOverTicket.id, payload);
       addToast({
         type: 'success',
-        message: `Ticket handed over to ${payload.first_name} ${payload.last_name}. They've been emailed it.`,
+        message: `Ticket transferred to ${payload.first_name} ${payload.last_name}. They've been emailed it.`,
       });
       setHandOverTicket(null);
       await Promise.all([refetch(), mine.refetch()]);
     } catch (err) {
-      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Hand-over failed' });
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Transfer failed' });
     } finally {
       setBusy(false);
     }

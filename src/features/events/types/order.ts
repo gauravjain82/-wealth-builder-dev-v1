@@ -19,6 +19,13 @@ export interface EventOrderListItem {
   id: number;
   uuid: string;
   invoice_number: string;
+  /** The outside provider's invoice number on an EXTERNAL order (e.g. BSCPro); `''` otherwise. */
+  external_invoice_reference?: string;
+  /** Provider confirmations of the order's imported tickets (list rows only). */
+  external_references?: string[];
+  /** Each ticket's attendee name or email; `''` for a ticket nobody is named on (list rows only). */
+  attendees?: string[];
+  /** On an EXTERNAL order: the provider's sponsor (who bought it there), by name only. */
   purchaser_first_name: string;
   purchaser_last_name: string;
   purchaser_email: string;

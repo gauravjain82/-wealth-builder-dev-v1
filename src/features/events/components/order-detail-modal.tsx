@@ -30,7 +30,10 @@ interface OrderDetailModalProps {
   onClose: () => void;
   onAssign: (ticket: EventTicket) => void;
   onTransfer: (ticket: EventTicket) => void;
-  /** Record a name change / hand-over (same ticket, new named attendee). */
+  /**
+   * Record a name change / hand-over (same ticket, new named attendee). For a
+   * BSCPro ticket this is how it is transferred, so its button reads "Transfer".
+   */
   onHandOver?: (ticket: EventTicket) => void;
   onUpdated: () => void;
   onRefund: (orderId: number) => Promise<unknown>;
@@ -49,9 +52,16 @@ const STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
   EXTERNAL: 'outline',
 };
 
+/** A ticket issued by an outside provider (BSCPro) rather than sold through WB. */
+function isPartnerTicket(ticket: EventTicket): boolean {
+  return Boolean(ticket.source) && ticket.source !== 'NATIVE';
+}
+
 function holderLabel(ticket: EventTicket): string {
   const name = `${ticket.holder_first_name} ${ticket.holder_last_name}`.trim();
-  return name || ticket.holder_email || 'Unassigned';
+  if (name || ticket.holder_email) return name || ticket.holder_email;
+  // Imported with no attendee: BSCPro's export named nobody (or "Guest"/"TBD").
+  return isPartnerTicket(ticket) ? 'Not named in BSCPro yet' : 'Unassigned';
 }
 
 /** Order detail + per-ticket actions + edit / refund / cancel / re-email / PDF. */
@@ -243,10 +253,31 @@ export function OrderDetailModal({
               </Form>
             ) : (
               <div className="grid gap-1 text-sm text-slate-700 dark:text-white/80">
-                <div>
-                  {order.purchaser_first_name} {order.purchaser_last_name} ·{' '}
-                  {order.purchaser_email}
-                </div>
+                {order.source === 'EXTERNAL' ? (
+                  <>
+                    <div>
+                      Sponsor (BSCPro):{' '}
+                      {`${order.purchaser_first_name} ${order.purchaser_last_name}`.trim() || '—'}
+                    </div>
+                    <div>BSCPro invoice: {order.external_invoice_reference || '—'}</div>
+                    <div>
+                      BSCPro confirmation:{' '}
+                      {order.tickets
+                        .map((ticket) => ticket.external_reference)
+                        .filter(Boolean)
+                        .join(', ') || '—'}
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    {[
+                      `${order.purchaser_first_name} ${order.purchaser_last_name}`.trim(),
+                      order.purchaser_email,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || '—'}
+                  </div>
+                )}
                 <div>Seller: {order.attributed_seller_name ?? 'Unassigned'}</div>
                 {order.promo_code ? <div>Promo: {order.promo_code}</div> : null}
                 {order.notes ? <div>Notes: {order.notes}</div> : null}
@@ -295,6 +326,11 @@ export function OrderDetailModal({
                         <span className="ml-2 text-slate-500 dark:text-white/50">
                           {ticket.assignment_status} · {holderLabel(ticket)}
                         </span>
+                        {isPartnerTicket(ticket) && ticket.external_reference ? (
+                          <span className="block text-xs text-slate-500 dark:text-white/50">
+                            BSCPro {ticket.external_reference}
+                          </span>
+                        ) : null}
                       </div>
                       <div className="flex flex-wrap gap-1">
                         <Button
@@ -305,16 +341,33 @@ export function OrderDetailModal({
                         >
                           Assign
                         </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onTransfer(ticket)}
-                          disabled={ticket.lifecycle_status !== 'ACTIVE'}
-                        >
-                          Transfer
-                        </Button>
-                        {onHandOver ? (
+                        {isPartnerTicket(ticket) ? (
+                          // A BSCPro ticket keeps its confirmation and QR, so it
+                          // changes hands by naming the new attendee (hand-over).
+                          onHandOver ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              title="Transfer to a new attendee — the BSCPro confirmation stays the same"
+                              onClick={() => onHandOver(ticket)}
+                              disabled={ticket.lifecycle_status !== 'ACTIVE'}
+                            >
+                              Transfer
+                            </Button>
+                          ) : null
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onTransfer(ticket)}
+                            disabled={ticket.lifecycle_status !== 'ACTIVE'}
+                          >
+                            Transfer
+                          </Button>
+                        )}
+                        {onHandOver && !isPartnerTicket(ticket) ? (
                           <Button
                             type="button"
                             variant="outline"

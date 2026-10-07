@@ -167,11 +167,11 @@ export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: nu
     setTicketBusy(true);
     try {
       await orderService.handOverTicket(handOverTicket.id, payload);
-      addToast({ type: 'success', message: 'Name change recorded. The new attendee has been emailed.' });
+      addToast({ type: 'success', message: 'Ticket transferred. The new attendee has been emailed.' });
       setHandOverTicket(null);
       await refreshDetail();
     } catch (err) {
-      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Name change failed' });
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Transfer failed' });
     } finally {
       setTicketBusy(false);
     }
@@ -215,8 +215,8 @@ export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: nu
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search invoice, email, name…"
-            className="max-w-xs"
+            placeholder="Search invoice (ours or BSCPro), confirmation, name, email…"
+            className="max-w-sm"
           />
           <Select
             value={filters.status ?? ''}

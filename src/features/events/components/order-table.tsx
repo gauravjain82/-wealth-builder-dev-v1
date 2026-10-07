@@ -24,7 +24,43 @@ const STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
 
 function purchaserName(order: EventOrderListItem): string {
   const name = `${order.purchaser_first_name} ${order.purchaser_last_name}`.trim();
-  return name || order.purchaser_email;
+  return name || order.purchaser_email || '—';
+}
+
+/** How many attendee names to list in a row before "+N more". */
+const ATTENDEES_SHOWN = 2;
+
+/** The partner's references for an imported order: confirmation(s) and invoice number. */
+function partnerReferences(order: EventOrderListItem): string {
+  const parts: string[] = [];
+  const confirmations = order.external_references ?? [];
+  if (confirmations.length) parts.push(confirmations.join(', '));
+  if (order.external_invoice_reference) parts.push(`Inv ${order.external_invoice_reference}`);
+  return parts.join(' · ');
+}
+
+/** Attendee names with the assigned count; unnamed tickets read "Not named yet". */
+function AttendeesCell({ order }: { order: EventOrderListItem }) {
+  const names = (order.attendees ?? []).filter(Boolean);
+  const unnamed = order.quantity - order.assigned_count;
+  return (
+    <div className="min-w-[140px]">
+      {names.slice(0, ATTENDEES_SHOWN).map((name, index) => (
+        <div key={`${name}-${index}`} className="text-slate-900 dark:text-white">
+          {name}
+        </div>
+      ))}
+      {names.length > ATTENDEES_SHOWN ? (
+        <div className="text-xs text-slate-500 dark:text-white/50">
+          +{names.length - ATTENDEES_SHOWN} more
+        </div>
+      ) : null}
+      <div className="text-xs text-slate-500 dark:text-white/50">
+        {order.assigned_count}/{order.quantity} assigned
+        {unnamed > 0 && !names.length ? ' · not named yet' : ''}
+      </div>
+    </div>
+  );
 }
 
 function formatWhen(value: string): string {
@@ -69,7 +105,7 @@ export function OrderTable({
               <th className="px-3 py-2">Status</th>
               <th className="px-3 py-2">Type</th>
               <th className="px-3 py-2">Qty</th>
-              <th className="px-3 py-2">Assigned</th>
+              <th className="px-3 py-2">Attendees</th>
               <th className="px-3 py-2">Total</th>
               <th className="px-3 py-2">Seller</th>
               <th className="px-3 py-2">When</th>
@@ -82,13 +118,20 @@ export function OrderTable({
                 onClick={() => onOpen(order)}
                 className="cursor-pointer border-t border-slate-100 hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
               >
-                <td className="px-3 py-2 font-medium text-slate-900 dark:text-white">
-                  {order.invoice_number}
+                <td className="px-3 py-2">
+                  <div className="font-medium text-slate-900 dark:text-white">
+                    {order.invoice_number}
+                  </div>
+                  {partnerReferences(order) ? (
+                    <div className="text-xs text-slate-500 dark:text-white/50">
+                      BSCPro {partnerReferences(order)}
+                    </div>
+                  ) : null}
                 </td>
                 <td className="px-3 py-2">
                   <div className="text-slate-900 dark:text-white">{purchaserName(order)}</div>
                   <div className="text-xs text-slate-500 dark:text-white/50">
-                    {order.purchaser_email}
+                    {order.source === 'EXTERNAL' ? 'Sponsor (BSCPro)' : order.purchaser_email}
                   </div>
                 </td>
                 <td className="px-3 py-2">
@@ -99,7 +142,7 @@ export function OrderTable({
                 </td>
                 <td className="px-3 py-2 text-slate-600 dark:text-white/70">{order.quantity}</td>
                 <td className="px-3 py-2 text-slate-600 dark:text-white/70">
-                  {order.assigned_count}/{order.quantity}
+                  <AttendeesCell order={order} />
                 </td>
                 <td className="px-3 py-2 text-slate-900 dark:text-white">
                   {formatPrice(order.total, order.currency)}
