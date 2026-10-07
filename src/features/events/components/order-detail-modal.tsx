@@ -28,7 +28,6 @@ import {
   TICKET_STATUS_TONE,
   isPartnerTicket,
   shownStatus,
-  statusCounts,
 } from '../utils/ticket-status';
 
 interface OrderDetailModalProps {
@@ -62,6 +61,33 @@ const STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
 
 function attendeeName(ticket: EventTicket): string {
   return `${ticket.holder_first_name} ${ticket.holder_last_name}`.trim() || ticket.holder_email;
+}
+
+/**
+ * "Tickets 6 · Assigned 1 · Not assigned 4 · Transferred 1" with each number
+ * highlighted in its status colour. Transferred is shown only when there are any.
+ */
+function TicketCounts({ tickets }: { tickets: EventTicket[] }) {
+  const count = (status: string) => tickets.filter((t) => shownStatus(t) === status).length;
+  const transferred = count('TRANSFERRED');
+  const items: Array<{ label: string; value: number; tone: string }> = [
+    { label: 'Tickets', value: tickets.length, tone: 'bg-slate-700 text-white dark:bg-white dark:text-slate-900' },
+    { label: 'Assigned', value: count('ASSIGNED'), tone: 'bg-green-500 text-white' },
+    { label: 'Not assigned', value: count('UNASSIGNED'), tone: 'bg-yellow-500 text-white' },
+    ...(transferred ? [{ label: 'Transferred', value: transferred, tone: 'bg-blue-500 text-white' }] : []),
+  ];
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-700 dark:text-white/80">
+      {items.map((item) => (
+        <span key={item.label} className="inline-flex items-center gap-1.5">
+          {item.label}
+          <span className={`min-w-[1.75rem] rounded-full px-2 py-0.5 text-center text-sm font-bold ${item.tone}`}>
+            {item.value}
+          </span>
+        </span>
+      ))}
+    </div>
+  );
 }
 
 /** One labelled line of the order summary; hidden when there is no value. */
@@ -203,19 +229,21 @@ export function OrderDetailModal({
                   <Badge variant="outline">{order.transaction_type}</Badge>
                 </>
               )}
-              <Text variant="muted" className="text-sm">
-                {imported ? '' : `${formatPrice(order.total, order.currency)} · `}
-                {order.tickets.length} ticket{order.tickets.length === 1 ? '' : 's'} ·{' '}
-                {statusCounts(
-                  order.tickets.filter((t) => shownStatus(t) === 'ASSIGNED').length,
-                  order.tickets.filter((t) => shownStatus(t) === 'UNASSIGNED').length,
-                  order.tickets.filter((t) => shownStatus(t) === 'TRANSFERRED').length,
-                )}
-              </Text>
+              {imported ? null : (
+                <Text variant="muted" className="text-sm">
+                  {formatPrice(order.total, order.currency)}
+                </Text>
+              )}
+              <TicketCounts tickets={order.tickets} />
             </div>
 
             {editing ? (
               <Form onSubmit={saveEdit}>
+                <Text variant="muted" className="text-sm">
+                  You are editing the <strong>invoice details</strong> — purchaser, SMD credited and
+                  notes. Tickets are not changed here; use <strong>Assign</strong> or{' '}
+                  <strong>Transfer</strong> on a ticket to change who attends.
+                </Text>
                 <FormRowGroup columns={2}>
                   <FormRow>
                     <Label variant="form">First name</Label>
@@ -314,13 +342,19 @@ export function OrderDetailModal({
                 type="button"
                 variant="outline"
                 size="sm"
-                title="Change the purchaser's details, the SMD credited and the notes"
+                title="Change the purchaser's details, the SMD credited and the notes — not the tickets"
                 onClick={() => setEditing(true)}
               >
-                Edit order
+                Edit invoice details
               </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => void runResend()}>
-                Email order to purchaser
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                title="Sends the invoice confirmation, with a QR card for every ticket, to the purchaser"
+                onClick={() => void runResend()}
+              >
+                Email invoice to purchaser
               </Button>
               <Button type="button" variant="outline" size="sm" onClick={() => void runPdf()}>
                 Print / PDF
@@ -466,8 +500,9 @@ export function OrderDetailModal({
                     {imported ? ' (the ticket, QR and BSCPro confirmation stay the same)' : ''}.
                   </p>
                   <p>
-                    * <strong>Edit order</strong> and <strong>Email order to purchaser</strong> act on
-                    the whole invoice — the email goes to the purchaser with a QR card for every ticket.
+                    * <strong>Edit invoice details</strong> and <strong>Email invoice to purchaser</strong>{' '}
+                    act on the invoice, not a single ticket — the email goes to the purchaser with a QR
+                    card for every ticket.
                   </p>
                 </div>
                 </>
