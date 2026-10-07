@@ -863,3 +863,159 @@ html:not(.dark) .wb-pf-total-row th,
 html:not(.dark) .wb-pf-total-row td {
   border-top-color: rgba(0, 0, 0, 0.25);
 }
+
+/* Cost form: picked SMDs as chips (name + email). */
+.wb-pf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-pf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 4px 8px 4px 10px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.08);
+  font-size: 12px;
+}
+
+html:not(.dark) .wb-pf-chip {
+  border-color: rgba(148, 163, 184, 0.6);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.wb-pf-chip-text {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.wb-pf-chip-remove {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 999px;
+  opacity: 0.7;
+}
+
+.wb-pf-chip-remove:hover:not(:disabled) {
+  opacity: 1;
+  background: rgba(148, 163, 184, 0.25);
+}
+
+/* Cost form: the editable item rows. */
+.wb-pf-cost-lines td {
+  vertical-align: top;
+}
+
+.wb-pf-cost-lines tfoot td {
+  border-top: 1px solid rgba(148, 163, 184, 0.4);
+  padding-top: 8px;
+}
+
+/* Logged costs: the itemised rows under a cost. */
+.wb-pf-cost-items {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+
+.wb-pf-cost-items li {
+  display: contents;
+}
+
+/* --- Recognition orders (2026-10-07): cart form and itemised statement --------------- */
+
+.wb-pf-cart-picker {
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.wb-pf-qty {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.wb-pf-qty input {
+  width: 3.5rem;
+  min-width: 0;
+}
+
+.wb-pf-override {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.wb-pf-orders {
+  display: grid;
+  gap: 8px;
+}
+
+.wb-pf-order {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.wb-pf-order-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.wb-pf-order-lines {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.wb-pf-order-lines td {
+  padding: 2px 0;
+  vertical-align: top;
+}
+
+.wb-pf-order-lines td + td {
+  padding-left: 12px;
+}
+
+.wb-pf-order-lines .wb-pf-num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-pf-lines .wb-pf-lines-orders > td {
+  padding: 2px 0 8px 16px;
+}
+
+.wb-pf-ledger-orders {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.wb-pf-ledger-orders > summary {
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.75;
+}
+
+.wb-pf-ledger-orders > .wb-pf-orders {
+  margin-top: 6px;
+}

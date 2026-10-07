@@ -330,6 +330,11 @@ export interface StatementInvoice extends InvoicePaymentState {
    * invoice still before its first charge.
    */
   can_pay_now: boolean;
+  /**
+   * Recognition orders netted in this month, itemised (SMD invoices only; `[]` otherwise).
+   * Absent from payloads served before recognition orders — guard for it.
+   */
+  cost_orders?: CostOrder[];
 }
 
 export type LedgerEntryType =
@@ -354,6 +359,8 @@ export interface LedgerEntry {
   month: string;
   /** Running balance after this entry. */
   balance_cents: number;
+  /** Only `costs` entries fill it: the orders behind the debit. Absent from older payloads. */
+  cost_orders?: CostOrder[];
 }
 
 /**
@@ -375,6 +382,38 @@ export interface PluginFeesStatement {
   invoices: StatementInvoice[];
   /** Present for SMDs (and anyone with ledger entries); absent for MDs. */
   ledger?: StatementLedger;
+  /** Recognition orders logged but not yet netted (with `nets_on`). Present with `ledger`. */
+  upcoming_costs?: CostOrder[];
+}
+
+/** One row of a recognition order as the SMD sees it on their statement. */
+export interface CostOrderLine {
+  kind: CostLineKind;
+  /** `''` for a row typed by hand. */
+  sku: string;
+  description: string;
+  quantity: number;
+  unit_price_cents: number;
+  amount_cents: number;
+}
+
+/** A recognition order (one per SMD per batch), as the SMD's statement shows it. */
+export interface CostOrder {
+  id: number;
+  /** e.g. `RC-000042`. */
+  number: string;
+  /** `YYYY-MM-DD` */
+  date_sent: string;
+  recipient_name: string;
+  item: string;
+  recognition_cents: number;
+  mailing_cents: number;
+  total_cents: number;
+  /** `YYYY-MM` of the cycle that netted it; `null` while upcoming. */
+  applied_month: string | null;
+  /** `YYYY-MM-DD` it will be netted on; `null` once netted. */
+  nets_on: string | null;
+  lines: CostOrderLine[];
 }
 
 /** `GET /api/plugin-fees/agents/{id}/statement/` */
@@ -478,6 +517,8 @@ export interface ApproveCycleInput {
 
 export interface RecognitionCost {
   id: number;
+  /** Order number shown to the SMD, e.g. `RC-000042`. */
+  number: string;
   smd: ReviewAgent;
   recipient_id: number | null;
   recipient_name: string;
@@ -491,6 +532,57 @@ export interface RecognitionCost {
   logged_by: string;
   /** `YYYY-MM` of the cycle that netted it (the month after `date_sent`); `null` until then. */
   applied_month: string | null;
+  /** Shared by the costs logged together by one `POST costs/batch/`; `null` for older costs. */
+  batch_id: string | null;
+  /** Itemised rows; derived (one recognition + optional mailing) for costs logged before rows existed. */
+  lines: CostLine[];
+}
+
+export type CostLineKind = 'recognition' | 'mailing';
+
+/** A stored row of an order (admin view). Price and SKU are as they were when logged. */
+export interface CostLine extends CostOrderLine {
+  /** `null` for a row typed by hand (or an order logged before the catalogue). */
+  product_id: number | null;
+  /** Set when the admin charged a different price than the catalogue's. */
+  price_override_reason: string;
+}
+
+/**
+ * One cart row sent to `POST costs/batch/`: a catalogue product × quantity (price taken
+ * from the catalogue unless overridden with a reason), or a row typed by hand.
+ */
+export type CostLineInput =
+  | {
+      product_id: number;
+      quantity: number;
+      unit_price_cents?: number;
+      price_override_reason?: string;
+    }
+  | {
+      kind: CostLineKind;
+      description: string;
+      quantity: number;
+      unit_price_cents: number;
+    };
+
+/** `POST costs/batch/` — every row charged in full to each SMD; one order per SMD. */
+export interface CostBatchInput {
+  smd_ids: number[];
+  lines: CostLineInput[];
+  recipient_id?: number;
+  /** Blank: each cost names its own SMD as the recipient. */
+  recipient_name?: string;
+  date_sent: string;
+  note?: string;
+}
+
+export interface CostBatchResult {
+  batch_id: string;
+  count: number;
+  /** Sum over all SMDs. */
+  total_cents: number;
+  results: RecognitionCost[];
 }
 
 export interface CostsQuery {
@@ -512,6 +604,38 @@ export interface CostInput {
 }
 
 export interface DeleteCostInput {
+  id: number;
+  reason: string;
+}
+
+export interface DeleteCostBatchInput {
+  batch_id: string;
+  reason: string;
+}
+
+/** A catalogue product (`GET costs/products/`). */
+export interface RecognitionProduct {
+  id: number;
+  sku: string;
+  name: string;
+  kind: CostLineKind;
+  unit_price_cents: number;
+  description: string;
+  active: boolean;
+  updated_at: string | null;
+}
+
+export interface RecognitionProductInput {
+  sku: string;
+  name: string;
+  kind: CostLineKind;
+  unit_price_cents: number;
+  description?: string;
+  active?: boolean;
+}
+
+/** `PATCH costs/products/{id}/` — any fields, plus a required reason. */
+export interface RecognitionProductPatch extends Partial<RecognitionProductInput> {
   id: number;
   reason: string;
 }

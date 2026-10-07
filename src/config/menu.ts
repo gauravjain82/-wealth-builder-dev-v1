@@ -148,7 +148,7 @@ const MENU_ITEMS = {
   } as MenuItem,
   // Recognition and mailing costs charged to SMDs, gated per-user by plugin_fees:manage.
   PLUGIN_FEES_COSTS: {
-    label: 'Recognition Costs',
+    label: 'Recognition Orders',
     icon: '🎖️',
     path: '/admin/plugin-fees/costs',
   } as MenuItem,

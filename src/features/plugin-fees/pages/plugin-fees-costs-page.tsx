@@ -1,8 +1,10 @@
 /**
- * Admin: recognition and mailing costs charged to SMDs. Route `/admin/plugin-fees/costs`,
- * guarded on `can_manage` (`plugin_fees:manage`). Lists `GET costs/` filtered by month
- * (of `date_sent`) and SMD, logs new costs, and deletes a cost that has not yet been
- * netted into a cycle (a reason is required). Screens and states: `docs/plugin-fees/UI.md` §2.8.
+ * Admin: recognition orders charged to SMDs. Route `/admin/plugin-fees/costs`, guarded on
+ * `can_manage` (`plugin_fees:manage`). Logs new orders from a cart of catalogue products
+ * (for one or many SMDs at once — one order per SMD), lists `GET costs/` filtered by
+ * month (of `date_sent`) and SMD, deletes an order — or its whole batch — that has not
+ * yet been netted into a cycle (a reason is required), and manages the product catalogue.
+ * Screens and states: `docs/plugin-fees/UI.md` §2.8.
  */
 
 import { useEffect, useState } from 'react';
@@ -20,8 +22,9 @@ import {
 } from '@/shared/components';
 import { useToastStore } from '@/store';
 
-import { useCosts, useDeleteCost } from '../hooks/use-plugin-fees';
+import { useCosts, useDeleteCost, useDeleteCostBatch } from '../hooks/use-plugin-fees';
 import { CostForm } from '../components/costs/cost-form';
+import { ProductCatalog } from '../components/costs/product-catalog';
 import type { RecognitionCost } from '../types';
 import {
   describeError,
@@ -38,30 +41,39 @@ function AppliedCell({ cost }: { cost: RecognitionCost }) {
   return <span className="wb-pf-muted">Pending — will be netted on the 1st of next month</span>;
 }
 
+/** What a delete removes: one order, or every order of its batch. */
+interface DeleteTarget {
+  cost: RecognitionCost;
+  wholeBatch: boolean;
+}
+
 function DeleteCostDialog({
-  cost,
+  target,
   loading,
   onConfirm,
   onClose,
 }: {
-  cost: RecognitionCost | null;
+  target: DeleteTarget | null;
   loading: boolean;
   onConfirm: (reason: string) => void | Promise<void>;
   onClose: () => void;
 }) {
   const [reason, setReason] = useState('');
   useEffect(() => {
-    if (cost) setReason('');
-  }, [cost]);
+    if (target) setReason('');
+  }, [target]);
+  const cost = target?.cost;
 
   return (
     <ConfirmationDialog
-      open={cost !== null}
-      title="Delete cost"
+      open={target !== null}
+      title={target?.wholeBatch ? 'Delete batch' : 'Delete order'}
       message={
-        cost
-          ? `Delete ${cost.item} (${formatMoney(cost.total_cents)}) for ${cost.recipient_name}, charged to ${cost.smd.name}? It will not be netted.`
-          : ''
+        !cost
+          ? ''
+          : target?.wholeBatch
+            ? `Delete every order logged with ${cost.number} (${cost.item}), for every SMD it was charged to? None of them will be netted.`
+            : `Delete ${cost.number} — ${cost.item} (${formatMoney(cost.total_cents)}) for ${cost.recipient_name}, charged to ${cost.smd.name}? It will not be netted.`
       }
       confirmText="Delete"
       confirmDisabled={!reason.trim()}
@@ -89,7 +101,7 @@ export default function PluginFeesCostsPage() {
   const [month, setMonth] = useState('');
   const [smd, setSmd] = useState<{ id: number; label: string } | null>(null);
   const [page, setPage] = useState(1);
-  const [deleting, setDeleting] = useState<RecognitionCost | null>(null);
+  const [deleting, setDeleting] = useState<DeleteTarget | null>(null);
 
   const monthFilter = MONTH_RE.test(month) ? month : '';
   // A new filter starts from the first page.
@@ -97,21 +109,29 @@ export default function PluginFeesCostsPage() {
 
   const costs = useCosts({ smd: smd?.id ?? null, month: monthFilter, page });
   const remove = useDeleteCost();
+  const removeBatch = useDeleteCostBatch();
+  const removing = remove.isPending || removeBatch.isPending;
   const count = costs.data?.count ?? 0;
 
   const onDelete = async (reason: string) => {
     if (!deleting) return;
+    const { cost, wholeBatch } = deleting;
     try {
-      await remove.mutateAsync({ id: deleting.id, reason });
-      addToast({ type: 'success', message: 'Cost deleted.' });
+      if (wholeBatch && cost.batch_id) {
+        await removeBatch.mutateAsync({ batch_id: cost.batch_id, reason });
+        addToast({ type: 'success', message: 'Batch deleted.' });
+      } else {
+        await remove.mutateAsync({ id: cost.id, reason });
+        addToast({ type: 'success', message: 'Order deleted.' });
+      }
       setDeleting(null);
     } catch (error) {
       if (isAlreadyDecided(error)) {
         // `already_applied`: netted into a cycle since the list loaded; the list refetches.
-        addToast({ type: 'warning', message: describeError(error, 'This cost was already netted.') });
+        addToast({ type: 'warning', message: describeError(error, 'This order was already netted.') });
         setDeleting(null);
       } else {
-        addToast({ type: 'error', message: describeError(error, 'Failed to delete the cost.') });
+        addToast({ type: 'error', message: describeError(error, 'Failed to delete.') });
       }
     }
   };
@@ -120,24 +140,25 @@ export default function PluginFeesCostsPage() {
     <div className="space-y-6">
       <div>
         <Heading as="h1" variant="h4" weight="bold">
-          Recognition &amp; Mailing Costs
+          Recognition Orders
         </Heading>
         <Text variant="muted">
-          Costs charged to an SMD for recognising their agents. Each is netted against the SMD on the
-          1st of the month after it was sent, and can be deleted only until then.
+          Recognition and mailing charged to an SMD for recognising their agents. Each order is
+          netted against the SMD on the 1st of the month after it was sent — no separate invoice —
+          and shown item by item on their statement. It can be deleted only until it is netted.
         </Text>
       </div>
 
       <section className="wb-pf-card" aria-labelledby="wb-pf-cost-form-heading">
         <h2 id="wb-pf-cost-form-heading" className="wb-pf-subheading">
-          Log a cost
+          New order
         </h2>
         <CostForm />
       </section>
 
       <section className="wb-pf-card" aria-labelledby="wb-pf-costs-heading">
         <h2 id="wb-pf-costs-heading" className="wb-pf-subheading">
-          Logged costs
+          Orders
         </h2>
         <div className="wb-pf-toolbar">
           <label className="wb-pf-row" style={{ gap: 6 }}>
@@ -171,7 +192,7 @@ export default function PluginFeesCostsPage() {
             </Button>
           ) : null}
           <span className="wb-pf-muted">
-            {costs.isFetching ? 'Loading…' : `${count.toLocaleString()} cost${count === 1 ? '' : 's'}`}
+            {costs.isFetching ? 'Loading…' : `${count.toLocaleString()} order${count === 1 ? '' : 's'}`}
           </span>
         </div>
 
@@ -184,18 +205,19 @@ export default function PluginFeesCostsPage() {
           />
         ) : !costs.data?.results.length ? (
           <NonIdealState
-            title="No costs"
-            description={monthFilter || smd ? 'No costs match these filters.' : 'No costs have been logged.'}
+            title="No orders"
+            description={monthFilter || smd ? 'No orders match these filters.' : 'No orders have been logged.'}
           />
         ) : (
           <div className="wb-pf-table-wrap">
             <table className="wb-pf-table wb-pf-table--dense">
               <thead>
                 <tr>
+                  <th scope="col">Order</th>
                   <th scope="col">Date sent</th>
                   <th scope="col">SMD</th>
                   <th scope="col">Recipient</th>
-                  <th scope="col">Item</th>
+                  <th scope="col">Items</th>
                   <th scope="col" className="wb-pf-num">
                     Recognition
                   </th>
@@ -215,6 +237,9 @@ export default function PluginFeesCostsPage() {
               <tbody>
                 {costs.data.results.map((cost) => (
                   <tr key={cost.id}>
+                    <td>
+                      <code>{cost.number}</code>
+                    </td>
                     <td>{formatDate(cost.date_sent)}</td>
                     <td>
                       {cost.smd.name || '—'}
@@ -224,7 +249,27 @@ export default function PluginFeesCostsPage() {
                     </td>
                     <td>{cost.recipient_name || '—'}</td>
                     <td>
-                      {cost.item || '—'}
+                      <ul className="wb-pf-cost-items">
+                        {cost.lines.map((line, index) => (
+                          <li key={index}>
+                            <span>
+                              {line.quantity > 1 ? `${line.quantity} × ` : ''}
+                              {line.description}
+                              {line.sku ? <span className="wb-pf-muted"> · {line.sku}</span> : null}
+                              {line.kind === 'mailing' && line.description !== 'Mailing' ? (
+                                <span className="wb-pf-muted"> (mailing)</span>
+                              ) : null}
+                              {line.price_override_reason ? (
+                                <span className="wb-pf-muted" title={line.price_override_reason}>
+                                  {' '}
+                                  · price changed: {line.price_override_reason}
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="wb-pf-num">{formatMoney(line.amount_cents)}</span>
+                          </li>
+                        ))}
+                      </ul>
                       {cost.note ? <span className="wb-pf-note">{cost.note}</span> : null}
                     </td>
                     <td className="wb-pf-num">{formatMoney(cost.recognition_cents)}</td>
@@ -238,15 +283,29 @@ export default function PluginFeesCostsPage() {
                     <td>{cost.logged_by || '—'}</td>
                     <td>
                       {cost.applied_month ? null : (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => setDeleting(cost)}
-                          disabled={remove.isPending}
-                        >
-                          Delete
-                        </Button>
+                        <div className="wb-pf-row" style={{ gap: 6, flexWrap: 'nowrap' }}>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => setDeleting({ cost, wholeBatch: false })}
+                            disabled={removing}
+                          >
+                            Delete
+                          </Button>
+                          {cost.batch_id ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              title="Delete this order for every SMD it was logged for"
+                              onClick={() => setDeleting({ cost, wholeBatch: true })}
+                              disabled={removing}
+                            >
+                              Delete batch
+                            </Button>
+                          ) : null}
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -283,9 +342,20 @@ export default function PluginFeesCostsPage() {
         ) : null}
       </section>
 
+      <section className="wb-pf-card" aria-labelledby="wb-pf-products-heading">
+        <h2 id="wb-pf-products-heading" className="wb-pf-subheading">
+          Product catalogue
+        </h2>
+        <Text variant="muted">
+          The items and mailing options an order can be built from, with their SKU and current price.
+          A price change applies to new orders only.
+        </Text>
+        <ProductCatalog />
+      </section>
+
       <DeleteCostDialog
-        cost={deleting}
-        loading={remove.isPending}
+        target={deleting}
+        loading={removing}
         onConfirm={onDelete}
         onClose={() => setDeleting(null)}
       />

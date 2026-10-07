@@ -171,13 +171,21 @@ Heading "My Plug-in Fees", a line pointing to Settings, then:
    payload carries `ledger.totals` (2026-10-03), **Totals, all time**: six signed tiles —
    "MD fees credited — own MDs", "MD fees credited — rolled up from downline SMDs", "SMD
    fees", "Recognition & mailing costs", "Payouts", and "Other" (collections + reversals +
-   adjustments). An older payload without `totals` shows no tiles.
+   adjustments). An older payload without `totals` shows no tiles. A `costs` entry with
+   `cost_orders` has a "What this is for (N orders)" disclosure listing the orders
+   (below).
+1b. **Upcoming recognition charges** (2026-10-07) — only when `upcoming_costs` is not
+   empty: total in the header, "Recognition sent on behalf of your team… there is no
+   separate bill.", orders grouped under "Charged on *date*" (`nets_on`).
+   An **order** reads: `RC-000042 · sent Nov 14, 2026 · for Jane Smith` and its total, then
+   one row per item: name · SKU, `qty × unit price`, amount.
 2. **Invoices** — month, kind (MD/SMD), payment state (badge + sentence, below), amount,
    paid date (plus "($x paid)" when `paid_cents` differs from the amount) and, on the
    agent's own statement, **Pay now** on each invoice with `can_pay_now`, with the copy
    beside it: "Pay by bank, card, or Klarna (pay over time, subject to Klarna's approval
    and fees)." The ▸ button expands the row to the invoice `lines`, a **Total** row equal
-   to `amount_cents` (a negative line is a credit, `−$150.00`, green), and the payment
+   to `amount_cents` (a negative line is a credit, `−$150.00`, green) — with the SMD
+   invoice's `cost_orders` itemised under the "Recognition and mailing costs" line — and the payment
    facts: collection, due by (self-pay), charge attempts, next retry, last failure (worded,
    with the raw code and time), paid, paid via (Klarna tagged).
 
@@ -265,20 +273,36 @@ P6, `can_manage` only:
   undone.", a required "Why is it being voided?" note; "Void invoice" disabled while
   blank. `409 not_voidable` → warning toast, dialog closes.
 
-### 2.8 Recognition & mailing costs (`/admin/plugin-fees/costs`)
+### 2.8 Recognition orders (`/admin/plugin-fees/costs`)
 
-1. **Log a cost** form: SMD charged (user search), recipient user (optional user search,
-   with Clear; picking one fills an empty recipient name), recipient name, item,
-   recognition $, mailing $ (optional), date sent (default today), a live **Total**, note
-   (optional). "The cost is netted against the SMD on the 1st of the month after it was
-   sent."
-2. **Logged costs**: month-sent filter (+ "All months"), SMD filter (+ "All SMDs"), count;
-   table of date sent, SMD (name, agency code), recipient, item (note underneath),
-   recognition, mailing, total, netting ("Netted in Dec 2026" or "Pending — will be
-   netted on the 1st of next month"), logged by, Delete (only while not netted).
-   Previous / Next when the server pages.
-3. **Delete dialog**: what is being deleted, and a required reason; Delete stays disabled
-   while it is blank.
+Menu "Recognition Orders". An order is **not** a separate invoice: it is netted into the
+SMD's next monthly cycle and itemised on their statement (§2.5).
+
+1. **New order** — a point-of-sale cart (`POST costs/batch/`):
+   - **SMDs charged** (multi-select, `GET costs/smds/`, active SMDs only): chips with name
+     and email (or agency code), removable; "N SMDs selected" + Clear all.
+   - **Cart**: a product picker (`GET costs/products/`, grouped Recognition items /
+     Mailing, "SKU · name · $price") — picking a product already in the cart raises its
+     quantity; "+ Custom item" / "+ Custom mailing" add a typed row. Columns: item (name +
+     SKU · type, or Type select + description for a typed row), Qty (− / input / +, 1–1000),
+     Unit price $ (prefilled from the catalogue), Amount, remove. Changing a catalogue
+     price shows "Catalogue price $X — reason for the change *". Footer: **Per SMD** total
+     and, with several SMDs, "× N SMDs (each charged the full cart)" with the grand total.
+     Row errors (client or `fields.lines["i"]`) show under the row.
+   - Recipient user (optional), recipient name (optional — blank names each SMD), date
+     sent (default today), internal note (not shown to the SMD).
+   - Button: "Log order · $X" or "Log N orders · $Y".
+2. **Orders**: month-sent and SMD filters, count; columns order number (`RC-000042`), date
+   sent, SMD, recipient, items (`qty × name · SKU`, amount; "price changed: reason" when
+   overridden; note underneath), recognition, mailing, total, netting, logged by, and —
+   while not netted — **Delete** (this order) and **Delete batch** (every SMD's order from
+   the same submission).
+3. **Delete dialog**: what is being deleted (one order or the batch) and a required reason.
+4. **Product catalogue**: add form (SKU — upper-cased, unique; name; type; unit price;
+   description); "Show retired products"; table of SKU, name, type, unit price, Active /
+   Retired, updated, **Edit** → dialog with the same fields, an Active checkbox (untick to
+   retire; products are never deleted), a required reason, and "Orders already logged keep
+   $X" when the price changes.
 
 ### 2.9 Payments (`/admin/plugin-fees/payments`)
 

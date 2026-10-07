@@ -16,6 +16,8 @@ import {
   createAdjustment,
   createConnectOnboardingLink,
   createCost,
+  createCostBatch,
+  createProduct,
   createInvoicePayLink,
   authorizeCard,
   completeCard,
@@ -24,6 +26,7 @@ import {
   decideAssistant,
   decideOffice,
   deleteCost,
+  deleteCostBatch,
   deleteFeeRate,
   fetchAdjustments,
   fetchAgentStatement,
@@ -46,6 +49,7 @@ import {
   fetchPayoutReport,
   fetchPayouts,
   fetchPluginFeesAccess,
+  fetchProducts,
   fetchSevcTotals,
   fetchSavedCards,
   preparePayout,
@@ -58,6 +62,7 @@ import {
   submitAssistant,
   submitOffice,
   updateBillingSettings,
+  updateProduct,
   voidInvoice,
   withdrawAssistant,
   withdrawOffice,
@@ -105,6 +110,8 @@ export const pluginFeesKeys = {
   cyclePreviewAll: ['plugin-fees', 'cycle-preview'] as const,
   cyclePreview: (month: string) => ['plugin-fees', 'cycle-preview', month] as const,
   costsAll: ['plugin-fees', 'costs'] as const,
+  products: (includeInactive: boolean) => ['plugin-fees', 'products', includeInactive] as const,
+  productsAll: ['plugin-fees', 'products'] as const,
   costs: (query: CostsQuery) =>
     ['plugin-fees', 'costs', { smd: query.smd, month: query.month, page: query.page }] as const,
   paymentsAll: ['plugin-fees', 'payments'] as const,
@@ -384,9 +391,43 @@ export function useCreateCost() {
   return useMutation({ mutationFn: createCost, onSettled: invalidate, ...NO_RETRY });
 }
 
+export function useCreateCostBatch() {
+  const invalidate = useInvalidateCosts();
+  return useMutation({ mutationFn: createCostBatch, onSettled: invalidate, ...NO_RETRY });
+}
+
 export function useDeleteCost() {
   const invalidate = useInvalidateCosts();
   return useMutation({ mutationFn: deleteCost, onSettled: invalidate, ...NO_RETRY });
+}
+
+export function useDeleteCostBatch() {
+  const invalidate = useInvalidateCosts();
+  return useMutation({ mutationFn: deleteCostBatch, onSettled: invalidate, ...NO_RETRY });
+}
+
+/** The recognition product catalogue (`plugin_fees:manage`). */
+export function useProducts(includeInactive = false) {
+  return useQuery({
+    queryKey: pluginFeesKeys.products(includeInactive),
+    queryFn: ({ signal }) => fetchProducts(includeInactive, signal),
+    staleTime: 60 * 1000,
+  });
+}
+
+function useInvalidateProducts() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: pluginFeesKeys.productsAll });
+}
+
+export function useCreateProduct() {
+  const invalidate = useInvalidateProducts();
+  return useMutation({ mutationFn: createProduct, onSettled: invalidate, ...NO_RETRY });
+}
+
+export function useUpdateProduct() {
+  const invalidate = useInvalidateProducts();
+  return useMutation({ mutationFn: updateProduct, onSettled: invalidate, ...NO_RETRY });
 }
 
 /* --- P4: collection -------------------------------------------------------- */
