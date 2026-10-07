@@ -140,8 +140,30 @@ A refund "refunds the payment (Stripe if applicable) and marks every ticket refu
 
 ### 2.6 Check-in — `pages/event-checkin-page.tsx`
 
-Scan or manual, stats, filters and export (`xlsx` / `pdf`). **A scan can be reversed** — an accidental
-scan is a normal operational event at a door, not an error state.
+Scan or manual, a progress strip, filters and export (`xlsx` / `pdf`). **A scan can be reversed** — an
+accidental scan is a normal operational event at a door, not an error state.
+
+Top to bottom: the scan box (`components/checkin-scan-box.tsx`, autofocused — the door's main control),
+the progress strip (`components/checkin-progress.tsx`: arrived / expected, a bar, to come · unnamed · via
+a session scan), then one toolbar row — **Find attendee** search, *Search in*, the arrival tabs
+**All · Not arrived · Arrived** (ticket counts from `checkin/stats/`), and the **Door | Detailed** switch.
+
+The list (`components/checkin-purchase-list.tsx`) is **one table with one header**, each purchase a group
+of rows led by the buyer's name, with our number and partner references beneath. Two views (PHASES E19),
+remembered per browser in `localStorage['wb.checkinListView']`, default Door:
+
+| | Door | Detailed |
+|---|---|---|
+| Columns | Attendee · Ticket · Arrival · Check in | Attendee · Ticket · Status · Arrival · Action |
+| Single-ticket purchase | one row, "Bought by …" when the buyer is someone else | heading row + ticket row |
+| Unnamed tickets | two or more fold into "N unnamed tickets" + **Check in next unnamed**; a search hit stays out | all listed |
+| Arrival detail | `✓ time`; session, credential and admitting user in the tooltip | written under the time |
+| Undo | only on tickets admitted from this device this visit | every arrived row |
+| SMD, Linked badge, Export | hidden | shown; Excel / PDF / Print under **Export** |
+
+Colour has one meaning each: green = arrived, amber = unnamed (and the search highlight), the brand
+button = Check in. An assigned ticket shows no badge. The page keeps 6rem of bottom padding so the last
+row clears the floating assistant button.
 
 A **camera** scan that records a new check-in flashes the whole screen green with a check mark for
 300 ms (`components/checkin-success-flash.tsx`), because the badge under the viewfinder went unseen. A
@@ -194,7 +216,9 @@ guest opens the link on whatever they have — and the checkout and ticket pages
 The builder and the order tables are desktop surfaces.
 
 Check-in is used on a phone at a door, so the scan panel and the attendee list are the parts that matter
-at narrow widths. Scanning needs **HTTPS**.
+at narrow widths. Below `sm` the Ticket column is hidden and the ticket number moves under the
+attendee's name, so the Door view fits a phone without scrolling sideways; Detailed keeps a minimum width
+and scrolls. Door view's Check in buttons are 40px tall for touch. Scanning needs **HTTPS**.
 
 No print styles. Check-in exports `xlsx`/`pdf` server-side instead, which is the right answer for a list
 somebody wants on paper.
