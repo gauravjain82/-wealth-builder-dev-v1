@@ -60,12 +60,25 @@ export interface PromotionDashboard {
   routes: PromotionRoute[];
 }
 export type PromotionDashboardResponse = PromotionDashboard | PromotionDashboard[];
+/** A quiz question as the learner gets it — the answer stays on the server. */
 export interface QuizQuestion {
   id: number;
   question_text: string;
   options: string[];
-  correct_index: number;
   order: number;
+}
+export interface QuizQuestionResult {
+  question_id: number;
+  selected_index: number | null;
+  is_correct: boolean;
+}
+export interface QuizSubmitResult {
+  score: number;
+  total: number;
+  passed: boolean;
+  results: QuizQuestionResult[];
+  quiz_passed_at: string | null;
+  skill_auto_completed: boolean;
 }
 export interface TeamSkillProgress {
   label: string;
