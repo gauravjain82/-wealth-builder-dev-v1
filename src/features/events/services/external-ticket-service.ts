@@ -2,6 +2,11 @@ import type {
   AccountMap,
   AccountSearchHit,
   DecidePayload,
+  EmailDelivery,
+  EmailPreview,
+  EmailRecipientFilters,
+  EmailRecipientsPage,
+  EmailRun,
   ExternalImport,
   ImportRow,
   ImportRowDetail,
@@ -128,4 +133,40 @@ export const externalTicketService = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+
+  // --- Emails to imported-ticket holders. Nothing is sent until a draft is confirmed. ---
+
+  listEmailRecipients: (eventId: number, filters: EmailRecipientFilters, signal?: AbortSignal) =>
+    request<EmailRecipientsPage>(`${base(eventId)}/emails/recipients/${query(filters)}`, { signal }),
+
+  previewEmail: (eventId: number, ticketId: number, signal?: AbortSignal) =>
+    request<EmailPreview>(`${base(eventId)}/emails/preview/${query({ ticket: ticketId })}`, { signal }),
+
+  previewEmailToMe: (eventId: number, ticketId: number) =>
+    request<EmailRun>(`${base(eventId)}/emails/preview-to-me/`, { method: 'POST', body: JSON.stringify({ ticket: ticketId }) }),
+
+  listEmailRuns: (eventId: number, page: number, signal?: AbortSignal) =>
+    request<Paged<EmailRun>>(`${base(eventId)}/emails/runs/${query({ page, page_size: 20 })}`, { signal }),
+
+  getEmailRun: (eventId: number, runId: number, signal?: AbortSignal) =>
+    request<EmailRun>(`${base(eventId)}/emails/runs/${runId}/`, { signal }),
+
+  draftEmailRun: (eventId: number, payload: { kind: 'test' | 'bulk' | 'retry'; ticket_ids?: number[]; retry_of?: number }) =>
+    request<EmailRun>(`${base(eventId)}/emails/runs/`, { method: 'POST', body: JSON.stringify(payload) }),
+
+  confirmEmailRun: (eventId: number, runId: number, confirmCount: number) =>
+    request<EmailRun>(`${base(eventId)}/emails/runs/${runId}/confirm/`, {
+      method: 'POST',
+      body: JSON.stringify({ confirm_count: confirmCount }),
+    }),
+
+  cancelEmailRun: (eventId: number, runId: number) =>
+    request<EmailRun>(`${base(eventId)}/emails/runs/${runId}/cancel/`, { method: 'POST', body: '{}' }),
+
+  listEmailDeliveries: (
+    eventId: number,
+    runId: number,
+    params: { outcome?: string; search?: string; page?: number },
+    signal?: AbortSignal,
+  ) => request<Paged<EmailDelivery>>(`${base(eventId)}/emails/runs/${runId}/deliveries/${query(params)}`, { signal }),
 };

@@ -205,3 +205,103 @@ export interface Paged<T> {
   rows: T[];
   pagination: Pagination;
 }
+
+// --- Emails to imported-ticket holders -------------------------------------
+
+export type EmailTargetStatus = 'ready' | 'review' | 'missing' | 'unnamed';
+export type EmailRunKind = 'preview' | 'test' | 'bulk' | 'retry';
+export type EmailRunStatus = 'draft' | 'sending' | 'done' | 'cancelled' | 'discarded';
+/** Our state, else the SendGrid-tracked status of the email. */
+export type EmailOutcome =
+  | 'planned' | 'cancelled' | 'skipped' | 'error'
+  | 'queued' | 'sent' | 'delivered' | 'opened' | 'failed' | 'bounced';
+
+export interface EmailLastSent {
+  run: number;
+  run_kind: EmailRunKind;
+  address: string;
+  outcome: EmailOutcome;
+  at: string | null;
+}
+
+export interface EmailRecipientRow {
+  ticket: number;
+  ticket_number: string;
+  confirmation: string;
+  holder: string;
+  address: string;
+  address_source: string;
+  status: EmailTargetStatus;
+  reasons: string[];
+  last_email: EmailLastSent | null;
+}
+
+export interface EmailRecipientSummary {
+  tickets: number;
+  ready: number;
+  review: number;
+  missing: number;
+  unnamed: number;
+  ready_recipients: number;
+  pending_tickets: number;
+  pending_recipients: number;
+}
+
+export interface EmailRecipientsPage extends Paged<EmailRecipientRow> {
+  summary: EmailRecipientSummary;
+  can_send: boolean;
+  content_revision: string;
+  test_done: boolean;
+  test_max_recipients: number;
+}
+
+export interface EmailRecipientFilters {
+  status?: EmailTargetStatus | '';
+  search?: string;
+  page?: number;
+}
+
+export interface EmailDelivery {
+  id: number;
+  address: string;
+  first_name: string;
+  address_source: string;
+  state: string;
+  outcome: EmailOutcome;
+  error: string;
+  queued_at: string | null;
+  tickets: Array<{ id: number; number: string; holder: string }>;
+  delivered_at: string | null;
+  first_opened_at: string | null;
+  bounce_reason: string;
+}
+
+export interface EmailRun {
+  id: number;
+  kind: EmailRunKind;
+  status: EmailRunStatus;
+  subject: string;
+  recipient_count: number;
+  ticket_count: number;
+  excluded: Record<string, number>;
+  content_revision: string;
+  retry_of: number | null;
+  created_by: string;
+  created_at: string;
+  confirmed_by: string;
+  confirmed_at: string | null;
+  finished_at: string | null;
+  cancelled_by: string;
+  cancelled_at: string | null;
+  expires_at: string | null;
+  counts: Partial<Record<EmailOutcome, number>>;
+  /** Only on a freshly prepared draft. */
+  sample?: EmailDelivery[];
+}
+
+export interface EmailPreview {
+  to: string;
+  subject: string;
+  tickets: number;
+  html: string;
+}
