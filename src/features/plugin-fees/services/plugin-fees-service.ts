@@ -29,11 +29,14 @@ import type {
   AssistantSubmissionInput,
   ConfigHistory,
   ConnectAccount,
+  CostBatchInput,
+  CostBatchResult,
   CostInput,
   CostsQuery,
   CycleReport,
   CycleSummary,
   DecisionInput,
+  DeleteCostBatchInput,
   DeleteCostInput,
   DeleteFeeRateInput,
   FeeSchedule,
@@ -61,9 +64,13 @@ import type {
   PluginFeesPaymentMethod,
   PluginFeesStatement,
   RecognitionCost,
+  RecognitionProduct,
+  RecognitionProductInput,
+  RecognitionProductPatch,
   ResolveFollowUpInput,
   SetSelfPayAllowedInput,
   RetryPayoutLineInput,
+  ReviewAgent,
   ReviewQuery,
   ScheduleFeeChangeInput,
   SendCycleResponse,
@@ -348,6 +355,37 @@ export function fetchCosts(
 
 export function createCost(input: CostInput): Promise<RecognitionCost> {
   return postJson('/costs/', input);
+}
+
+export function createCostBatch(input: CostBatchInput): Promise<CostBatchResult> {
+  return postJson('/costs/batch/', input);
+}
+
+/** Active SMDs (with email) matching `search`, for the cost form's SMD picker. */
+export function searchCostSmds(search: string, signal?: AbortSignal): Promise<ReviewAgent[]> {
+  return getJson(`/costs/smds/?search=${encodeURIComponent(search)}`, signal);
+}
+
+/** Delete every order of a batch (all or nothing; refused once any is netted). */
+export function deleteCostBatch(input: DeleteCostBatchInput): Promise<void> {
+  return deleteJson(`/costs/batch/${input.batch_id}/`, { reason: input.reason });
+}
+
+/** The product catalogue; `includeInactive` adds retired products. */
+export function fetchProducts(
+  includeInactive: boolean,
+  signal?: AbortSignal,
+): Promise<RecognitionProduct[]> {
+  return getJson(`/costs/products/${includeInactive ? '?include_inactive=1' : ''}`, signal);
+}
+
+export function createProduct(input: RecognitionProductInput): Promise<RecognitionProduct> {
+  return postJson('/costs/products/', input);
+}
+
+/** Change or retire a product. Orders already logged keep their price. */
+export function updateProduct({ id, ...body }: RecognitionProductPatch): Promise<RecognitionProduct> {
+  return patchJson(`/costs/products/${id}/`, body);
 }
 
 export function deleteCost(input: DeleteCostInput): Promise<void> {

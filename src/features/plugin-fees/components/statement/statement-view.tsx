@@ -6,7 +6,9 @@
  * owns the pay-link mutation and passes `payNow`). P6: on the admin lookup, `:manage`
  * may void a `draft`, `open` or `failed` invoice (the page owns the dialog, `voidInvoice`).
  * The ledger opens with its lifetime totals by type (`ledger.totals`, 2026-10-03), MD fees
- * from own MDs and rolled up from downline SMDs kept apart.
+ * from own MDs and rolled up from downline SMDs kept apart. Recognition orders are
+ * itemised (2026-10-07): under the invoice's costs line, under the `costs` ledger entry,
+ * and — before they are netted — in the "Upcoming recognition charges" card.
  *
  * Screens and states: `docs/plugin-fees/UI.md` §2.5.
  */
@@ -16,6 +18,7 @@ import { Fragment, useState, type ReactNode } from 'react';
 import { Button } from '@/shared/components';
 
 import type {
+  CostOrder,
   InvoiceStatus,
   LedgerEntry,
   LedgerTotals,
@@ -34,6 +37,7 @@ import {
 import { StatusBadge } from '../submission-parts';
 import { PaymentFacts, PaymentStateCell } from '../payments/payment-state';
 import { isVoidable } from '../../utils/plugin-fees-payment';
+import { COSTS_LINE_LABEL, CostOrdersList, UpcomingCosts } from './cost-orders';
 
 const INVOICE_STATUS: Record<InvoiceStatus, { label: string; tone: string }> = {
   draft: { label: 'Scheduled', tone: 'info' },
@@ -58,22 +62,46 @@ export function SignedAmount({ cents, signed = false }: { cents: number; signed?
   return <span className={`wb-pf-amount${tone}`}>{signed ? formatSignedMoney(cents) : formatMoney(cents)}</span>;
 }
 
-/** An invoice's lines and its total. Negative lines are credits. */
-export function LinesTable({ lines, totalCents }: { lines: StatementLine[]; totalCents: number }) {
+/**
+ * An invoice's lines and its total. Negative lines are credits. `costOrders`, when given,
+ * itemises the recognition orders under the costs line (or after the lines if absent).
+ */
+export function LinesTable({
+  lines,
+  totalCents,
+  costOrders,
+}: {
+  lines: StatementLine[];
+  totalCents: number;
+  costOrders?: CostOrder[];
+}) {
   if (!lines.length) return <p className="wb-pf-muted">No lines.</p>;
+  const hasOrders = Boolean(costOrders?.length);
+  const costsIndex = lines.findIndex((line) => line.label === COSTS_LINE_LABEL);
+  const ordersRow = (
+    <tr key="cost-orders" className="wb-pf-lines-orders">
+      <td colSpan={2}>
+        <CostOrdersList orders={costOrders} />
+      </td>
+    </tr>
+  );
   return (
     <table className="wb-pf-lines">
       <tbody>
         {lines.map((line, index) => (
-          <tr key={`${line.label}-${index}`}>
-            <td>{line.label}</td>
-            <td className="wb-pf-num">
-              <span className={line.amount_cents < 0 ? 'wb-pf-amount wb-pf-amount--credit' : 'wb-pf-amount'}>
-                {formatMoney(line.amount_cents)}
-              </span>
-            </td>
-          </tr>
+          <Fragment key={`${line.label}-${index}`}>
+            <tr>
+              <td>{line.label}</td>
+              <td className="wb-pf-num">
+                <span className={line.amount_cents < 0 ? 'wb-pf-amount wb-pf-amount--credit' : 'wb-pf-amount'}>
+                  {formatMoney(line.amount_cents)}
+                </span>
+              </td>
+            </tr>
+            {hasOrders && index === costsIndex ? ordersRow : null}
+          </Fragment>
         ))}
+        {hasOrders && costsIndex === -1 ? ordersRow : null}
       </tbody>
       <tfoot>
         <tr>
@@ -248,7 +276,11 @@ function InvoicesTable({
                   <tr id={panelId} className="wb-pf-detail-row">
                     <td colSpan={columns}>
                       <div className="wb-pf-detail-inner">
-                        <LinesTable lines={invoice.lines} totalCents={invoice.amount_cents} />
+                        <LinesTable
+                          lines={invoice.lines}
+                          totalCents={invoice.amount_cents}
+                          costOrders={invoice.cost_orders}
+                        />
                         <PaymentFacts state={invoice} />
                       </div>
                     </td>
@@ -376,6 +408,15 @@ function LedgerTable({ entries }: { entries: LedgerEntry[] }) {
               <td>{formatMonthShort(entry.month)}</td>
               <td>
                 <LedgerDescription entry={entry} />
+                {entry.cost_orders?.length ? (
+                  <details className="wb-pf-ledger-orders">
+                    <summary>
+                      What this is for ({entry.cost_orders.length} order
+                      {entry.cost_orders.length === 1 ? '' : 's'})
+                    </summary>
+                    <CostOrdersList orders={entry.cost_orders} />
+                  </details>
+                ) : null}
               </td>
               <td className="wb-pf-num">
                 <SignedAmount cents={entry.amount_cents} signed />
@@ -434,6 +475,8 @@ export function StatementView({
           <LedgerTable entries={statement.ledger.entries} />
         </section>
       ) : null}
+
+      <UpcomingCosts orders={statement.upcoming_costs} own={own} />
 
       <section className="wb-pf-card" aria-labelledby="wb-pf-invoices-heading">
         <h2 id="wb-pf-invoices-heading" className="wb-pf-subheading">
