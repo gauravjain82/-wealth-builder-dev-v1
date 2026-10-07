@@ -122,7 +122,7 @@ export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: n
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, email, ticket, invoice…"
+            placeholder="Search name, email, ticket, invoice, BSCPro confirmation…"
             className="max-w-xs"
           />
           <Select

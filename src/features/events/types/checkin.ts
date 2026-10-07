@@ -7,6 +7,8 @@ export interface CheckinAttendee {
   ticket_number: string;
   qr_token: string;
   assignment_status: AssignmentStatus;
+  /** Assigned / Not assigned (UNASSIGNED) / Transferred, as the Purchases page shows it. */
+  shown_status?: AssignmentStatus;
   lifecycle_status: LifecycleStatus;
   holder_name: string;
   holder_first_name: string;
@@ -14,6 +16,14 @@ export interface CheckinAttendee {
   holder_email: string;
   holder_phone: string;
   invoice_number: string;
+  /** Imported tickets: the partner purchase (`c1550-141063`) and its invoice number. */
+  external_order_reference?: string;
+  external_invoice_reference?: string;
+  /** Who bought the ticket (the partner purchase's buyer for imports). */
+  purchaser_name?: string;
+  /** Who sold it: `WB` or the partner (`BSCPro`). */
+  channel?: string;
+  /** The SMD credited with the ticket. */
   seller_name: string;
   checked_in: boolean;
   checked_in_at: string | null;

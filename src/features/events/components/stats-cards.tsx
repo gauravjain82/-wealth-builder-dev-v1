@@ -12,32 +12,46 @@ interface CardSpec {
   hint?: string;
 }
 
-/** Dashboard stat cards: tickets, assignment, collected / projected. */
+/**
+ * Dashboard stat cards. Tickets and purchases are split by who sold them (WB vs
+ * the partner the event imports from); ticket status uses the shown statuses
+ * (Assigned / Not assigned / Transferred, which add up to the total). Money is
+ * what WB collected — a partner's export carries no amounts, so it is excluded and
+ * the card says so.
+ */
 export function StatsCards({ summary }: StatsCardsProps) {
   const currency = summary.currency || 'USD';
+  const partner = summary.external_provider || '';
+  const imported = summary.external_tickets ?? 0;
+  const wbTickets = summary.wb_tickets ?? summary.total_tickets - imported;
   const cards: CardSpec[] = [
     {
-      label: 'Tickets sold',
-      value: String(summary.total_tickets),
-      hint:
-        summary.remaining_capacity == null
+      label: 'Tickets',
+      value: summary.total_tickets.toLocaleString(),
+      hint: partner
+        ? `${imported.toLocaleString()} from ${partner} · ${wbTickets.toLocaleString()} sold through WB`
+        : summary.remaining_capacity == null
           ? 'Unlimited capacity'
           : `${summary.remaining_capacity} remaining`,
     },
     {
-      label: 'Assigned / unassigned',
-      value: `${summary.assigned} / ${summary.unassigned}`,
-      hint: `${summary.transferred} transferred · ${summary.checked_in} checked in`,
+      label: 'Purchases',
+      value: ((summary.external_purchases ?? 0) + summary.order_count).toLocaleString(),
+      hint: partner
+        ? `${(summary.external_purchases ?? 0).toLocaleString()} ${partner} · ${summary.order_count.toLocaleString()} WB`
+        : `${summary.pending_count} pending payment`,
     },
     {
-      label: 'Collected',
+      label: 'Assigned / not assigned / transferred',
+      value: `${summary.assigned} / ${summary.unassigned} / ${summary.transferred}`,
+      hint: `${summary.checked_in.toLocaleString()} checked in`,
+    },
+    {
+      label: 'Collected through WB',
       value: formatPrice(summary.collected, currency),
-      hint: `${summary.pending_count} pending · ${formatPrice(summary.pending, currency)}`,
-    },
-    {
-      label: 'Projected',
-      value: formatPrice(summary.projected, currency),
-      hint: `${summary.unassigned_smd_count} unassigned SMD`,
+      hint: partner
+        ? `${partner} amounts aren't in its export · projected ${formatPrice(summary.projected, currency)}`
+        : `${summary.pending_count} pending · projected ${formatPrice(summary.projected, currency)}`,
     },
   ];
 

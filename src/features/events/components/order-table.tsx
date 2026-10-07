@@ -1,5 +1,11 @@
 import { Badge, Button } from '@shared/components';
 import { formatPrice } from '../utils/public-pricing';
+import {
+  ORDER_STATUS_LABEL,
+  TICKET_STATUS_LABEL,
+  TICKET_STATUS_TONE,
+  statusCounts,
+} from '../utils/ticket-status';
 import type { EventOrderListItem, OrderStatus } from '../types/order';
 
 interface OrderTableProps {
@@ -22,45 +28,16 @@ const STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
   EXTERNAL: 'outline',
 };
 
+/** How many attendees to list in a row before "+N more". */
+const ATTENDEES_SHOWN = 3;
+
+function isImported(order: EventOrderListItem): boolean {
+  return order.source === 'EXTERNAL';
+}
+
 function purchaserName(order: EventOrderListItem): string {
   const name = `${order.purchaser_first_name} ${order.purchaser_last_name}`.trim();
   return name || order.purchaser_email || '—';
-}
-
-/** How many attendee names to list in a row before "+N more". */
-const ATTENDEES_SHOWN = 2;
-
-/** The partner's references for an imported order: confirmation(s) and invoice number. */
-function partnerReferences(order: EventOrderListItem): string {
-  const parts: string[] = [];
-  const confirmations = order.external_references ?? [];
-  if (confirmations.length) parts.push(confirmations.join(', '));
-  if (order.external_invoice_reference) parts.push(`Inv ${order.external_invoice_reference}`);
-  return parts.join(' · ');
-}
-
-/** Attendee names with the assigned count; unnamed tickets read "Not named yet". */
-function AttendeesCell({ order }: { order: EventOrderListItem }) {
-  const names = (order.attendees ?? []).filter(Boolean);
-  const unnamed = order.quantity - order.assigned_count;
-  return (
-    <div className="min-w-[140px]">
-      {names.slice(0, ATTENDEES_SHOWN).map((name, index) => (
-        <div key={`${name}-${index}`} className="text-slate-900 dark:text-white">
-          {name}
-        </div>
-      ))}
-      {names.length > ATTENDEES_SHOWN ? (
-        <div className="text-xs text-slate-500 dark:text-white/50">
-          +{names.length - ATTENDEES_SHOWN} more
-        </div>
-      ) : null}
-      <div className="text-xs text-slate-500 dark:text-white/50">
-        {order.assigned_count}/{order.quantity} assigned
-        {unnamed > 0 && !names.length ? ' · not named yet' : ''}
-      </div>
-    </div>
-  );
 }
 
 function formatWhen(value: string): string {
@@ -75,7 +52,71 @@ function formatWhen(value: string): string {
   });
 }
 
-/** Clickable orders table; rows open the order-detail modal. */
+/** Our invoice number, and for an import the partner's purchase and invoice numbers. */
+function InvoiceCell({ order }: { order: EventOrderListItem }) {
+  return (
+    <div>
+      <div className="font-medium text-slate-900 dark:text-white">{order.invoice_number}</div>
+      {isImported(order) ? (
+        <div className="text-xs text-slate-500 dark:text-white/50">
+          {order.channel ?? 'Partner'} {order.external_order_reference || '—'}
+          {order.external_invoice_reference ? ` · Inv ${order.external_invoice_reference}` : ''}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Each ticket's attendee with its status; unnamed tickets read "Not assigned". */
+function TicketsCell({ order }: { order: EventOrderListItem }) {
+  const attendees = order.attendees ?? [];
+  return (
+    <div className="min-w-[180px] space-y-0.5">
+      {attendees.slice(0, ATTENDEES_SHOWN).map((attendee) => (
+        <div key={attendee.ticket_number} className="flex items-center gap-1.5">
+          <span
+            className={
+              attendee.name
+                ? 'text-slate-900 dark:text-white'
+                : 'italic text-slate-500 dark:text-white/50'
+            }
+          >
+            {attendee.name || 'Not assigned'}
+          </span>
+          {attendee.status === 'TRANSFERRED' ? (
+            <Badge variant={TICKET_STATUS_TONE.TRANSFERRED}>{TICKET_STATUS_LABEL.TRANSFERRED}</Badge>
+          ) : null}
+        </div>
+      ))}
+      {attendees.length > ATTENDEES_SHOWN ? (
+        <div className="text-xs text-slate-500 dark:text-white/50">
+          +{attendees.length - ATTENDEES_SHOWN} more
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Imported orders: ticket status counts. WB orders: payment status, then the counts. */
+function StatusCell({ order }: { order: EventOrderListItem }) {
+  const counts = statusCounts(
+    order.assigned_count,
+    order.unassigned_count,
+    order.transferred_count ?? 0,
+  );
+  return (
+    <div className="space-y-1">
+      {isImported(order) ? null : (
+        <Badge variant={STATUS_VARIANT[order.status] ?? 'outline'}>
+          {ORDER_STATUS_LABEL[order.status] ?? order.status}
+        </Badge>
+      )}
+      <div className="text-xs text-slate-600 dark:text-white/70">{counts}</div>
+    </div>
+  );
+}
+
+/** Clickable purchases table; rows open the order-detail modal. */
 export function OrderTable({
   orders,
   onOpen,
@@ -97,17 +138,16 @@ export function OrderTable({
   return (
     <div className="space-y-3">
       <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-white/10">
-        <table className="w-full min-w-[960px] border-collapse text-sm">
+        <table className="w-full min-w-[1080px] border-collapse text-sm">
           <thead>
             <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-white/5 dark:text-white/60">
               <th className="px-3 py-2">Invoice</th>
               <th className="px-3 py-2">Purchaser</th>
+              <th className="px-3 py-2">Tickets</th>
               <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2">Type</th>
-              <th className="px-3 py-2">Qty</th>
-              <th className="px-3 py-2">Attendees</th>
+              <th className="px-3 py-2">Sold by</th>
+              <th className="px-3 py-2">SMD</th>
               <th className="px-3 py-2">Total</th>
-              <th className="px-3 py-2">Seller</th>
               <th className="px-3 py-2">When</th>
             </tr>
           </thead>
@@ -116,41 +156,48 @@ export function OrderTable({
               <tr
                 key={order.id}
                 onClick={() => onOpen(order)}
-                className="cursor-pointer border-t border-slate-100 hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
+                className="cursor-pointer border-t border-slate-100 align-top hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
               >
                 <td className="px-3 py-2">
-                  <div className="font-medium text-slate-900 dark:text-white">
-                    {order.invoice_number}
-                  </div>
-                  {partnerReferences(order) ? (
-                    <div className="text-xs text-slate-500 dark:text-white/50">
-                      BSCPro {partnerReferences(order)}
-                    </div>
-                  ) : null}
+                  <InvoiceCell order={order} />
                 </td>
                 <td className="px-3 py-2">
                   <div className="text-slate-900 dark:text-white">{purchaserName(order)}</div>
                   <div className="text-xs text-slate-500 dark:text-white/50">
-                    {order.source === 'EXTERNAL' ? 'Sponsor (BSCPro)' : order.purchaser_email}
+                    {order.purchaser_email}
                   </div>
                 </td>
                 <td className="px-3 py-2">
-                  <Badge variant={STATUS_VARIANT[order.status] ?? 'outline'}>{order.status}</Badge>
+                  <TicketsCell order={order} />
                 </td>
-                <td className="px-3 py-2 text-slate-600 dark:text-white/70">
-                  {order.transaction_type}
-                </td>
-                <td className="px-3 py-2 text-slate-600 dark:text-white/70">{order.quantity}</td>
-                <td className="px-3 py-2 text-slate-600 dark:text-white/70">
-                  <AttendeesCell order={order} />
+                <td className="px-3 py-2">
+                  <StatusCell order={order} />
                 </td>
                 <td className="px-3 py-2 text-slate-900 dark:text-white">
-                  {formatPrice(order.total, order.currency)}
+                  {order.channel ?? (isImported(order) ? 'Partner' : 'WB')}
+                  {isImported(order) ? null : (
+                    <div className="text-xs text-slate-500 dark:text-white/50">
+                      {order.transaction_type}
+                    </div>
+                  )}
                 </td>
                 <td className="px-3 py-2 text-slate-600 dark:text-white/70">
                   {order.attributed_seller_name ?? '—'}
                 </td>
+                <td className="px-3 py-2 text-slate-900 dark:text-white">
+                  {isImported(order) ? (
+                    <span
+                      className="text-xs text-slate-500 dark:text-white/50"
+                      title={`${order.channel ?? 'The partner'}'s export has no amounts`}
+                    >
+                      Not in export
+                    </span>
+                  ) : (
+                    formatPrice(order.total, order.currency)
+                  )}
+                </td>
                 <td className="px-3 py-2 text-slate-500 dark:text-white/50">
+                  {isImported(order) ? 'Imported ' : ''}
                   {formatWhen(order.created_at)}
                 </td>
               </tr>

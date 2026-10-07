@@ -1,5 +1,6 @@
 import { Badge, Button } from '@shared/components';
 import type { EventTicket } from '../types/ticket';
+import { TICKET_STATUS_LABEL, TICKET_STATUS_TONE, shownStatus } from '../utils/ticket-status';
 
 interface MyTicketsTableProps {
   tickets: EventTicket[];
@@ -43,7 +44,9 @@ export function MyTicketsTable({ tickets, onAssign, onTransfer, onPdf }: MyTicke
                 {ticket.ticket_number}
               </td>
               <td className="px-3 py-2">
-                <Badge variant="outline">{ticket.assignment_status}</Badge>
+                <Badge variant={TICKET_STATUS_TONE[shownStatus(ticket)]}>
+                  {TICKET_STATUS_LABEL[shownStatus(ticket)]}
+                </Badge>
               </td>
               <td className="px-3 py-2 text-slate-600 dark:text-white/70">{holderLabel(ticket)}</td>
               <td className="px-3 py-2 text-slate-600 dark:text-white/70">

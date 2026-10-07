@@ -1,7 +1,7 @@
-import type { EventTicket } from './ticket';
+import type { AssignmentStatus, EventTicket } from './ticket';
 
 export type TransactionType = 'STRIPE' | 'CASH' | 'CHECK' | 'CREDIT' | 'COMP' | 'EXTERNAL';
-/** `EXTERNAL`: the $0 order each imported partner (BSCPro) ticket gets. */
+/** `EXTERNAL`: the $0 order of an imported partner (BSCPro) purchase — one per purchase. */
 export type OrderStatus = 'PENDING' | 'PAID' | 'REFUNDED' | 'CANCELLED' | 'COMP' | 'EXTERNAL';
 export type OrderSource = 'PUBLIC' | 'ADMIN' | 'EXTERNAL';
 
@@ -19,13 +19,17 @@ export interface EventOrderListItem {
   id: number;
   uuid: string;
   invoice_number: string;
-  /** The outside provider's invoice number on an EXTERNAL order (e.g. BSCPro); `''` otherwise. */
+  /** EXTERNAL orders: the provider purchase's confirmation (BSCPro `c1550-141063`); `''` otherwise. */
+  external_order_reference?: string;
+  /** EXTERNAL orders: the provider's own invoice number (e.g. BSCPro `6a4001deccfb6`); `''` otherwise. */
   external_invoice_reference?: string;
   /** Provider confirmations of the order's imported tickets (list rows only). */
   external_references?: string[];
-  /** Each ticket's attendee name or email; `''` for a ticket nobody is named on (list rows only). */
-  attendees?: string[];
-  /** On an EXTERNAL order: the provider's sponsor (who bought it there), by name only. */
+  /** Who sold it: `WB`, or the provider of an imported order (`BSCPro`). */
+  channel?: string;
+  /** Each ticket's attendee (`''` when nobody is named) and shown status (list rows only). */
+  attendees?: OrderAttendee[];
+  /** On an imported order: the buyer named on the provider's purchase row. */
   purchaser_first_name: string;
   purchaser_last_name: string;
   purchaser_email: string;
@@ -37,9 +41,18 @@ export interface EventOrderListItem {
   source: OrderSource;
   attributed_seller: number | null;
   attributed_seller_name: string | null;
+  /** Tickets by shown status; they add up to the order's tickets. */
   assigned_count: number;
   unassigned_count: number;
+  transferred_count?: number;
   created_at: string;
+}
+
+/** One ticket of an order, as the Purchases list shows it. */
+export interface OrderAttendee {
+  name: string;
+  status: AssignmentStatus;
+  ticket_number: string;
 }
 
 /** Full order from retrieve / create / refund / cancel. */
@@ -88,6 +101,10 @@ export interface OrderFilters {
   attributed_seller?: number;
   unassigned_seller?: boolean;
   source?: string;
+  /** `wb` = sold through WB; `external` = imported from a provider. */
+  channel?: string;
+  /** Orders with at least one ticket showing this status. */
+  ticket_status?: string;
   search?: string;
   page?: number;
 }

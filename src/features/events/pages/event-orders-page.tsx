@@ -33,24 +33,39 @@ import type {
 } from '../types/ticket';
 import type { EventTrackedSeller } from '../types/config';
 
+/** Who sold it: WB, or an imported partner purchase. */
+const CHANNEL_OPTIONS = [
+  { value: '', label: 'All channels' },
+  { value: 'wb', label: 'Sold through WB' },
+  { value: 'external', label: 'Imported (BSCPro)' },
+];
+
+/** Orders with at least one ticket showing this status. */
+const TICKET_STATUS_OPTIONS = [
+  { value: '', label: 'All ticket statuses' },
+  { value: 'ASSIGNED', label: 'Has assigned tickets' },
+  { value: 'UNASSIGNED', label: 'Has not-assigned tickets' },
+  { value: 'TRANSFERRED', label: 'Has transferred tickets' },
+];
+
+/** WB payment status (imported orders carry none). */
 const STATUS_OPTIONS = [
-  { value: '', label: 'All statuses' },
+  { value: '', label: 'All payment statuses' },
   { value: 'PENDING', label: 'Pending' },
   { value: 'PAID', label: 'Paid' },
   { value: 'COMP', label: 'Comp' },
-  { value: 'EXTERNAL', label: 'External (BSCPro)' },
   { value: 'REFUNDED', label: 'Refunded' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
 
+/** How a WB order was paid. */
 const TYPE_OPTIONS = [
-  { value: '', label: 'All types' },
+  { value: '', label: 'All payment types' },
   { value: 'STRIPE', label: 'Stripe' },
   { value: 'CASH', label: 'Cash' },
   { value: 'CHECK', label: 'Check' },
   { value: 'CREDIT', label: 'Credit' },
   { value: 'COMP', label: 'Comp' },
-  { value: 'EXTERNAL', label: 'External (BSCPro)' },
 ];
 
 export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: number } = {}) {
@@ -219,6 +234,28 @@ export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: nu
             className="max-w-sm"
           />
           <Select
+            value={filters.channel ?? ''}
+            onChange={(e) => setFilters({ channel: e.target.value || undefined })}
+            className="max-w-[180px]"
+          >
+            {CHANNEL_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={filters.ticket_status ?? ''}
+            onChange={(e) => setFilters({ ticket_status: e.target.value || undefined })}
+            className="max-w-[220px]"
+          >
+            {TICKET_STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
+          <Select
             value={filters.status ?? ''}
             onChange={(e) => setFilters({ status: e.target.value || undefined })}
             className="max-w-[160px]"
@@ -261,8 +298,8 @@ export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: nu
             }}
             className="max-w-[200px]"
           >
-            <option value="">All sellers</option>
-            <option value="unassigned">Unassigned SMD</option>
+            <option value="">All SMDs</option>
+            <option value="unassigned">No SMD credited</option>
             {sellers.map((seller) => (
               <option key={seller.id} value={seller.id}>
                 {seller.display_name}
