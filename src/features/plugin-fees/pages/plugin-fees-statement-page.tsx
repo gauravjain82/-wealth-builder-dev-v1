@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { ErrorState, Heading, Text } from '@/shared/components';
+import { usePageRestored } from '@/hooks/use-page-restored';
 import { useToastStore } from '@/store';
 
 import { useCreateInvoicePayLink, useMyStatement, usePluginFeesAccess } from '../hooks/use-plugin-fees';
@@ -64,6 +65,7 @@ export default function PluginFeesStatementPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [poll, setPoll] = useState<{ invoiceId: number; startedAt: number } | null>(null);
   const [payingId, setPayingId] = useState<number | null>(null);
+  usePageRestored(() => setPayingId(null));
   const handledReturn = useRef<string | null>(null);
 
   const statement = useMyStatement(true, poll ? POLL_EVERY_MS : false);

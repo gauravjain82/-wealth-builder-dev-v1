@@ -17,6 +17,7 @@
 
 import { useState } from 'react';
 
+import { usePageRestored } from '@/hooks/use-page-restored';
 import { useToastStore } from '@/store';
 
 import { useCreatePaymentMethodSetupSession, useSetPaymentPreference } from '../hooks/use-plugin-fees';
@@ -88,6 +89,7 @@ export function PaymentMethodSection({
   const setupSession = useCreatePaymentMethodSetupSession();
   const setPreference = useSetPaymentPreference();
   const [redirecting, setRedirecting] = useState(false);
+  usePageRestored(() => setRedirecting(false));
   const saved = paymentMethod.status === 'saved';
   const automatic = paymentMethod.preference === 'automatic';
   const canChoose = paymentMethod.self_pay_allowed;

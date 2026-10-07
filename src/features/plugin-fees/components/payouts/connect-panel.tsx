@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '@/shared/components';
+import { usePageRestored } from '@/hooks/use-page-restored';
 import { useToastStore } from '@/store';
 
 import { useCreateConnectOnboardingLink, useMyConnect } from '../../hooks/use-plugin-fees';
@@ -62,6 +63,7 @@ export function ConnectPanel() {
   /** `before` null: nothing remembered — wait for `enabled`. */
   const [poll, setPoll] = useState<{ before: string | null; startedAt: number } | null>(null);
   const [redirecting, setRedirecting] = useState(false);
+  usePageRestored(() => setRedirecting(false));
   const handledReturn = useRef<string | null>(null);
 
   const connect = useMyConnect(true, poll ? POLL_EVERY_MS : false);

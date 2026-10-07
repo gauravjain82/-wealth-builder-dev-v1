@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
 import { useAuth } from '@/features/auth';
+import { usePageRestored } from '@/hooks/use-page-restored';
 import { config } from '@/core/config';
 import { Plan } from '@/core/types';
 import { DatePicker, Modal, Text } from '@/shared/components';
@@ -739,6 +740,7 @@ export default function SettingsPage() {
   const [telegramLink, setTelegramLink] = useState<TelegramLinkTokenResponse | null>(null);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryResponse | null>(null);
   const [openingPortal, setOpeningPortal] = useState(false);
+  usePageRestored(() => setOpeningPortal(false));
   const [profileEmail, setProfileEmail] = useState('');
   const [profileForm, setProfileForm] = useState<ProfileFormState>(DEFAULT_PROFILE_FORM);
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());

@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { usePageRestored } from '@/hooks/use-page-restored';
 import { useToastStore } from '@/store';
 import {
   calendarSyncKeys,
@@ -26,6 +27,7 @@ export function CalendarSyncSection() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [connecting, setConnecting] = useState(false);
+  usePageRestored(() => setConnecting(false));
 
   const statusQuery = useCalendarSyncStatus();
   const settingsQuery = useCalendarSyncSettings();

@@ -91,6 +91,11 @@ saved", or "Waiting for Stripe to confirm…" while polling. Hint: ACH is the de
 preferred method; separate from the website subscription. Button: "Save bank account"
 (or "Replace with a bank account" when one is saved).
 
+Every button that redirects to Stripe ("Save bank account", Pay now, payout setup) shows
+"Opening…" until the browser leaves. If the user comes back with the browser's Back button,
+the page is restored from the back/forward cache with that state frozen, so each one resets
+it on a restored `pageshow` (`src/hooks/use-page-restored.ts`).
+
 ### 2.4 Review page
 
 Heading, then tabs **Offices** · **Assistants**. Each tab: status select, debounced search
