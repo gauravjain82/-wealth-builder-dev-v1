@@ -91,24 +91,30 @@ saved", or "Waiting for Stripe to confirm…" while polling. Hint: ACH is the de
 preferred method; separate from the website subscription. Button: "Save bank account"
 (or "Replace with a bank account" when one is saved).
 
-**Subscription card offer.** When the website subscription pays with a card, the
-section shows the offer if nothing usable is saved:
-
-> "Use your website subscription card, Visa ••••4242, for plug-in fees?"
-
-with a consent checkbox ("I authorize Wealth Builders to charge … on the 1st of each
-month, until I change my payment method here") and **Authorize**. Authorize stays
-disabled until the box is ticked, and reads "Authorizing…" while it runs. If the bank
-asks for 3D Secure, Stripe's modal opens over the page. On success, a toast appears and
-the saved method shows "Card (website subscription card)". The Stripe button becomes
-secondary while the offer is shown.
-
-If the agent chose the subscription card and it has since changed, the same box reads:
-
-> "Your website subscription card changed to Mastercard ••••1111. Use it for plug-in fees too?"
-
-It adds **Keep current**, which hides the box until the next visit. If the lookup fails
-or there is no card, nothing is shown.
+**Saved-card picker.** It lists the cards already saved on the agent's Stripe account,
+with the website subscription's card first and preselected.
+- **Heading:**
+  - One card: "Use your website subscription card, Visa ••••4242, for plug-in fees?"
+    (or "Use your saved card, …").
+  - Several cards: "Choose a card saved on your account for plug-in fees", with a
+    radio list of label · expires MM/YYYY · website subscription.
+- **Consent and Authorize:** a checkbox ("I authorize Wealth Builders to charge
+  <selected card> … on the 1st of each month, until I change my payment method here"),
+  then **Authorize**.
+  - Authorize stays disabled until the box is ticked, and reads "Authorizing…" while
+    it runs.
+  - Changing the selected card clears the tick.
+  - If the bank asks for 3D Secure, Stripe's modal opens over the page.
+  - On success, a toast appears. A subscription card then shows as "Card (website
+    subscription card)".
+- **When it shows:**
+  - **Nothing usable is saved:** it is open by itself, with no Cancel.
+  - **The agent chose the subscription card and it has changed:** it opens with
+    "Your website subscription card changed to Mastercard ••••1111. Use it for plug-in
+    fees too?" and **Keep current**, which hides it until the next visit.
+  - **Otherwise:** a secondary **Use a saved card** button opens it, with **Cancel**.
+- While the picker is open, the Stripe button is secondary.
+- If there are no other saved cards, or the lookup fails, nothing is shown.
 
 Every button that redirects to Stripe ("Save bank account", Pay now, payout setup) shows
 "Opening…" until the browser leaves. If the user comes back with the browser's Back button,

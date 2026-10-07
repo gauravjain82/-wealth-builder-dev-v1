@@ -68,8 +68,8 @@ import type {
   ScheduleFeeChangeInput,
   SendCycleResponse,
   SetupSessionResponse,
-  SubscriptionCard,
-  UseSubscriptionCardResponse,
+  SavedCards,
+  UseCardResponse,
   SevcMonthTotal,
   SevcTotalsRange,
   SmdBalance,
@@ -235,18 +235,19 @@ export function createPaymentMethodSetupSession(returnPath: string): Promise<Set
   return postJson('/me/payment-method/setup-session/', { return_path: returnPath });
 }
 
-/** The website subscription's card, which can be authorized for plug-in fees in one click. */
-export function fetchSubscriptionCard(signal?: AbortSignal): Promise<SubscriptionCard> {
-  return getJson('/me/payment-method/subscription-card/', signal);
+/** Cards saved on the agent's Stripe account, any of which can be authorized in one click. */
+export function fetchSavedCards(signal?: AbortSignal): Promise<SavedCards> {
+  return getJson('/me/payment-method/cards/', signal);
 }
 
-export function authorizeSubscriptionCard(): Promise<UseSubscriptionCardResponse> {
-  return postJson('/me/payment-method/use-subscription-card/', { authorize: true });
+/** `authorize: true` is the agent's consent tick. */
+export function authorizeCard(paymentMethodId: string): Promise<UseCardResponse> {
+  return postJson('/me/payment-method/use-card/', { payment_method_id: paymentMethodId, authorize: true });
 }
 
 /** After the bank's 3D Secure check succeeded in the browser. */
-export function completeSubscriptionCard(setupIntentId: string): Promise<PluginFeesPaymentMethod> {
-  return postJson('/me/payment-method/use-subscription-card/complete/', {
+export function completeCard(setupIntentId: string): Promise<PluginFeesPaymentMethod> {
+  return postJson('/me/payment-method/use-card/complete/', {
     setup_intent_id: setupIntentId,
   });
 }

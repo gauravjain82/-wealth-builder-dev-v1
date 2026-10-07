@@ -147,14 +147,22 @@ page. On return, `PluginFeesSettingsSections` reads `?fee_pm=`:
 `payment_method.status === 'saved'` (`plugin-fees-settings-sections.tsx:23-24`);
 `cancelled` → info toast. The param is removed with `replace`.
 
-**Use the subscription card (one click).** `PaymentMethodSection` reads
-`subscription-card/` (`pluginFeesKeys.subscriptionCard`; not polled, because each read
-asks Stripe). It shows the offer when the card is `available`, not `in_use`, and either
-nothing is saved or the card has `changed`. Authorize runs one mutation,
-`useAuthorizeSubscriptionCard`: POST `use-subscription-card/`. If it answers
-`requires_action`, `confirmCardSetupInBrowser` opens Stripe.js's 3D Secure modal, and the
-mutation then POSTs `complete/`. Both `me/` and `subscription-card/` are invalidated on
-settle. Backend: `mlm_platform` IMPACT_ANALYSIS D22.
+**Use a saved card (one click).** `PaymentMethodSection` reads `cards/`
+(`pluginFeesKeys.savedCards`). It is not polled, because each read asks Stripe.
+`SavedCardPicker` shows the cards not `in_use`, with the subscription card first and
+preselected.
+- **When it opens:**
+  - by itself, when nothing usable is saved (with no Cancel), or when `changed` (with
+    "Keep current", which hides it for the visit);
+  - otherwise from "Use a saved card".
+- **Authorize:** one mutation, `useAuthorizeCard(paymentMethodId)`, POSTs `use-card/`.
+  If that answers `requires_action`, `confirmCardSetupInBrowser` opens Stripe.js's
+  3D Secure modal, and the mutation then POSTs `complete/`.
+- **After:** both `me/` and `cards/` are invalidated on settle. The picker remounts
+  (`key` = the card ids) when the list changes, so the selection and the consent tick
+  reset.
+
+Backend: `mlm_platform` IMPACT_ANALYSIS D22.
 
 **Decide (review). Approve/Verify/Re-verify opens `ApproveDialog` (optional note);
 Reject opens `RejectModal`, whose submit is disabled while the note is blank. The decide

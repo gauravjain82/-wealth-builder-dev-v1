@@ -140,19 +140,28 @@ export interface PluginFeesPaymentMethod {
   follows_subscription?: boolean;
 }
 
-/** `GET me/payment-method/subscription-card/`: the card the website subscription pays with. */
-export interface SubscriptionCard {
-  available: boolean;
-  /** e.g. "Visa ••••4242". Present when `available`. */
-  label?: string;
+/** One card saved on the agent's Stripe customer. */
+export interface SavedCard {
+  id: string;
+  /** e.g. "Visa ••••4242". */
+  label: string;
+  /** `MM/YYYY`, or `""` when Stripe did not say. */
+  expires: string;
+  /** The website subscription pays with this card. */
+  subscription: boolean;
   /** Plug-in fees are already charged to this card. */
-  in_use?: boolean;
-  /** The agent chose the subscription card before, and it has since changed. */
-  changed?: boolean;
+  in_use: boolean;
 }
 
-/** `POST me/payment-method/use-subscription-card/`. */
-export type UseSubscriptionCardResponse =
+/** `GET me/payment-method/cards/`. The subscription card, if any, comes first. */
+export interface SavedCards {
+  cards: SavedCard[];
+  /** The agent chose the subscription card before, and it has since changed. */
+  changed: boolean;
+}
+
+/** `POST me/payment-method/use-card/`. */
+export type UseCardResponse =
   | { status: 'saved'; payment_method: PluginFeesPaymentMethod }
   | { status: 'requires_action'; client_secret: string; setup_intent_id: string };
 
@@ -980,5 +989,5 @@ export type PluginFeesErrorCode =
   | 'rate_started'
   | 'go_live_locked'
   | 'authorization_required'
-  | 'no_subscription_card'
+  | 'card_not_found'
   | 'card_declined';

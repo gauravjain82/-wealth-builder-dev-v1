@@ -17,8 +17,8 @@ import {
   createConnectOnboardingLink,
   createCost,
   createInvoicePayLink,
-  authorizeSubscriptionCard,
-  completeSubscriptionCard,
+  authorizeCard,
+  completeCard,
   confirmCardSetupInBrowser,
   createPaymentMethodSetupSession,
   decideAssistant,
@@ -47,7 +47,7 @@ import {
   fetchPayouts,
   fetchPluginFeesAccess,
   fetchSevcTotals,
-  fetchSubscriptionCard,
+  fetchSavedCards,
   preparePayout,
   resolveFollowUp,
   retryPayoutLine,
@@ -127,7 +127,7 @@ export const pluginFeesKeys = {
   feeSchedule: ['plugin-fees', 'fee-schedule'] as const,
   billingSettings: ['plugin-fees', 'settings'] as const,
   configHistory: ['plugin-fees', 'config-history'] as const,
-  subscriptionCard: ['plugin-fees', 'subscription-card'] as const,
+  savedCards: ['plugin-fees', 'saved-cards'] as const,
 };
 
 /** What the current user may do with plug-in fees. Drives the menu, guard and Settings sections. */
@@ -192,13 +192,13 @@ export function useCreatePaymentMethodSetupSession() {
 }
 
 /**
- * The website subscription's card. Asks Stripe on every read, so it is not polled; it
- * refetches on mount, which covers the return from the billing portal.
+ * Cards saved on the agent's Stripe account. Asks Stripe on every read, so it is not
+ * polled; it refetches on mount, which covers the return from the billing portal.
  */
-export function useSubscriptionCard(enabled: boolean) {
+export function useSavedCards(enabled: boolean) {
   return useQuery({
-    queryKey: pluginFeesKeys.subscriptionCard,
-    queryFn: ({ signal }) => fetchSubscriptionCard(signal),
+    queryKey: pluginFeesKeys.savedCards,
+    queryFn: ({ signal }) => fetchSavedCards(signal),
     enabled,
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
@@ -207,22 +207,22 @@ export function useSubscriptionCard(enabled: boolean) {
 }
 
 /**
- * One click: authorize the subscription card for plug-in fees. If the bank asks for
- * 3D Secure, Stripe.js shows it on this page and the backend is told once it passes.
+ * One click: authorize a saved card for plug-in fees. If the bank asks for 3D Secure,
+ * Stripe.js shows it on this page and the backend is told once it passes.
  */
-export function useAuthorizeSubscriptionCard() {
+export function useAuthorizeCard() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const result = await authorizeSubscriptionCard();
+    mutationFn: async (paymentMethodId: string) => {
+      const result = await authorizeCard(paymentMethodId);
       if (result.status === 'saved') return result.payment_method;
       await confirmCardSetupInBrowser(result.client_secret);
-      return completeSubscriptionCard(result.setup_intent_id);
+      return completeCard(result.setup_intent_id);
     },
     onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: pluginFeesKeys.me }),
-        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.subscriptionCard }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.savedCards }),
       ]),
     ...NO_RETRY,
   });
