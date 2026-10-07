@@ -25,7 +25,7 @@ export function EmailPreviewModal(props: EmailPreviewModalProps) {
       dismissible
       title="Email preview"
       subtitle={preview ? `To ${preview.to} · ${preview.subject} · ${preview.tickets} ticket${preview.tickets > 1 ? 's' : ''}` : undefined}
-      className="max-w-3xl"
+      contentClassName="max-w-3xl"
     >
       {loading ? (
         <LoadingState />
