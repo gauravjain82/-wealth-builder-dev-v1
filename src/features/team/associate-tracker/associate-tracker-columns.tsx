@@ -80,7 +80,7 @@ function GoalHeader() {
 interface BuildAssociateColumnsOptions {
   onToggle: (userId: number, field: keyof AssociateTrackerRecord, value: boolean) => void;
   onPatch: (userId: number, field: keyof AssociateTrackerRecord, value: number | string | null) => void;
-  showKeyPlayerColumn?: boolean;
+  showSmdColumns?: boolean;
   onOpenUserProfile?: (row: AssociateTrackerRecord) => void;
   onOpenHotRecruits?: (row: AssociateTrackerRecord) => void;
   onOpenPersonalPoints?: (row: AssociateTrackerRecord) => void;
@@ -475,13 +475,13 @@ function TwoInputCell({
     </div>
   );
 }
-export type AssociateTrackerColumnVariant = 'associate' | 'builders';
+export type AssociateTrackerColumnVariant = 'associate' | 'builders' | 'producers';
 
 export function buildAssociateColumns(
   options: BuildAssociateColumnsOptions,
   variant: AssociateTrackerColumnVariant = 'associate'
 ): TrackerTableColumn<AssociateTrackerRecord>[] {
-  const showKeyPlayerColumn = options.showKeyPlayerColumn ?? true;
+  const showSmdColumns = options.showSmdColumns ?? true;
   const columns: TrackerTableColumn<AssociateTrackerRecord>[] = [
     {
       key: 'index',
@@ -557,6 +557,19 @@ export function buildAssociateColumns(
         ) : (
           row.leader_name || '-'
         ),
+    },
+    {
+      // Producers page only (see the variant filter below).
+      key: 'producer_since',
+      label: 'Producer since',
+      width: 140,
+      align: 'center',
+      sortable: true,
+      searchable: false,
+      value: (row) => row.producer_since ?? '',
+      render: (row) => (
+        <span className="text-xs text-white/80">{formatTrackerDate(row.producer_since)}</span>
+      ),
     },
     {
       key: 'finish_1st_recruit',
@@ -690,6 +703,17 @@ export function buildAssociateColumns(
       render: (row) => <NetLicenseAmountCell row={row} options={options} />,
     },
     {
+      // SMD-only, like Builder. Independent of Builder: a person can be both.
+      key: 'is_producer',
+      label: 'Producer',
+      width: 120,
+      align: 'center',
+      sortable: true,
+      searchable: false,
+      value: (row) => asYesNo(row.is_producer),
+      render: (row) => renderCheckbox(row, 'is_producer', options),
+    },
+    {
       key: 'is_key_player',
       label: 'Builder',
       width: 120,
@@ -775,16 +799,20 @@ export function buildAssociateColumns(
     },
   ];
 
-  const visibleColumns = showKeyPlayerColumn
-    ? columns
-    : columns.filter((column) => column.key !== 'is_key_player');
+  const smdOnlyColumnKeys = new Set(['is_producer', 'is_key_player']);
+  const variantColumns =
+    variant === 'producers' ? columns : columns.filter((column) => column.key !== 'producer_since');
+  const visibleColumns = showSmdColumns
+    ? variantColumns
+    : variantColumns.filter((column) => !smdOnlyColumnKeys.has(column.key));
 
-  if (variant === 'builders') {
+  if (variant === 'builders' || variant === 'producers') {
     const builderColumnKeys = new Set([
       'index',
       'user_name',
       'recruiter',
       'leader',
+      'producer_since',
       'recruits_inputs',
       'points_inputs',
       'licenses_inputs',

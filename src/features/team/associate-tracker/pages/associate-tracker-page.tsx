@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { hasRoleAtLeast } from '@/core/constants/roles';
-import { Plan } from '@/core/types';
+import { isSmdOrAbove } from '@/features/team/associate-tracker/smd-access';
 import { useAuth } from '@/features/auth';
 import { Block, Button, ErrorState, LoadingState, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
@@ -29,15 +28,6 @@ import { TrackerTeamScopeFilter, type TrackerTeamScope } from '@/features/team/c
 import type { TrackerUserProfile } from '@/features/team/services/tracker-user-profile-service';
 
 type SortDirection = 'asc' | 'desc';
-
-function canViewKeyPlayerColumn(user: ReturnType<typeof useAuth>['user']): boolean {
-  const candidateRoles = [
-    ...(user?.roles || []),
-    user?.accountType,
-    user?.plan,
-  ];
-  return hasRoleAtLeast(candidateRoles, Plan.Broker);
-}
 
 function toSortParam(sort: { key: string; direction: SortDirection } | null): string | undefined {
   if (!sort) return undefined;
@@ -164,7 +154,7 @@ export function AssociateTrackerContent({
 
   const pageSize = 15;
   const addToast = useToastStore((state) => state.addToast);
-  const showKeyPlayerColumn = useMemo(() => canViewKeyPlayerColumn(user), [user]);
+  const showSmdColumns = useMemo(() => isSmdOrAbove(user), [user]);
 
   const handleDateRangeChange = useCallback((value: TrackerDateRangeChange) => {
     setDateRangePreset(value.preset);
@@ -432,7 +422,7 @@ export function AssociateTrackerContent({
       buildAssociateColumns({
         onToggle: handleToggle,
         onPatch: handlePatchField,
-        showKeyPlayerColumn,
+        showSmdColumns,
         onOpenUserProfile: (row) => {
           setProfileOpenFor({
             userId: row.user_id,
@@ -468,7 +458,7 @@ export function AssociateTrackerContent({
         },
       }, columnVariant),
     [
-      showKeyPlayerColumn,
+      showSmdColumns,
       savingKeySet,
       notesByUserId,
       noteDraftByUserId,
@@ -517,10 +507,10 @@ export function AssociateTrackerContent({
 
   const headerGroupRows = useMemo(
     () =>
-      columnVariant === 'builders'
+      columnVariant === 'builders' || columnVariant === 'producers'
         ? [
             [
-              { label: '', colSpan: 4, className: 'group-empty' },
+              { label: '', colSpan: columnVariant === 'producers' ? 5 : 4, className: 'group-empty' },
               { label: 'SYSTEM', colSpan: 4, className: 'group-main' },
               { label: 'BUILD', colSpan: 3, className: 'group-main' },
             ],
@@ -530,10 +520,10 @@ export function AssociateTrackerContent({
               { label: '', colSpan: 3, className: 'group-empty' },
               { label: 'PHILOSOPHY', colSpan: 3, className: 'group-main' },
               { label: 'SYSTEM', colSpan: 4, className: 'group-main' },
-              { label: 'BUILD', colSpan: showKeyPlayerColumn ? 9 : 8, className: 'group-main' },
+              { label: 'BUILD', colSpan: showSmdColumns ? 10 : 8, className: 'group-main' },
             ],
           ],
-    [columnVariant, showKeyPlayerColumn]
+    [columnVariant, showSmdColumns]
   );
 
   const loadRows = useCallback(
@@ -729,7 +719,7 @@ export function AssociateTrackerContent({
           rows={rows}
           rowKey={(row, index) => `${row.id}-${index}`}
           headerGroupRows={headerGroupRows}
-          stickyFirstNColumns={columnVariant === 'builders' ? 4 : 3}
+          stickyFirstNColumns={columnVariant === 'associate' ? 3 : 4}
           resizable
           tableId={tableId}
           emptyMessage={emptyMessage}

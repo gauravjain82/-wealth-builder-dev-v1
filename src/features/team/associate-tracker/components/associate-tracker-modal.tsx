@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { hasRoleAtLeast } from '@/core/constants/roles';
-import { Plan } from '@/core/types';
+import { isSmdOrAbove } from '@/features/team/associate-tracker/smd-access';
 import { useAuth } from '@/features/auth';
 import { Modal, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
@@ -26,15 +25,6 @@ interface AssociateTrackerModalProps {
   ownerUserId: number | null;
   ownerName: string;
   onClose: () => void;
-}
-
-function canViewKeyPlayerColumn(user: ReturnType<typeof useAuth>['user']): boolean {
-  const candidateRoles = [
-    ...(user?.roles || []),
-    user?.accountType,
-    user?.plan,
-  ];
-  return hasRoleAtLeast(candidateRoles, Plan.Broker);
 }
 
 function toSortParam(sort: { key: string; direction: SortDirection } | null): string | undefined {
@@ -90,7 +80,7 @@ export function AssociateTrackerModal({
     userName: string;
     avatarUrl?: string | null;
   } | null>(null);
-  const showKeyPlayerColumn = useMemo(() => canViewKeyPlayerColumn(user), [user]);
+  const showSmdColumns = useMemo(() => isSmdOrAbove(user), [user]);
 
   const loadRows = useCallback(async (
     page: number,
@@ -222,7 +212,7 @@ export function AssociateTrackerModal({
   const columns = useMemo(() => buildAssociateColumns({
     onToggle: (userId, field, value) => void handleToggle(userId, field, value),
     onPatch: (userId, field, value) => void handlePatchField(userId, field, value),
-    showKeyPlayerColumn,
+    showSmdColumns,
     onOpenUserProfile: (row) => setProfileOpenFor({
       userId: row.user_id,
       userName: row.user_name,
@@ -252,7 +242,7 @@ export function AssociateTrackerModal({
     notesByUserId,
     savingKeySet,
     savingNoteUserIdSet,
-    showKeyPlayerColumn,
+    showSmdColumns,
   ]);
 
   const handleProfileSaved = useCallback((updated: TrackerUserProfile) => {

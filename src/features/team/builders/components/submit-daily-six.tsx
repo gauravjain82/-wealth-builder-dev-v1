@@ -12,6 +12,7 @@ import {
   type DailySixPayload,
   type DailySixSubmission,
 } from '../services/builders-service';
+import { BUILDER_PROGRAM, type TeamProgram } from '../team-programs';
 
 const EMPTY_DAILY_SIX: DailySixPayload = {
   session: 'PM',
@@ -31,6 +32,8 @@ interface SubmitDailySixProps {
   enrollment: BuilderEnrollment | null;
   todaySubmissions: DailySixSubmission[];
   onSubmitted: () => void;
+  /** Program whose flagged people the name picker offers. Defaults to Builders. */
+  program?: TeamProgram;
 }
 
 type CountField = 'friends_made' | 'calls_made' | 'appointments';
@@ -75,6 +78,7 @@ export function SubmitDailySix({
   enrollment,
   todaySubmissions,
   onSubmitted,
+  program = BUILDER_PROGRAM,
 }: SubmitDailySixProps) {
   const addToast = useToastStore((state) => state.addToast);
   const [step, setStep] = useState<DailySixStep>('setup');
@@ -98,7 +102,7 @@ export function SubmitDailySix({
       page: 1,
       pageSize: 20,
       filters: {
-        is_key_player: 'true',
+        [program.trackerFlag]: 'true',
         name: search,
       },
     });
@@ -106,7 +110,7 @@ export function SubmitDailySix({
     return data.results
       .filter((row) => Boolean(row.agency_code))
       .map(mapAssociateToOption);
-  }, []);
+  }, [program.trackerFlag]);
 
   useEffect(() => {
     if (enrollment?.pace) {
@@ -286,7 +290,7 @@ export function SubmitDailySix({
             <UserAutocompleteDropdown
               selectedId={selectedBuilder?.id ?? null}
               selectedLabel={activeUserName}
-              placeholder="Select builder"
+              placeholder={`Select ${program.label.toLowerCase()}`}
               fetchOptions={loadBuilderOptions}
               onSelect={(option) => {
                 handleBuilderSelect(option);
@@ -381,7 +385,7 @@ export function SubmitDailySix({
             <div>
               <h2 className="mb-1 text-xl font-bold text-slate-900 dark:text-white">Daily Six</h2>
               <p className="text-sm text-slate-500 dark:text-white/60">
-                {activeUserName ? `${activeUserName} - ` : ''}{activePace?.name || 'Builder'} goals
+                {activeUserName ? `${activeUserName} - ` : ''}{activePace?.name || program.label} goals
                 {existingForSession ? ' - this session will be updated' : ''}
               </p>
             </div>

@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { ProtectedRoute } from './protected-route';
 import { AdminRoute } from './admin-route';
+import { SmdRoute } from './smd-route';
 import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
 import { CodeOfHonorRoute } from './code-of-honor-route';
@@ -66,6 +67,7 @@ const OrgChartPage = lazy(() => import('@/features/team/org-chart/pages/org-char
 const MissionTrackerPage = lazy(() => import('@/features/team/mission-tracker/pages/mission-tracker-page'));
 const AssociateTrackerPage = lazy(() => import('@/features/team/associate-tracker/pages/associate-tracker-page'));
 const BuildersPage = lazy(() => import('@/features/team/builders/pages/builders-page'));
+const ProducersPage = lazy(() => import('@/features/team/producers/pages/producers-page'));
 const BuilderAiHomePage = lazy(() => import('@/features/builder-ai/pages/home-page'));
 const BuilderAiCompanyPage = lazy(() => import('@/features/builder-ai/pages/company-page'));
 const BuilderAiBaseshopPage = lazy(() => import('@/features/builder-ai/pages/baseshop-page'));
@@ -722,6 +724,10 @@ const router = createBrowserRouter([
       {
         path: 'team/associate-tracker',
         element: lazyLoad(AssociateTrackerPage),
+      },
+      {
+        path: 'team/producers',
+        element: <SmdRoute>{lazyLoad(ProducersPage)}</SmdRoute>,
       },
       {
         path: 'team/builders',

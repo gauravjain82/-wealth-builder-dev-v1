@@ -35,7 +35,7 @@ export function LeaderboardShell({
         <div className="flex items-center gap-2">
           {paces.length > 0 && (
             <Select
-              aria-label="Builder pace"
+              aria-label="Pace"
               className="min-w-[180px]"
               value={paceId ?? ''}
               onChange={(event) => onPaceChange(Number(event.target.value))}
