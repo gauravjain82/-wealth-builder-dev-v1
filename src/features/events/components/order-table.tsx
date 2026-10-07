@@ -7,6 +7,8 @@ import {
   statusCounts,
 } from '../utils/ticket-status';
 import type { EventOrderListItem, OrderStatus } from '../types/order';
+import { SearchMatchLabel } from './search-match-label';
+import { SEARCH_HIT_CLASS } from '../utils/purchase-search';
 
 interface OrderTableProps {
   orders: EventOrderListItem[];
@@ -63,23 +65,30 @@ function InvoiceCell({ order }: { order: EventOrderListItem }) {
           {order.external_invoice_reference ? ` · Inv ${order.external_invoice_reference}` : ''}
         </div>
       ) : null}
+      <SearchMatchLabel matches={order.search_match} />
     </div>
   );
 }
 
-/** Each ticket's attendee with its status; unnamed tickets read "Not assigned". */
+/**
+ * Each ticket's attendee with its status; unnamed tickets read "Not assigned".
+ * Attendees a search named come first and are highlighted, so they are never
+ * hidden behind "+N more".
+ */
 function TicketsCell({ order }: { order: EventOrderListItem }) {
-  const attendees = order.attendees ?? [];
+  const attendees = [...(order.attendees ?? [])].sort(
+    (a, b) => Number(Boolean(b.matched)) - Number(Boolean(a.matched)),
+  );
   return (
     <div className="min-w-[180px] space-y-0.5">
       {attendees.slice(0, ATTENDEES_SHOWN).map((attendee) => (
         <div key={attendee.ticket_number} className="flex items-center gap-1.5">
           <span
-            className={
+            className={`${
               attendee.name
                 ? 'text-slate-900 dark:text-white'
                 : 'italic text-slate-500 dark:text-white/50'
-            }
+            } ${attendee.matched ? SEARCH_HIT_CLASS : ''}`}
           >
             {attendee.name || 'Not assigned'}
           </span>
@@ -162,7 +171,11 @@ export function OrderTable({
                   <InvoiceCell order={order} />
                 </td>
                 <td className="px-3 py-2">
-                  <div className="text-slate-900 dark:text-white">{purchaserName(order)}</div>
+                  <div className="text-slate-900 dark:text-white">
+                    <span className={order.search_match?.includes('buyer') ? SEARCH_HIT_CLASS : undefined}>
+                      {purchaserName(order)}
+                    </span>
+                  </div>
                   <div className="text-xs text-slate-500 dark:text-white/50">
                     {order.purchaser_email}
                   </div>

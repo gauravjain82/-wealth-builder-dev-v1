@@ -16,9 +16,11 @@ import { checkinService } from '../services/checkin-service';
 import { EventSubnav } from '../components/event-subnav';
 import { CheckinStatsCards } from '../components/checkin-stats-cards';
 import { CheckinScanBox } from '../components/checkin-scan-box';
-import { AttendeeTable } from '../components/attendee-table';
+import { CheckinPurchaseList } from '../components/checkin-purchase-list';
 import type { BigEvent } from '../types/event';
 import type { CheckinAttendee } from '../types/checkin';
+import { PURCHASE_SEARCH_HELP, PURCHASE_SEARCH_PLACEHOLDER } from '../utils/purchase-search';
+import { SearchInSelect } from '../components/search-in-select';
 
 const ARRIVED_OPTIONS = [
   { value: '', label: 'Everyone' },
@@ -33,7 +35,7 @@ export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: n
   const embedded = eventIdProp !== undefined;
   const addToast = useToastStore((state) => state.addToast);
   const {
-    attendees,
+    purchases,
     count,
     stats,
     filters,
@@ -122,8 +124,14 @@ export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: n
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, email, ticket, invoice, BSCPro confirmation…"
-            className="max-w-xs"
+            placeholder={PURCHASE_SEARCH_PLACEHOLDER}
+            title={PURCHASE_SEARCH_HELP}
+            aria-label={PURCHASE_SEARCH_HELP}
+            className="w-full sm:w-[26rem]"
+          />
+          <SearchInSelect
+            value={filters.search_in}
+            onChange={(searchIn) => setFilters({ search_in: searchIn })}
           />
           <Select
             value={filters.arrived === undefined ? '' : String(filters.arrived)}
@@ -159,8 +167,8 @@ export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: n
       ) : error ? (
         <ErrorState description={error} onRetry={() => void refetch()} />
       ) : (
-        <AttendeeTable
-          attendees={attendees}
+        <CheckinPurchaseList
+          purchases={purchases}
           count={count}
           page={filters.page ?? 1}
           busyTicketId={busyTicketId}

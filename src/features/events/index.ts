@@ -37,7 +37,7 @@ export { MyTicketsTable } from './components/my-tickets-table';
 export { CheckinStatsCards } from './components/checkin-stats-cards';
 export { CheckinScanBox } from './components/checkin-scan-box';
 export { CheckinCameraScanner } from './components/checkin-camera-scanner';
-export { AttendeeTable } from './components/attendee-table';
+export { CheckinPurchaseList } from './components/checkin-purchase-list';
 
 // Components — public
 export {
