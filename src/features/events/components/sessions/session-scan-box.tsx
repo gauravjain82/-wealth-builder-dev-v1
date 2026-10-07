@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge, Button, Card, CardContent, Input, Text } from '@shared/components';
 import { CheckinCameraScanner } from '../checkin-camera-scanner';
 import { CheckinSuccessFlash } from '../checkin-success-flash';
@@ -6,6 +6,7 @@ import { isCameraScanSupported } from '../../utils/checkin-scan';
 import { doorErrorOf } from '../../services/door-service';
 import { DoorRefusalPanel } from '../door/door-refusal-panel';
 import { DoorSuccessDetails } from '../door/door-success-details';
+import { LinkProfilePanel } from '../door/link-profile-panel';
 import { credentialLabel, type DoorErrorBody, type LinkAccountResult } from '../../types/door';
 import type { SessionCheckinPayload, SessionScanResult } from '../../types/session';
 
@@ -79,6 +80,12 @@ export function SessionScanBox({
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
+  const [linking, setLinking] = useState<SessionScanResult | null>(null);
+
+  // A pending link belongs to the session it was started in.
+  useEffect(() => {
+    setLinking(null);
+  }, [sessionId]);
   const [flash, setFlash] = useState({ n: 0, caption: '' });
   const inputRef = useRef<HTMLInputElement>(null);
   // Remounts the refusal panel per refusal so a stale link error never lingers.
@@ -89,6 +96,7 @@ export function SessionScanBox({
     async (payload: SessionCheckinPayload, fromCamera = false) => {
       if (busy) return;
       setBusy(true);
+      setLinking(null);
       try {
         const attendee = await onScan(payload);
         setOutcome({ kind: 'ok', attendee });
@@ -126,6 +134,7 @@ export function SessionScanBox({
   };
 
   const handleLinked = (result: LinkAccountResult) => {
+    setLinking(null);
     buzz(60);
     setOutcome({ kind: 'linked', result });
     setValue('');
@@ -166,7 +175,8 @@ export function SessionScanBox({
           ) : null}
         </div>
 
-        {cameraOn ? (
+        {/* One camera at a time: the link panel opens its own for the profile QR. */}
+        {cameraOn && !linking ? (
           <CheckinCameraScanner
             paused={busy || outcome?.kind === 'refused'}
             fallbackHint="Type the ticket number instead."
@@ -267,11 +277,32 @@ export function SessionScanBox({
                     credential={outcome.attendee.credential}
                     warnings={outcome.attendee.warnings}
                   />
+                  {outcome.attendee.can_link_account && linking?.id !== outcome.attendee.id ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setLinking(outcome.attendee)}
+                    >
+                      Link profile QR
+                    </Button>
+                  ) : null}
                 </div>
               )}
             </div>
           ) : null}
         </div>
+
+        {linking ? (
+          <LinkProfilePanel
+            eventId={eventId}
+            sessionId={sessionId}
+            ticketId={linking.id}
+            holderName={linking.holder_name}
+            onLinked={handleLinked}
+            onCancel={() => setLinking(null)}
+          />
+        ) : null}
       </CardContent>
     </Card>
   );

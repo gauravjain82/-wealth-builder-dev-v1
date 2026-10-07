@@ -9,6 +9,8 @@ import type { LinkAccountResult } from '../../types/door';
 interface LinkProfilePanelProps {
   eventId: number;
   ticketId: number;
+  /** On a session door: the link admits into this session. */
+  sessionId?: number | null;
   holderName: string;
   onLinked: (result: LinkAccountResult) => void;
   onCancel: () => void;
@@ -22,11 +24,12 @@ interface LinkProfilePanelProps {
 export function LinkProfilePanel({
   eventId,
   ticketId,
+  sessionId,
   holderName,
   onLinked,
   onCancel,
 }: LinkProfilePanelProps) {
-  const link = useAccountLink(eventId);
+  const link = useAccountLink(eventId, sessionId);
   const [value, setValue] = useState('');
   const [cameraOn, setCameraOn] = useState(isCameraScanSupported());
   const cameraSupported = isCameraScanSupported();

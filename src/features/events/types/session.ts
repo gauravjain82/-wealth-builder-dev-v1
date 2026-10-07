@@ -72,6 +72,8 @@ export interface SessionScanResult extends SessionAttendee {
   warnings: string[];
   /** What the scan was recognised as. */
   credential?: DoorCredential;
+  /** The ticket has no linked account — offer "Link profile QR". */
+  can_link_account?: boolean;
 }
 
 export interface SessionStats {

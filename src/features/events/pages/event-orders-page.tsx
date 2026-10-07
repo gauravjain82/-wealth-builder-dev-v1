@@ -38,6 +38,7 @@ const STATUS_OPTIONS = [
   { value: 'PENDING', label: 'Pending' },
   { value: 'PAID', label: 'Paid' },
   { value: 'COMP', label: 'Comp' },
+  { value: 'EXTERNAL', label: 'External (BSCPro)' },
   { value: 'REFUNDED', label: 'Refunded' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
@@ -49,6 +50,7 @@ const TYPE_OPTIONS = [
   { value: 'CHECK', label: 'Check' },
   { value: 'CREDIT', label: 'Credit' },
   { value: 'COMP', label: 'Comp' },
+  { value: 'EXTERNAL', label: 'External (BSCPro)' },
 ];
 
 export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: number } = {}) {

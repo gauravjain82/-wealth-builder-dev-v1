@@ -46,6 +46,7 @@ const STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
   REFUNDED: 'outline',
   CANCELLED: 'secondary',
   COMP: 'info',
+  EXTERNAL: 'outline',
 };
 
 function holderLabel(ticket: EventTicket): string {
