@@ -15,6 +15,8 @@ import type {
   SessionScanResult,
   SessionStats,
 } from '../types/session';
+import type { DoorErrorBody } from '../types/door';
+import { DoorApiError, toDoorError } from './door-service';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -23,16 +25,12 @@ const EVENTS_BASE = '/api/events/events';
 
 /**
  * A refused request. `code` and `overridable` come from session check-in
- * refusals, so the door can offer "Admit anyway" only where staff may.
+ * refusals, so the door can offer "Admit anyway" only where staff may; `door`
+ * carries the full structured refusal (candidates, account, hold).
  */
-export class SessionApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly code: string | null = null,
-    readonly overridable = false,
-  ) {
-    super(message);
+export class SessionApiError extends DoorApiError {
+  constructor(message: string, status: number, door: DoorErrorBody | null = null) {
+    super(message, status, door);
     this.name = 'SessionApiError';
   }
 }
@@ -46,29 +44,9 @@ function authHeaders(isJson = true): HeadersInit {
   };
 }
 
-function messageFrom(data: Record<string, unknown>, fallback: string): string {
-  const detail = data.detail;
-  if (typeof detail === 'string') return detail;
-  if (Array.isArray(detail)) return detail.join(', ');
-  const first = Object.entries(data).find(
-    ([, value]) => Array.isArray(value) || typeof value === 'string',
-  );
-  if (!first) return fallback;
-  const [field, value] = first;
-  const text = Array.isArray(value) ? value.join(', ') : String(value);
-  return field === 'non_field_errors' ? text : `${field.replace(/_/g, ' ')}: ${text}`;
-}
-
 async function toError(response: Response): Promise<SessionApiError> {
-  const fallback = `Request failed (${response.status})`;
-  const data = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-  if (!data || typeof data !== 'object') return new SessionApiError(fallback, response.status);
-  return new SessionApiError(
-    messageFrom(data, fallback),
-    response.status,
-    typeof data.code === 'string' ? data.code : null,
-    data.overridable === true,
-  );
+  const err = await toDoorError(response);
+  return new SessionApiError(err.message, err.status, err.door);
 }
 
 /** Authenticated JSON request against the API; throws `SessionApiError`. */

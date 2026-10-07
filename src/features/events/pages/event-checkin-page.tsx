@@ -115,7 +115,7 @@ export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: n
       )}
 
       <CheckinStatsCards stats={stats} />
-      <CheckinScanBox onScan={checkIn} />
+      <CheckinScanBox eventId={id} onScan={checkIn} onLinked={() => void refetch()} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">

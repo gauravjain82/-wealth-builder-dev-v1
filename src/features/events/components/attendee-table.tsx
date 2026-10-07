@@ -1,5 +1,6 @@
 import { Badge, Button } from '@shared/components';
 import type { CheckinAttendee } from '../types/checkin';
+import { credentialLabel } from '../types/door';
 
 interface AttendeeTableProps {
   attendees: CheckinAttendee[];
@@ -64,8 +65,13 @@ export function AttendeeTable({
                 }`}
               >
                 <td className="px-3 py-2">
-                  <div className="font-medium text-slate-900 dark:text-white">
+                  <div className="flex flex-wrap items-center gap-1.5 font-medium text-slate-900 dark:text-white">
                     {attendee.holder_name || '(unassigned)'}
+                    {attendee.holder_linked ? (
+                      <Badge variant="outline" title="Ticket is linked to a platform account">
+                        Linked
+                      </Badge>
+                    ) : null}
                   </div>
                   <div className="text-xs text-slate-500 dark:text-white/50">
                     {attendee.holder_email || attendee.holder_phone || '—'}
@@ -75,6 +81,11 @@ export function AttendeeTable({
                   <div className="text-slate-600 dark:text-white/70">
                     {attendee.ticket_number}
                   </div>
+                  {attendee.source === 'BSCPRO' ? (
+                    <div className="text-xs text-slate-500 dark:text-white/50">
+                      BSCPro{attendee.external_reference ? ` · ${attendee.external_reference}` : ''}
+                    </div>
+                  ) : null}
                   {attendee.assignment_status !== 'ASSIGNED' ? (
                     <Badge variant="outline">{attendee.assignment_status}</Badge>
                   ) : null}
@@ -92,6 +103,11 @@ export function AttendeeTable({
                           title="Skipped registration — checked in by a session scan"
                         >
                           via {attendee.checkin_via_session || 'session'}
+                        </Badge>
+                      ) : null}
+                      {credentialLabel(attendee.checkin_credential) ? (
+                        <Badge variant="outline" title="What was scanned at arrival">
+                          {credentialLabel(attendee.checkin_credential)}
                         </Badge>
                       ) : null}
                     </div>

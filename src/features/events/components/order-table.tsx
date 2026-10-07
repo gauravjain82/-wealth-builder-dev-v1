@@ -19,6 +19,7 @@ const STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
   REFUNDED: 'outline',
   CANCELLED: 'secondary',
   COMP: 'info',
+  EXTERNAL: 'outline',
 };
 
 function purchaserName(order: EventOrderListItem): string {

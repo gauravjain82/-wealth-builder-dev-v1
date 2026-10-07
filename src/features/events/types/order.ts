@@ -1,8 +1,9 @@
 import type { EventTicket } from './ticket';
 
-export type TransactionType = 'STRIPE' | 'CASH' | 'CHECK' | 'CREDIT' | 'COMP';
-export type OrderStatus = 'PENDING' | 'PAID' | 'REFUNDED' | 'CANCELLED' | 'COMP';
-export type OrderSource = 'PUBLIC' | 'ADMIN';
+export type TransactionType = 'STRIPE' | 'CASH' | 'CHECK' | 'CREDIT' | 'COMP' | 'EXTERNAL';
+/** `EXTERNAL`: the $0 order each imported partner (BSCPro) ticket gets. */
+export type OrderStatus = 'PENDING' | 'PAID' | 'REFUNDED' | 'CANCELLED' | 'COMP' | 'EXTERNAL';
+export type OrderSource = 'PUBLIC' | 'ADMIN' | 'EXTERNAL';
 
 export interface AddOnOrderItem {
   id: number;

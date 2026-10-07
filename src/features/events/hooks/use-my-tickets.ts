@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { EventTicket, MyTicketsResponse, OwnerSummary } from '../types/ticket';
+import type { EventTicket, HeldTicket, MyTicketsResponse, OwnerSummary } from '../types/ticket';
 import { orderService } from '../services/order-service';
 
 const EMPTY_SUMMARY: OwnerSummary = {
@@ -10,8 +10,11 @@ const EMPTY_SUMMARY: OwnerSummary = {
   checked_in: 0,
 };
 
+const NO_HELD: HeldTicket[] = [];
+
 /**
- * Loads the current user's owned tickets for an event (bulk-buy dashboard).
+ * Loads the current user's owned tickets for an event (bulk-buy dashboard),
+ * plus the tickets they are the named attendee of (`heldTickets`).
  */
 export function useMyTickets(eventId: number) {
   const [data, setData] = useState<MyTicketsResponse | null>(null);
@@ -36,6 +39,7 @@ export function useMyTickets(eventId: number) {
 
   return {
     tickets: (data?.tickets ?? []) as EventTicket[],
+    heldTickets: data?.held_tickets ?? NO_HELD,
     summary: data?.summary ?? EMPTY_SUMMARY,
     loading,
     error,

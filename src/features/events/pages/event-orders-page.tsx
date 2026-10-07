@@ -21,10 +21,16 @@ import { AddPurchaseModal } from '../components/add-purchase-modal';
 import { OrderDetailModal } from '../components/order-detail-modal';
 import { AssignTicketModal } from '../components/assign-ticket-modal';
 import { TransferTicketModal } from '../components/transfer-ticket-modal';
+import { HandOverTicketModal } from '../components/hand-over-ticket-modal';
 import { ReportsPanel } from '../components/reports-panel';
 import type { BigEvent } from '../types/event';
 import type { EventOrder, EventOrderListItem, OrderCreatePayload } from '../types/order';
-import type { AssignHolderPayload, EventTicket, TransferPayload } from '../types/ticket';
+import type {
+  AssignHolderPayload,
+  EventTicket,
+  HandOverPayload,
+  TransferPayload,
+} from '../types/ticket';
 import type { EventTrackedSeller } from '../types/config';
 
 const STATUS_OPTIONS = [
@@ -32,6 +38,7 @@ const STATUS_OPTIONS = [
   { value: 'PENDING', label: 'Pending' },
   { value: 'PAID', label: 'Paid' },
   { value: 'COMP', label: 'Comp' },
+  { value: 'EXTERNAL', label: 'External (BSCPro)' },
   { value: 'REFUNDED', label: 'Refunded' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
@@ -43,6 +50,7 @@ const TYPE_OPTIONS = [
   { value: 'CHECK', label: 'Check' },
   { value: 'CREDIT', label: 'Credit' },
   { value: 'COMP', label: 'Comp' },
+  { value: 'EXTERNAL', label: 'External (BSCPro)' },
 ];
 
 export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: number } = {}) {
@@ -76,6 +84,7 @@ export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: nu
   const [detailLoading, setDetailLoading] = useState(false);
   const [assignTicket, setAssignTicket] = useState<EventTicket | null>(null);
   const [transferTicket, setTransferTicket] = useState<EventTicket | null>(null);
+  const [handOverTicket, setHandOverTicket] = useState<EventTicket | null>(null);
   const [ticketBusy, setTicketBusy] = useState(false);
 
   useEffect(() => {
@@ -148,6 +157,21 @@ export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: nu
       await refreshDetail();
     } catch (err) {
       addToast({ type: 'error', message: err instanceof Error ? err.message : 'Transfer failed' });
+    } finally {
+      setTicketBusy(false);
+    }
+  };
+
+  const handleHandOver = async (payload: HandOverPayload) => {
+    if (!handOverTicket) return;
+    setTicketBusy(true);
+    try {
+      await orderService.handOverTicket(handOverTicket.id, payload);
+      addToast({ type: 'success', message: 'Name change recorded. The new attendee has been emailed.' });
+      setHandOverTicket(null);
+      await refreshDetail();
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Name change failed' });
     } finally {
       setTicketBusy(false);
     }
@@ -293,6 +317,7 @@ export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: nu
         onClose={() => setDetail(null)}
         onAssign={setAssignTicket}
         onTransfer={setTransferTicket}
+        onHandOver={setHandOverTicket}
         onUpdated={() => void refreshDetail()}
         onRefund={refundOrder}
         onCancel={cancelOrder}
@@ -311,6 +336,15 @@ export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: nu
         submitting={ticketBusy}
         onClose={() => setTransferTicket(null)}
         onSubmit={handleTransfer}
+      />
+      <HandOverTicketModal
+        open={Boolean(handOverTicket)}
+        ticket={handOverTicket}
+        eventId={id}
+        mode="manager"
+        submitting={ticketBusy}
+        onClose={() => setHandOverTicket(null)}
+        onSubmit={handleHandOver}
       />
     </div>
   );

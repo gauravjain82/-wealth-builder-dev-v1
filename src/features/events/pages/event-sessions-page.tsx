@@ -329,7 +329,13 @@ export default function EventSessionsPage({ eventId: eventIdProp }: { eventId?: 
             />
           </div>
 
-          <SessionScanBox sessionTitle={selected.title} onScan={door.checkIn} />
+          <SessionScanBox
+            eventId={id}
+            sessionId={selected.id}
+            sessionTitle={selected.title}
+            onScan={door.checkIn}
+            onLinked={() => void door.refetch()}
+          />
 
           <div className="flex flex-wrap items-center gap-3">
             <Input

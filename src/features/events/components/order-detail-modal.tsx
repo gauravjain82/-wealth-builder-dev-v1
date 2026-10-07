@@ -30,6 +30,8 @@ interface OrderDetailModalProps {
   onClose: () => void;
   onAssign: (ticket: EventTicket) => void;
   onTransfer: (ticket: EventTicket) => void;
+  /** Record a name change / hand-over (same ticket, new named attendee). */
+  onHandOver?: (ticket: EventTicket) => void;
   onUpdated: () => void;
   onRefund: (orderId: number) => Promise<unknown>;
   onCancel: (orderId: number) => Promise<unknown>;
@@ -44,6 +46,7 @@ const STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
   REFUNDED: 'outline',
   CANCELLED: 'secondary',
   COMP: 'info',
+  EXTERNAL: 'outline',
 };
 
 function holderLabel(ticket: EventTicket): string {
@@ -59,6 +62,7 @@ export function OrderDetailModal({
   onClose,
   onAssign,
   onTransfer,
+  onHandOver,
   onUpdated,
   onRefund,
   onCancel,
@@ -310,6 +314,18 @@ export function OrderDetailModal({
                         >
                           Transfer
                         </Button>
+                        {onHandOver ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            title="Record name change / hand-over"
+                            onClick={() => onHandOver(ticket)}
+                            disabled={ticket.lifecycle_status !== 'ACTIVE'}
+                          >
+                            Name change
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
                           variant="ghost"
