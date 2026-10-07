@@ -66,7 +66,7 @@ List endpoints filter `is_active=True` by default — config is **soft-deleted**
 | Orders | `/api/events/orders/` and `/api/events/orders/{id}/` |
 | Refund | an action on an order |
 | Tickets | `/api/events/tickets/` and `/api/events/tickets/{id}/` |
-| Assign holder | a ticket action |
+| Assign holder | a ticket action — `assign/`. A manager may send `to_user_id` (a picked person) and `update_contact`; a new prospect joins the chosen SMD's team (backend E23) |
 | Transfer | a ticket action — `transfer/` (WB tickets, moves ownership) or `hand-over/` (BSCPro, names the new attendee) |
 | Person search | `/api/events/events/{id}/people/search/?q=` — agents and prospects for the managers' transfer picker; `searchPeople`, called only through `hooks/use-people-search.ts` (key `['events', eventId, 'people-search', q]`, forwards `signal`) |
 | History | per ticket |
@@ -74,7 +74,9 @@ List endpoints filter `is_active=True` by default — config is **soft-deleted**
 ### Check-in — `checkin-service.ts`
 
 Attendee list with filters, scan, **undo scan** (`:96`), manual check-in, stats, and export
-(`xlsx` / `pdf`).
+(`xlsx` / `pdf`). `listPurchases` returns `CheckinPurchasePage` — the page plus `can_assign`, which
+gates the door's Assign. The door's Assign itself goes through `orderService.assignTicket`, called
+from `useCheckIn().assign`, which re-fetches the list and counters.
 
 ### Post-sale — `post-sale-service.ts`
 

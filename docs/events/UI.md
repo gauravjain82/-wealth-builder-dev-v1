@@ -158,6 +158,11 @@ user-directory teammate picker, and typed details for a hand-over.
 Scan or manual, a progress strip, filters and export (`xlsx` / `pdf`). **A scan can be reversed** — an
 accidental scan is a normal operational event at a door, not an error state.
 
+**Two inputs, two jobs.** The scan box *checks someone in* — it expects one exact credential (ticket QR,
+profile QR, BSCPro QR or a typed ticket number) and admits it. **Find attendee** *only filters the
+list* — partial name, email, phone, ticket or invoice — and admits nobody; staff then press Check in
+on the row. They are separate so a typed name can never admit the wrong ticket.
+
 Top to bottom: the scan box (`components/checkin-scan-box.tsx`, autofocused — the door's main control),
 the progress strip (`components/checkin-progress.tsx`: arrived / expected, a bar, to come · unnamed · via
 a session scan), then one toolbar row — **Find attendee** search, *Search in*, the arrival tabs
@@ -169,12 +174,22 @@ remembered per browser in `localStorage['wb.checkinListView']`, default Door:
 
 | | Door | Detailed |
 |---|---|---|
-| Columns | Attendee · Ticket · Arrival · Check in | Attendee · Ticket · Status · Arrival · Action |
-| Single-ticket purchase | one row, "Bought by …" when the buyer is someone else | heading row + ticket row |
-| Unnamed tickets | two or more fold into "N unnamed tickets" + **Check in next unnamed**; a search hit stays out | all listed |
-| Arrival detail | `✓ time`; session, credential and admitting user in the tooltip | written under the time |
+| Columns | Attendee · Ticket details · Purchaser · Assign / Check in | Attendee · Ticket · Status · Arrival · Action |
+| Ticket details | Internal ID (ticket number), External ID (BSCPro confirmation), Invoice ID (the partner's invoice when imported, else ours) | ticket number + BSCPro reference |
+| Purchaser | name, email, mobile on every row; under the name as "Bought by …" below `md` | in the purchase heading row |
+| Purchase heading row | none — rows of one purchase are divided from the next by a heavier rule | one per purchase |
+| Unnamed tickets | two or more fold into "N unnamed tickets" + **Assign** + **Check in next unnamed**; a search hit stays out | all listed |
+| Arrival detail | `✓ time` in the action cell; session, credential and admitting user in the tooltip | written under the time |
 | Undo | only on tickets admitted from this device this visit | every arrived row |
 | SMD, Linked badge, Export | hidden | shown; Excel / PDF / Print under **Export** |
+
+**Assign** (PHASES E21) shows on every unnamed ticket — in both views, on the fold row (it names an
+already-arrived unnamed ticket first) and on an unnamed scan result — but only when
+`checkin/purchases/` returns `can_assign: true`, i.e. the viewer has `PURCHASE` manage. It opens
+`components/door/door-assign-modal.tsx`: the managers' `TicketRecipientPicker` (find an agent or a
+prospect, or type someone new and add them as a prospect on the SMD's team) and the SMD select,
+required only when adding a prospect. Ownership stays with the buyer. On success the list re-fetches
+and the scan result line takes the new name.
 
 Colour has one meaning each: green = arrived, amber = unnamed (and the search highlight), the brand
 button = Check in. An assigned ticket shows no badge. The page keeps 6rem of bottom padding so the last

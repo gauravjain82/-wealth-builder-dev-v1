@@ -3,7 +3,7 @@ import type {
   CheckinExportType,
   CheckinFilters,
   CheckinPayload,
-  CheckinPurchase,
+  CheckinPurchasePage,
   CheckinScanResult,
   CheckinStats,
 } from '../types/checkin';
@@ -81,7 +81,7 @@ export const checkinService = {
   listPurchases(
     eventId: number,
     filters: CheckinFilters = {},
-  ): Promise<PaginatedResponse<CheckinPurchase>> {
+  ): Promise<CheckinPurchasePage> {
     return request(`${EVENTS_BASE}/${eventId}/checkin/purchases/${buildQuery(filters)}`);
   },
 

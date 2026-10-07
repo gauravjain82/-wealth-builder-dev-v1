@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { checkinService } from '../services/checkin-service';
+import { orderService } from '../services/order-service';
 import type {
   CheckinAttendee,
   CheckinFilters,
   CheckinPayload,
-  CheckinPurchase,
+  CheckinPurchasePage,
   CheckinScanResult,
   CheckinStats,
 } from '../types/checkin';
-import type { PaginatedResponse } from '../types/event';
+import type { AssignHolderPayload, EventTicket } from '../types/ticket';
 
 const EMPTY_STATS: CheckinStats = {
   expected: 0,
@@ -21,14 +22,15 @@ const EMPTY_STATS: CheckinStats = {
 
 /**
  * Door-list state for one event: paginated purchase blocks (each with its
- * tickets), arrival counters, and the mutations staff perform at the entrance.
+ * tickets), arrival counters, and the mutations staff perform at the entrance —
+ * check in, undo, and (purchase managers) assign an attendee.
  *
  * A checked-in or undone ticket is patched in place inside its purchase (and
  * the purchase's arrived count adjusted) so the list doesn't flash between
  * scans; only the counters are re-fetched.
  */
 export function useCheckIn(eventId: number) {
-  const [page, setPage] = useState<PaginatedResponse<CheckinPurchase> | null>(null);
+  const [page, setPage] = useState<CheckinPurchasePage | null>(null);
   const [stats, setStats] = useState<CheckinStats>(EMPTY_STATS);
   const [filters, setFiltersState] = useState<CheckinFilters>({ page: 1 });
   const [loading, setLoading] = useState(true);
@@ -130,6 +132,19 @@ export function useCheckIn(eventId: number) {
     [eventId, syncRow],
   );
 
+  /**
+   * Name the attendee on a ticket (purchase managers). Re-fetches the list:
+   * the purchase's named-first order and unnamed count both change.
+   */
+  const assign = useCallback(
+    async (ticketId: number, payload: AssignHolderPayload): Promise<EventTicket> => {
+      const ticket = await orderService.assignTicket(ticketId, payload);
+      await refetch();
+      return ticket;
+    },
+    [refetch],
+  );
+
   const purchases = useMemo(() => page?.results ?? [], [page]);
 
   return {
@@ -142,6 +157,8 @@ export function useCheckIn(eventId: number) {
     error,
     checkIn,
     undoCheckIn,
+    assign,
+    canAssign: Boolean(page?.can_assign),
     refetch,
   };
 }

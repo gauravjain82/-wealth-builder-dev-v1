@@ -1,5 +1,6 @@
 import type { AssignmentStatus, LifecycleStatus } from './ticket';
 import type { DoorCredential } from './door';
+import type { PaginatedResponse } from './event';
 import type { SearchIn, SearchMatch } from '../utils/purchase-search';
 
 /** One row of the door list — a live ticket plus its arrival state. */
@@ -74,6 +75,12 @@ export interface CheckinPurchase {
   tickets: CheckinAttendee[];
   /** With a search: what it matched (buyer, an attendee, a number). */
   search_match?: SearchMatch[];
+}
+
+/** `GET .../checkin/purchases/` — a page of purchase blocks. */
+export interface CheckinPurchasePage extends PaginatedResponse<CheckinPurchase> {
+  /** The viewer may name attendees (purchase-manage access); check-in access alone does not. */
+  can_assign?: boolean;
 }
 
 /**

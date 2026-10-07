@@ -9,9 +9,11 @@ import { EventSubnav } from '../components/event-subnav';
 import { CheckinProgress } from '../components/checkin-progress';
 import { CheckinScanBox } from '../components/checkin-scan-box';
 import { CheckinPurchaseList, type CheckinListView } from '../components/checkin-purchase-list';
+import { DoorAssignModal } from '../components/door/door-assign-modal';
 import { useCheckinView } from '../hooks/use-checkin-view';
 import type { BigEvent } from '../types/event';
-import type { CheckinAttendee, CheckinPayload, CheckinStats } from '../types/checkin';
+import type { CheckinAttendee, CheckinPayload, CheckinPurchase, CheckinStats } from '../types/checkin';
+import type { AssignHolderPayload } from '../types/ticket';
 import { PURCHASE_SEARCH_HELP, PURCHASE_SEARCH_PLACEHOLDER } from '../utils/purchase-search';
 import { SearchInSelect } from '../components/search-in-select';
 
@@ -24,7 +26,7 @@ const ARRIVED_TABS: Array<{ id: ArrivedTab; label: string; count: (stats: Checki
 ];
 
 const VIEW_TABS: Array<{ id: CheckinListView; label: string; hint: string }> = [
-  { id: 'door', label: 'Door', hint: 'Name, ticket and Check in — unnamed tickets folded' },
+  { id: 'door', label: 'Door', hint: 'Attendee, ticket numbers, purchaser, Assign and Check in — unnamed tickets folded' },
   { id: 'detailed', label: 'Detailed', hint: 'Every ticket with status, references, SMD and who checked them in' },
 ];
 
@@ -86,6 +88,8 @@ export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: n
     error,
     checkIn,
     undoCheckIn,
+    assign,
+    canAssign,
     refetch,
   } = useCheckIn(id);
 
@@ -95,6 +99,8 @@ export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: n
   // Tickets admitted from this device this visit: the Door view offers Undo on these only.
   const [undoableIds, setUndoableIds] = useState<ReadonlySet<number>>(new Set());
   const { view, setView } = useCheckinView();
+  const [assigning, setAssigning] = useState<{ attendee: CheckinAttendee; purchase: CheckinPurchase } | null>(null);
+  const [assignBusy, setAssignBusy] = useState(false);
   const exportMenu = useRef<HTMLDetailsElement>(null);
 
   const markUndoable = useCallback((ticketId: number, undoable: boolean) => {
@@ -144,6 +150,21 @@ export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: n
     }
   };
 
+  const submitAssign = async (payload: AssignHolderPayload) => {
+    if (!assigning) return;
+    setAssignBusy(true);
+    try {
+      const ticket = await assign(assigning.attendee.id, payload);
+      const holderName = `${ticket.holder_first_name} ${ticket.holder_last_name}`.trim();
+      addToast({ type: 'success', message: `${holderName || ticket.ticket_number} assigned.` });
+      setAssigning(null);
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Assign failed' });
+    } finally {
+      setAssignBusy(false);
+    }
+  };
+
   const shortcut = event?.shortcut || 'event';
 
   const download = async (type: 'xlsx' | 'pdf') => {
@@ -185,7 +206,13 @@ export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: n
         </>
       )}
 
-      <CheckinScanBox eventId={id} onScan={scan} onLinked={() => void refetch()} />
+      <CheckinScanBox
+        eventId={id}
+        onScan={scan}
+        onLinked={() => void refetch()}
+        canAssign={canAssign}
+        onAssign={assign}
+      />
       <CheckinProgress stats={stats} />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -248,6 +275,8 @@ export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: n
           page={filters.page ?? 1}
           busyTicketId={busyTicketId}
           onPageChange={(page) => setFilters({ page })}
+          canAssign={canAssign}
+          onAssign={(attendee, purchase) => setAssigning({ attendee, purchase })}
           onCheckIn={(attendee) =>
             void runRowAction(
               attendee,
@@ -270,6 +299,15 @@ export default function EventCheckinPage({ eventId: eventIdProp }: { eventId?: n
           }
         />
       )}
+
+      <DoorAssignModal
+        eventId={id}
+        attendee={assigning?.attendee ?? null}
+        purchaserName={assigning?.purchase.purchaser_name}
+        submitting={assignBusy}
+        onClose={() => setAssigning(null)}
+        onSubmit={submitAssign}
+      />
     </div>
   );
 }
