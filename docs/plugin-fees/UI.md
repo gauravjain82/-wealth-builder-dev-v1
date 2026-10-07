@@ -32,7 +32,7 @@
 | `/admin/plugin-fees/settings` | admin (edits), Hierarchy Assistant and approver (read-only) | `PluginFeesAccessRoute` (`canSeeFeeSettings`: `can_manage \|\| can_review \|\| can_approve_payouts`) |
 | `/admin/plugin-fees/review?tab=offices\|assistants&status=…` | overview deep link | read once (PF42) |
 | Settings → "View statement of account →" | `is_billable` | link under the plug-in fee sections |
-| Menu group "Plug-in Fees" 💼 | any of the children below | one collapsible group appended after the other per-user admin entries; added only when at least one child is visible, and opens itself when the current page is one of its children (PF53) |
+| Menu group "Plug-in Fees" 💼 | any of the children below | one collapsible group nested at the end of the Admin group (top level for a holder whose plan has no Admin group); added only when at least one child is visible, and opens itself when the current page is one of its children (PF53, PF57) |
 | ↳ "Overview" 📊 | `can_manage \|\| can_review` | first child (PF41) |
 | ↳ "Reviews" 🗂️ | `can_review` | after "Overview" |
 | ↳ "Billing Cycles" 🧾 | `can_manage \|\| can_review \|\| can_approve_payouts` | after "Reviews" |

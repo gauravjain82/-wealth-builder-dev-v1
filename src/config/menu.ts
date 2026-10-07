@@ -225,15 +225,15 @@ const DATA_INTEGRITY_GROUP: MenuItem = {
 
 /**
  * Plug-in fees admin group — like Data Integrity, not plan-based. `getMenuForUser`
- * builds its children from the per-user plug-in fee grants and adds the group only
- * when at least one child is visible.
+ * builds its children from the per-user plug-in fee grants and adds the group, nested
+ * in Admin, only when at least one child is visible.
  */
 const PLUGIN_FEES_GROUP_LABEL = 'Plug-in Fees';
 
 /** Every plan has a My Team group; Builder AI nests in it. */
 const MY_TEAM_LABEL = 'My Team';
 
-/** The Admin and Super Admin plans' Admin group; Products, Reporting Pipeline and Contest Settings nest in it. */
+/** The Admin and Super Admin plans' Admin group; Products, Reporting Pipeline, Contest Settings, Code of Honor and Plug-in Fees nest in it. */
 const ADMIN_GROUP_LABEL = 'Admin';
 
 /**
@@ -838,14 +838,13 @@ export function getMenuForUser(
     canManagePluginFees ? MENU_ITEMS.PLUGIN_FEES_ADJUSTMENTS : null,
     canViewPluginFeeCycles ? MENU_ITEMS.PLUGIN_FEES_SETTINGS : null,
   ].filter((entry): entry is MenuItem => entry !== null);
-  if (
-    pluginFeesAdminEntries.length &&
-    !menuItems.some((item) => item.label === PLUGIN_FEES_GROUP_LABEL)
-  ) {
-    menuItems.push({
+  // The group is fee management, so it nests at the end of the Admin group, or goes at
+  // top level for a holder whose plan has no Admin group (a Hierarchy Assistant).
+  if (pluginFeesAdminEntries.length) {
+    addAdminEntry({
       label: PLUGIN_FEES_GROUP_LABEL,
       icon: '💼',
-      children: cloneMenuItems(pluginFeesAdminEntries),
+      children: pluginFeesAdminEntries,
     });
   }
 
