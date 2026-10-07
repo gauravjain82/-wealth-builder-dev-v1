@@ -20,11 +20,12 @@ import { MapReviewModal } from '../components/external-tickets/map-review-modal'
 import { RowDetailModal } from '../components/external-tickets/row-detail-modal';
 import { ApplyPanel } from '../components/external-tickets/apply-panel';
 import { ReviewQueue } from '../components/external-tickets/review-queue';
+import { HolderEmailsPanel } from '../components/external-tickets/holder-emails-panel';
 import { errorText } from '../components/external-tickets/labels';
 import type { BigEvent } from '../types/event';
 import type { AccountMap, DecidePayload, RowFilters, SponsorFilters } from '../types/external-tickets';
 
-type Step = 'upload' | 'sponsors' | 'holders' | 'apply' | 'review';
+type Step = 'upload' | 'sponsors' | 'holders' | 'apply' | 'review' | 'emails';
 
 const STEPS: Array<{ key: Step; label: string }> = [
   { key: 'upload', label: '1. Upload export' },
@@ -32,6 +33,7 @@ const STEPS: Array<{ key: Step; label: string }> = [
   { key: 'holders', label: '3. Review ticket holders' },
   { key: 'apply', label: '4. Apply update' },
   { key: 'review', label: '5. Conflicts & review' },
+  { key: 'emails', label: '6. Email holders' },
 ];
 
 /**
@@ -172,8 +174,10 @@ export default function EventExternalTicketsPage() {
         />
       ) : null}
 
-      {step !== 'upload' && step !== 'review' && !imp ? <Text variant="muted">Upload an export first.</Text> : null}
-      {step !== 'upload' && step !== 'review' && imp && !ready ? (
+      {step === 'emails' ? <HolderEmailsPanel eventId={id} /> : null}
+
+      {step !== 'upload' && step !== 'review' && step !== 'emails' && !imp ? <Text variant="muted">Upload an export first.</Text> : null}
+      {step !== 'upload' && step !== 'review' && step !== 'emails' && imp && !ready ? (
         <Text variant="muted" aria-live="polite">
           {imp.state === 'failed' ? `This upload failed validation: ${imp.safe_error.replace(/_/g, ' ')}.` : 'Validating the export…'}
         </Text>
