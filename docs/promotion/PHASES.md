@@ -24,6 +24,7 @@
 | ~3 | — | Shipped | The team view |
 | 4 | 2026-10-06 | Built, not deployed | Content editing moves to `/admin/promotion` |
 | 5 | 2026-10-08 | Built | Promotions moves into the Training Center menu group |
+| 6 | 2026-10-08 | Built | Team rows show Skills % and Promotion %; highest total sorts first |
 
 ## 2. Phases
 
@@ -69,6 +70,15 @@ plan. A New Agent without `hasPromotionAccess` loses only the Promotions child
 
 **Decisions.** PR9.
 
+### 6 — team rows show both halves; highest total first (2026-10-08)
+
+**What shipped.** Each `TeamMemberCard` row now shows Skills % (`skill_pct`) and Promotion %
+(`route_pct`) next to the overall bar, which is now labelled Total. The team page's default sort changed
+from `progress_asc` (furthest behind first) to `progress_desc`, relabelled "Highest Total First". No backend
+change: the payload already carried all three numbers, and the endpoint already sorted by `overall`.
+
+**Decisions.** PR10.
+
 ## 3. Decision log
 
 | ID | Decision | Rationale | Source |
@@ -82,6 +92,7 @@ plan. A New Agent without `hasPromotionAccess` loses only the Promotions child
 | PR7 | `RankCode` is an **open** union — `'TA' \| 'A' \| 'MD' \| string` | A new rank should not fail to compile. Cost: no exhaustiveness checking, and an unmapped code falls through to "Next Level" | `types.ts:3`; `promotion-ranks.ts` |
 | PR8 | `updateRouteItem` sends **no body** for a check item | The absence of a value is the signal that it is a toggle rather than a measurement — one endpoint for both item types | `services/promotion-service.ts` |
 | PR9 | Promotions is a **child of the Training Center group**, not a top-level entry | Product request: promotion work is training, so both sit together straight after My Team. The access gate removes the child by path, so the group never disappears with it | `src/config/menu.ts` `TRAINING_CENTER_GROUP` |
+| PR10 | The team view **defaults to highest total first** and shows skill % and promotion % on every row | Product request: lead with who is furthest along. Showing both halves next to the total keeps PR1 intact, because the total can no longer hide either half. "Furthest behind first" is still in the sort menu | `pages/team-promotion-page.tsx`; `components/team-member-card.tsx` |
 
 ## 4. Deliberately not built
 

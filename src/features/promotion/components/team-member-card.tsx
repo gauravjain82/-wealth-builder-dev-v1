@@ -37,11 +37,20 @@ export function TeamMemberCard({
         <span className="promo-target">
           {target[member.rank_code] ?? "Next Rank"}
         </span>
-        <span className="promo-mini-progress">
+        <span className="promo-member-split">
+          <span>
+            Skills <b>{member.skill_pct}%</b>
+          </span>
+          <span>
+            Promotion <b>{member.route_pct}%</b>
+          </span>
+        </span>
+        <span className="promo-mini-progress" title="Total progress">
           <i>
             <b style={{ width: `${member.overall}%` }} />
           </i>
           <strong>{member.overall}%</strong>
+          <small>Total</small>
         </span>
         {member.overall >= 95 && <span className="promo-ready">Ready</span>}
         <span className={open ? "open" : ""}>▼</span>

@@ -12,7 +12,7 @@ export default function TeamPromotionPage() {
   const [rank, setRank] = useState("");
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<TeamSort>("progress_asc");
+  const [sort, setSort] = useState<TeamSort>("progress_desc");
   const [open, setOpen] = useState<number | null>(null);
 
   useEffect(() => {
@@ -74,10 +74,8 @@ export default function TeamPromotionPage() {
           value={sort}
           onChange={(event) => setSort(event.target.value as TeamSort)}
         >
+          <option value="progress_desc">Sort: Highest Total First</option>
           <option value="progress_asc">Sort: Furthest Behind First</option>
-          <option value="progress_desc">
-            Sort: Closest to Promotion First
-          </option>
           <option value="name">Sort: Name A–Z</option>
           <option value="rank">Sort: Rank</option>
         </select>

@@ -876,7 +876,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 145px;
+  width: 175px;
 }
 .promo-mini-progress > i {
   height: 5px;
@@ -893,6 +893,26 @@
 .promo-mini-progress > strong {
   font: 13px "Bebas Neue";
   color: var(--gold);
+}
+.promo-mini-progress > small {
+  font: 9px "Barlow Condensed";
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.promo-member-split {
+  display: flex;
+  gap: 10px;
+  font: 10px "Barlow Condensed";
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.promo-member-split b {
+  font: 13px "Bebas Neue";
+  color: var(--dim);
+  margin-left: 2px;
 }
 .promo-member-detail {
   display: grid;
@@ -1018,7 +1038,7 @@
     flex-wrap: wrap;
   }
   .promo-mini-progress {
-    width: 120px;
+    width: 150px;
   }
   .promo-member-detail {
     grid-template-columns: 1fr;

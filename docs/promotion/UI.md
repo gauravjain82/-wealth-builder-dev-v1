@@ -66,13 +66,15 @@ Selecting a route is a commitment — only one may be selected.
 | Element | Shows |
 |---|---|
 | Stats | total · ready · in progress · just started |
-| Per member | name, rank, days in rank, videos done, skill %, route %, overall |
+| Per member | name, rank, days in rank, videos done; **Skills %** (`skill_pct`) and **Promotion %** (`route_pct`, the member's best route) side by side; a bar labelled **Total** (`overall`) |
 | Per member detail | skill progress, and their routes **without** `is_selected` |
 
 Team member routes deliberately omit `is_selected` (`Omit<PromotionRoute, 'id' \| 'is_selected'>`) — a
 leader sees progress, not the private choice of path.
 
-Filter by rank, search by name, sort by progress, name or rank.
+Filter by rank, search by name, sort by progress, name or rank. The default sort is **Highest Total
+First** (`progress_desc`), so whoever has the highest `overall` is listed first. `overall` is computed by the
+backend as the average of skill % and best-route % (`promotion/services/team.py`).
 
 ## 3. States
 
