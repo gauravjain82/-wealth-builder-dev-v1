@@ -10,6 +10,7 @@ import type {
   AssignHolderPayload,
   TransferPayload,
   HandOverPayload,
+  PersonSearchHit,
   TicketHistory,
   MyTicketsResponse,
 } from '../types/ticket';
@@ -168,6 +169,11 @@ export const orderService = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  /** Agents and prospects a manager can hand or transfer a ticket to. */
+  searchPeople(eventId: number, q: string, signal?: AbortSignal): Promise<{ rows: PersonSearchHit[] }> {
+    return request(`${EVENTS_BASE}/${eventId}/people/search/${buildQuery({ q })}`, { signal });
   },
 
   getTicketHistory(ticketId: number): Promise<TicketHistory> {

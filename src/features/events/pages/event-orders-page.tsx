@@ -378,6 +378,7 @@ export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: nu
       <TransferTicketModal
         open={Boolean(transferTicket)}
         ticket={transferTicket}
+        mode="manager"
         submitting={ticketBusy}
         onClose={() => setTransferTicket(null)}
         onSubmit={handleTransfer}

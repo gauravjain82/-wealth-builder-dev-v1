@@ -237,6 +237,7 @@ export default function EventMyTicketsPage() {
       <TransferTicketModal
         open={Boolean(transferTicket)}
         ticket={transferTicket}
+        mode="owner"
         submitting={busy}
         onClose={() => setTransferTicket(null)}
         onSubmit={handleTransfer}

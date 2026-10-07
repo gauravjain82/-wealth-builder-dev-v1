@@ -138,6 +138,21 @@ checkout stays on the public page (`components/add-purchase-modal.tsx:49`).
 
 A refund "refunds the payment (Stripe if applicable) and marks every ticket refunded".
 
+**Transferring a ticket.** "Transfer" opens `HandOverTicketModal` for a BSCPro ticket and
+`TransferTicketModal` for a WB ticket, both in `manager` mode here. Both use
+`TicketRecipientPicker` ([E20](PHASES.md#3-decision-log)):
+
+| State | Shows |
+|---|---|
+| Searching | "Find the person" — name, agency code, email or phone; results say Agent or Prospect and their SMD |
+| Agent picked | name, code, masked contact, read-only; an email field only when they have none on file (used for the ticket, not saved) |
+| Prospect picked | their name, email and phone, editable; changes are saved to the prospect |
+| Nobody picked | "Not in Wealth Builders?" — first name, last name, email (required), phone, and "Add them as a prospect" (on by default) |
+
+Picking a person preselects the SMD their recruiting line credits. Adding a new prospect makes the
+SMD required — they join that SMD's team. On My tickets the modals keep their owner/self forms: the
+user-directory teammate picker, and typed details for a hand-over.
+
 ### 2.6 Check-in — `pages/event-checkin-page.tsx`
 
 Scan or manual, a progress strip, filters and export (`xlsx` / `pdf`). **A scan can be reversed** — an
@@ -203,6 +218,7 @@ duplicate does not flash; its amber "Already checked in" line stands. BPM's scan
 - **Never treat Stripe's success as completion.** Poll until the order is `PAID`.
 - **Never price an order in the client.** The server prices it, always.
 - **Keep assign and transfer distinct.** Transfer clears the holder; assign sets it.
+- **Never offer to edit an agent from a ticket screen.** Only a prospect's details are editable in the transfer picker.
 - **Re-send the claim proof with every public action.** There is no session to rely on.
 - **Preview blast recipients before sending.** A blast is not undoable.
 - **Let a scan be undone.** A door operator will mis-scan.

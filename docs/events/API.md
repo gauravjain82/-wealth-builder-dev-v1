@@ -67,7 +67,8 @@ List endpoints filter `is_active=True` by default — config is **soft-deleted**
 | Refund | an action on an order |
 | Tickets | `/api/events/tickets/` and `/api/events/tickets/{id}/` |
 | Assign holder | a ticket action |
-| Transfer | a ticket action |
+| Transfer | a ticket action — `transfer/` (WB tickets, moves ownership) or `hand-over/` (BSCPro, names the new attendee) |
+| Person search | `/api/events/events/{id}/people/search/?q=` — agents and prospects for the managers' transfer picker; `searchPeople`, called only through `hooks/use-people-search.ts` (key `['events', eventId, 'people-search', q]`, forwards `signal`) |
 | History | per ticket |
 
 ### Check-in — `checkin-service.ts`
@@ -116,6 +117,8 @@ Eight type modules, one per concern. The ones carrying real design:
 | `QuestionStatus` | `post-sale.ts` | `OPEN \| ANSWERED \| CLOSED` |
 | `PermissionScope` | `post-sale.ts` | `EVENT \| PURCHASE \| CHECKIN \| QUESTION` |
 | `EscrowReport` | `reports.ts` | funds held pending payout |
+| `PersonSearchHit` | `ticket.ts` | `kind: agent \| prospect`; a prospect's `email`/`phone` arrive in full, an agent's masked; `upline_seller` is the SMD their recruiting line credits ([E20](PHASES.md#3-decision-log)) |
+| `HandOverPayload`, `TransferPayload` | `ticket.ts` | managers add `to_user_id`, `create_prospect`, `update_contact`; built from a `RecipientDraft` by `utils/recipient-draft.ts` |
 
 **The two-status model is the contract detail most likely to be "simplified" by mistake.** A ticket
 carries `assignment_status` (`UNASSIGNED`/`ASSIGNED`/`TRANSFERRED`) and `lifecycle_status`
@@ -151,6 +154,7 @@ error state.
 | Promo invalid | previewed server-side, so it is rejected before checkout |
 | Refund failure | surfaced on the order |
 | Missing per-event permission | 403 from the API; there is no client guard |
+| Transfer recipient refused | `hand-over/` and `transfer/` return `{detail, code}` — `smd_required`, `not_prospect`, `email_taken`, `email_required`, `same_person` — shown as the toast message |
 
 The one to understand is the difference between **slow** and **broken** in step 3 of checkout. A poll
 still running is the expected path; only a poll that never resolves is a problem, and the cause is
