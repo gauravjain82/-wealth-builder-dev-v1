@@ -13,6 +13,12 @@
  * `src/features/settings/pages/settings-page.tsx`. The return (`?fee_pm=`) is handled by
  * `PluginFeesSettingsSections`. A bank account on micro-deposits shows
  * `pending_verification` until Stripe confirms it.
+ *
+ * One-click alternative: any card already saved on the agent's Stripe account (the
+ * website subscription's card first) can be authorized for plug-in fees with a consent
+ * tick and one button, without leaving the page (3D Secure, if the bank asks, opens as
+ * a Stripe modal). The picker opens by itself when nothing usable is saved, or when the
+ * subscription card they chose has changed; otherwise "Use a saved card" opens it.
  */
 
 import { useState } from 'react';
@@ -20,8 +26,13 @@ import { useState } from 'react';
 import { usePageRestored } from '@/hooks/use-page-restored';
 import { useToastStore } from '@/store';
 
-import { useCreatePaymentMethodSetupSession, useSetPaymentPreference } from '../hooks/use-plugin-fees';
-import type { PaymentPreference, PluginFeesPaymentMethod } from '../types';
+import {
+  useAuthorizeCard,
+  useCreatePaymentMethodSetupSession,
+  useSavedCards,
+  useSetPaymentPreference,
+} from '../hooks/use-plugin-fees';
+import type { PaymentPreference, PluginFeesPaymentMethod, SavedCard } from '../types';
 import { describeError, formatDateTime } from '../utils/plugin-fees-format';
 import { Detail } from './submission-parts';
 
@@ -49,7 +60,9 @@ function MethodStatus({
       return (
         <div className="wb-pf-details">
           <Detail label="Saved method">{paymentMethod.label || '—'}</Detail>
-          <Detail label="Type">{typeLabel}</Detail>
+          <Detail label="Type">
+            {paymentMethod.follows_subscription ? `${typeLabel} (website subscription card)` : typeLabel}
+          </Detail>
           <Detail label="Saved">{formatDateTime(paymentMethod.saved_at)}</Detail>
         </div>
       );
@@ -78,6 +91,104 @@ function MethodStatus({
   }
 }
 
+function cardLine(card: SavedCard): string {
+  const parts = [card.label];
+  if (card.expires) parts.push(`expires ${card.expires}`);
+  if (card.subscription) parts.push('website subscription');
+  return parts.join(' · ');
+}
+
+function SavedCardPicker({
+  cards,
+  changed,
+  onClose,
+}: {
+  /** Cards not already in use; the subscription card, if any, first. */
+  cards: SavedCard[];
+  changed: boolean;
+  /** Absent when the picker must stay open (nothing usable is saved). */
+  onClose?: () => void;
+}) {
+  const { addToast } = useToastStore();
+  const authorize = useAuthorizeCard();
+  const [selectedId, setSelectedId] = useState(cards[0].id);
+  const [agreed, setAgreed] = useState(false);
+  const selected = cards.find((card) => card.id === selectedId) ?? cards[0];
+
+  const handleAuthorize = async () => {
+    try {
+      await authorize.mutateAsync(selected.id);
+      addToast({ type: 'success', message: `${selected.label} will be charged for your plug-in fees on the 1st.` });
+      onClose?.();
+    } catch (error) {
+      addToast({ type: 'error', message: describeError(error, 'Could not authorize your card.') });
+    }
+  };
+
+  let heading: string;
+  if (changed && cards[0].subscription) {
+    heading = `Your website subscription card changed to ${cards[0].label}. Use it for plug-in fees too?`;
+  } else if (cards.length === 1) {
+    heading = cards[0].subscription
+      ? `Use your website subscription card, ${cards[0].label}, for plug-in fees?`
+      : `Use your saved card, ${cards[0].label}, for plug-in fees?`;
+  } else {
+    heading = 'Choose a card saved on your account for plug-in fees';
+  }
+
+  return (
+    <div className="wb-pf-callout wb-pf-stack">
+      <strong>{heading}</strong>
+      {cards.length > 1 ? (
+        <fieldset className="wb-pf-choice" disabled={authorize.isPending}>
+          <legend className="wb-pf-sr-only">Saved cards</legend>
+          {cards.map((card) => (
+            <label key={card.id} className="wb-pf-choice-option">
+              <input
+                type="radio"
+                name="wb-pf-saved-card"
+                checked={card.id === selected.id}
+                onChange={() => {
+                  setSelectedId(card.id);
+                  setAgreed(false);
+                }}
+              />
+              <span>{cardLine(card)}</span>
+            </label>
+          ))}
+        </fieldset>
+      ) : null}
+      <label className="wb-pf-choice-option">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(event) => setAgreed(event.target.checked)}
+          disabled={authorize.isPending}
+        />
+        <span>
+          I authorize Wealth Builders to charge {selected.label} for my monthly plug-in fees on the
+          1st of each month, until I change my payment method here.
+        </span>
+      </label>
+      <div className="connected-account-actions">
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={handleAuthorize}
+          disabled={!agreed || authorize.isPending}
+        >
+          {authorize.isPending ? 'Authorizing…' : 'Authorize'}
+        </button>
+        {onClose ? (
+          <button type="button" className="btn-secondary" onClick={onClose} disabled={authorize.isPending}>
+            {changed ? 'Keep current' : 'Cancel'}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function PaymentMethodSection({
   paymentMethod,
   waitingForStripe,
@@ -94,6 +205,20 @@ export function PaymentMethodSection({
   const automatic = paymentMethod.preference === 'automatic';
   const canChoose = paymentMethod.self_pay_allowed;
   const dueDay = ordinal(paymentMethod.self_pay_due_day);
+  // Saved cards not already in use. The picker opens by itself when nothing usable is
+  // saved, or when the subscription card they chose has changed; "Use a saved card"
+  // opens it otherwise. A failed lookup just hides it; the Stripe button remains.
+  const savedCards = useSavedCards(true).data;
+  const choosable = savedCards?.cards.filter((card) => !card.in_use) ?? [];
+  const changed = Boolean(savedCards?.changed);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [changeDismissed, setChangeDismissed] = useState(false);
+  const autoOpen = !saved || (changed && !changeDismissed);
+  const showPicker = choosable.length > 0 && (autoOpen || pickerOpen);
+  const closePicker = () => {
+    setPickerOpen(false);
+    if (changed) setChangeDismissed(true);
+  };
 
   const handleSave = async () => {
     try {
@@ -181,20 +306,39 @@ export function PaymentMethodSection({
 
         <MethodStatus paymentMethod={paymentMethod} waitingForStripe={waitingForStripe} />
 
+        {showPicker ? (
+          <SavedCardPicker
+            key={choosable.map((card) => card.id).join()}
+            cards={choosable}
+            changed={changed && !changeDismissed}
+            onClose={saved ? closePicker : undefined}
+          />
+        ) : null}
+
         <p className="settings-hint" style={{ margin: 0 }}>
-          A bank account (ACH) is the default and preferred method. This is separate from your
-          website subscription.
+          A bank account (ACH) is the default and preferred method. Saving one here does not
+          change how your website subscription is paid.
           {!automatic ? ' A saved method is optional while you pay each month yourself.' : ''}
         </p>
 
         <div className="connected-account-actions">
-          <button type="button" className="btn-primary" onClick={handleSave} disabled={redirecting}>
+          <button
+            type="button"
+            className={showPicker ? 'btn-secondary' : 'btn-primary'}
+            onClick={handleSave}
+            disabled={redirecting}
+          >
             {redirecting
               ? 'Opening…'
               : paymentMethod.status === 'none'
                 ? 'Save bank account'
                 : 'Replace with a bank account'}
           </button>
+          {!showPicker && choosable.length > 0 ? (
+            <button type="button" className="btn-secondary" onClick={() => setPickerOpen(true)}>
+              Use a saved card
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

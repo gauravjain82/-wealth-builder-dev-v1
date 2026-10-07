@@ -17,6 +17,9 @@ import {
   createConnectOnboardingLink,
   createCost,
   createInvoicePayLink,
+  authorizeCard,
+  completeCard,
+  confirmCardSetupInBrowser,
   createPaymentMethodSetupSession,
   decideAssistant,
   decideOffice,
@@ -44,6 +47,7 @@ import {
   fetchPayouts,
   fetchPluginFeesAccess,
   fetchSevcTotals,
+  fetchSavedCards,
   preparePayout,
   resolveFollowUp,
   retryPayoutLine,
@@ -123,6 +127,7 @@ export const pluginFeesKeys = {
   feeSchedule: ['plugin-fees', 'fee-schedule'] as const,
   billingSettings: ['plugin-fees', 'settings'] as const,
   configHistory: ['plugin-fees', 'config-history'] as const,
+  savedCards: ['plugin-fees', 'saved-cards'] as const,
 };
 
 /** What the current user may do with plug-in fees. Drives the menu, guard and Settings sections. */
@@ -184,6 +189,43 @@ export function useSetPaymentPreference() {
 
 export function useCreatePaymentMethodSetupSession() {
   return useMutation({ mutationFn: createPaymentMethodSetupSession, ...NO_RETRY });
+}
+
+/**
+ * Cards saved on the agent's Stripe account. Asks Stripe on every read, so it is not
+ * polled; it refetches on mount, which covers the return from the billing portal.
+ */
+export function useSavedCards(enabled: boolean) {
+  return useQuery({
+    queryKey: pluginFeesKeys.savedCards,
+    queryFn: ({ signal }) => fetchSavedCards(signal),
+    enabled,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+
+/**
+ * One click: authorize a saved card for plug-in fees. If the bank asks for 3D Secure,
+ * Stripe.js shows it on this page and the backend is told once it passes.
+ */
+export function useAuthorizeCard() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (paymentMethodId: string) => {
+      const result = await authorizeCard(paymentMethodId);
+      if (result.status === 'saved') return result.payment_method;
+      await confirmCardSetupInBrowser(result.client_secret);
+      return completeCard(result.setup_intent_id);
+    },
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.me }),
+        queryClient.invalidateQueries({ queryKey: pluginFeesKeys.savedCards }),
+      ]),
+    ...NO_RETRY,
+  });
 }
 
 /* --- review queues --------------------------------------------------------- */

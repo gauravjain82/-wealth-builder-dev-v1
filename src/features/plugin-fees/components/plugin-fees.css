@@ -303,6 +303,16 @@ html:not(.dark) .wb-pf-card {
   margin-top: 4px;
 }
 
+/* Visually hidden, still read by screen readers (the saved-card picker's legend). */
+.wb-pf-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 /* --- P3: statements, billing cycles, costs --------------------------------- */
 
 /* Extra badge tones for invoice and cycle statuses. */
