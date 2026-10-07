@@ -1,4 +1,5 @@
 import type { AssignmentStatus, LifecycleStatus } from './ticket';
+import type { DoorCredential } from './door';
 
 /** One row of the door list — a live ticket plus its arrival state. */
 export interface CheckinAttendee {
@@ -22,6 +23,15 @@ export interface CheckinAttendee {
   checkin_source: 'DESK' | 'SESSION' | null;
   /** Title of that session, for `SESSION`. */
   checkin_via_session: string;
+  /** `NATIVE` (sold here) or `BSCPRO` (imported from the partner). */
+  source?: string;
+  /** BSCPro confirmation number, or ''. */
+  external_reference?: string;
+  /** The ticket is linked to a platform account. */
+  holder_linked?: boolean;
+  transfer_count?: number;
+  /** What was scanned at arrival; '' when not checked in / unknown. */
+  checkin_credential?: DoorCredential | '';
 }
 
 /**
@@ -30,6 +40,12 @@ export interface CheckinAttendee {
  */
 export interface CheckinScanResult extends CheckinAttendee {
   duplicate: boolean;
+  /** What the scan was recognised as. */
+  credential?: DoorCredential;
+  /** Things staff should look at, e.g. "Ticket was handed over — check ID". */
+  warnings?: string[];
+  /** The ticket has no linked account — offer "Link profile QR". */
+  can_link_account?: boolean;
 }
 
 /** Door counters returned by `GET .../checkin/stats/`. */
@@ -64,6 +80,8 @@ export interface CheckinPayload {
   qr_token?: string;
   ticket_number?: string;
   notes?: string;
+  /** Passed back with `ticket_id` after picking an ambiguous-scan candidate. */
+  credential?: DoorCredential;
 }
 
 /** Roster download variants offered by `GET .../checkin/export/`. */

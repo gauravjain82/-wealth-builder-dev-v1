@@ -1,6 +1,8 @@
 // Event sessions (the agenda) and per-session attendance.
 // Mirrors `events/serializers/session.py` and `events/views/session.py`.
 
+import type { DoorCredential } from './door';
+
 export type SessionKind = 'SESSION' | 'BREAK' | 'INFO';
 export type SessionAccess = 'OPEN' | 'RESTRICTED';
 export type SessionCheckinMethod = 'STAFF_SCAN' | 'SELF_SCAN' | 'MANUAL';
@@ -68,6 +70,8 @@ export interface SessionScanResult extends SessionAttendee {
   /** This scan also did the event check-in (they skipped registration). */
   event_checkin_created: boolean;
   warnings: string[];
+  /** What the scan was recognised as. */
+  credential?: DoorCredential;
 }
 
 export interface SessionStats {
@@ -94,6 +98,8 @@ export interface SessionCheckinPayload {
   ticket_id?: number;
   override?: boolean;
   notes?: string;
+  /** Passed back with `ticket_id` after picking an ambiguous-scan candidate. */
+  credential?: DoorCredential;
 }
 
 export interface SessionDoorFilters {

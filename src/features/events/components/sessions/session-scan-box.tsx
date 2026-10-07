@@ -3,17 +3,32 @@ import { Badge, Button, Card, CardContent, Input, Text } from '@shared/component
 import { CheckinCameraScanner } from '../checkin-camera-scanner';
 import { CheckinSuccessFlash } from '../checkin-success-flash';
 import { isCameraScanSupported } from '../../utils/checkin-scan';
-import { SessionApiError } from '../../services/session-service';
+import { doorErrorOf } from '../../services/door-service';
+import { DoorRefusalPanel } from '../door/door-refusal-panel';
+import { DoorSuccessDetails } from '../door/door-success-details';
+import { credentialLabel, type DoorErrorBody, type LinkAccountResult } from '../../types/door';
 import type { SessionCheckinPayload, SessionScanResult } from '../../types/session';
 
 interface SessionScanBoxProps {
+  eventId: number;
+  sessionId: number;
   sessionTitle: string;
   onScan: (payload: SessionCheckinPayload) => Promise<SessionScanResult>;
+  /** A profile was linked to a ticket and admitted here — refresh the list. */
+  onLinked?: () => void;
 }
 
 type Outcome =
   | { kind: 'ok'; attendee: SessionScanResult }
-  | { kind: 'refused'; message: string; overridable: boolean; payload: SessionCheckinPayload };
+  | { kind: 'linked'; result: LinkAccountResult }
+  | {
+      kind: 'refused';
+      id: number;
+      message: string;
+      overridable: boolean;
+      payload: SessionCheckinPayload;
+      door: DoorErrorBody | null;
+    };
 
 function time(value: string | null): string {
   if (!value) return '';
@@ -36,7 +51,8 @@ function tone(outcome: Outcome): string {
   if (outcome.kind === 'refused') {
     return 'border-red-300 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10';
   }
-  return outcome.attendee.duplicate
+  const attendee = outcome.kind === 'ok' ? outcome.attendee : outcome.result;
+  return attendee.duplicate || attendee.warnings.length > 0
     ? 'border-amber-300 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10'
     : 'border-emerald-300 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10';
 }
@@ -52,13 +68,21 @@ function tone(outcome: Outcome): string {
  * - **Checked in without registration**: still a success, with a note that the
  *   event check-in was done too.
  */
-export function SessionScanBox({ sessionTitle, onScan }: SessionScanBoxProps) {
+export function SessionScanBox({
+  eventId,
+  sessionId,
+  sessionTitle,
+  onScan,
+  onLinked,
+}: SessionScanBoxProps) {
   const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
-  const [flash, setFlash] = useState(0);
+  const [flash, setFlash] = useState({ n: 0, caption: '' });
   const inputRef = useRef<HTMLInputElement>(null);
+  // Remounts the refusal panel per refusal so a stale link error never lingers.
+  const refusalSeq = useRef(0);
   const cameraSupported = isCameraScanSupported();
 
   const run = useCallback(
@@ -71,7 +95,10 @@ export function SessionScanBox({ sessionTitle, onScan }: SessionScanBoxProps) {
         setValue('');
         if (!attendee.duplicate) {
           buzz(60);
-          if (fromCamera) setFlash((n) => n + 1);
+          // A warning keeps the amber line on screen instead of a green flash.
+          if (fromCamera && !attendee.warnings?.length) {
+            setFlash((f) => ({ n: f.n + 1, caption: credentialLabel(attendee.credential) }));
+          }
         } else {
           buzz([40, 60, 40]);
         }
@@ -79,9 +106,11 @@ export function SessionScanBox({ sessionTitle, onScan }: SessionScanBoxProps) {
         buzz([120, 80, 120]);
         setOutcome({
           kind: 'refused',
+          id: (refusalSeq.current += 1),
           message: err instanceof Error ? err.message : 'Check-in failed',
-          overridable: err instanceof SessionApiError && err.overridable,
+          overridable: doorErrorOf(err)?.overridable === true,
           payload,
+          door: doorErrorOf(err),
         });
       } finally {
         setBusy(false);
@@ -94,6 +123,13 @@ export function SessionScanBox({ sessionTitle, onScan }: SessionScanBoxProps) {
   const submit = (raw: string, fromCamera = false) => {
     const scan = raw.trim();
     if (scan) void run({ scan }, fromCamera);
+  };
+
+  const handleLinked = (result: LinkAccountResult) => {
+    buzz(60);
+    setOutcome({ kind: 'linked', result });
+    setValue('');
+    onLinked?.();
   };
 
   return (
@@ -116,7 +152,7 @@ export function SessionScanBox({ sessionTitle, onScan }: SessionScanBoxProps) {
                 submit(value);
               }
             }}
-            placeholder="Scan a ticket QR or type a ticket number…"
+            placeholder="Scan a ticket, profile or BSCPro QR, or type a ticket number…"
             className="min-w-[240px] flex-1"
             autoComplete="off"
           />
@@ -137,16 +173,31 @@ export function SessionScanBox({ sessionTitle, onScan }: SessionScanBoxProps) {
             onDetected={(payload) => submit(payload, true)}
           />
         ) : null}
-        <CheckinSuccessFlash trigger={flash} />
+        <CheckinSuccessFlash trigger={flash.n} caption={flash.caption} />
 
         <div aria-live="polite" aria-atomic="true">
           {outcome ? (
             <div className={`rounded-lg border px-3 py-2 ${tone(outcome)}`}>
               {outcome.kind === 'refused' ? (
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <Text className="text-sm font-medium text-red-800 dark:text-red-200">{outcome.message}</Text>
-                  <div className="flex gap-2">
-                    {outcome.overridable ? (
+                <DoorRefusalPanel
+                  key={outcome.id}
+                  eventId={eventId}
+                  sessionId={sessionId}
+                  message={outcome.message}
+                  door={outcome.door}
+                  busy={busy}
+                  onPickCandidate={(candidate) =>
+                    void run({
+                      ticket_id: candidate.ticket_id,
+                      credential: outcome.door?.credential,
+                      ...(outcome.payload.override ? { override: true } : {}),
+                    })
+                  }
+                  onLinked={handleLinked}
+                  onDismiss={() => setOutcome(null)}
+                  dismissLabel={outcome.overridable ? 'Turn away' : 'Dismiss'}
+                  actions={
+                    outcome.overridable ? (
                       <Button
                         type="button"
                         size="sm"
@@ -156,11 +207,34 @@ export function SessionScanBox({ sessionTitle, onScan }: SessionScanBoxProps) {
                       >
                         Admit anyway
                       </Button>
-                    ) : null}
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setOutcome(null)}>
-                      {outcome.overridable ? 'Turn away' : 'Dismiss'}
-                    </Button>
+                    ) : null
+                  }
+                />
+              ) : outcome.kind === 'linked' ? (
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        {outcome.result.holder_name || '(unassigned ticket)'}
+                      </p>
+                      <Text variant="muted" className="text-xs">
+                        {outcome.result.ticket_number}
+                        {time(outcome.result.checked_in_at) ? ` · ${time(outcome.result.checked_in_at)}` : ''}
+                      </Text>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <Badge variant="info">Profile linked</Badge>
+                      {outcome.result.duplicate ? (
+                        <Badge variant="warning">Already in this session</Badge>
+                      ) : (
+                        <Badge variant="success">Checked in</Badge>
+                      )}
+                    </div>
                   </div>
+                  <DoorSuccessDetails
+                    credential={outcome.result.credential}
+                    warnings={outcome.result.warnings}
+                  />
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -189,6 +263,10 @@ export function SessionScanBox({ sessionTitle, onScan }: SessionScanBoxProps) {
                       Hadn’t checked in at registration — checked in to the event as well.
                     </p>
                   ) : null}
+                  <DoorSuccessDetails
+                    credential={outcome.attendee.credential}
+                    warnings={outcome.attendee.warnings}
+                  />
                 </div>
               )}
             </div>

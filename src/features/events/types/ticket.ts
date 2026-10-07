@@ -23,6 +23,10 @@ export interface EventTicket {
   transfer_count: number;
   qr_token: string;
   is_checked_in?: boolean;
+  /** `NATIVE` (sold here) or `BSCPRO` (imported from the partner). */
+  source?: string;
+  /** BSCPro confirmation number, or ''. */
+  external_reference?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -72,7 +76,28 @@ export interface OwnerSummary {
   checked_in: number;
 }
 
+/** A ticket the user is the named attendee of (owned or not — e.g. BSCPro). */
+export interface HeldTicket extends EventTicket {
+  can_hand_over: boolean;
+  /** Why hand-over is unavailable, when `can_hand_over` is false. */
+  hand_over_blocked_reason: string;
+}
+
 export interface MyTicketsResponse {
   summary: OwnerSummary;
   tickets: EventTicket[];
+  held_tickets?: HeldTicket[];
+}
+
+/**
+ * Name change: the ticket (and its confirmation) stays, the named attendee
+ * becomes this person. `POST /api/events/tickets/{id}/hand-over/`.
+ */
+export interface HandOverPayload {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  attributed_seller_id?: number;
+  reason?: string;
 }

@@ -11,14 +11,22 @@ import { EventSubnav } from '../components/event-subnav';
 import { MyTicketsTable } from '../components/my-tickets-table';
 import { AssignTicketModal } from '../components/assign-ticket-modal';
 import { TransferTicketModal } from '../components/transfer-ticket-modal';
-import type { AssignHolderPayload, EventTicket, TransferPayload } from '../types/ticket';
+import { HandOverTicketModal } from '../components/hand-over-ticket-modal';
+import { HeldTicketsSection } from '../components/held-tickets-section';
+import type {
+  AssignHolderPayload,
+  EventTicket,
+  HandOverPayload,
+  HeldTicket,
+  TransferPayload,
+} from '../types/ticket';
 import type { BigEvent } from '../types/event';
 
 export default function EventMyTicketsPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const id = Number(eventId);
   const addToast = useToastStore((state) => state.addToast);
-  const { tickets, summary, loading, error, refetch } = useMyTickets(id);
+  const { tickets, heldTickets, summary, loading, error, refetch } = useMyTickets(id);
   const mine = useMySchedule(id);
   const [params, setParams] = useSearchParams();
   // Default to your own schedule when you hold a ticket; else the ones you own.
@@ -26,7 +34,7 @@ export default function EventMyTicketsPage() {
   const view: 'schedule' | 'owned' =
     requested === 'owned' || requested === 'schedule'
       ? requested
-      : mine.schedule && !mine.schedule.ticket && summary.total_owned > 0
+      : mine.schedule && !mine.schedule.ticket && summary.total_owned > 0 && heldTickets.length === 0
         ? 'owned'
         : 'schedule';
   const selectView = (next: 'schedule' | 'owned') => {
@@ -37,6 +45,7 @@ export default function EventMyTicketsPage() {
   const [event, setEvent] = useState<BigEvent | null>(null);
   const [assignTicket, setAssignTicket] = useState<EventTicket | null>(null);
   const [transferTicket, setTransferTicket] = useState<EventTicket | null>(null);
+  const [handOverTicket, setHandOverTicket] = useState<HeldTicket | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -69,6 +78,24 @@ export default function EventMyTicketsPage() {
       await refetch();
     } catch (err) {
       addToast({ type: 'error', message: err instanceof Error ? err.message : 'Transfer failed' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleHandOver = async (payload: HandOverPayload) => {
+    if (!handOverTicket) return;
+    setBusy(true);
+    try {
+      await orderService.handOverTicket(handOverTicket.id, payload);
+      addToast({
+        type: 'success',
+        message: `Ticket handed over to ${payload.first_name} ${payload.last_name}. They've been emailed it.`,
+      });
+      setHandOverTicket(null);
+      await Promise.all([refetch(), mine.refetch()]);
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Hand-over failed' });
     } finally {
       setBusy(false);
     }
@@ -121,6 +148,10 @@ export default function EventMyTicketsPage() {
       </div>
 
       {view === 'schedule' ? (
+        <HeldTicketsSection tickets={heldTickets} onHandOver={setHandOverTicket} />
+      ) : null}
+
+      {view === 'schedule' ? (
         mine.loading && !mine.schedule ? (
           <LoadingState />
         ) : mine.error ? (
@@ -137,7 +168,7 @@ export default function EventMyTicketsPage() {
               addToast({ type: 'success', message: 'Thanks — your review is saved.' });
             }}
           />
-        ) : (
+        ) : heldTickets.length > 0 ? null : (
           <div className="rounded-xl border border-dashed border-slate-300 px-6 py-12 text-center dark:border-white/15">
             <p className="font-medium text-slate-900 dark:text-white">You don’t hold a ticket for this event</p>
             <Text variant="muted" className="mx-auto mt-1 max-w-md text-sm">
@@ -209,6 +240,15 @@ export default function EventMyTicketsPage() {
         submitting={busy}
         onClose={() => setTransferTicket(null)}
         onSubmit={handleTransfer}
+      />
+      <HandOverTicketModal
+        open={Boolean(handOverTicket)}
+        ticket={handOverTicket}
+        eventId={id}
+        mode="self"
+        submitting={busy}
+        onClose={() => setHandOverTicket(null)}
+        onSubmit={handleHandOver}
       />
     </div>
   );

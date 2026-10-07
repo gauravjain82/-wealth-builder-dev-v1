@@ -10,6 +10,8 @@ interface CheckinSuccessFlashProps {
    * back flash twice; 0 never flashes.
    */
   trigger: number;
+  /** A short line under the check mark, e.g. which credential was recognised. */
+  caption?: string;
 }
 
 /**
@@ -27,7 +29,7 @@ interface CheckinSuccessFlashProps {
  * during the flash reaches whatever is under it. The outcome line stays the
  * accessible announcement; this is decoration and is hidden from assistive tech.
  */
-export function CheckinSuccessFlash({ trigger }: CheckinSuccessFlashProps) {
+export function CheckinSuccessFlash({ trigger, caption }: CheckinSuccessFlashProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export function CheckinSuccessFlash({ trigger }: CheckinSuccessFlashProps) {
   return createPortal(
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-[1400] flex items-center justify-center bg-emerald-500"
+      className="pointer-events-none fixed inset-0 z-[1400] flex flex-col items-center justify-center gap-3 bg-emerald-500"
     >
       <svg
         viewBox="0 0 24 24"
@@ -56,6 +58,7 @@ export function CheckinSuccessFlash({ trigger }: CheckinSuccessFlashProps) {
         <circle cx="12" cy="12" r="10" strokeWidth={2} />
         <path d="M7 12.5l3.5 3.5L17 9" />
       </svg>
+      {caption ? <p className="text-xl font-semibold text-white drop-shadow">{caption}</p> : null}
     </div>,
     document.body,
   );

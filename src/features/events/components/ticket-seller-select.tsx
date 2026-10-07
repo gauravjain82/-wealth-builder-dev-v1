@@ -15,11 +15,14 @@ export function TicketSellerSelect({
   value,
   onChange,
   label,
+  optional = false,
 }: {
   sellers: EventTrackedSeller[];
   value: number | null;
   onChange: (next: number | null) => void;
   label: string;
+  /** Leave the answer optional (keeps the current SMD when unanswered). */
+  optional?: boolean;
 }) {
   const groups = useMemo(() => {
     const byTeam = new Map<string, EventTrackedSeller[]>([['', []]]);
@@ -41,11 +44,11 @@ export function TicketSellerSelect({
     <FormRow>
       <Label variant="form">{label}</Label>
       <Select
-        required
+        required={!optional}
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
       >
-        <option value="">Select an SMD</option>
+        <option value="">{optional ? 'Keep the current SMD' : 'Select an SMD'}</option>
         {groups.map(([team, list]) =>
           team ? (
             <optgroup key={team} label={team}>

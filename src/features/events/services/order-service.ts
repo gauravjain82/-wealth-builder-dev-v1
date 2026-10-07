@@ -9,6 +9,7 @@ import type {
   EventTicket,
   AssignHolderPayload,
   TransferPayload,
+  HandOverPayload,
   TicketHistory,
   MyTicketsResponse,
 } from '../types/ticket';
@@ -153,6 +154,17 @@ export const orderService = {
 
   transferTicket(ticketId: number, payload: TransferPayload): Promise<EventTicket> {
     return request(`${TICKETS_BASE}/${ticketId}/transfer/`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Record a name change: same ticket and confirmation, new named attendee.
+   * Used by the holder themself (My tickets) and by managers.
+   */
+  handOverTicket(ticketId: number, payload: HandOverPayload): Promise<EventTicket> {
+    return request(`${TICKETS_BASE}/${ticketId}/hand-over/`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });

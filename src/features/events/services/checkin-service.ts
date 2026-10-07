@@ -7,6 +7,7 @@ import type {
   CheckinStats,
 } from '../types/checkin';
 import type { PaginatedResponse } from '../types/event';
+import { toDoorError } from './door-service';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -44,7 +45,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { ...authHeaders(init?.body !== undefined), ...init?.headers },
   });
-  if (!response.ok) throw new Error(await parseError(response));
+  // Door refusals carry a structured body (code, candidates, account…).
+  if (!response.ok) throw await toDoorError(response);
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
@@ -85,7 +87,10 @@ export const checkinService = {
     return request(`${EVENTS_BASE}/${eventId}/checkin/stats/`);
   },
 
-  /** Mark a holder arrived. Returns the updated row plus a duplicate flag. */
+  /**
+   * Mark a holder arrived. Returns the updated row plus a duplicate flag.
+   * Refusals throw `DoorApiError` (see `doorErrorOf`).
+   */
   checkIn(eventId: number, payload: CheckinPayload): Promise<CheckinScanResult> {
     return request(`${EVENTS_BASE}/${eventId}/checkin/`, {
       method: 'POST',
