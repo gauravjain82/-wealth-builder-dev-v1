@@ -11,6 +11,7 @@ import { useGmsAccess } from '@/features/gms';
 import { useBpmCapabilities } from '@/features/bpm/hooks/use-bpm-capabilities';
 import { usePluginFeesAccess } from '@/features/plugin-fees/hooks/use-plugin-fees';
 import { useEventsAccess } from '@/features/events/hooks/use-events-access';
+import { useCodeOfHonorAccess } from '@/features/code-of-honor';
 import {
   canManageCosts,
   canSeeCycles,
@@ -71,6 +72,9 @@ export function useRoleBasedMenu(): MenuItem[] {
   // check-in-only delegate sees Big Event → Check-in whatever their role.
   const { data: eventsAccess } = useEventsAccess();
   const bigEventScreens = eventsAccess?.surfaces;
+  // Code of Honor committee/admin page: code_of_honor:* grants in the access console.
+  const { data: codeOfHonorAccess } = useCodeOfHonorAccess();
+  const canManageCodeOfHonor = Boolean(codeOfHonorAccess?.can_review || codeOfHonorAccess?.can_manage);
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
@@ -94,7 +98,8 @@ export function useRoleBasedMenu(): MenuItem[] {
         canViewPluginFeePayments,
         canViewPluginFeeOverview,
         canViewPluginFeePayouts,
-        bigEventScreens
+        bigEventScreens,
+        canManageCodeOfHonor
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -115,7 +120,8 @@ export function useRoleBasedMenu(): MenuItem[] {
       canViewPluginFeePayments,
       canViewPluginFeeOverview,
       canViewPluginFeePayouts,
-      bigEventScreens
+      bigEventScreens,
+      canManageCodeOfHonor
     );
   }, [
     user?.hasPromotionAccess,
@@ -136,5 +142,6 @@ export function useRoleBasedMenu(): MenuItem[] {
     canViewPluginFeeOverview,
     canViewPluginFeePayouts,
     bigEventScreens,
+    canManageCodeOfHonor,
   ]);
 }

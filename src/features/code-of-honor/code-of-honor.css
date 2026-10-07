@@ -1,0 +1,675 @@
+/*
+ * Code of Honor wall — feature styles.
+ *
+ * Every rule is scoped under `wb-coh-`, following `leaderboards.css`: the surfaces are
+ * the host's translucent dark glass and the accent is the home page's yellow. The
+ * vendor's black-and-gold theme is reference material, not a second theme.
+ *
+ * Containment (the Home v2 card): the card has a fixed height and is a flex column;
+ * `min-height: 0` on each flex ancestor lets `.wb-coh-scroll` — the only scroller — own
+ * the overflow, so long content scrolls inside the card instead of growing the page.
+ * The committee page is not height-bounded; there the page scrolls.
+ */
+
+.wb-coh-card {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  height: clamp(520px, 75vh, 780px);
+  overflow: hidden;
+  background: rgb(0 0 0 / 0.2);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  color: #fff;
+}
+
+.wb-coh-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.wb-coh-card__title,
+.wb-coh-page__title {
+  color: #facc15;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.wb-coh-card__status {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  opacity: 0.75;
+}
+
+.wb-coh-card__content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.wb-coh-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.wb-coh-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.wb-coh-tab,
+.wb-coh-like,
+.wb-coh-chip {
+  min-height: 44px;
+}
+
+.wb-coh-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.375rem;
+  font-size: 0.75rem;
+}
+
+.wb-coh-live__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #ef4444;
+  animation: wb-coh-pulse 1.6s ease-in-out infinite;
+}
+
+/* --- layout --------------------------------------------------------------- */
+
+.wb-coh-post__columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@container (max-width: 640px) {
+  .wb-coh-post__columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wb-coh-panel {
+  min-width: 0;
+}
+
+.wb-coh-heading {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.wb-coh-muted {
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+.wb-coh-latest {
+  margin-top: 1.5rem;
+}
+
+.wb-coh-toolbar,
+.wb-coh-statusbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.wb-coh-statusbar {
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.wb-coh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* --- acts ----------------------------------------------------------------- */
+
+.wb-coh-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.wb-coh-act,
+.wb-coh-review,
+.wb-coh-value {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 0.06);
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.wb-coh-act--preview {
+  margin: 0.75rem 0;
+}
+
+.wb-coh-act__text {
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.wb-coh-act__who {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.wb-coh-act__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.wb-coh-blank {
+  display: inline-block;
+  min-width: 3.5em;
+  margin: 0 0.15em;
+  border-bottom: 2px solid #facc15;
+  vertical-align: baseline;
+}
+
+.wb-coh-tag {
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: rgb(250 204 21 / 0.2);
+  color: #fde68a;
+}
+
+.wb-coh-tag--soft {
+  background: rgb(255 255 255 / 0.08);
+  color: inherit;
+}
+
+.wb-coh-count {
+  margin-left: auto;
+  font-size: 0.8125rem;
+  opacity: 0.8;
+}
+
+.wb-coh-like {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 44px;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.25);
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+}
+
+.wb-coh-like--on {
+  border-color: #facc15;
+  background: rgb(250 204 21 / 0.2);
+  color: #facc15;
+}
+
+.wb-coh-like:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.wb-coh-vote__bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgb(15 15 15 / 0.85);
+  backdrop-filter: blur(8px);
+}
+
+/* --- podium and standings ------------------------------------------------- */
+
+.wb-coh-podium {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.wb-coh-podium__item {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 0.06);
+  border-top: 3px solid rgb(255 255 255 / 0.3);
+}
+
+.wb-coh-podium__item--p1 {
+  border-top-color: #facc15;
+}
+
+.wb-coh-podium__item--p2 {
+  border-top-color: #cbd5e1;
+}
+
+.wb-coh-podium__item--p3 {
+  border-top-color: #d97706;
+}
+
+.wb-coh-podium__place {
+  font-weight: 700;
+  color: #facc15;
+}
+
+.wb-coh-shared {
+  font-weight: 400;
+  font-size: 0.8125rem;
+  color: #fff;
+}
+
+.wb-coh-podium__name {
+  font-weight: 600;
+  margin: 0.25rem 0;
+}
+
+.wb-coh-podium__meta {
+  font-size: 0.8125rem;
+  opacity: 0.8;
+}
+
+.wb-coh-standings {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.wb-coh-standing {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.wb-coh-standing__rank {
+  width: 2rem;
+  text-align: center;
+  font-weight: 700;
+  color: #facc15;
+}
+
+.wb-coh-standing__name {
+  flex: 1;
+  min-width: 0;
+}
+
+.wb-coh-standing__coins {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.wb-coh-avatar {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.wb-coh-avatar--initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgb(250 204 21 / 0.25);
+  color: #fde68a;
+}
+
+/* --- forms ---------------------------------------------------------------- */
+
+.wb-coh-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.wb-coh-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.wb-coh-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.wb-coh-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background: rgb(0 0 0 / 0.35);
+  color: #fff;
+}
+
+.wb-coh-input--inline {
+  width: auto;
+}
+
+.wb-coh-textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.wb-coh-hint {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.wb-coh-hint--warn {
+  color: #fca5a5;
+  opacity: 1;
+}
+
+.wb-coh-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.wb-coh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.wb-coh-chip--on {
+  border-color: #facc15;
+  background: rgb(250 204 21 / 0.15);
+}
+
+.wb-coh-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+}
+
+.wb-coh-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.875rem;
+}
+
+.wb-coh-combobox {
+  position: relative;
+}
+
+.wb-coh-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-height: 16rem;
+  overflow: auto;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem;
+  list-style: none;
+  border-radius: 0.5rem;
+  background: #111;
+  border: 1px solid rgb(255 255 255 / 0.15);
+}
+
+.wb-coh-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.5rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.wb-coh-option--active {
+  background: rgb(250 204 21 / 0.2);
+}
+
+.wb-coh-option--note {
+  padding: 0.75rem 0.5rem;
+  opacity: 0.7;
+}
+
+.wb-coh-chosen {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+}
+
+.wb-coh-link {
+  margin-left: auto;
+  color: #facc15;
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  min-height: 44px;
+}
+
+/* --- committee and admin -------------------------------------------------- */
+
+.wb-coh-page {
+  color: #fff;
+}
+
+.wb-coh-page__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.wb-coh-review--hidden {
+  opacity: 0.6;
+}
+
+.wb-coh-review__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.wb-coh-review__versions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .wb-coh-review__versions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wb-coh-warning {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  background: rgb(239 68 68 / 0.2);
+  border: 1px solid rgb(239 68 68 / 0.6);
+}
+
+.wb-coh-order {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+}
+
+.wb-coh-order__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wb-coh-order__pos {
+  font-weight: 700;
+  width: 1.5rem;
+}
+
+.wb-coh-value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.wb-coh-value--retired {
+  opacity: 0.6;
+}
+
+.wb-coh-value__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  flex: 1;
+  min-width: 220px;
+}
+
+.wb-coh-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.wb-coh-add {
+  margin-top: 1rem;
+}
+
+.wb-coh-audit {
+  margin-top: 1.5rem;
+}
+
+.wb-coh-audit__list {
+  font-size: 0.8125rem;
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* --- states --------------------------------------------------------------- */
+
+.wb-coh-empty {
+  padding: 1rem 0;
+  opacity: 0.75;
+}
+
+.wb-coh-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  background: rgb(239 68 68 / 0.15);
+  color: #fecaca;
+}
+
+.wb-coh-success {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  background: rgb(34 197 94 / 0.15);
+  color: #bbf7d0;
+}
+
+.wb-coh-skeleton {
+  height: 2.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 0.08);
+  animation: wb-coh-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes wb-coh-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-coh-skeleton,
+  .wb-coh-live__dot {
+    animation: none;
+  }
+}
+
+/* --- surfaces outside the Home v2 card ------------------------------------ */
+
+/*
+ * The committee page and the dialogs render in the app shell and the shared `Modal`,
+ * whose own palette follows the light/dark theme. These screens use the card's dark
+ * surface either way, so the doubled class (0,2,1) outranks the Modal's Tailwind
+ * utilities whatever order the stylesheets load in — the approach `contests.css` takes.
+ */
+div.wb-coh-modal.wb-coh-modal,
+div.wb-coh-page.wb-coh-page {
+  background: #171a18;
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.15);
+}
+
+div.wb-coh-modal.wb-coh-modal h3 {
+  color: #facc15;
+}
+
+div.wb-coh-page.wb-coh-page {
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+}

@@ -16,7 +16,8 @@
  * The "Event & Contests" slot is a Canva media card (like Recognition), the two
  * sitting side by side as on `/home`. The live contest is a separate full-width block
  * below the leaderboard — the featured-contest showcase, not the standings grid, which
- * stays on `/contests` — rather than replacing the media card.
+ * stays on `/contests` — rather than replacing the media card. The Code of Honor wall
+ * follows the contests, as its own card.
  */
 
 import { useRef, useState } from 'react';
@@ -24,6 +25,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { VideoHero, CanvaVideoCard, PerformanceTable } from '@/features/home/components';
 import { ContestShowcase } from '@/features/contests';
+import { CodeOfHonorCard } from '@/features/code-of-honor';
 import { LeaderboardPanel } from '@/features/leaderboards';
 import { useHomePageContent } from '@/features/home/hooks/use-home-content';
 import type { HomeMediaType, HomePageSlot } from '@/features/home/services/home-content-service';
@@ -114,6 +116,17 @@ export default function HomeV2Page() {
               grid, filters and proofs are on /contests, which "View all" opens.
             */}
             <ContestShowcase onViewAll={() => navigate('/contests')} />
+          </div>
+        </section>
+
+        <section className="px-4 pb-8" aria-label="Code of Honor">
+          <div className="max-w-7xl mx-auto">
+            {/*
+              The Code of Honor wall: a fixed-height card whose tabs scroll inside it.
+              It renders nothing for anyone the backend does not count as a member
+              (prospects), and links committee holders to /code-of-honor/committee.
+            */}
+            <CodeOfHonorCard onOpenCommittee={() => navigate('/code-of-honor/committee')} />
           </div>
         </section>
 
