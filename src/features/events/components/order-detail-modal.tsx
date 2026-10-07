@@ -22,6 +22,14 @@ import { orderService } from '../services/order-service';
 import type { EventOrder, OrderStatus, OrderUpdatePayload } from '../types/order';
 import type { EventTicket } from '../types/ticket';
 import type { EventTrackedSeller } from '../types/config';
+import {
+  ORDER_STATUS_LABEL,
+  TICKET_STATUS_LABEL,
+  TICKET_STATUS_TONE,
+  isPartnerTicket,
+  shownStatus,
+  statusCounts,
+} from '../utils/ticket-status';
 
 interface OrderDetailModalProps {
   open: boolean;
@@ -30,7 +38,10 @@ interface OrderDetailModalProps {
   onClose: () => void;
   onAssign: (ticket: EventTicket) => void;
   onTransfer: (ticket: EventTicket) => void;
-  /** Record a name change / hand-over (same ticket, new named attendee). */
+  /**
+   * Transfer by hand-over (same ticket and QR, new named attendee, who is emailed).
+   * The "Transfer" button uses it for BSCPro tickets; WB tickets use `onTransfer`.
+   */
   onHandOver?: (ticket: EventTicket) => void;
   onUpdated: () => void;
   onRefund: (orderId: number) => Promise<unknown>;
@@ -49,9 +60,19 @@ const STATUS_VARIANT: Record<OrderStatus, BadgeVariant> = {
   EXTERNAL: 'outline',
 };
 
-function holderLabel(ticket: EventTicket): string {
-  const name = `${ticket.holder_first_name} ${ticket.holder_last_name}`.trim();
-  return name || ticket.holder_email || 'Unassigned';
+function attendeeName(ticket: EventTicket): string {
+  return `${ticket.holder_first_name} ${ticket.holder_last_name}`.trim() || ticket.holder_email;
+}
+
+/** One labelled line of the order summary; hidden when there is no value. */
+function Fact({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value) return null;
+  return (
+    <div className="flex gap-2">
+      <span className="w-28 shrink-0 text-slate-500 dark:text-white/50">{label}</span>
+      <span className="text-slate-900 dark:text-white">{value}</span>
+    </div>
+  );
 }
 
 /** Order detail + per-ticket actions + edit / refund / cancel / re-email / PDF. */
@@ -142,6 +163,7 @@ export function OrderDetailModal({
     }
   };
 
+  const imported = order?.source === 'EXTERNAL';
   const canRefund = order?.status === 'PAID' || order?.status === 'COMP';
   const canCancel = order?.status === 'PENDING';
 
@@ -158,12 +180,24 @@ export function OrderDetailModal({
         ) : (
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={STATUS_VARIANT[order.status]}>{order.status}</Badge>
-              <Badge variant="outline">{order.transaction_type}</Badge>
-              <Badge variant="secondary">{order.source}</Badge>
+              {imported ? (
+                <Badge variant="outline">Sold by {order.channel ?? 'partner'}</Badge>
+              ) : (
+                <>
+                  <Badge variant={STATUS_VARIANT[order.status]}>
+                    {ORDER_STATUS_LABEL[order.status] ?? order.status}
+                  </Badge>
+                  <Badge variant="outline">{order.transaction_type}</Badge>
+                </>
+              )}
               <Text variant="muted" className="text-sm">
-                {formatPrice(order.total, order.currency)} · {order.quantity} ticket
-                {order.quantity === 1 ? '' : 's'}
+                {imported ? '' : `${formatPrice(order.total, order.currency)} · `}
+                {order.tickets.length} ticket{order.tickets.length === 1 ? '' : 's'} ·{' '}
+                {statusCounts(
+                  order.tickets.filter((t) => shownStatus(t) === 'ASSIGNED').length,
+                  order.tickets.filter((t) => shownStatus(t) === 'UNASSIGNED').length,
+                  order.tickets.filter((t) => shownStatus(t) === 'TRANSFERRED').length,
+                )}
               </Text>
             </div>
 
@@ -242,14 +276,29 @@ export function OrderDetailModal({
                 </FormActions>
               </Form>
             ) : (
-              <div className="grid gap-1 text-sm text-slate-700 dark:text-white/80">
-                <div>
-                  {order.purchaser_first_name} {order.purchaser_last_name} ·{' '}
-                  {order.purchaser_email}
-                </div>
-                <div>Seller: {order.attributed_seller_name ?? 'Unassigned'}</div>
-                {order.promo_code ? <div>Promo: {order.promo_code}</div> : null}
-                {order.notes ? <div>Notes: {order.notes}</div> : null}
+              <div className="grid gap-1 rounded-lg border border-slate-200 p-3 text-sm dark:border-white/10">
+                <Fact
+                  label="Purchaser"
+                  value={
+                    [
+                      `${order.purchaser_first_name} ${order.purchaser_last_name}`.trim(),
+                      order.purchaser_email,
+                      order.purchaser_phone,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || '—'
+                  }
+                />
+                <Fact label="Sold by" value={order.channel ?? (imported ? 'Partner' : 'WB')} />
+                {imported ? (
+                  <>
+                    <Fact label={`${order.channel ?? 'Partner'} purchase`} value={order.external_order_reference || '—'} />
+                    <Fact label={`${order.channel ?? 'Partner'} invoice`} value={order.external_invoice_reference || '—'} />
+                  </>
+                ) : null}
+                <Fact label="SMD" value={order.attributed_seller_name ?? 'None credited'} />
+                <Fact label="Promo" value={order.promo_code} />
+                <Fact label="Notes" value={order.notes} />
               </div>
             )}
 
@@ -282,6 +331,12 @@ export function OrderDetailModal({
                   Tickets are issued after payment confirms.
                 </Text>
               ) : (
+                <>
+                <Text variant="muted" className="mb-2 text-xs">
+                  <strong>Assign</strong> — name or correct who attends; no email is sent.{' '}
+                  <strong>Transfer</strong> — give the ticket to someone else; they are emailed it
+                  {imported ? ' (the ticket, QR and BSCPro confirmation stay the same)' : ''}.
+                </Text>
                 <ul className="divide-y divide-slate-100 dark:divide-white/10">
                   {order.tickets.map((ticket) => (
                     <li
@@ -289,12 +344,31 @@ export function OrderDetailModal({
                       className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"
                     >
                       <div>
-                        <span className="font-medium text-slate-900 dark:text-white">
-                          {ticket.ticket_number}
-                        </span>
-                        <span className="ml-2 text-slate-500 dark:text-white/50">
-                          {ticket.assignment_status} · {holderLabel(ticket)}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={
+                              attendeeName(ticket)
+                                ? 'font-medium text-slate-900 dark:text-white'
+                                : 'italic text-slate-500 dark:text-white/50'
+                            }
+                          >
+                            {attendeeName(ticket) || 'Not assigned'}
+                          </span>
+                          <Badge variant={TICKET_STATUS_TONE[shownStatus(ticket)]}>
+                            {TICKET_STATUS_LABEL[shownStatus(ticket)]}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-white/50">
+                          {[
+                            ticket.ticket_number,
+                            isPartnerTicket(ticket) && ticket.external_reference
+                              ? `BSCPro ${ticket.external_reference}`
+                              : '',
+                            ticket.attributed_seller_name ? `SMD ${ticket.attributed_seller_name}` : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </div>
                       </div>
                       <div className="flex flex-wrap gap-1">
                         <Button
@@ -309,23 +383,18 @@ export function OrderDetailModal({
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => onTransfer(ticket)}
+                          // A BSCPro ticket keeps its confirmation and QR, so it
+                          // changes hands by naming the new attendee (hand-over);
+                          // a WB ticket's ownership moves (transfer).
+                          onClick={() =>
+                            isPartnerTicket(ticket) && onHandOver
+                              ? onHandOver(ticket)
+                              : onTransfer(ticket)
+                          }
                           disabled={ticket.lifecycle_status !== 'ACTIVE'}
                         >
                           Transfer
                         </Button>
-                        {onHandOver ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            title="Record name change / hand-over"
-                            onClick={() => onHandOver(ticket)}
-                            disabled={ticket.lifecycle_status !== 'ACTIVE'}
-                          >
-                            Name change
-                          </Button>
-                        ) : null}
                         <Button
                           type="button"
                           variant="ghost"
@@ -345,6 +414,7 @@ export function OrderDetailModal({
                     </li>
                   ))}
                 </ul>
+                </>
               )}
             </div>
 

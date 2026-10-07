@@ -11,9 +11,17 @@ export interface TicketSummary {
 
 export interface ReportSummary {
   total_tickets: number;
+  /** Shown statuses; they add up to `total_tickets`. */
   assigned: number;
   unassigned: number;
   transferred: number;
+  /** Tickets imported from a partner vs sold through WB (absent on older servers). */
+  external_tickets?: number;
+  wb_tickets?: number;
+  /** Imported partner purchases (one order each). */
+  external_purchases?: number;
+  /** The partner's label, e.g. `BSCPro`; `''` when nothing was imported. */
+  external_provider?: string;
   checked_in: number;
   remaining_capacity: number | null;
   collected: string;

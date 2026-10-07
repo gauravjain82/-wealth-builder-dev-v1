@@ -1,6 +1,7 @@
 import { Badge, Button } from '@shared/components';
 import type { CheckinAttendee } from '../types/checkin';
 import { credentialLabel } from '../types/door';
+import { TICKET_STATUS_LABEL, TICKET_STATUS_TONE } from '../utils/ticket-status';
 
 interface AttendeeTableProps {
   attendees: CheckinAttendee[];
@@ -50,7 +51,7 @@ export function AttendeeTable({
             <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-white/5 dark:text-white/60">
               <th className="px-3 py-2">Attendee</th>
               <th className="px-3 py-2">Ticket</th>
-              <th className="px-3 py-2">Invoice</th>
+              <th className="px-3 py-2">Purchase</th>
               <th className="px-3 py-2">Arrived</th>
               <th className="px-3 py-2">By</th>
               <th className="px-3 py-2" />
@@ -66,7 +67,9 @@ export function AttendeeTable({
               >
                 <td className="px-3 py-2">
                   <div className="flex flex-wrap items-center gap-1.5 font-medium text-slate-900 dark:text-white">
-                    {attendee.holder_name || '(unassigned)'}
+                    {attendee.holder_name || (
+                      <span className="italic text-slate-500 dark:text-white/50">Not assigned</span>
+                    )}
                     {attendee.holder_linked ? (
                       <Badge variant="outline" title="Ticket is linked to a platform account">
                         Linked
@@ -86,12 +89,32 @@ export function AttendeeTable({
                       BSCPro{attendee.external_reference ? ` · ${attendee.external_reference}` : ''}
                     </div>
                   ) : null}
-                  {attendee.assignment_status !== 'ASSIGNED' ? (
-                    <Badge variant="outline">{attendee.assignment_status}</Badge>
+                  {(attendee.shown_status ?? attendee.assignment_status) !== 'ASSIGNED' ? (
+                    <Badge variant={TICKET_STATUS_TONE[attendee.shown_status ?? attendee.assignment_status]}>
+                      {TICKET_STATUS_LABEL[attendee.shown_status ?? attendee.assignment_status]}
+                    </Badge>
                   ) : null}
                 </td>
                 <td className="px-3 py-2 text-slate-600 dark:text-white/70">
-                  {attendee.invoice_number}
+                  <div>{attendee.invoice_number}</div>
+                  {attendee.purchaser_name ? (
+                    <div className="text-xs text-slate-500 dark:text-white/50">
+                      Bought by {attendee.purchaser_name}
+                    </div>
+                  ) : null}
+                  {attendee.channel && attendee.channel !== 'WB' ? (
+                    <div className="text-xs text-slate-500 dark:text-white/50">
+                      {attendee.channel} {attendee.external_order_reference || ''}
+                      {attendee.external_invoice_reference
+                        ? ` · Inv ${attendee.external_invoice_reference}`
+                        : ''}
+                    </div>
+                  ) : null}
+                  {attendee.seller_name ? (
+                    <div className="text-xs text-slate-500 dark:text-white/50">
+                      SMD {attendee.seller_name}
+                    </div>
+                  ) : null}
                 </td>
                 <td className="px-3 py-2">
                   {attendee.checked_in ? (

@@ -13,7 +13,7 @@ function holderName(ticket: HeldTicket): string {
 /**
  * "Tickets in your name" — tickets the user is the named attendee of, whoever
  * owns them (including BSCPro imports, which have no owner here). The holder
- * can hand one over to someone else; when that isn't allowed the button says why.
+ * can transfer one to someone else; when that isn't allowed the button says why.
  */
 export function HeldTicketsSection({ tickets, onHandOver }: HeldTicketsSectionProps) {
   if (tickets.length === 0) return null;
@@ -51,7 +51,7 @@ export function HeldTicketsSection({ tickets, onHandOver }: HeldTicketsSectionPr
                   title={ticket.can_hand_over ? undefined : ticket.hand_over_blocked_reason}
                   onClick={() => onHandOver(ticket)}
                 >
-                  Hand over this ticket
+                  Transfer this ticket
                 </Button>
                 {!ticket.can_hand_over && ticket.hand_over_blocked_reason ? (
                   <span className="max-w-[260px] text-right text-xs text-slate-500 dark:text-white/50">

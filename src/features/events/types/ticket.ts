@@ -8,6 +8,11 @@ export interface EventTicket {
   order?: number;
   ticket_number: string;
   assignment_status: AssignmentStatus;
+  /**
+   * What staff see: ASSIGNED, UNASSIGNED ("Not assigned") or TRANSFERRED (changed
+   * hands on WB or at the provider). Prefer this over `assignment_status` for display.
+   */
+  shown_status?: AssignmentStatus;
   lifecycle_status: LifecycleStatus;
   holder_first_name: string;
   holder_last_name: string;

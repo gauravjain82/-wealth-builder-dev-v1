@@ -22,8 +22,8 @@ interface HandOverTicketModalProps {
   /** Fallback when the ticket payload doesn't carry its event id. */
   eventId?: number;
   /**
-   * `self` — the named attendee handing over their own ticket (My tickets).
-   * `manager` — staff recording a name change on someone's behalf.
+   * `self` — the named attendee transferring their own ticket (My tickets).
+   * `manager` — staff transferring it on someone's behalf.
    */
   mode: 'self' | 'manager';
   submitting: boolean;
@@ -32,9 +32,12 @@ interface HandOverTicketModalProps {
 }
 
 /**
- * Hand-over (name change): the same ticket and confirmation, a new named
- * attendee. Unlike a transfer, ownership doesn't move — only who is on it. The
- * new holder is emailed their ticket. The SMD question is optional here.
+ * Transfer by hand-over: the same ticket and confirmation, a new named attendee
+ * (`POST tickets/{id}/hand-over/`). It is called "Transfer" in the UI — the word
+ * staff and attendees use — and it is the only way a BSCPro ticket changes hands,
+ * since its confirmation and QR must stay valid. Unlike WB's ownership transfer,
+ * ownership doesn't move — only who is on it. The new holder is emailed their
+ * ticket. The SMD question is optional here.
  */
 export function HandOverTicketModal({
   open,
@@ -83,10 +86,10 @@ export function HandOverTicketModal({
       open={open}
       title={
         mode === 'self'
-          ? 'Hand over this ticket'
+          ? 'Transfer this ticket'
           : ticket
-            ? `Record name change — ${ticket.ticket_number}`
-            : 'Record name change'
+            ? `Transfer ticket — ${ticket.ticket_number}`
+            : 'Transfer ticket'
       }
       onClose={onClose}
       contentClassName="max-w-lg"
@@ -94,8 +97,8 @@ export function HandOverTicketModal({
       <Form onSubmit={handleSubmit}>
         <Text variant="muted" className="text-sm">
           {mode === 'self'
-            ? `Your ticket's confirmation${confirmation} stays the same; the name on it changes to the person you enter. They'll be emailed their ticket, and you won't be able to use it any more.`
-            : `The ticket and its confirmation${confirmation} stay the same; the named attendee changes to the person below and they are emailed their ticket.`}
+            ? `Your ticket's confirmation${confirmation} stays the same; it is transferred to the person you enter. They'll be emailed their ticket, and you won't be able to use it any more.`
+            : `The ticket is transferred to the person below and they are emailed their ticket. The ticket and its confirmation${confirmation} stay the same.`}
         </Text>
         <FormRowGroup columns={2}>
           <FormRow>
@@ -136,7 +139,7 @@ export function HandOverTicketModal({
             Cancel
           </Button>
           <Button type="submit" disabled={submitting}>
-            {submitting ? 'Saving…' : mode === 'self' ? 'Hand over ticket' : 'Record name change'}
+            {submitting ? 'Transferring…' : 'Transfer ticket'}
           </Button>
         </FormActions>
       </Form>
