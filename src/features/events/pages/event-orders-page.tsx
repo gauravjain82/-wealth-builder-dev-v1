@@ -32,6 +32,8 @@ import type {
   TransferPayload,
 } from '../types/ticket';
 import type { EventTrackedSeller } from '../types/config';
+import { PURCHASE_SEARCH_HELP, PURCHASE_SEARCH_PLACEHOLDER } from '../utils/purchase-search';
+import { SearchInSelect } from '../components/search-in-select';
 
 /** Who sold it: WB, or an imported partner purchase. */
 const CHANNEL_OPTIONS = [
@@ -230,8 +232,14 @@ export default function EventOrdersPage({ eventId: eventIdProp }: { eventId?: nu
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search invoice (ours or BSCPro), confirmation, name, email…"
-            className="max-w-sm"
+            placeholder={PURCHASE_SEARCH_PLACEHOLDER}
+            title={PURCHASE_SEARCH_HELP}
+            aria-label={PURCHASE_SEARCH_HELP}
+            className="w-full sm:w-[26rem]"
+          />
+          <SearchInSelect
+            value={filters.search_in}
+            onChange={(searchIn) => setFilters({ search_in: searchIn })}
           />
           <Select
             value={filters.channel ?? ''}

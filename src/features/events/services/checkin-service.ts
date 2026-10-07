@@ -3,6 +3,7 @@ import type {
   CheckinExportType,
   CheckinFilters,
   CheckinPayload,
+  CheckinPurchase,
   CheckinScanResult,
   CheckinStats,
 } from '../types/checkin';
@@ -74,6 +75,14 @@ export const checkinService = {
     filters: CheckinFilters = {},
   ): Promise<PaginatedResponse<CheckinAttendee>> {
     return request(`${EVENTS_BASE}/${eventId}/checkin/${buildQuery(filters)}`);
+  },
+
+  /** The door list grouped by purchase (search keeps whole purchases). */
+  listPurchases(
+    eventId: number,
+    filters: CheckinFilters = {},
+  ): Promise<PaginatedResponse<CheckinPurchase>> {
+    return request(`${EVENTS_BASE}/${eventId}/checkin/purchases/${buildQuery(filters)}`);
   },
 
   arrivedList(

@@ -1,4 +1,5 @@
 import type { AssignmentStatus, EventTicket } from './ticket';
+import type { SearchIn, SearchMatch } from '../utils/purchase-search';
 
 export type TransactionType = 'STRIPE' | 'CASH' | 'CHECK' | 'CREDIT' | 'COMP' | 'EXTERNAL';
 /** `EXTERNAL`: the $0 order of an imported partner (BSCPro) purchase — one per purchase. */
@@ -46,6 +47,8 @@ export interface EventOrderListItem {
   unassigned_count: number;
   transferred_count?: number;
   created_at: string;
+  /** With a search: what it matched (buyer, an attendee, a number). */
+  search_match?: SearchMatch[];
 }
 
 /** One ticket of an order, as the Purchases list shows it. */
@@ -53,6 +56,8 @@ export interface OrderAttendee {
   name: string;
   status: AssignmentStatus;
   ticket_number: string;
+  /** This ticket is what the search named (highlight it). */
+  matched?: boolean;
 }
 
 /** Full order from retrieve / create / refund / cancel. */
@@ -106,5 +111,7 @@ export interface OrderFilters {
   /** Orders with at least one ticket showing this status. */
   ticket_status?: string;
   search?: string;
+  /** Whose name / email / phone `search` looks at; omitted = everywhere. */
+  search_in?: SearchIn;
   page?: number;
 }

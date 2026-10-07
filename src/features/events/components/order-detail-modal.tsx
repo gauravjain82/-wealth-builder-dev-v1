@@ -29,6 +29,7 @@ import {
   isPartnerTicket,
   shownStatus,
 } from '../utils/ticket-status';
+import { TicketCountPills } from './ticket-count-pills';
 
 interface OrderDetailModalProps {
   open: boolean;
@@ -63,30 +64,16 @@ function attendeeName(ticket: EventTicket): string {
   return `${ticket.holder_first_name} ${ticket.holder_last_name}`.trim() || ticket.holder_email;
 }
 
-/**
- * "Tickets 6 · Assigned 1 · Not assigned 4 · Transferred 1" with each number
- * highlighted in its status colour. Transferred is shown only when there are any.
- */
+/** The order's ticket counts, by shown status. */
 function TicketCounts({ tickets }: { tickets: EventTicket[] }) {
   const count = (status: string) => tickets.filter((t) => shownStatus(t) === status).length;
-  const transferred = count('TRANSFERRED');
-  const items: Array<{ label: string; value: number; tone: string }> = [
-    { label: 'Tickets', value: tickets.length, tone: 'bg-slate-700 text-white dark:bg-white dark:text-slate-900' },
-    { label: 'Assigned', value: count('ASSIGNED'), tone: 'bg-green-500 text-white' },
-    { label: 'Not assigned', value: count('UNASSIGNED'), tone: 'bg-yellow-500 text-white' },
-    ...(transferred ? [{ label: 'Transferred', value: transferred, tone: 'bg-blue-500 text-white' }] : []),
-  ];
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-700 dark:text-white/80">
-      {items.map((item) => (
-        <span key={item.label} className="inline-flex items-center gap-1.5">
-          {item.label}
-          <span className={`min-w-[1.75rem] rounded-full px-2 py-0.5 text-center text-sm font-bold ${item.tone}`}>
-            {item.value}
-          </span>
-        </span>
-      ))}
-    </div>
+    <TicketCountPills
+      total={tickets.length}
+      assigned={count('ASSIGNED')}
+      unassigned={count('UNASSIGNED')}
+      transferred={count('TRANSFERRED')}
+    />
   );
 }
 

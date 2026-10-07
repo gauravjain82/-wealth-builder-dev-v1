@@ -4,6 +4,7 @@ import type {
   CheckinAttendee,
   CheckinFilters,
   CheckinPayload,
+  CheckinPurchase,
   CheckinScanResult,
   CheckinStats,
 } from '../types/checkin';
@@ -19,14 +20,15 @@ const EMPTY_STATS: CheckinStats = {
 };
 
 /**
- * Door-list state for one event: paginated attendees, arrival counters, and
- * the mutations staff perform at the entrance.
+ * Door-list state for one event: paginated purchase blocks (each with its
+ * tickets), arrival counters, and the mutations staff perform at the entrance.
  *
- * Attendee rows are patched in place after a check-in or undo so the table
- * doesn't flash between scans; only the counters are re-fetched.
+ * A checked-in or undone ticket is patched in place inside its purchase (and
+ * the purchase's arrived count adjusted) so the list doesn't flash between
+ * scans; only the counters are re-fetched.
  */
 export function useCheckIn(eventId: number) {
-  const [page, setPage] = useState<PaginatedResponse<CheckinAttendee> | null>(null);
+  const [page, setPage] = useState<PaginatedResponse<CheckinPurchase> | null>(null);
   const [stats, setStats] = useState<CheckinStats>(EMPTY_STATS);
   const [filters, setFiltersState] = useState<CheckinFilters>({ page: 1 });
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,7 @@ export function useCheckIn(eventId: number) {
     setLoading(true);
     setError(null);
     try {
-      setPage(await checkinService.listAttendees(eventId, filters));
+      setPage(await checkinService.listPurchases(eventId, filters));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load attendees');
     } finally {
@@ -74,11 +76,20 @@ export function useCheckIn(eventId: number) {
   }, []);
 
   const patchRow = useCallback((row: CheckinAttendee) => {
-    setPage((current) =>
-      current
-        ? { ...current, results: current.results.map((r) => (r.id === row.id ? row : r)) }
-        : current,
-    );
+    setPage((current) => {
+      if (!current) return current;
+      const results = current.results.map((purchase) => {
+        const previous = purchase.tickets.find((t) => t.id === row.id);
+        if (!previous) return purchase;
+        const delta = Number(row.checked_in) - Number(previous.checked_in);
+        return {
+          ...purchase,
+          arrived_count: purchase.arrived_count + delta,
+          tickets: purchase.tickets.map((t) => (t.id === row.id ? row : t)),
+        };
+      });
+      return { ...current, results };
+    });
   }, []);
 
   const refetch = useCallback(async () => {
@@ -119,10 +130,10 @@ export function useCheckIn(eventId: number) {
     [eventId, syncRow],
   );
 
-  const attendees = useMemo(() => page?.results ?? [], [page]);
+  const purchases = useMemo(() => page?.results ?? [], [page]);
 
   return {
-    attendees,
+    purchases,
     count: page?.count ?? 0,
     stats,
     filters,

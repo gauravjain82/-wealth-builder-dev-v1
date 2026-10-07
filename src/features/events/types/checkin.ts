@@ -1,5 +1,6 @@
 import type { AssignmentStatus, LifecycleStatus } from './ticket';
 import type { DoorCredential } from './door';
+import type { SearchIn, SearchMatch } from '../utils/purchase-search';
 
 /** One row of the door list — a live ticket plus its arrival state. */
 export interface CheckinAttendee {
@@ -42,6 +43,37 @@ export interface CheckinAttendee {
   transfer_count?: number;
   /** What was scanned at arrival; '' when not checked in / unknown. */
   checkin_credential?: DoorCredential | '';
+  /** This ticket is what the list's search named (highlight it). */
+  search_hit?: boolean;
+}
+
+/**
+ * One purchase block of the door list (`GET .../checkin/purchases/`): the order,
+ * its ticket counts and its live tickets (named attendees first). With the
+ * `arrived` filter on, `tickets` holds only the matching ones; the counts always
+ * cover the whole purchase.
+ */
+export interface CheckinPurchase {
+  id: number;
+  invoice_number: string;
+  /** Imported purchases: the partner purchase (`c1550-141063`) and its invoice number. */
+  external_order_reference: string;
+  external_invoice_reference: string;
+  purchaser_name: string;
+  purchaser_email: string;
+  purchaser_phone: string;
+  /** Who sold it: `WB` or the partner (`BSCPro`). */
+  channel: string;
+  /** The SMD credited with the purchase, or ''. */
+  seller_name: string;
+  ticket_count: number;
+  assigned_count: number;
+  unassigned_count: number;
+  transferred_count: number;
+  arrived_count: number;
+  tickets: CheckinAttendee[];
+  /** With a search: what it matched (buyer, an attendee, a number). */
+  search_match?: SearchMatch[];
 }
 
 /**
@@ -72,6 +104,8 @@ export interface CheckinStats {
 /** Query params accepted by the attendee list (and the export endpoint). */
 export interface CheckinFilters {
   search?: string;
+  /** Whose name / email / phone `search` looks at; omitted = everywhere. */
+  search_in?: SearchIn;
   /** `true` = arrived only, `false` = not yet arrived, omitted = everyone. */
   arrived?: boolean;
   assignment_status?: AssignmentStatus;
