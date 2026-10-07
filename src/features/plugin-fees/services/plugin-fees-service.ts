@@ -14,6 +14,8 @@
  * hiding a control here is not authorisation.
  */
 
+import { config } from '@/core/config';
+
 import type {
   AdjustmentInput,
   AdjustmentsQuery,
@@ -66,6 +68,8 @@ import type {
   ScheduleFeeChangeInput,
   SendCycleResponse,
   SetupSessionResponse,
+  SubscriptionCard,
+  UseSubscriptionCardResponse,
   SevcMonthTotal,
   SevcTotalsRange,
   SmdBalance,
@@ -229,6 +233,34 @@ export function setPaymentPreference(preference: PaymentPreference): Promise<Plu
 /** Starts a Stripe setup session; the caller redirects the browser to `url`. */
 export function createPaymentMethodSetupSession(returnPath: string): Promise<SetupSessionResponse> {
   return postJson('/me/payment-method/setup-session/', { return_path: returnPath });
+}
+
+/** The website subscription's card, which can be authorized for plug-in fees in one click. */
+export function fetchSubscriptionCard(signal?: AbortSignal): Promise<SubscriptionCard> {
+  return getJson('/me/payment-method/subscription-card/', signal);
+}
+
+export function authorizeSubscriptionCard(): Promise<UseSubscriptionCardResponse> {
+  return postJson('/me/payment-method/use-subscription-card/', { authorize: true });
+}
+
+/** After the bank's 3D Secure check succeeded in the browser. */
+export function completeSubscriptionCard(setupIntentId: string): Promise<PluginFeesPaymentMethod> {
+  return postJson('/me/payment-method/use-subscription-card/complete/', {
+    setup_intent_id: setupIntentId,
+  });
+}
+
+/**
+ * Runs the bank's 3D Secure check for a SetupIntent the backend already confirmed on
+ * the card. Stripe.js shows its own modal; nothing leaves this page.
+ */
+export async function confirmCardSetupInBrowser(clientSecret: string): Promise<void> {
+  const { loadStripe } = await import('@stripe/stripe-js');
+  const stripe = config.stripe.publishableKey ? await loadStripe(config.stripe.publishableKey) : null;
+  if (!stripe) throw new PluginFeesError('Card authorization is unavailable right now.', 0, 'stripe_unavailable');
+  const { error } = await stripe.confirmCardSetup(clientSecret);
+  if (error) throw new PluginFeesError(error.message || 'Your card could not be authorized.', 402, 'card_declined');
 }
 
 /* --- review queues --------------------------------------------------------- */

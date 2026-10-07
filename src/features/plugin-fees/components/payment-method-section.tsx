@@ -13,6 +13,11 @@
  * `src/features/settings/pages/settings-page.tsx`. The return (`?fee_pm=`) is handled by
  * `PluginFeesSettingsSections`. A bank account on micro-deposits shows
  * `pending_verification` until Stripe confirms it.
+ *
+ * One-click alternative: when the website subscription pays with a card, the agent can
+ * authorize that card for plug-in fees with a consent tick and one button, without
+ * leaving the page (3D Secure, if the bank asks, opens as a Stripe modal). If they chose
+ * it and the subscription card later changes, the same offer asks whether to switch.
  */
 
 import { useState } from 'react';
@@ -20,8 +25,13 @@ import { useState } from 'react';
 import { usePageRestored } from '@/hooks/use-page-restored';
 import { useToastStore } from '@/store';
 
-import { useCreatePaymentMethodSetupSession, useSetPaymentPreference } from '../hooks/use-plugin-fees';
-import type { PaymentPreference, PluginFeesPaymentMethod } from '../types';
+import {
+  useAuthorizeSubscriptionCard,
+  useCreatePaymentMethodSetupSession,
+  useSetPaymentPreference,
+  useSubscriptionCard,
+} from '../hooks/use-plugin-fees';
+import type { PaymentPreference, PluginFeesPaymentMethod, SubscriptionCard } from '../types';
 import { describeError, formatDateTime } from '../utils/plugin-fees-format';
 import { Detail } from './submission-parts';
 
@@ -49,7 +59,9 @@ function MethodStatus({
       return (
         <div className="wb-pf-details">
           <Detail label="Saved method">{paymentMethod.label || '—'}</Detail>
-          <Detail label="Type">{typeLabel}</Detail>
+          <Detail label="Type">
+            {paymentMethod.follows_subscription ? `${typeLabel} (website subscription card)` : typeLabel}
+          </Detail>
           <Detail label="Saved">{formatDateTime(paymentMethod.saved_at)}</Detail>
         </div>
       );
@@ -78,6 +90,65 @@ function MethodStatus({
   }
 }
 
+function SubscriptionCardOffer({ card }: { card: SubscriptionCard }) {
+  const { addToast } = useToastStore();
+  const authorize = useAuthorizeSubscriptionCard();
+  const [agreed, setAgreed] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  const handleAuthorize = async () => {
+    try {
+      await authorize.mutateAsync();
+      addToast({ type: 'success', message: `${card.label} will be charged for your plug-in fees on the 1st.` });
+    } catch (error) {
+      addToast({ type: 'error', message: describeError(error, 'Could not authorize your card.') });
+    }
+  };
+
+  return (
+    <div className="wb-pf-callout wb-pf-stack">
+      <strong>
+        {card.changed
+          ? <>Your website subscription card changed to {card.label}. Use it for plug-in fees too?</>
+          : <>Use your website subscription card, {card.label}, for plug-in fees?</>}
+      </strong>
+      <label className="wb-pf-choice-option">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(event) => setAgreed(event.target.checked)}
+          disabled={authorize.isPending}
+        />
+        <span>
+          I authorize Wealth Builders to charge {card.label} for my monthly plug-in fees on the 1st
+          of each month, until I change my payment method here.
+        </span>
+      </label>
+      <div className="connected-account-actions">
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={handleAuthorize}
+          disabled={!agreed || authorize.isPending}
+        >
+          {authorize.isPending ? 'Authorizing…' : 'Authorize'}
+        </button>
+        {card.changed ? (
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setDismissed(true)}
+            disabled={authorize.isPending}
+          >
+            Keep current
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function PaymentMethodSection({
   paymentMethod,
   waitingForStripe,
@@ -94,6 +165,13 @@ export function PaymentMethodSection({
   const automatic = paymentMethod.preference === 'automatic';
   const canChoose = paymentMethod.self_pay_allowed;
   const dueDay = ordinal(paymentMethod.self_pay_due_day);
+  // Offered when nothing usable is saved, or when the card they chose has changed.
+  // A failed or unavailable lookup just hides the offer; the Stripe button remains.
+  const subscriptionCard = useSubscriptionCard(true).data;
+  const offer =
+    subscriptionCard?.available && !subscriptionCard.in_use && (subscriptionCard.changed || !saved)
+      ? subscriptionCard
+      : null;
 
   const handleSave = async () => {
     try {
@@ -181,14 +259,21 @@ export function PaymentMethodSection({
 
         <MethodStatus paymentMethod={paymentMethod} waitingForStripe={waitingForStripe} />
 
+        {offer ? <SubscriptionCardOffer card={offer} /> : null}
+
         <p className="settings-hint" style={{ margin: 0 }}>
-          A bank account (ACH) is the default and preferred method. This is separate from your
-          website subscription.
+          A bank account (ACH) is the default and preferred method. Saving one here does not
+          change how your website subscription is paid.
           {!automatic ? ' A saved method is optional while you pay each month yourself.' : ''}
         </p>
 
         <div className="connected-account-actions">
-          <button type="button" className="btn-primary" onClick={handleSave} disabled={redirecting}>
+          <button
+            type="button"
+            className={offer ? 'btn-secondary' : 'btn-primary'}
+            onClick={handleSave}
+            disabled={redirecting}
+          >
             {redirecting
               ? 'Opening…'
               : paymentMethod.status === 'none'

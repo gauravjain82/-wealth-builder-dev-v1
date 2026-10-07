@@ -136,7 +136,25 @@ export interface PluginFeesPaymentMethod {
   type?: PaymentMethodType;
   label?: string;
   saved_at?: string;
+  /** The method is the role subscription's card, authorized with one click. */
+  follows_subscription?: boolean;
 }
+
+/** `GET me/payment-method/subscription-card/`: the card the website subscription pays with. */
+export interface SubscriptionCard {
+  available: boolean;
+  /** e.g. "Visa ••••4242". Present when `available`. */
+  label?: string;
+  /** Plug-in fees are already charged to this card. */
+  in_use?: boolean;
+  /** The agent chose the subscription card before, and it has since changed. */
+  changed?: boolean;
+}
+
+/** `POST me/payment-method/use-subscription-card/`. */
+export type UseSubscriptionCardResponse =
+  | { status: 'saved'; payment_method: PluginFeesPaymentMethod }
+  | { status: 'requires_action'; client_secret: string; setup_intent_id: string };
 
 export interface PluginFeesRates {
   with_office_cents: number;
@@ -960,4 +978,7 @@ export type PluginFeesErrorCode =
   | 'cycle_exists'
   | 'conflict'
   | 'rate_started'
-  | 'go_live_locked';
+  | 'go_live_locked'
+  | 'authorization_required'
+  | 'no_subscription_card'
+  | 'card_declined';

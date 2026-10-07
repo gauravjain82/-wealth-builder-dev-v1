@@ -91,6 +91,25 @@ saved", or "Waiting for Stripe to confirm…" while polling. Hint: ACH is the de
 preferred method; separate from the website subscription. Button: "Save bank account"
 (or "Replace with a bank account" when one is saved).
 
+**Subscription card offer.** When the website subscription pays with a card, the
+section shows the offer if nothing usable is saved:
+
+> "Use your website subscription card, Visa ••••4242, for plug-in fees?"
+
+with a consent checkbox ("I authorize Wealth Builders to charge … on the 1st of each
+month, until I change my payment method here") and **Authorize**. Authorize stays
+disabled until the box is ticked, and reads "Authorizing…" while it runs. If the bank
+asks for 3D Secure, Stripe's modal opens over the page. On success, a toast appears and
+the saved method shows "Card (website subscription card)". The Stripe button becomes
+secondary while the offer is shown.
+
+If the agent chose the subscription card and it has since changed, the same box reads:
+
+> "Your website subscription card changed to Mastercard ••••1111. Use it for plug-in fees too?"
+
+It adds **Keep current**, which hides the box until the next visit. If the lookup fails
+or there is no card, nothing is shown.
+
 Every button that redirects to Stripe ("Save bank account", Pay now, payout setup) shows
 "Opening…" until the browser leaves. If the user comes back with the browser's Back button,
 the page is restored from the back/forward cache with that state frozen, so each one resets

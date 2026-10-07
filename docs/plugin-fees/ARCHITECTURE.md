@@ -147,7 +147,16 @@ page. On return, `PluginFeesSettingsSections` reads `?fee_pm=`:
 `payment_method.status === 'saved'` (`plugin-fees-settings-sections.tsx:23-24`);
 `cancelled` → info toast. The param is removed with `replace`.
 
-**Decide (review).** Approve/Verify/Re-verify opens `ApproveDialog` (optional note);
+**Use the subscription card (one click).** `PaymentMethodSection` reads
+`subscription-card/` (`pluginFeesKeys.subscriptionCard`; not polled, because each read
+asks Stripe). It shows the offer when the card is `available`, not `in_use`, and either
+nothing is saved or the card has `changed`. Authorize runs one mutation,
+`useAuthorizeSubscriptionCard`: POST `use-subscription-card/`. If it answers
+`requires_action`, `confirmCardSetupInBrowser` opens Stripe.js's 3D Secure modal, and the
+mutation then POSTs `complete/`. Both `me/` and `subscription-card/` are invalidated on
+settle. Backend: `mlm_platform` IMPACT_ANALYSIS D22.
+
+**Decide (review). Approve/Verify/Re-verify opens `ApproveDialog` (optional note);
 Reject opens `RejectModal`, whose submit is disabled while the note is blank. The decide
 mutation invalidates `['plugin-fees','review',<kind>]`. A `409` (`not_pending` /
 `not_decidable`) toasts a warning, closes the dialog and the queue refetches.

@@ -40,6 +40,9 @@ what the frontend sends and reads; it does not restate server behaviour.
 | POST | `me/assistant/{id}/withdraw/` | `withdrawAssistant` | `useWithdrawAssistant` | Assistant Withdraw |
 | POST | `me/payment-preference/` | `setPaymentPreference` | `useSetPaymentPreference` | Payment method (automatic vs pay myself) |
 | POST | `me/payment-method/setup-session/` | `createPaymentMethodSetupSession` | `useCreatePaymentMethodSetupSession` | Payment method |
+| GET | `me/payment-method/subscription-card/` | `fetchSubscriptionCard` | `useSubscriptionCard` | Payment method (one-click offer) |
+| POST | `me/payment-method/use-subscription-card/` | `authorizeSubscriptionCard` | `useAuthorizeSubscriptionCard` | Payment method (Authorize) |
+| POST | `me/payment-method/use-subscription-card/complete/` | `completeSubscriptionCard` | `useAuthorizeSubscriptionCard` | after 3D Secure |
 | GET | `review/offices/` | `fetchOfficeReviews` | `useOfficeReviews` | Review → Offices |
 | POST | `review/offices/{id}/decide/` | `decideOffice` | `useDecideOffice` | Review → Offices |
 | GET | `review/assistants/` | `fetchAssistantReviews` | `useAssistantReviews` | Review → Assistants |
@@ -126,6 +129,8 @@ All in `src/features/plugin-fees/types/index.ts`, mirroring the contract:
 | `me/office/` | multipart: `address_line1`, `address_line2`, `city`, `state`, `zip`, `lease`, `photo` |
 | `me/assistant/` | multipart: `name`, `phone` (E.164), `email`, `hours` (**JSON string** of `[{day,start,end}]`), `photo` |
 | `setup-session/` | `{ "return_path": "/settings" }` |
+| `use-subscription-card/` | `{ "authorize": true }` (the consent tick; the button is disabled until it is ticked) |
+| `use-subscription-card/complete/` | `{ "setup_intent_id": "seti_…" }` |
 | `…/decide/` | `{ "decision": "approve"\|"reject" }` (offices) or `"verify"\|"reject"` (assistants), `"note": str` |
 | `…/withdraw/` | no body |
 | `cycles/{month}/approve/` | `{ "note": str }` — required, trimmed, never sent blank |
@@ -173,7 +178,10 @@ Previous / Next from `previous` / `next` rather than computing a page count.
 | `already_pending` | 400 | submit | same; `me/` refetches and the form disables |
 | `not_eligible` | 403 | submit, setup-session | toast |
 | `not_withdrawable` | 409 | withdraw | toast; `me/` refetches |
-| `stripe_unavailable` | 503 | setup-session | toast; button re-enabled |
+| `stripe_unavailable` | 503 | setup-session, subscription-card | toast; button re-enabled. On the GET the offer is just hidden |
+| `authorization_required` | 400 | use-subscription-card | prevented client-side; toast |
+| `no_subscription_card` | 409 | use-subscription-card | toast; the offer refetches and disappears |
+| `card_declined` | 402 | use-subscription-card, complete, or a failed 3D Secure | toast; the previous method stays |
 | `forbidden` | 403 | review | `ErrorState` (the guard normally prevents this) |
 | `note_required` | 400 | decide | prevented client-side; toast if it happens |
 | `not_pending` / `not_decidable` | 409 | decide | warning toast, dialog closes, queue refetches |
