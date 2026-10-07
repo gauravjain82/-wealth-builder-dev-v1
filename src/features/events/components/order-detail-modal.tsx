@@ -69,7 +69,7 @@ function Fact({ label, value }: { label: string; value: string | null | undefine
   if (!value) return null;
   return (
     <div className="flex gap-2">
-      <span className="w-28 shrink-0 text-slate-500 dark:text-white/50">{label}</span>
+      <span className="w-36 shrink-0 text-slate-500 dark:text-white/50">{label}</span>
       <span className="text-slate-900 dark:text-white">{value}</span>
     </div>
   );
@@ -164,6 +164,29 @@ export function OrderDetailModal({
   };
 
   const imported = order?.source === 'EXTERNAL';
+
+  /**
+   * What a ticket row adds beyond the order summary above: only the parts that
+   * differ — its number when the order has several tickets, its partner
+   * confirmation when it isn't the purchase's own, its SMD when credited
+   * differently. For a one-ticket order this is usually empty.
+   */
+  const ticketDetails = (ticket: EventTicket): string => {
+    if (!order) return '';
+    return [
+      order.tickets.length > 1 ? ticket.ticket_number : '',
+      isPartnerTicket(ticket) &&
+      ticket.external_reference &&
+      ticket.external_reference !== order.external_order_reference
+        ? `BSCPro ${ticket.external_reference}`
+        : '',
+      ticket.attributed_seller_name && ticket.attributed_seller_name !== order.attributed_seller_name
+        ? `SMD ${ticket.attributed_seller_name}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  };
   const canRefund = order?.status === 'PAID' || order?.status === 'COMP';
   const canCancel = order?.status === 'PENDING';
 
@@ -278,17 +301,11 @@ export function OrderDetailModal({
             ) : (
               <div className="grid gap-1 rounded-lg border border-slate-200 p-3 text-sm dark:border-white/10">
                 <Fact
-                  label="Purchaser"
-                  value={
-                    [
-                      `${order.purchaser_first_name} ${order.purchaser_last_name}`.trim(),
-                      order.purchaser_email,
-                      order.purchaser_phone,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ') || '—'
-                  }
+                  label="Purchaser name"
+                  value={`${order.purchaser_first_name} ${order.purchaser_last_name}`.trim() || '—'}
                 />
+                <Fact label="Purchaser email" value={order.purchaser_email || '—'} />
+                <Fact label="Purchaser phone" value={order.purchaser_phone || '—'} />
                 <Fact label="Sold by" value={order.channel ?? (imported ? 'Partner' : 'WB')} />
                 {imported ? (
                   <>
@@ -332,19 +349,11 @@ export function OrderDetailModal({
                 </Text>
               ) : (
                 <>
-                <Text variant="muted" className="mb-2 text-xs">
-                  <strong>Assign</strong> — name or correct who attends; no email is sent.{' '}
-                  <strong>Transfer</strong> — give the ticket to someone else; they are emailed it
-                  {imported ? ' (the ticket, QR and BSCPro confirmation stay the same)' : ''}.
-                </Text>
                 <ul className="divide-y divide-slate-100 dark:divide-white/10">
                   {order.tickets.map((ticket) => (
-                    <li
-                      key={ticket.id}
-                      className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"
-                    >
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
+                    <li key={ticket.id} className="space-y-2 py-3 text-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
                           <span
                             className={
                               attendeeName(ticket)
@@ -354,23 +363,20 @@ export function OrderDetailModal({
                           >
                             {attendeeName(ticket) || 'Not assigned'}
                           </span>
-                          <Badge variant={TICKET_STATUS_TONE[shownStatus(ticket)]}>
-                            {TICKET_STATUS_LABEL[shownStatus(ticket)]}
-                          </Badge>
+                          {ticketDetails(ticket) ? (
+                            <div className="text-xs text-slate-500 dark:text-white/50">
+                              {ticketDetails(ticket)}
+                            </div>
+                          ) : null}
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-white/50">
-                          {[
-                            ticket.ticket_number,
-                            isPartnerTicket(ticket) && ticket.external_reference
-                              ? `BSCPro ${ticket.external_reference}`
-                              : '',
-                            ticket.attributed_seller_name ? `SMD ${ticket.attributed_seller_name}` : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </div>
+                        <Badge
+                          variant={TICKET_STATUS_TONE[shownStatus(ticket)]}
+                          className="shrink-0 px-3 py-1 text-sm shadow-sm"
+                        >
+                          {TICKET_STATUS_LABEL[shownStatus(ticket)]}
+                        </Badge>
                       </div>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap justify-end gap-1">
                         <Button
                           type="button"
                           variant="outline"
@@ -414,6 +420,15 @@ export function OrderDetailModal({
                     </li>
                   ))}
                 </ul>
+                <div className="mt-3 space-y-0.5 text-xs italic text-slate-500 dark:text-white/50">
+                  <p>
+                    * <strong>Assign</strong> — name or correct who attends; no email is sent.
+                  </p>
+                  <p>
+                    * <strong>Transfer</strong> — give the ticket to someone else; they are emailed it
+                    {imported ? ' (the ticket, QR and BSCPro confirmation stay the same)' : ''}.
+                  </p>
+                </div>
                 </>
               )}
             </div>
