@@ -1,6 +1,6 @@
 /**
- * The card's header: why to take part (the question), what is at stake (the coins per
- * place), and when (the countdown to voting, posts left, acts so far). The coins and the
+ * The card's header: why to take part (the question) and when (the countdown to voting,
+ * posts left, acts so far). The coins and the
  * video sit on the right, over the Post tab's feed column.
  *
  * Every number comes from `state/` and `wall/`; nothing here is computed that the server
@@ -11,12 +11,9 @@ import { Clock, PenLine, Sparkles } from 'lucide-react';
 
 import { Button } from '@/shared/components/ui/button';
 
-import coinFront from '../assets/coin-front.webp';
 import type { WallResponse, WallState } from '../types';
 import { HonorCoins } from './honor-coin';
 import { HonorVideo } from './honor-video';
-
-const ORDINAL = ['1st', '2nd', '3rd'];
 
 /** Whole days from today to an ISO date, read at local noon so DST never shifts it. */
 function daysUntil(isoDay: string): number {
@@ -41,7 +38,6 @@ interface HonorHeroProps {
 
 export function HonorHero({ state, wall, onOpenCommittee }: HonorHeroProps) {
   const voting = state?.voting ?? null;
-  const coins = state?.rules.coins.slice(0, 3) ?? [];
 
   return (
     <>
@@ -57,19 +53,6 @@ export function HonorHero({ state, wall, onOpenCommittee }: HonorHeroProps) {
               : 'Which acts deserve the coins?'
             : 'Who held the standard this month?'}
         </h3>
-
-        {coins.length > 0 && (
-          <p className="wb-coh-hero__prize">
-            {voting ? 'Top acts earn' : 'Recognize a teammate. Top acts earn'}
-            {coins.map((amount, index) => (
-              <span key={index} className="wb-coh-hero__place">
-                {ORDINAL[index]}
-                <img src={coinFront} alt="" className="wb-coh-hero__coin" />
-                {amount}
-              </span>
-            ))}
-          </p>
-        )}
 
         <div className="wb-coh-hero__chips">
           {state && !voting && (
