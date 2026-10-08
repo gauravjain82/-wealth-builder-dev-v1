@@ -3,6 +3,7 @@ import {
   ChevronDown,
   ExternalLink,
   ListChecks,
+  Mic,
   Pencil,
   Plus,
   Sparkles,
@@ -13,6 +14,7 @@ import { Button, ConfirmationDialog, ErrorState, LoadingState } from '@/shared/c
 import { cn } from '@core/utils';
 import { AIAttemptsModal } from '../components/ai-attempts-modal';
 import { AILessonModal } from '../components/ai-lesson-modal';
+import { AIPreviewModal } from '../components/ai-preview-modal';
 import { QuizEditorModal } from '../components/quiz-editor-modal';
 import { SkillFormModal } from '../components/skill-form-modal';
 import { SortableList } from '../components/sortable-list';
@@ -49,6 +51,7 @@ export default function AdminPromotionPage() {
   } | null>(null);
   const [quizVideoId, setQuizVideoId] = useState<number | null>(null);
   const [aiLessonVideo, setAILessonVideo] = useState<AdminVideo | null>(null);
+  const [aiPreviewVideo, setAIPreviewVideo] = useState<AdminVideo | null>(null);
   const [attemptsOpen, setAttemptsOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -258,6 +261,7 @@ export default function AdminPromotionPage() {
                                 onEdit={() => setVideoForm({ editing: video, skillId: skill.id })}
                                 onQuiz={() => setQuizVideoId(video.id)}
                                 onAILesson={() => setAILessonVideo(video)}
+                                onAIPreview={() => setAIPreviewVideo(video)}
                                 onDelete={() => setDeleteTarget({ kind: 'video', video })}
                               />
                             )}
@@ -289,6 +293,7 @@ export default function AdminPromotionPage() {
       />
       <QuizEditorModal video={quizVideo} onClose={() => setQuizVideoId(null)} />
       <AILessonModal video={aiLessonVideo} onClose={() => setAILessonVideo(null)} />
+      <AIPreviewModal video={aiPreviewVideo} onClose={() => setAIPreviewVideo(null)} />
       <AIAttemptsModal open={attemptsOpen} onClose={() => setAttemptsOpen(false)} />
       <ConfirmationDialog
         open={deleteTarget !== null}
@@ -327,6 +332,7 @@ function VideoRow({
   onEdit,
   onQuiz,
   onAILesson,
+  onAIPreview,
   onDelete,
 }: {
   video: AdminVideo;
@@ -335,6 +341,8 @@ function VideoRow({
   onEdit: () => void;
   onQuiz: () => void;
   onAILesson: () => void;
+  /** Admin "Test with Sophia"; only offered once the video has an AI lesson. */
+  onAIPreview: () => void;
   onDelete: () => void;
 }) {
   const quizCount = video.quiz_questions.length;
@@ -404,6 +412,18 @@ function VideoRow({
               ? 'AI test off'
               : 'Add AI test'}
         </button>
+        {video.ai_lesson_enabled !== null && (
+          <button
+            type="button"
+            onClick={onAIPreview}
+            className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-100 dark:border-white/15 dark:text-white/70 dark:hover:bg-white/10"
+            aria-label={`Test the AI test for ${video.title} with Sophia`}
+            title="Try the AI test yourself (no quiz lock or daily limit)"
+          >
+            <Mic className="h-3 w-3" />
+            Test with Sophia
+          </button>
+        )}
         <button
           type="button"
           className={ICON_BUTTON}

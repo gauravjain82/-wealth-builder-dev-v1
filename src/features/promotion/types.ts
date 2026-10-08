@@ -143,7 +143,9 @@ export type AITestStatus =
   | "locked"
   | "not_started"
   | "failed"
-  | "passed";
+  | "passed"
+  /** Admin preview: no lock, no daily limits, retakes allowed. */
+  | "preview";
 
 /** One graded answer; also the tool result Sophia reads back. */
 export interface AITestAnswer {
@@ -177,6 +179,10 @@ export interface AITestAttempt {
 export interface AITestState {
   available: boolean;
   status: AITestStatus;
+  /** True when a promotion manager is previewing from the admin page. */
+  preview?: boolean;
+  /** Whether learners are required to take this test (previews may run disabled lessons). */
+  lesson_enabled?: boolean;
   pass_threshold?: number;
   min_questions?: number;
   attempts_today?: number;
