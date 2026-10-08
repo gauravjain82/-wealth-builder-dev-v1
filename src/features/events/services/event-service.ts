@@ -1,4 +1,5 @@
 import type { EventsAccess } from '../types/access';
+import type { AnnouncementBar } from '../types/announcement';
 import type { BigEvent, BigEventListItem, BigEventPayload, EventFilters, PaginatedResponse } from '../types/event';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -67,6 +68,11 @@ export const eventService = {
   /** Which Big Event screens the viewer can open, and for which events. */
   myAccess(signal?: AbortSignal): Promise<EventsAccess> {
     return request(`${EVENTS_BASE}/my-access/`, { signal });
+  },
+
+  /** The site-wide event banner for the viewer (event + whether they hold a ticket). */
+  announcementBar(signal?: AbortSignal): Promise<AnnouncementBar> {
+    return request(`${EVENTS_BASE}/announcement-bar/`, { signal });
   },
 
   create(payload: BigEventPayload): Promise<BigEvent> {
