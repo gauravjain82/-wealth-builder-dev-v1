@@ -73,6 +73,7 @@ export default function MatchupMetricsPage() {
   const [openAppointment, setOpenAppointment] = useState<AppointmentDetail | null>(null);
   const [rowSort, setRowSort] = useState<RowSort>({ key: 'total', descending: true });
   const [stepView, setStepView] = useState<'chart' | 'table'>('chart');
+  const [rowsDetailed, setRowsDetailed] = useState(false);
   const rowsPanel = useRef<HTMLElement>(null);
   const { data: access } = useMatchupMetricsAccess();
 
@@ -266,9 +267,22 @@ export default function MatchupMetricsPage() {
                 </section>
               </div>
               <section className="mm-panel mm-rows-panel" ref={rowsPanel}>
-                <h2>
-                  {rowKind === 'smd' ? 'By SMD' : rowKind === 'agent' ? 'By agent' : 'By prospect'}
-                </h2>
+                <div className="mm-panel-head">
+                  <h2>{rowKind === 'smd' ? 'By SMD' : rowKind === 'agent' ? 'By agent' : 'By prospect'}</h2>
+                  <div className="mm-toggle" role="group" aria-label="Columns">
+                    {[false, true].map((detailed) => (
+                      <button
+                        key={String(detailed)}
+                        type="button"
+                        aria-pressed={rowsDetailed === detailed}
+                        className={rowsDetailed === detailed ? 'is-active' : ''}
+                        onClick={() => setRowsDetailed(detailed)}
+                      >
+                        {detailed ? 'Detailed' : 'Summary'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 {rowKind === 'agent' && data.mode === 'prospects' && (
                   <p className="mm-note">
                     A prospect worked by two agents counts once for each, so agent rows can add up to more than the SMD total.
@@ -280,6 +294,8 @@ export default function MatchupMetricsPage() {
                   onSortChange={setRowSort}
                   steps={data.steps}
                   section={section}
+                  mode={data.mode}
+                  detailed={rowsDetailed}
                   title={ROW_TITLES[rowKind]}
                   onOpen={openRow}
                 />

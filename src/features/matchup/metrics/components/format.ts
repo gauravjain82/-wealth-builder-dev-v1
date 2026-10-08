@@ -29,6 +29,27 @@ export const OUTCOME_SEGMENTS: { key: OutcomeSegmentKey; label: string; trainerO
   { key: 'cancelled', label: 'Cancelled' },
 ];
 
+/** Best first, as the backend ranks them (`OUTCOME_PRIORITY` in metrics.py). */
+export const OUTCOME_PRIORITY: Outcome[] = [
+  'showed',
+  'no_show',
+  'upcoming',
+  'result_pending',
+  'not_accepted',
+  'no_trainer',
+  'cancelled',
+];
+
+/** The chart segment (and colour) a single outcome belongs to. */
+export function outcomeSegment(outcome: Outcome): OutcomeSegmentKey {
+  return outcome === 'no_trainer' || outcome === 'not_accepted' ? 'unanswered' : outcome;
+}
+
+/** The best outcome with a non-zero count, or null when nothing is booked. */
+export function bestOutcome(counts: OutcomeCounts): Outcome | null {
+  return OUTCOME_PRIORITY.find((outcome) => counts[outcome] > 0) ?? null;
+}
+
 export function segmentsFor(section: MetricsSection) {
   return OUTCOME_SEGMENTS.filter((segment) => !segment.trainerOnly || section === 'REQUEST_TRAINER');
 }

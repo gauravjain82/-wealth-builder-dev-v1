@@ -92,7 +92,7 @@ One day, grouped, with trainer references and row actions.
 ### 2.9 Appointment metrics — `metrics/pages/matchup-metrics-page.tsx`
 
 Organisation → SMD → agent → prospect drill-down. Filters, section and drill position live in the URL.
-This section covers the screen as of the phase-1 visual redesign (2026-10-08, PHASES M10–M11); the
+This section covers the screen as of the phase-1 and phase-2 visual redesign (2026-10-08, PHASES M10–M12); the
 API and query keys are not yet documented in this set.
 
 Above the prospect level, top to bottom:
@@ -103,7 +103,16 @@ Above the prospect level, top to bottom:
 | Needs attention | `components/attention-strip.tsx` | Form pending (`overall.result_pending`), no trainer / not accepted (trainer requests only), unlinked appointments. "See who" sorts the rows table by that column and scrolls to it. "All clear" when nothing is pending |
 | Funnel | `components/funnel-strip.tsx` | The backend's leadership funnel, % of the first stage |
 | By step | `components/step-bars.tsx` / `step-table.tsx` | Chart/Table toggle. Chart: one stacked bar per step, booked, show rate over past bookings; "Biggest leak" callout for the lowest show rate among steps with ≥ 5 past bookings (needs ≥ 2 such steps) |
-| Rows | `components/rows-table.tsx` | Next level down; sort is owned by the page (`RowSort`) so the attention strip can set it; the sorted column is highlighted |
+| Rows | `components/rows-table.tsx` | Next level down; sort is owned by the page (`RowSort`) so the attention strip can set it; the sorted column is highlighted. Summary/Detailed toggle (Detailed adds the per-step counts, muted). SMD/agent rows: Booked with an inline data bar, a five-bar "shape" (booked → showed → FNA → AMA → sale as a share of booked), Show/FNA/AMA % with gold heat shading, Sales, problem counts with a coloured dot. Gold/silver/bronze rank on the top 3 AMA rates when there are more than 3 rows. Prospect rows: one dot per step coloured by its best outcome, the furthest step, and ticks for showed/FNA/AMA/sale |
+
+Rows with fewer than 5 booked (`MIN_RATED`) get no heat or rank, render their rates muted and italic, and
+sort last on any rate column (M12).
+
+At the prospect level, `components/prospect-journey.tsx` shows a summary card (a step track with one node
+per step, coloured and iconed by its best outcome across all the prospect's appointments, the attempt
+count and a gold connector up to the furthest step; then FNA / AMA / Sale / 2nd appt / BPM chips and
+referrals) above a vertical timeline of every appointment. Appointments outside the selected dates are
+faded, not hidden. Each timeline card is a button that opens the appointment details modal.
 
 Outcome colours are fixed CSS tokens (`--mm-o-*`), separately stepped for dark mode and validated together
 for colour-blind separation. Amber (form pending) is below 3:1 on white, so every bar carries a legend,

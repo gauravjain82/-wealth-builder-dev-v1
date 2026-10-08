@@ -10,6 +10,9 @@
   --mm-panel-solid: #ffffff;
   --mm-sorted-bg: rgba(217, 119, 6, 0.07);
   --mm-tip-bg: #ffffff;
+  --mm-page-bg: #f3f4f6;
+  /* Sequential heat for rate cells: the accent hue, alpha = rate × 0.4. */
+  --mm-heat-rgb: 217 119 6;
   /* Outcome colours — validated as a set for colour-blind separation on the panel surface. */
   --mm-o-showed: #059669;
   --mm-o-upcoming: #2563eb;
@@ -37,6 +40,8 @@
   --mm-panel-solid: #333333;
   --mm-sorted-bg: rgba(255, 215, 0, 0.06);
   --mm-tip-bg: #2b2b2b;
+  --mm-page-bg: #1e1e1e;
+  --mm-heat-rgb: 255 215 0;
   --mm-o-showed: #059669;
   --mm-o-upcoming: #3b82f6;
   --mm-o-result_pending: #d97706;
@@ -127,23 +132,15 @@
 .mm-empty { color: var(--mm-muted); font-size: 13px; }
 .mm-error { color: #dc2626; font-size: 13px; }
 
-.mm-journey { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.mm-journey li { border: 1px solid var(--mm-border); border-radius: 8px; padding: 10px 12px; background: var(--mm-panel); cursor: pointer; }
-.mm-journey li:hover { border-color: var(--mm-bar); }
-.mm-journey li.mm-journey--outside { opacity: 0.65; }
 .mm-journey-head { display: flex; justify-content: space-between; gap: 8px; }
 .mm-journey-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--mm-muted); margin-top: 4px; }
 .mm-flags { margin-top: 6px; }
 .mm-flags .mm-tag:first-child { margin-left: 0; }
 
-.mm-outcome { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--mm-bar-track); }
-.mm-outcome--showed { color: #059669; }
-.mm-outcome--no_show,
-.mm-outcome--cancelled { color: #dc2626; }
-.mm-outcome--result_pending,
-.mm-outcome--not_accepted,
-.mm-outcome--no_trainer { color: #d97706; }
-.mm-outcome--upcoming { color: #0891b2; }
+.mm-outcome {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; border-radius: 999px;
+  background: var(--mm-bar-track); font-size: 12px; font-weight: 600; white-space: nowrap;
+}
 
 /* -- Hero band: show-rate gauge, booked → showed → outcomes, overall split -- */
 .mm-hero-band {
@@ -290,10 +287,113 @@
 }
 .mm-callout svg { flex: none; margin-top: 2px; color: var(--mm-o-no_show); }
 
+/* -- Rows table: data bars, mini funnels, heat, ranks -- */
+.mm-rows td { vertical-align: middle; }
+.mm-name { display: inline-flex; align-items: center; gap: 8px; }
+.mm-rank {
+  flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  font-size: 11px; font-weight: 800; color: #1f2937;
+}
+.mm-rank--1 { background: linear-gradient(135deg, #fde68a, #f59e0b); }
+.mm-rank--2 { background: linear-gradient(135deg, #f3f4f6, #9ca3af); }
+.mm-rank--3 { background: linear-gradient(135deg, #fed7aa, #c2410c); color: #ffffff; }
+
+.mm-cell-bar { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.mm-cell-bar > span { display: block; width: 56px; height: 10px; }
+.mm-cell-bar i {
+  display: block; height: 100%; min-width: 2px; border-radius: 0 4px 4px 0; background: var(--mm-bar); opacity: 0.35;
+  transform-origin: left; animation: mm-grow 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mm-cell-bar b { min-width: 3ch; font-weight: 700; }
+
+.mm-spark { display: inline-block; width: 54px; height: 20px; vertical-align: middle; overflow: visible; }
+.mm-spark rect { fill: var(--mm-bar); }
+.mm-spark rect.mm-spark-base { fill: var(--mm-muted); opacity: 0.45; }
+
+.mm-table td.mm-heat { background: rgb(var(--mm-heat-rgb) / calc(var(--heat, 0) * 0.4)); font-weight: 600; }
+.mm-table td.mm-lown { color: var(--mm-muted); font-style: italic; }
+.mm-table td.mm-flagged { font-weight: 700; }
+.mm-table td.mm-flagged::before {
+  content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; vertical-align: 1px;
+}
+.mm-table td.mm-flagged--pending::before { background: var(--mm-o-result_pending); }
+.mm-table td.mm-flagged--unanswered::before { background: var(--mm-o-unanswered); }
+.mm-table th.mm-detail,
+.mm-table td.mm-detail { color: var(--mm-muted); }
+.mm-table th.mm-detail:first-of-type { border-left: 1px solid var(--mm-border); }
+
+.mm-dots { display: inline-flex; align-items: center; gap: 4px; }
+.mm-dots i { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--mm-border); }
+.mm-dots i[class*='mm-o--'] { box-shadow: none; }
+.mm-dots small { margin-left: 6px; font-size: 12px; color: var(--mm-muted); }
+
+.mm-tick { display: inline-flex; justify-content: flex-end; min-width: 14px; color: var(--mm-muted); }
+.mm-tick.is-yes { color: var(--mm-ink); font-weight: 700; }
+.mm-tick.is-yes svg { color: var(--mm-o-showed); }
+
+/* -- Prospect journey: step track + timeline -- */
+.mm-journey-view { display: flex; flex-direction: column; gap: 12px; }
+.mm-journey-card {
+  position: relative; display: flex; flex-direction: column; gap: 16px; padding: 16px;
+  border: 1px solid var(--mm-border); border-radius: 12px; background: var(--mm-panel);
+}
+.mm-journey-card::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; border-radius: 12px 12px 0 0;
+  background: linear-gradient(90deg, var(--mm-bar), transparent 70%);
+}
+.mm-journey-card header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 4px 16px; }
+.mm-journey-card h2 { margin: 0; font-size: 20px; font-weight: 800; }
+.mm-journey-card header > span { font-size: 12px; color: var(--mm-muted); }
+
+.mm-track-wrap { overflow-x: auto; }
+.mm-track { list-style: none; margin: 0; padding: 0; display: flex; }
+.mm-track li {
+  position: relative; flex: 1 1 0; min-width: 84px; display: flex; flex-direction: column; align-items: center;
+  gap: 4px; text-align: center; font-size: 12px;
+}
+.mm-track li + li::before {
+  content: ''; position: absolute; top: 16px; left: calc(-50% + 20px); right: calc(50% + 20px); height: 2px;
+  background: var(--mm-border);
+}
+.mm-track li.is-reached::before { background: var(--mm-bar); }
+.mm-track-node {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  border: 2px solid var(--mm-border); color: var(--mm-muted); font-size: 12px; font-weight: 700;
+}
+.mm-track-node[class*='mm-o--'] { border-color: transparent; color: #ffffff; box-shadow: 0 0 0 3px var(--mm-bar-track); }
+.mm-track-node.mm-o--result_pending { color: #1f2937; }
+.mm-track strong { font-size: 12px; }
+.mm-track small { color: var(--mm-muted); }
+
+.mm-achieve { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.mm-achieve li {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px;
+  border: 1px solid var(--mm-border); font-size: 12px; color: var(--mm-muted);
+}
+.mm-achieve li.is-yes { border-color: var(--mm-bar); background: rgb(var(--mm-heat-rgb) / 0.12); color: var(--mm-ink); font-weight: 600; }
+.mm-achieve li.is-yes svg { color: var(--mm-accent); }
+
+.mm-timeline { position: relative; list-style: none; margin: 0; padding: 0 0 0 24px; display: flex; flex-direction: column; gap: 8px; }
+.mm-timeline::before { content: ''; position: absolute; left: 7px; top: 12px; bottom: 12px; width: 2px; background: var(--mm-border); }
+.mm-timeline li { position: relative; }
+.mm-timeline li.is-outside { opacity: 0.6; }
+.mm-timeline-dot {
+  position: absolute; left: -22px; top: 15px; width: 12px; height: 12px; border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--mm-page-bg);
+}
+.mm-timeline-card {
+  display: block; width: 100%; padding: 10px 12px; border: 1px solid var(--mm-border); border-radius: 8px;
+  background: var(--mm-panel); color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.mm-timeline-card:hover,
+.mm-timeline-card:focus-visible { border-color: var(--mm-bar); outline: none; }
+
+/* Keep last: must override every animated rule above. */
 @keyframes mm-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes mm-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 @media (prefers-reduced-motion: reduce) {
   .mm-obar,
   .mm-meter span,
-  .mm-funnel-bar span { animation: none; transition: none; }
+  .mm-funnel-bar span,
+  .mm-cell-bar i { animation: none; transition: none; }
 }
