@@ -53,11 +53,17 @@ export interface AppointmentResult {
   ama_completed: boolean;
   fna_taken: boolean;
   second_appointment_scheduled: boolean;
+  step_three_appointment: boolean;
+  calls_made: boolean;
+  /** null when not asked — no step 3, or no calls made. */
+  appointments_booked: number | null;
   referrals: number;
   invited_to_bpm: boolean;
   trainee_edified_trainer: 'YES' | 'NO' | 'KINDA' | '';
   made_sale: 'YES' | 'NOT_YET' | '';
   submitted_by?: number;
+  /** Set once a filed result has been corrected; submitted_by keeps the original submitter. */
+  last_edited_by?: number | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -283,6 +289,9 @@ export interface CompleteAppointmentPayload {
   ama_completed?: boolean;
   fna_taken?: boolean;
   second_appointment_scheduled?: boolean;
+  step_three_appointment?: boolean;
+  calls_made?: boolean;
+  appointments_booked?: number | null;
   referrals?: number;
   invited_to_bpm?: boolean;
   trainee_edified_trainer?: 'YES' | 'NO' | 'KINDA' | '';

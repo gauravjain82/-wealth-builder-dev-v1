@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarClock, CheckCircle2, ChevronDown, ChevronRight, Download, MoreHorizontal, NotebookPen, Pencil, UserPlus, XCircle } from 'lucide-react';
+import { CalendarClock, CheckCircle2, ChevronDown, ChevronRight, ClipboardPen, Download, MoreHorizontal, NotebookPen, Pencil, UserPlus, XCircle } from 'lucide-react';
 import { Button } from '@shared/components/ui';
 import { formatAppointmentTime } from '../services/matchup-service';
 import { canReschedule } from './reschedule-appointment-modal';
@@ -47,6 +47,8 @@ interface AppointmentListProps {
   onOpenContact?: (contactId: number, contactName: string) => void;
   onAssign: (item: AppointmentListItem) => void;
   onComplete: (item: AppointmentListItem) => void;
+  /** Correct a filed result; the button shows only on rows that have one. */
+  onEditResult?: (item: AppointmentListItem) => void;
   onReschedule: (item: AppointmentListItem) => void;
   onCancel: (item: AppointmentListItem) => void;
   onExport: () => void;
@@ -72,6 +74,7 @@ export function AppointmentList({
   onOpenContact,
   onAssign,
   onComplete,
+  onEditResult,
   onReschedule,
   onCancel,
   onExport,
@@ -284,6 +287,18 @@ export function AppointmentList({
               >
                 <CheckCircle2 size={15} />
                 <span>Result Required</span>
+              </Button>
+            ) : null}
+            {item.has_result && onEditResult ? (
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Edit appointment result"
+                title="Edit the recorded result"
+                className="matchup-action-button is-edit-result"
+                onClick={() => onEditResult(item)}
+              >
+                <ClipboardPen size={15} />
               </Button>
             ) : null}
             {canReschedule(item.status) ? (

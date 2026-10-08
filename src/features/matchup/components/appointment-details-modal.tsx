@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarClock, Check, Copy, History, MapPin, Pencil, UserRound } from 'lucide-react';
+import { CalendarClock, Check, ClipboardPen, Copy, History, MapPin, Pencil, UserRound } from 'lucide-react';
 import { Button, Modal } from '@shared/components/ui';
 import { formatAppointmentTime } from '../services/matchup-service';
 import { canReschedule } from './reschedule-appointment-modal';
@@ -10,6 +10,7 @@ interface AppointmentDetailsModalProps {
   onClose: () => void;
   onEdit?: (appointment: AppointmentDetail) => void;
   onReschedule?: (appointment: AppointmentDetail) => void;
+  onEditResult?: (appointment: AppointmentDetail) => void;
 }
 
 function value(value: unknown) {
@@ -18,7 +19,7 @@ function value(value: unknown) {
   return String(value).replace(/_/g, ' ');
 }
 
-export function AppointmentDetailsModal({ appointment, onClose, onEdit, onReschedule }: AppointmentDetailsModalProps) {
+export function AppointmentDetailsModal({ appointment, onClose, onEdit, onReschedule, onEditResult }: AppointmentDetailsModalProps) {
   const [copied, setCopied] = useState(false);
   if (!appointment) return null;
   const types = appointment.types_detail || [];
@@ -86,10 +87,17 @@ export function AppointmentDetailsModal({ appointment, onClose, onEdit, onResche
       </section>
 
       <section className="matchup-details-section">
-        <h3>Outcome</h3>
+        <div className="matchup-outcome-header">
+          <h3>Outcome</h3>
+          {appointment.result && onEditResult ? (
+            <Button type="button" variant="outline" size="sm" onClick={() => onEditResult(appointment)}>
+              <ClipboardPen size={14} /> Edit Result
+            </Button>
+          ) : null}
+        </div>
         {appointment.result ? (
           <div className="matchup-result-grid">
-            {Object.entries(appointment.result).filter(([key]) => !['submitted_by', 'created_at', 'updated_at'].includes(key)).map(([key, resultValue]) => (
+            {Object.entries(appointment.result).filter(([key]) => !['submitted_by', 'last_edited_by', 'created_at', 'updated_at'].includes(key)).map(([key, resultValue]) => (
               <div key={key}><small>{key.replace(/_/g, ' ')}</small><strong>{value(resultValue)}</strong></div>
             ))}
           </div>

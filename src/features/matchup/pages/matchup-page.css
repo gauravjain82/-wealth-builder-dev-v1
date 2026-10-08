@@ -79,6 +79,12 @@
   --action-border: rgba(56, 189, 248, 0.42);
 }
 
+.matchup-action-button.is-edit-result {
+  --action-color: #22c55e;
+  --action-bg: rgba(34, 197, 94, 0.13);
+  --action-border: rgba(34, 197, 94, 0.45);
+}
+
 .matchup-action-button.is-assign {
   --action-color: #a78bfa;
   --action-bg: rgba(167, 139, 250, 0.13);
@@ -1438,6 +1444,8 @@
 .matchup-form-history > .matchup-details-section:first-child { margin-top:0; }
 .matchup-details-section { margin-top:14px; padding:14px; border:1px solid rgba(148,163,184,.2); border-radius:12px; }
 .matchup-details-section h3 { margin:0 0 10px; font-size:.95rem; }
+.matchup-outcome-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.matchup-outcome-header h3 { margin:0; }
 .matchup-details-section article { display:flex; flex-direction:column; gap:2px; padding:9px 0; border-bottom:1px solid rgba(148,163,184,.15); }
 .matchup-details-section article:last-child { border-bottom:0; }
 .matchup-details-section article span,.matchup-details-section article p { margin:0; color:#475569; font-size:.78rem; }
@@ -1798,6 +1806,11 @@
   width: 13px;
   height: 13px;
   accent-color: #2563eb;
+}
+
+.matchup-followup-question .matchup-followup-number {
+  justify-self: start;
+  width: 96px;
 }
 
 .matchup-followup-action-prompt {
