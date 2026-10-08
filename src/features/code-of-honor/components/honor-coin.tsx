@@ -1,29 +1,20 @@
 /**
- * The Code of Honor challenge coin, turning slowly so both faces show: the front
- * ("Guardian of the Month") and the back ("Protect the Standard").
+ * The Code of Honor challenge coin, both faces side by side above the Post tab's feed: the
+ * front ("Guardian of the Month") and the back ("Protect the Standard"), each swaying
+ * and floating out of step with the other.
  *
- * Decorative: the card beside it carries all the content, so the coin is hidden from
- * assistive tech. Under `prefers-reduced-motion` it holds still on the front face.
+ * Decorative: the card carries all the content, so the coins are hidden from assistive
+ * tech. Under `prefers-reduced-motion` they hold still.
  */
 
 import coinBack from '../assets/coin-back.webp';
 import coinFront from '../assets/coin-front.webp';
 
-export function HonorCoin() {
+export function HonorCoins() {
   return (
-    <div className="wb-coh-coin" aria-hidden="true">
-      <div className="wb-coh-coin__float">
-        <div className="wb-coh-coin__spin">
-          <img className="wb-coh-coin__face" src={coinFront} alt="" draggable={false} />
-          <img
-            className="wb-coh-coin__face wb-coh-coin__face--back"
-            src={coinBack}
-            alt=""
-            draggable={false}
-          />
-        </div>
-      </div>
-      <div className="wb-coh-coin__shadow" />
+    <div className="wb-coh-coins" aria-hidden="true">
+      <img className="wb-coh-coins__coin" src={coinFront} alt="" draggable={false} />
+      <img className="wb-coh-coins__coin wb-coh-coins__coin--back" src={coinBack} alt="" draggable={false} />
     </div>
   );
 }

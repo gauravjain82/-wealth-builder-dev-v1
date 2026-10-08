@@ -2,9 +2,6 @@
  * The Code of Honor card on Home v2: title, tabs, and a body that scrolls inside the
  * card (the card keeps its height; the page does not grow).
  *
- * The card is split in half: the wall on the left, the turning challenge coin on the
- * right. On a narrow card the coin is dropped and the wall takes the full width.
- *
  * Tabs appear only for capabilities the server reports in `state/`; the server enforces
  * the same rule on every endpoint regardless. Committee and Admin screens live on their
  * own page (`/code-of-honor/committee`), linked from here for those who hold them.
@@ -19,7 +16,6 @@ import '../code-of-honor.css';
 import { useCodeOfHonorAccess, useWallState } from '../hooks/use-code-of-honor';
 import type { Capability } from '../types';
 import { CoinsTab } from './coins-tab';
-import { HonorCoin } from './honor-coin';
 import { PostTab } from './post-tab';
 import { ErrorNotice, Loading } from './states';
 import { VoteTab } from './vote-tab';
@@ -56,64 +52,59 @@ export function CodeOfHonorCard({ onOpenCommittee }: CodeOfHonorCardProps) {
 
   return (
     <Card className="wb-coh-card">
-      <div className="wb-coh-card__layout">
-        <div className="wb-coh-card__main">
-          <CardHeader className="wb-coh-card__header">
-            <div>
-              <CardTitle className="wb-coh-card__title">Code of Honor</CardTitle>
-              <p className="wb-coh-card__status">
-                {state.data
-                  ? voting
-                    ? `${voting.round === 'runoff' ? 'Tie-breaker' : 'Voting'} live · ${voting.label}`
-                    : `Posting for ${state.data.open_cycle.label}`
-                  : 'Loading…'}
-              </p>
-            </div>
-            {showCommitteeLink && (
-              <Button type="button" variant="outline" onClick={onOpenCommittee}>
-                Committee
-              </Button>
-            )}
-          </CardHeader>
-
-          <CardContent className="wb-coh-card__content">
-            <div className="wb-coh-tabs" role="tablist" aria-label="Code of Honor">
-              {tabs.map((item) => (
-                <Button
-                  key={item.id}
-                  type="button"
-                  role="tab"
-                  id={`wb-coh-tab-${item.id}`}
-                  aria-selected={tab === item.id}
-                  aria-controls="wb-coh-tabpanel"
-                  variant={tab === item.id ? 'default' : 'outline'}
-                  className="wb-coh-tab"
-                  onClick={() => setChosen(item.id)}
-                >
-                  {item.label}
-                  {item.id === 'vote' && voting && (
-                    <span className="wb-coh-live">
-                      <span className="wb-coh-live__dot" aria-hidden="true" /> live
-                    </span>
-                  )}
-                </Button>
-              ))}
-            </div>
-
-            <div id="wb-coh-tabpanel" role="tabpanel" aria-labelledby={`wb-coh-tab-${tab}`} className="wb-coh-scroll">
-              {state.isLoading && <Loading label="Loading Code of Honor" />}
-              {state.isError && <ErrorNotice error={state.error} onRetry={() => state.refetch()} />}
-              {state.data && tab === 'post' && (
-                <PostTab state={state.data} canSubmit={capabilities.has('code_of_honor.submit')} />
-              )}
-              {state.data && tab === 'vote' && <VoteTab state={state.data} />}
-              {state.data && tab === 'winners' && <WinnersTab />}
-              {state.data && tab === 'coins' && <CoinsTab />}
-            </div>
-          </CardContent>
+      <CardHeader className="wb-coh-card__header">
+        <div>
+          <CardTitle className="wb-coh-card__title">Code of Honor</CardTitle>
+          <p className="wb-coh-card__status">
+            {state.data
+              ? voting
+                ? `${voting.round === 'runoff' ? 'Tie-breaker' : 'Voting'} live · ${voting.label}`
+                : `Posting for ${state.data.open_cycle.label}`
+              : 'Loading…'}
+          </p>
         </div>
-        <HonorCoin />
-      </div>
+        {showCommitteeLink && (
+          <Button type="button" variant="outline" onClick={onOpenCommittee}>
+            Committee
+          </Button>
+        )}
+      </CardHeader>
+
+      <CardContent className="wb-coh-card__content">
+        <div className="wb-coh-tabs" role="tablist" aria-label="Code of Honor">
+          {tabs.map((item) => (
+            <Button
+              key={item.id}
+              type="button"
+              role="tab"
+              id={`wb-coh-tab-${item.id}`}
+              aria-selected={tab === item.id}
+              aria-controls="wb-coh-tabpanel"
+              variant={tab === item.id ? 'default' : 'outline'}
+              className="wb-coh-tab"
+              onClick={() => setChosen(item.id)}
+            >
+              {item.label}
+              {item.id === 'vote' && voting && (
+                <span className="wb-coh-live">
+                  <span className="wb-coh-live__dot" aria-hidden="true" /> live
+                </span>
+              )}
+            </Button>
+          ))}
+        </div>
+
+        <div id="wb-coh-tabpanel" role="tabpanel" aria-labelledby={`wb-coh-tab-${tab}`} className="wb-coh-scroll">
+          {state.isLoading && <Loading label="Loading Code of Honor" />}
+          {state.isError && <ErrorNotice error={state.error} onRetry={() => state.refetch()} />}
+          {state.data && tab === 'post' && (
+            <PostTab state={state.data} canSubmit={capabilities.has('code_of_honor.submit')} />
+          )}
+          {state.data && tab === 'vote' && <VoteTab state={state.data} />}
+          {state.data && tab === 'winners' && <WinnersTab />}
+          {state.data && tab === 'coins' && <CoinsTab />}
+        </div>
+      </CardContent>
     </Card>
   );
 }

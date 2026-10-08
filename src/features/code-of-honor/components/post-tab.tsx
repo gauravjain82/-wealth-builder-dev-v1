@@ -1,6 +1,6 @@
 /**
- * Post an Act: the form on one side, the month's anonymous feed on the other, and last
- * month's podium underneath.
+ * Post an Act: the form on one side; on the other, the challenge coins with the month's
+ * anonymous feed beneath them; and last month's podium underneath both.
  *
  * Preview is mandatory: the form only calls `acts/preview/`, shows the server's hidden
  * version and the identifiers it blanked, and only the explicit confirm calls `acts/`.
@@ -15,6 +15,7 @@ import { Modal } from '@/shared/components/ui/modal';
 import { usePreviewAct, useSubmitAct, useWall } from '../hooks/use-code-of-honor';
 import type { MemberOption, PreviewResponse, WallState } from '../types';
 import { ActText } from './act-text';
+import { HonorCoins } from './honor-coin';
 import { MemberPicker } from './member-picker';
 import { Podium } from './podium';
 import { Empty, ErrorNotice, Loading } from './states';
@@ -50,6 +51,7 @@ export function PostTab({ state, canSubmit }: PostTabProps) {
         </section>
 
         <section aria-label="This month's acts" className="wb-coh-panel">
+          <HonorCoins />
           <h3 className="wb-coh-heading">
             {data.feed.voting_live ? 'Which acts deserve the coins?' : 'What the team is posting'}
             <span className="wb-coh-muted"> · {data.feed.label}</span>

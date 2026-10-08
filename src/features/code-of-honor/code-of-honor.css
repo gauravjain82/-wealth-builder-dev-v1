@@ -44,90 +44,39 @@
   opacity: 0.75;
 }
 
+/* Top of the Post tab's right column, above the feed. */
+.wb-coh-coins {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  perspective: 600px;
+}
+
+.wb-coh-coins__coin {
+  height: 120px;
+  width: auto;
+  filter: drop-shadow(0 6px 12px rgb(0 0 0 / 0.45));
+  user-select: none;
+  animation: wb-coh-coin-sway 6s ease-in-out infinite;
+}
+
+.wb-coh-coins__coin--back {
+  animation-delay: -3s;
+}
+
+@container (max-width: 640px) {
+  .wb-coh-coins__coin {
+    height: 72px;
+  }
+}
+
 .wb-coh-card__content {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
-}
-
-.wb-coh-card__layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  flex: 1;
-  min-height: 0;
-}
-
-/* The wall's own container, so the tabs' container queries see the half-width column. */
-.wb-coh-card__main {
-  container-type: inline-size;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-}
-
-@container (max-width: 720px) {
-  .wb-coh-card__layout {
-    grid-template-columns: 1fr;
-  }
-
-  .wb-coh-coin {
-    display: none;
-  }
-}
-
-/* --- the coin (right half) ------------------------------------------------- */
-
-.wb-coh-coin {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-  padding: 1.5rem;
-  border-left: 1px solid rgb(255 255 255 / 0.08);
-  background: radial-gradient(closest-side, rgb(250 204 21 / 0.16), transparent 70%);
-  perspective: 1200px;
-  overflow: hidden;
-}
-
-.wb-coh-coin__float {
-  width: min(100%, 340px);
-  animation: wb-coh-coin-float 4s ease-in-out infinite;
-}
-
-.wb-coh-coin__spin {
-  position: relative;
-  aspect-ratio: 952 / 1224;
-  transform-style: preserve-3d;
-  animation: wb-coh-coin-spin 12s linear infinite;
-}
-
-.wb-coh-coin__face {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  filter: drop-shadow(0 12px 24px rgb(0 0 0 / 0.45));
-  user-select: none;
-}
-
-.wb-coh-coin__face--back {
-  transform: rotateY(180deg);
-}
-
-.wb-coh-coin__shadow {
-  width: min(60%, 220px);
-  height: 18px;
-  margin-top: 1rem;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(0 0 0 / 0.55), transparent);
-  animation: wb-coh-coin-shadow 4s ease-in-out infinite;
 }
 
 .wb-coh-scroll {
@@ -715,22 +664,13 @@
   animation: wb-coh-pulse 1.6s ease-in-out infinite;
 }
 
-@keyframes wb-coh-coin-spin {
-  to {
-    transform: rotateY(360deg);
+@keyframes wb-coh-coin-sway {
+  0%,
+  100% {
+    transform: translateY(0) rotateY(-18deg);
   }
-}
-
-@keyframes wb-coh-coin-float {
   50% {
-    transform: translateY(-12px);
-  }
-}
-
-@keyframes wb-coh-coin-shadow {
-  50% {
-    transform: scaleX(0.8);
-    opacity: 0.6;
+    transform: translateY(-6px) rotateY(18deg);
   }
 }
 
@@ -743,9 +683,7 @@
 @media (prefers-reduced-motion: reduce) {
   .wb-coh-skeleton,
   .wb-coh-live__dot,
-  .wb-coh-coin__float,
-  .wb-coh-coin__spin,
-  .wb-coh-coin__shadow {
+  .wb-coh-coins__coin {
     animation: none;
   }
 }
