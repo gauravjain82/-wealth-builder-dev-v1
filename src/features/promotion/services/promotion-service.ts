@@ -1,4 +1,10 @@
 import type {
+  AITestAnswer,
+  AITestFinishResult,
+  AITestMode,
+  AITestStartResult,
+  AITestState,
+  ConversationTurn,
   PromotionDashboard,
   PromotionDashboardResponse,
   QuizQuestion,
@@ -67,5 +73,24 @@ export const promotionService = {
     request<QuizSubmitResult>(`modules/${id}/quiz/`, {
       method: "POST",
       body: JSON.stringify({ answers }),
+    }),
+  aiTestState: (id: number) => request<AITestState>(`modules/${id}/ai-test/`),
+  aiTestStart: (id: number, mode: AITestMode) =>
+    request<AITestStartResult>(`modules/${id}/ai-test/start/`, {
+      method: "POST",
+      body: JSON.stringify({ mode }),
+    }),
+  aiTestGrade: (
+    attemptId: number,
+    body: { question: string; answer: string; speech_transcript?: string },
+  ) =>
+    request<AITestAnswer & { pass_threshold: number }>(
+      `ai-test/attempts/${attemptId}/grade/`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  aiTestFinish: (attemptId: number, conversation: ConversationTurn[]) =>
+    request<AITestFinishResult>(`ai-test/attempts/${attemptId}/finish/`, {
+      method: "POST",
+      body: JSON.stringify({ conversation }),
     }),
 };

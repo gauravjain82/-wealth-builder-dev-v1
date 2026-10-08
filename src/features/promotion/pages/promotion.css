@@ -296,6 +296,10 @@
   color: var(--amber);
   border: 1px solid #f0b4294d;
 }
+.promo-module-row i.ai_test {
+  color: var(--gold);
+  border: 1px solid #c9a84c4d;
+}
 .promo-module-row i.done {
   color: var(--green);
   border: 1px solid #2ecc714d;
@@ -1293,4 +1297,104 @@
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
+}
+
+/* ── AI Test (Sophia) ── */
+.promo-ai-last {
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+.promo-ai-last p,
+.promo-ai-feedback {
+  white-space: pre-line;
+  color: var(--muted);
+}
+.promo-ai-live {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: promo-ai-pulse 1.2s ease-in-out infinite;
+}
+@keyframes promo-ai-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+.promo-ai-transcript {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--soft);
+  font-size: 13px;
+}
+.promo-ai-transcript p {
+  margin: 0 0 6px;
+}
+.promo-ai-transcript p.agent b {
+  color: var(--gold);
+}
+.promo-ai-transcript p.learner b {
+  color: var(--blue);
+}
+.promo-ai-answers {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.promo-ai-answer {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--red);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.promo-ai-answer.pass {
+  border-left-color: var(--green);
+}
+.promo-ai-answer-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.promo-ai-answer-head span {
+  flex: none;
+  font: 600 13px "Barlow Condensed";
+}
+.promo-ai-answer p {
+  margin: 6px 0;
+  color: var(--dim);
+}
+.promo-ai-answer ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  color: var(--muted);
+}
+.promo-ai-typed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.promo-ai-typed textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 8px 0;
+  padding: 8px;
+  background: var(--soft);
+  color: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  resize: vertical;
 }

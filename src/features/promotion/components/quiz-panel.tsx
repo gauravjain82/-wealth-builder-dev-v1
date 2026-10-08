@@ -8,6 +8,7 @@ import type {
   WatchProgress,
 } from "../types";
 import { getEmbedVideoUrl } from "../video-url";
+import { AITestPanel } from "./ai-test-panel";
 import { TrackedVideoModal } from "./tracked-video-modal";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
@@ -47,7 +48,9 @@ export function QuizPanel({
   const [videoOpen, setVideoOpen] = useState(false);
   const questionRef = useRef<HTMLDivElement>(null);
 
-  const quizOpen = module.has_quiz && watched && module.status !== "done";
+  // Done or waiting on the AI test both mean the quiz itself is passed.
+  const quizPassed = Boolean(module.quiz_passed_at) || module.status === "done";
+  const quizOpen = module.has_quiz && watched && !quizPassed;
 
   useEffect(() => {
     if (!quizOpen || questions.length) return;
@@ -192,7 +195,7 @@ export function QuizPanel({
         </div>
       )}
 
-      {module.has_quiz && module.status === "done" && phase !== "result" && (
+      {module.has_quiz && quizPassed && phase !== "result" && (
         <div className="promo-quiz promo-quiz-passed">
           <strong>✓ Quiz passed</strong>
           {module.quiz_total ? (
@@ -318,9 +321,11 @@ export function QuizPanel({
               <h4>{result.passed ? "Quiz passed" : "Not quite yet"}</h4>
               <p>
                 {result.passed
-                  ? result.skill_auto_completed
-                    ? "Module complete — and that finishes the whole skill."
-                    : "Module complete. Nice work."
+                  ? module.has_ai_test
+                    ? "Nice work. One step left: the AI test below."
+                    : result.skill_auto_completed
+                      ? "Module complete — and that finishes the whole skill."
+                      : "Module complete. Nice work."
                   : `You need all ${result.total} correct to pass. Review the ones marked below, rewatch if it helps, and try again.`}
               </p>
             </div>
@@ -363,6 +368,10 @@ export function QuizPanel({
             </div>
           )}
         </div>
+      )}
+
+      {module.has_ai_test && (quizPassed || (!module.has_quiz && watched)) && (
+        <AITestPanel module={module} onComplete={onComplete} />
       )}
 
       {message && <div className="promo-message">{message}</div>}

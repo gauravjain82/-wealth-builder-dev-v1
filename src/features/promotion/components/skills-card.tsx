@@ -7,6 +7,7 @@ const moduleLabel = (status: PromotionModule["status"]) =>
     pending: "Awaiting Video",
     watch: "Ready to Watch",
     quiz: "Quiz Pending",
+    ai_test: "AI Test Pending",
     done: "Complete",
   })[status];
 
@@ -114,8 +115,8 @@ export function SkillsCard({
         );
       })}
       <p className="promo-skills-hint">
-        Click any skill to open its video course. Watch each video, then answer
-        the quiz before moving to the next.
+        Click any skill to open its video course. Watch each video, pass the
+        quiz, then pass the AI test with Sophia before moving to the next.
       </p>
     </section>
   );

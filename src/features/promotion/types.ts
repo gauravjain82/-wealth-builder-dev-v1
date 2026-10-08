@@ -1,4 +1,4 @@
-export type ModuleStatus = "pending" | "watch" | "quiz" | "done";
+export type ModuleStatus = "pending" | "watch" | "quiz" | "ai_test" | "done";
 export type PromotionStatus = "ready" | "close" | "not_ready";
 export type RankCode = "TA" | "A" | "MD" | string;
 
@@ -16,6 +16,11 @@ export interface PromotionModule {
   video_duration: number;
   quiz_score: number | null;
   quiz_total: number | null;
+  quiz_passed_at: string | null;
+  /** The module has an AI test the learner must pass after the quiz. */
+  has_ai_test: boolean;
+  ai_test_passed: boolean;
+  ai_test_best_score: number | null;
 }
 /** The server's view of a learner's playback after a progress report. */
 export interface WatchProgress {
@@ -120,3 +125,74 @@ export interface TeamResponse {
   members: TeamMember[];
 }
 export type TeamSort = "progress_asc" | "progress_desc" | "name" | "rank";
+
+// ── AI Coach (Sophia's voice test after the quiz) ──────────────────────────
+
+export type AITestMode = "voice" | "text";
+export type AITestStatus =
+  | "unavailable"
+  | "locked"
+  | "not_started"
+  | "failed"
+  | "passed";
+
+/** One graded answer; also the tool result Sophia reads back. */
+export interface AITestAnswer {
+  id: number;
+  question: string;
+  answer: string;
+  score: number;
+  passed: boolean;
+  strengths: string[];
+  mistakes: string[];
+  tips: string[];
+  feedback: string;
+  created_at: string;
+}
+
+export interface AITestAttempt {
+  id: number;
+  attempt_number: number;
+  mode: AITestMode;
+  status: "in_progress" | "finished";
+  pass_threshold: number;
+  score: number | null;
+  passed: boolean;
+  passed_at: string | null;
+  feedback: string;
+  started_at: string;
+  finished_at: string | null;
+  answers: AITestAnswer[];
+}
+
+export interface AITestState {
+  available: boolean;
+  status: AITestStatus;
+  pass_threshold?: number;
+  min_questions?: number;
+  attempts_today?: number;
+  daily_limit?: number;
+  passed_at?: string | null;
+  best_score?: number | null;
+  last_attempt?: AITestAttempt | null;
+}
+
+export interface AITestStartResult {
+  attempt_id: number;
+  mode: AITestMode;
+  pass_threshold: number;
+  min_questions: number;
+  /** Voice only: short-lived OpenAI Realtime key. */
+  client_secret?: string;
+  /** Typed only: the questions to answer. */
+  questions?: string[];
+}
+
+export interface AITestFinishResult extends AITestAttempt {
+  skill_auto_completed: boolean;
+}
+
+export interface ConversationTurn {
+  role: "agent" | "learner";
+  text: string;
+}
