@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { VideoModal } from "@/features/education/components";
 import { promotionService } from "../services/promotion-service";
 import type {
   PromotionModule,
   QuizQuestion,
   QuizSubmitResult,
+  WatchProgress,
 } from "../types";
 import { getEmbedVideoUrl } from "../video-url";
+import { AITestPanel } from "./ai-test-panel";
+import { TrackedVideoModal } from "./tracked-video-modal";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
@@ -31,6 +33,8 @@ export function QuizPanel({
   onComplete: () => void;
 }) {
   const [watched, setWatched] = useState(module.status !== "watch");
+  const [watchedSeconds, setWatchedSeconds] = useState(module.watch_seconds);
+  const [duration, setDuration] = useState(module.video_duration);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [phase, setPhase] = useState<Phase>("intro");
   const [index, setIndex] = useState(0);
@@ -44,7 +48,9 @@ export function QuizPanel({
   const [videoOpen, setVideoOpen] = useState(false);
   const questionRef = useRef<HTMLDivElement>(null);
 
-  const quizOpen = module.has_quiz && watched && module.status !== "done";
+  // Done or waiting on the AI test both mean the quiz itself is passed.
+  const quizPassed = Boolean(module.quiz_passed_at) || module.status === "done";
+  const quizOpen = module.has_quiz && watched && !quizPassed;
 
   useEffect(() => {
     if (!quizOpen || questions.length) return;
@@ -60,19 +66,18 @@ export function QuizPanel({
     if (phase === "question") questionRef.current?.focus();
   }, [phase, index]);
 
-  const markWatched = async () => {
-    setBusy(true);
-    setMessage("");
-    try {
-      await promotionService.watch(module.id);
+  const onWatchProgress = (progress: WatchProgress) => {
+    setWatchedSeconds(progress.watch_seconds);
+    setDuration(progress.video_duration);
+    if (progress.watched_at && !watched) {
       setWatched(true);
-      if (!module.has_quiz) onComplete();
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Unable to update video");
-    } finally {
-      setBusy(false);
+      onComplete();
     }
   };
+
+  const watchedPct = duration
+    ? Math.min(100, Math.round((watchedSeconds / duration) * 100))
+    : 0;
 
   const startAttempt = () => {
     setOptionOrder(
@@ -150,32 +155,47 @@ export function QuizPanel({
           {module.title} — {module.duration_label}
         </span>
       </div>
-      <VideoModal
+      <TrackedVideoModal
         open={videoOpen}
         onClose={() => setVideoOpen(false)}
+        moduleId={module.id}
         src={getEmbedVideoUrl(module.video_url)}
         title={module.title}
+        watchedSeconds={watchedSeconds}
+        alreadyWatched={watched}
+        onProgress={onWatchProgress}
       />
 
       {!watched && (
         <div className="promo-watch-cta">
-          <span>
-            {module.has_quiz
-              ? "Finished the video? Mark it watched to unlock the quiz."
-              : "Finished the video? Mark it watched to complete this module."}
-          </span>
+          <div className="promo-watch-progress">
+            <span>
+              {module.has_quiz
+                ? "Watch the full video to unlock the quiz."
+                : "Watch the full video to complete this module."}
+              {watchedPct > 0 && ` ${watchedPct}% watched.`}
+            </span>
+            <div
+              className="promo-watch-bar"
+              role="progressbar"
+              aria-valuenow={watchedPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <i style={{ width: `${watchedPct}%` }} />
+            </div>
+          </div>
           <button
             type="button"
-            disabled={busy}
-            onClick={markWatched}
+            onClick={() => setVideoOpen(true)}
             className="promo-gold-btn"
           >
-            {busy ? "Saving…" : "Mark as Watched"}
+            {watchedPct > 0 ? "Continue Watching" : "Watch Video"}
           </button>
         </div>
       )}
 
-      {module.has_quiz && module.status === "done" && phase !== "result" && (
+      {module.has_quiz && quizPassed && phase !== "result" && (
         <div className="promo-quiz promo-quiz-passed">
           <strong>✓ Quiz passed</strong>
           {module.quiz_total ? (
@@ -301,9 +321,11 @@ export function QuizPanel({
               <h4>{result.passed ? "Quiz passed" : "Not quite yet"}</h4>
               <p>
                 {result.passed
-                  ? result.skill_auto_completed
-                    ? "Module complete — and that finishes the whole skill."
-                    : "Module complete. Nice work."
+                  ? module.has_ai_test
+                    ? "Nice work. One step left: the AI test below."
+                    : result.skill_auto_completed
+                      ? "Module complete — and that finishes the whole skill."
+                      : "Module complete. Nice work."
                   : `You need all ${result.total} correct to pass. Review the ones marked below, rewatch if it helps, and try again.`}
               </p>
             </div>
@@ -346,6 +368,10 @@ export function QuizPanel({
             </div>
           )}
         </div>
+      )}
+
+      {module.has_ai_test && (quizPassed || (!module.has_quiz && watched)) && (
+        <AITestPanel module={module} onComplete={onComplete} />
       )}
 
       {message && <div className="promo-message">{message}</div>}

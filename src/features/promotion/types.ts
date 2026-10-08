@@ -1,4 +1,4 @@
-export type ModuleStatus = "pending" | "watch" | "quiz" | "done";
+export type ModuleStatus = "pending" | "watch" | "quiz" | "ai_test" | "done";
 export type PromotionStatus = "ready" | "close" | "not_ready";
 export type RankCode = "TA" | "A" | "MD" | string;
 
@@ -10,8 +10,23 @@ export interface PromotionModule {
   duration_label: string;
   has_quiz: boolean;
   status: ModuleStatus;
+  watched_at: string | null;
+  /** Furthest point of the video played so far, in seconds. */
+  watch_seconds: number;
+  video_duration: number;
   quiz_score: number | null;
   quiz_total: number | null;
+  quiz_passed_at: string | null;
+  /** The module has an AI test the learner must pass after the quiz. */
+  has_ai_test: boolean;
+  ai_test_passed: boolean;
+  ai_test_best_score: number | null;
+}
+/** The server's view of a learner's playback after a progress report. */
+export interface WatchProgress {
+  watch_seconds: number;
+  video_duration: number;
+  watched_at: string | null;
 }
 export interface PromotionSkill {
   id: number;
@@ -99,6 +114,15 @@ export interface TeamMember {
   overall: number;
   skill_progress: TeamSkillProgress[];
   routes: Omit<PromotionRoute, "id" | "is_selected">[];
+  ai_tests: {
+    /** Modules on their track with a required AI test. */
+    required: number;
+    passed: number;
+    /** Quiz passed, AI test still to pass. */
+    pending: number;
+    attempts: number;
+    best_score: number | null;
+  };
 }
 export interface TeamResponse {
   stats: {
@@ -110,3 +134,132 @@ export interface TeamResponse {
   members: TeamMember[];
 }
 export type TeamSort = "progress_asc" | "progress_desc" | "name" | "rank";
+
+// ── AI Coach (Sophia's voice test after the quiz) ──────────────────────────
+
+export type AITestMode = "voice" | "text";
+export type AITestStatus =
+  | "unavailable"
+  | "locked"
+  | "not_started"
+  | "failed"
+  | "passed";
+
+/** One graded answer; also the tool result Sophia reads back. */
+export interface AITestAnswer {
+  id: number;
+  question: string;
+  answer: string;
+  score: number;
+  passed: boolean;
+  strengths: string[];
+  mistakes: string[];
+  tips: string[];
+  feedback: string;
+  created_at: string;
+}
+
+export interface AITestAttempt {
+  id: number;
+  attempt_number: number;
+  mode: AITestMode;
+  status: "in_progress" | "finished";
+  pass_threshold: number;
+  score: number | null;
+  passed: boolean;
+  passed_at: string | null;
+  feedback: string;
+  started_at: string;
+  finished_at: string | null;
+  answers: AITestAnswer[];
+}
+
+export interface AITestState {
+  available: boolean;
+  status: AITestStatus;
+  pass_threshold?: number;
+  min_questions?: number;
+  attempts_today?: number;
+  daily_limit?: number;
+  /** Sophia teaching sessions (not graded) in the last 24 hours, and the cap. */
+  practice_today?: number;
+  practice_limit?: number;
+  passed_at?: string | null;
+  best_score?: number | null;
+  last_attempt?: AITestAttempt | null;
+}
+
+export interface AITestStartResult {
+  attempt_id: number;
+  mode: AITestMode;
+  pass_threshold: number;
+  min_questions: number;
+  /** Voice only: short-lived OpenAI Realtime key. */
+  client_secret?: string;
+  /** Typed only: the questions to answer. */
+  questions?: string[];
+}
+
+export interface AITestFinishResult extends AITestAttempt {
+  skill_auto_completed: boolean;
+}
+
+export interface ConversationTurn {
+  role: "agent" | "learner";
+  text: string;
+}
+
+/** An attempt in a list (no answers). */
+export interface AITestAttemptSummary {
+  id: number;
+  user: number;
+  user_name: string;
+  module: number;
+  module_title: string;
+  attempt_number: number;
+  mode: AITestMode;
+  status: "in_progress" | "finished";
+  pass_threshold: number;
+  score: number | null;
+  passed: boolean;
+  passed_at: string | null;
+  answer_count: number;
+  started_at: string;
+  finished_at: string | null;
+}
+
+/** One attempt in full, for a leader or admin, with the call transcript. */
+export interface AITestAttemptReview extends AITestAttempt {
+  user: number;
+  user_name: string;
+  module: number;
+  module_title: string;
+  skill_label: string;
+  conversation: ConversationTurn[];
+}
+
+export interface MemberAITestModule {
+  module_id: number;
+  title: string;
+  skill: string;
+  required: boolean;
+  status: ModuleStatus;
+  best_score: number | null;
+  passed_at: string | null;
+  attempts: AITestAttemptSummary[];
+}
+
+export interface MemberAITests {
+  user: number;
+  name: string;
+  modules: MemberAITestModule[];
+}
+
+/** A teaching session with Sophia: same voice call as the test, nothing graded. */
+export interface AIPracticeStartResult {
+  session_id: number;
+  client_secret: string;
+  expires_at: number;
+  model: string;
+  voice: string;
+}

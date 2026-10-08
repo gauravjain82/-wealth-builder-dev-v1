@@ -26,6 +26,7 @@
     "@tiptap/pm": "^3.31.4",
     "@tiptap/react": "^3.31.4",
     "@tiptap/starter-kit": "^3.31.4",
+    "@vimeo/player": "^2.30.4",
     "@xyflow/react": "^12.8.6",
     "@zxing/browser": "^0.2.1",
     "class-variance-authority": "^0.7.1",

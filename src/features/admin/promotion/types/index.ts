@@ -30,6 +30,8 @@ export interface AdminVideo {
   /** Agents who have watched it. Deleting the video erases their progress. */
   watched_count: number;
   quiz_questions: AdminQuizQuestion[];
+  /** null = no AI lesson; otherwise whether the AI test is switched on. */
+  ai_lesson_enabled: boolean | null;
 }
 
 export interface AdminSkill {
@@ -78,3 +80,32 @@ export const SKILL_TAG_LABELS: Record<SkillTag, string> = {
   skill: 'Skill',
   action: 'Action',
 };
+
+/** A module's AI lesson — what Sophia teaches and tests from (LessonNotes on the backend). */
+export interface AILessonContent {
+  summary: string;
+  learning_objectives: string[];
+  key_concepts: string[];
+  sections: { heading: string; content: string }[];
+  scripts_and_phrases: string[];
+  common_mistakes: string[];
+  quiz: { question: string; ideal_answer: string; must_mention: string[] }[];
+}
+
+export interface AdminAILesson {
+  id: number;
+  module: number;
+  enabled: boolean;
+  pass_threshold: number;
+  lesson: AILessonContent;
+  transcript: string;
+  source_topic_id: string;
+  /** When the AI test became required; learners who finished before then stay complete. */
+  required_since: string | null;
+  updated_at: string;
+}
+
+export type AILessonPayload = Pick<
+  AdminAILesson,
+  'module' | 'enabled' | 'pass_threshold' | 'lesson' | 'transcript'
+>;

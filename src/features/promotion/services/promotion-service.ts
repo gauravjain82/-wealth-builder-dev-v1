@@ -1,10 +1,20 @@
 import type {
+  AIPracticeStartResult,
+  AITestAnswer,
+  AITestAttemptReview,
+  AITestFinishResult,
+  AITestMode,
+  AITestStartResult,
+  AITestState,
+  ConversationTurn,
+  MemberAITests,
   PromotionDashboard,
   PromotionDashboardResponse,
   QuizQuestion,
   QuizSubmitResult,
   TeamResponse,
   TeamSort,
+  WatchProgress,
 } from "../types";
 
 const API_BASE_URL =
@@ -57,10 +67,46 @@ export const promotionService = {
     }),
   questions: (id: number) =>
     request<QuizQuestion[]>(`modules/${id}/questions/`),
-  watch: (id: number) => request(`modules/${id}/watch/`, { method: "POST" }),
+  watchProgress: (id: number, watchedSeconds: number, duration: number) =>
+    request<WatchProgress>(`modules/${id}/watch-progress/`, {
+      method: "POST",
+      body: JSON.stringify({ watched_seconds: watchedSeconds, duration }),
+    }),
   submitQuiz: (id: number, answers: Record<string, number>) =>
     request<QuizSubmitResult>(`modules/${id}/quiz/`, {
       method: "POST",
       body: JSON.stringify({ answers }),
+    }),
+  teamMemberAITests: (userId: number) =>
+    request<MemberAITests>(`team/${userId}/ai-tests/`),
+  teamAIAttempt: (attemptId: number) =>
+    request<AITestAttemptReview>(`team/ai-attempts/${attemptId}/`),
+  aiPracticeStart: (id: number) =>
+    request<AIPracticeStartResult>(`modules/${id}/ai-practice/start/`, {
+      method: "POST",
+    }),
+  aiPracticeEnd: (sessionId: number, conversation: ConversationTurn[]) =>
+    request<{ session_id: number; ended_at: string }>(
+      `ai-practice/${sessionId}/end/`,
+      { method: "POST", body: JSON.stringify({ conversation }) },
+    ),
+  aiTestState: (id: number) => request<AITestState>(`modules/${id}/ai-test/`),
+  aiTestStart: (id: number, mode: AITestMode) =>
+    request<AITestStartResult>(`modules/${id}/ai-test/start/`, {
+      method: "POST",
+      body: JSON.stringify({ mode }),
+    }),
+  aiTestGrade: (
+    attemptId: number,
+    body: { question: string; answer: string; speech_transcript?: string },
+  ) =>
+    request<AITestAnswer & { pass_threshold: number }>(
+      `ai-test/attempts/${attemptId}/grade/`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  aiTestFinish: (attemptId: number, conversation: ConversationTurn[]) =>
+    request<AITestFinishResult>(`ai-test/attempts/${attemptId}/finish/`, {
+      method: "POST",
+      body: JSON.stringify({ conversation }),
     }),
 };

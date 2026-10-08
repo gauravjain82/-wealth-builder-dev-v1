@@ -1,4 +1,6 @@
 import type {
+  AdminAILesson,
+  AILessonPayload,
   AdminQuizQuestion,
   AdminSkill,
   AdminTrack,
@@ -8,6 +10,7 @@ import type {
   SkillPayload,
   VideoPayload,
 } from '../types';
+import type { AITestAttemptSummary } from '@/features/promotion/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const BASE = '/api/promotion/admin';
@@ -72,6 +75,27 @@ export const updateQuizQuestion = (id: number, payload: Partial<QuizQuestionPayl
   send<AdminQuizQuestion>('PATCH', `questions/${id}/`, payload);
 export const deleteQuizQuestion = (id: number) =>
   request<void>(`questions/${id}/`, { method: 'DELETE' });
+
+/** The module's AI lesson, or null when it has none. */
+export const fetchAILesson = async (moduleId: number) =>
+  (await request<AdminAILesson[]>(`ai-lessons/?module=${moduleId}`))[0] ?? null;
+export const createAILesson = (payload: AILessonPayload) =>
+  send<AdminAILesson>('POST', 'ai-lessons/', payload);
+export const updateAILesson = (id: number, payload: Partial<AILessonPayload>) =>
+  send<AdminAILesson>('PATCH', `ai-lessons/${id}/`, payload);
+
+/** All agents' AI test attempts, newest first (see AIAttemptsModal). */
+export const fetchAIAttempts = (params: {
+  search: string;
+  passed: '' | 'true' | 'false';
+  limit: number;
+  offset: number;
+}) => {
+  const query = new URLSearchParams({ limit: String(params.limit), offset: String(params.offset) });
+  if (params.search) query.set('search', params.search);
+  if (params.passed) query.set('passed', params.passed);
+  return request<{ count: number; results: AITestAttemptSummary[] }>(`ai-attempts/?${query}`);
+};
 
 /** Rewrite `order` for every sibling under one parent, in the order given. */
 export const reorder = (kind: ReorderKind, ids: number[]) =>

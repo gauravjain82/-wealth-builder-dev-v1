@@ -1,4 +1,5 @@
 import type { TeamMember } from "../types";
+import { MemberAITests } from "./member-ai-tests";
 const target: Record<string, string> = {
   TA: "Associate",
   A: "Marketing Director",
@@ -27,6 +28,17 @@ export function TeamMemberCard({
           <strong>{member.name}</strong>
           <small>
             {member.done_videos}/{member.total_videos} videos ·{" "}
+            {member.ai_tests.required > 0 && (
+              <>
+                AI tests {member.ai_tests.passed}/{member.ai_tests.required}
+                {member.ai_tests.pending > 0 && (
+                  <em className="promo-team-ai-pending">
+                    {" "}({member.ai_tests.pending} waiting)
+                  </em>
+                )}{" "}
+                ·{" "}
+              </>
+            )}
             {member.days_in_rank} days in rank
           </small>
         </span>
@@ -115,6 +127,9 @@ export function TeamMemberCard({
               </div>
             ))}
           </section>
+          {(member.ai_tests.required > 0 || member.ai_tests.attempts > 0) && (
+            <MemberAITests member={member} />
+          )}
         </div>
       )}
     </article>
