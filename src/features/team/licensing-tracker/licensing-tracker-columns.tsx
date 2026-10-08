@@ -245,7 +245,7 @@ export function buildLicensingColumns(
     {
       key: 'xcel_completion_percent',
       label: 'Completion %',
-      width: 130,
+      width: 170,
       align: 'center',
       sortable: true,
       searchable: false,
@@ -255,7 +255,7 @@ export function buildLicensingColumns(
     {
       key: 'xcel_final_score',
       label: 'Final Score',
-      width: 130,
+      width: 160,
       align: 'center',
       sortable: true,
       searchable: false,
