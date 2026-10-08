@@ -1,4 +1,6 @@
 import type {
+  AdminAILesson,
+  AILessonPayload,
   AdminQuizQuestion,
   AdminSkill,
   AdminTrack,
@@ -72,6 +74,14 @@ export const updateQuizQuestion = (id: number, payload: Partial<QuizQuestionPayl
   send<AdminQuizQuestion>('PATCH', `questions/${id}/`, payload);
 export const deleteQuizQuestion = (id: number) =>
   request<void>(`questions/${id}/`, { method: 'DELETE' });
+
+/** The module's AI lesson, or null when it has none. */
+export const fetchAILesson = async (moduleId: number) =>
+  (await request<AdminAILesson[]>(`ai-lessons/?module=${moduleId}`))[0] ?? null;
+export const createAILesson = (payload: AILessonPayload) =>
+  send<AdminAILesson>('POST', 'ai-lessons/', payload);
+export const updateAILesson = (id: number, payload: Partial<AILessonPayload>) =>
+  send<AdminAILesson>('PATCH', `ai-lessons/${id}/`, payload);
 
 /** Rewrite `order` for every sibling under one parent, in the order given. */
 export const reorder = (kind: ReorderKind, ids: number[]) =>

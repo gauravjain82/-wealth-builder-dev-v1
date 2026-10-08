@@ -5,11 +5,13 @@ import {
   ListChecks,
   Pencil,
   Plus,
+  Sparkles,
   Trash2,
   VideoOff,
 } from 'lucide-react';
 import { Button, ConfirmationDialog, ErrorState, LoadingState } from '@/shared/components';
 import { cn } from '@core/utils';
+import { AILessonModal } from '../components/ai-lesson-modal';
 import { QuizEditorModal } from '../components/quiz-editor-modal';
 import { SkillFormModal } from '../components/skill-form-modal';
 import { SortableList } from '../components/sortable-list';
@@ -45,6 +47,7 @@ export default function AdminPromotionPage() {
     skillId: number | null;
   } | null>(null);
   const [quizVideoId, setQuizVideoId] = useState<number | null>(null);
+  const [aiLessonVideo, setAILessonVideo] = useState<AdminVideo | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -247,6 +250,7 @@ export default function AdminPromotionPage() {
                                 handle={videoHandle}
                                 onEdit={() => setVideoForm({ editing: video, skillId: skill.id })}
                                 onQuiz={() => setQuizVideoId(video.id)}
+                                onAILesson={() => setAILessonVideo(video)}
                                 onDelete={() => setDeleteTarget({ kind: 'video', video })}
                               />
                             )}
@@ -277,6 +281,7 @@ export default function AdminPromotionPage() {
         onClose={() => setVideoForm(null)}
       />
       <QuizEditorModal video={quizVideo} onClose={() => setQuizVideoId(null)} />
+      <AILessonModal video={aiLessonVideo} onClose={() => setAILessonVideo(null)} />
       <ConfirmationDialog
         open={deleteTarget !== null}
         title={deleteTarget?.kind === 'skill' ? 'Delete skill?' : 'Delete video?'}
@@ -313,6 +318,7 @@ function VideoRow({
   handle,
   onEdit,
   onQuiz,
+  onAILesson,
   onDelete,
 }: {
   video: AdminVideo;
@@ -320,6 +326,7 @@ function VideoRow({
   handle: React.ReactNode;
   onEdit: () => void;
   onQuiz: () => void;
+  onAILesson: () => void;
   onDelete: () => void;
 }) {
   const quizCount = video.quiz_questions.length;
@@ -370,6 +377,24 @@ function VideoRow({
         >
           <ListChecks className="h-3 w-3" />
           {quizCount > 0 ? `Quiz · ${quizCount}` : 'Add quiz'}
+        </button>
+        <button
+          type="button"
+          onClick={onAILesson}
+          className={cn(
+            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium',
+            video.ai_lesson_enabled
+              ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-[rgba(255,215,0,.45)] dark:bg-amber-400/10 dark:text-[#ffd700]'
+              : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-white/15 dark:text-white/50 dark:hover:bg-white/10'
+          )}
+          aria-label={`Edit AI test lesson for ${video.title}`}
+        >
+          <Sparkles className="h-3 w-3" />
+          {video.ai_lesson_enabled
+            ? 'AI test'
+            : video.ai_lesson_enabled === false
+              ? 'AI test off'
+              : 'Add AI test'}
         </button>
         <button
           type="button"
