@@ -1,0 +1,234 @@
+/* Site-wide event banner: WB black & gold in both themes (a brand strip, not themed). */
+.announcement-bar {
+  --ab-bg: #0b0b0b;
+  --ab-gold: #d4af37;
+  --ab-gold-light: #f3d77a;
+  --ab-text: #f5e9c4;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 8px 0 12px;
+  background: var(--ab-bg);
+  color: var(--ab-text);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.45);
+  font-size: 13px;
+  line-height: 1.2;
+  z-index: 5;
+}
+
+/* --- Fixed ticket button ------------------------------------------------ */
+.announcement-bar__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--ab-gold-light), var(--ab-gold));
+  color: #111;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4) inset;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.announcement-bar__cta:hover {
+  filter: brightness(1.08);
+}
+
+.announcement-bar__cta:focus-visible,
+.announcement-bar__pause:focus-visible {
+  outline: 2px solid var(--ab-gold-light);
+  outline-offset: 2px;
+}
+
+.announcement-bar__cta-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.announcement-bar__cta-ready {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.announcement-bar__cta-action {
+  font-weight: 600;
+}
+
+/* --- Live badge ---------------------------------------------------------- */
+.announcement-bar__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: var(--ab-gold-light);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+
+.announcement-bar__live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  animation: announcement-bar-pulse 1.6s ease-out infinite;
+}
+
+/* --- Ticker -------------------------------------------------------------- */
+.announcement-bar__viewport {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+}
+
+.announcement-bar__track {
+  display: flex;
+  width: max-content;
+  animation: announcement-bar-scroll linear infinite;
+}
+
+.announcement-bar__track.is-paused,
+.announcement-bar__viewport:hover .announcement-bar__track,
+.announcement-bar:focus-within .announcement-bar__track {
+  animation-play-state: paused;
+}
+
+.announcement-bar__copy,
+.announcement-bar__group {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.announcement-bar__message {
+  white-space: nowrap;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.announcement-bar__message:first-child {
+  color: var(--ab-gold);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.announcement-bar__sep {
+  padding: 0 18px;
+  color: var(--ab-gold);
+  font-size: 10px;
+}
+
+.announcement-bar__static {
+  display: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.announcement-bar__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* --- Pause button -------------------------------------------------------- */
+.announcement-bar__pause {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ab-gold);
+  cursor: pointer;
+}
+
+.announcement-bar__pause:hover {
+  background: rgba(212, 175, 55, 0.15);
+}
+
+.announcement-bar__pause svg {
+  width: 14px;
+  height: 14px;
+}
+
+@keyframes announcement-bar-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes announcement-bar-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+/* --- Small screens: shorter button, tighter strip ------------------------ */
+@media (max-width: 640px) {
+  .announcement-bar {
+    min-height: 36px;
+    gap: 8px;
+    padding: 0 4px 0 8px;
+    font-size: 12px;
+  }
+
+  .announcement-bar__cta {
+    padding: 4px 10px;
+  }
+
+  .announcement-bar__cta-ready,
+  .announcement-bar__live {
+    display: none;
+  }
+
+  .announcement-bar__sep {
+    padding: 0 12px;
+  }
+}
+
+/* --- Reduced motion: static line, no pulse, nothing to pause ------------- */
+@media (prefers-reduced-motion: reduce) {
+  .announcement-bar__track,
+  .announcement-bar__pause {
+    display: none;
+  }
+
+  .announcement-bar__static {
+    display: block;
+  }
+
+  .announcement-bar__viewport {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  .announcement-bar__live-dot {
+    animation: none;
+  }
+}
