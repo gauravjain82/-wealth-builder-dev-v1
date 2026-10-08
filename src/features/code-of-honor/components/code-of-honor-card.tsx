@@ -10,13 +10,13 @@
 import { useState } from 'react';
 
 import { Button } from '@/shared/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/shared/components/ui/card';
 
 import '../code-of-honor.css';
-import { useCodeOfHonorAccess, useWallState } from '../hooks/use-code-of-honor';
+import { useCodeOfHonorAccess, useWall, useWallState } from '../hooks/use-code-of-honor';
 import type { Capability } from '../types';
 import { CoinsTab } from './coins-tab';
-import { HonorCoins } from './honor-coin';
+import { HonorHero } from './honor-hero';
 import { PostTab } from './post-tab';
 import { ErrorNotice, Loading } from './states';
 import { VoteTab } from './vote-tab';
@@ -40,6 +40,7 @@ export function CodeOfHonorCard({ onOpenCommittee }: CodeOfHonorCardProps) {
   const access = useCodeOfHonorAccess();
   const canView = Boolean(access.data?.can_view);
   const state = useWallState(canView);
+  const wall = useWall(canView);
   const [chosen, setChosen] = useState<TabId | null>(null);
 
   // Prospects and anyone without the view capability see nothing at all.
@@ -54,22 +55,11 @@ export function CodeOfHonorCard({ onOpenCommittee }: CodeOfHonorCardProps) {
   return (
     <Card className="wb-coh-card">
       <CardHeader className="wb-coh-card__header">
-        <div>
-          <CardTitle className="wb-coh-card__title">Code of Honor</CardTitle>
-          <p className="wb-coh-card__status">
-            {state.data
-              ? voting
-                ? `${voting.round === 'runoff' ? 'Tie-breaker' : 'Voting'} live · ${voting.label}`
-                : `Posting for ${state.data.open_cycle.label}`
-              : 'Loading…'}
-          </p>
-          {showCommitteeLink && (
-            <Button type="button" variant="outline" className="wb-coh-card__committee" onClick={onOpenCommittee}>
-              Committee
-            </Button>
-          )}
-        </div>
-        <HonorCoins />
+        <HonorHero
+          state={state.data}
+          wall={wall.data}
+          onOpenCommittee={showCommitteeLink ? onOpenCommittee : undefined}
+        />
       </CardHeader>
 
       <CardContent className="wb-coh-card__content">

@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID: string;
   readonly VITE_FIREBASE_MEASUREMENT_ID: string;
   readonly VITE_STRIPE_PUBLISHABLE_KEY: string;
+  /** Code of Honor video (YouTube/Vimeo link or file URL). Unset shows a "coming soon" thumbnail. */
+  readonly VITE_CODE_OF_HONOR_VIDEO_URL?: string;
 }
 
 interface ImportMeta {
