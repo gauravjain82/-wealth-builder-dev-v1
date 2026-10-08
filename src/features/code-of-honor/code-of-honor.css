@@ -55,7 +55,7 @@
 }
 
 .wb-coh-coins__coin {
-  height: 120px;
+  height: 140px;
   width: auto;
   filter: drop-shadow(0 6px 12px rgb(0 0 0 / 0.45));
   user-select: none;
@@ -554,6 +554,19 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+/* Each version's label sits on its own line above the text it names. */
+.wb-coh-review__versions .wb-coh-label {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* The row's buttons get their own band below the value tags instead of butting into them. */
+.wb-coh-review > .wb-coh-actions {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
 }
 
 @media (max-width: 640px) {

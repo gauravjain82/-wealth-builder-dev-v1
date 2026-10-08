@@ -45,6 +45,7 @@ interface TieState {
 export function CommitteePanel({ canManageCycles, canComplete }: { canManageCycles: boolean; canComplete: boolean }) {
   const [cycleId, setCycleId] = useState<string | null>(null);
   const review = useReview(cycleId);
+  const wall = useWallState();
   const cycleAction = useCycleAction();
   const [confirm, setConfirm] = useState<'open-voting' | 'complete' | null>(null);
   const [tie, setTie] = useState<TieState | null>(null);
@@ -54,6 +55,7 @@ export function CommitteePanel({ canManageCycles, canComplete }: { canManageCycl
   if (review.isError || !review.data) return <ErrorNotice error={review.error} onRetry={() => review.refetch()} />;
   const { cycles, selected, acts, require_approval: requireApproval } = review.data;
   const live = selected.status === 'voting' || selected.status === 'runoff';
+  const valueNames = new Map((wall.data?.values ?? []).map((value) => [value.key, value.name]));
 
   const handleTieError = (error: unknown): boolean => {
     if (error instanceof CohError && (error.code === 'tie_runoff_required' || error.code === 'tie_decision_required')) {
@@ -112,8 +114,8 @@ export function CommitteePanel({ canManageCycles, canComplete }: { canManageCycl
 
       <div className="wb-coh-statusbar">
         <span>
-          <strong>{selected.label}</strong> · {STATUS_LABEL[selected.status]} · {selected.acts} acts · {selected.hidden}{' '}
-          hidden · {selected.in_vote} in the vote
+          <strong>{selected.label}</strong> · {STATUS_LABEL[selected.status]} · {selected.acts}{' '}
+          {selected.acts === 1 ? 'act' : 'acts'} · {selected.hidden} hidden · {selected.in_vote} in the vote
         </span>
         <span className="wb-coh-actions">
           {selected.status === 'open' && canManageCycles && (
@@ -136,7 +138,13 @@ export function CommitteePanel({ canManageCycles, canComplete }: { canManageCycl
       ) : (
         <ul className="wb-coh-list">
           {acts.map((act) => (
-            <ReviewRow key={act.id} act={act} locked={selected.status === 'closed'} requireApproval={requireApproval} />
+            <ReviewRow
+              key={act.id}
+              act={act}
+              valueNames={valueNames}
+              locked={selected.status === 'closed'}
+              requireApproval={requireApproval}
+            />
           ))}
         </ul>
       )}
@@ -182,7 +190,9 @@ export function CommitteePanel({ canManageCycles, canComplete }: { canManageCycl
   );
 }
 
-function ReviewRow({ act, locked, requireApproval }: { act: ReviewAct; locked: boolean; requireApproval: boolean }) {
+function ReviewRow({ act, valueNames, locked, requireApproval }: {
+  act: ReviewAct; valueNames: Map<string, string>; locked: boolean; requireApproval: boolean;
+}) {
   const reviewAct = useReviewAct();
   const [editing, setEditing] = useState<'text' | 'values' | null>(null);
   const busy = reviewAct.isPending;
@@ -218,6 +228,9 @@ function ReviewRow({ act, locked, requireApproval }: { act: ReviewAct; locked: b
       </div>
       <div className="wb-coh-act__meta">
         <span className="wb-coh-tag">{act.primary_value_name}</span>
+        {act.secondary_values.map((key) => (
+          <span key={key} className="wb-coh-tag wb-coh-tag--soft">{valueNames.get(key) ?? key}</span>
+        ))}
         {act.values_corrected && <span className="wb-coh-muted">values corrected</span>}
       </div>
       {reviewAct.isError && <ErrorNotice error={reviewAct.error} />}

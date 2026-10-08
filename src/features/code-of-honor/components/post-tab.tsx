@@ -225,12 +225,10 @@ function PostForm({ state }: { state: WallState }) {
             <div className="wb-coh-act wb-coh-act--preview">
               <ActText text={preview.anonymous_text} />
             </div>
-            <p className="wb-coh-hint">
-              {preview.blanks.length > 0
-                ? `Hidden: ${preview.blanks.join(', ')}`
-                : `No mention of ${preview.nominee_name} was found to hide.`}
-            </p>
-            <p className="wb-coh-hint">{preview.nominee_name}'s name is revealed when voting closes. You are never named.</p>
+            {preview.blanks.length === 0 && (
+              <p className="wb-coh-hint">No mention of your teammate was found to hide.</p>
+            )}
+            <p className="wb-coh-hint">Their name is revealed when voting closes. You are never named.</p>
             {submit.isError && <p className="wb-coh-error" role="alert">{errorMessage(submit.error)}</p>}
             <div className="wb-coh-actions">
               <Button type="button" variant="outline" onClick={() => setPreview(null)} disabled={submit.isPending}>
