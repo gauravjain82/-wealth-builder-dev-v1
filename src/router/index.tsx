@@ -5,6 +5,7 @@ import { AdminRoute } from './admin-route';
 import { SmdRoute } from './smd-route';
 import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
+import { MatchupMetricsRoute } from './matchup-metrics-route';
 import { CodeOfHonorRoute } from './code-of-honor-route';
 import { WbPipelineRoute } from './wb-pipeline-route';
 import { ContestSettingsRoute } from './contest-settings-route';
@@ -161,6 +162,7 @@ const TrainingCenterPage = lazy(() => import('@/features/training-center/pages/t
 const TrainingSchedulePage = lazy(() => import('@/features/training-schedule/pages/training-schedule-page'));
 const MatchupPage = lazy(() => import('@/features/matchup/pages/matchup-page'));
 const CalendarPage = lazy(() => import('@/features/matchup/pages/calendar-page'));
+const MatchupMetricsPage = lazy(() => import('@/features/matchup/metrics/pages/matchup-metrics-page'));
 const BpmOverviewPage = lazy(() => import('@/features/bpm/pages/bpm-overview-page'));
 const BpmSchedulePage = lazy(() => import('@/features/bpm/pages/bpm-schedule-page'));
 const BpmAddGuestPage = lazy(() => import('@/features/bpm/pages/add-guest-page'));
@@ -639,6 +641,11 @@ const router = createBrowserRouter([
       {
         path: 'matchup',
         element: lazyLoad(MatchupPage),
+      },
+      {
+        // Gated per user by matchup_metrics:read (access console).
+        path: 'matchup/metrics',
+        element: <MatchupMetricsRoute>{lazyLoad(MatchupMetricsPage)}</MatchupMetricsRoute>,
       },
       {
         path: 'calendar',
