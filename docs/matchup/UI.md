@@ -39,6 +39,12 @@ Match Up page links out to `/settings#settings-calendar-sync` to manage the Goog
 The action-required panel is the point of the page: it answers "what is waiting on me", which is a
 different question from "show me all appointments". Its contents are computed server-side.
 
+The first filter dropdown is a **preset**, served by `/appointments/statuses/` as `presets` and defined in
+`mlm_platform` `matchup/filters.py` `PRESET_FILTERS`: all, done, sale recruit, rescheduled, not interested,
+and **result required** (M17) — the meeting has ended, it is `ACCEPTED` or `RESCHEDULED`, and no follow-up
+result is filed. Unlike the action-required queue, it is not limited to the viewer's own meetings or to
+Request Trainer: it filters whatever the list already shows.
+
 ### 2.2 Calendar — `pages/calendar-page.tsx`
 
 `MonthCalendar` with real appointments **and imported Google events side by side**. Clicking a day opens
@@ -57,7 +63,7 @@ Create and edit, for both kinds. The largest component, and the one with the mos
 | **Kind** | editable on edit, and **shows a warning when changed** — see §4 |
 | Contact | required for both kinds |
 | Trainee | **required for `REQUEST_TRAINER`**, cleared for `PERSONAL` |
-| Types | multi-select from the served `AppointmentType` catalogue |
+| Types | single-select from the served `AppointmentType` catalogue — exactly one per appointment (M15) |
 | Location | `VIRTUAL` or `PHYSICAL`; the URL field is **explicitly optional** |
 | Start, duration, timezone | defaults to `browserTimezone()` |
 
@@ -66,10 +72,22 @@ Create and edit, for both kinds. The largest component, and the one with the mos
 **Company-wide** trainer search with segment filtering. Deliberately broader than the usual downline
 scope: an assigner may need a trainer from outside their own base shop.
 
-### 2.5 Complete appointment — `components/complete-appointment-modal.tsx` (330 lines)
+### 2.5 Complete appointment — `components/complete-appointment-modal.tsx` (419 lines)
 
 Records the outcome, and **offers a follow-up appointment** — including rescheduling this one instead, if
 that is what actually happened.
+
+**Step 3 appt?** = Yes opens two required questions (M16): **Call made?** (Yes/No) and **How many
+appointments booked?** (a whole number, 0 allowed). Both are cleared when Step 3 flips to No, so a hidden
+answer is never submitted.
+
+**Edit mode** (`editing` prop, M18) corrects a filed result: titled *Edit Follow Up*, pre-filled from the
+result (a stored empty sale shows as No), saved with **Save Changes** to `PATCH …/result/`. The follow-up
+action prompts are hidden — they were offered on the first submit — and Notes becomes *Add a note*, which
+adds a note to the contact's feed rather than replacing earlier ones. Three entry points, all shown only when
+a result exists: an **Edit Result** button in the Outcome section of the edit-appointment form and of the
+details modal (both close and hand over their loaded detail), and an icon button on the list row (which
+loads the detail first, since list rows carry only `has_result`).
 
 ### 2.6 Reschedule — `components/reschedule-appointment-modal.tsx`
 

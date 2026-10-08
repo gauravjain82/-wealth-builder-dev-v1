@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Info } from 'lucide-react';
+import { ClipboardPen, Info } from 'lucide-react';
 import { Button, Input, Modal, Select, Textarea } from '@shared/components/ui';
 import { UserAutocompleteDropdown, type UserAutocompleteOption } from '@shared/components/user-autocomplete-dropdown';
 import { browserTimezone, formatAppointmentTime, localDateTimeValue } from '../services/matchup-service';
@@ -66,6 +66,8 @@ interface AppointmentFormModalProps {
   onSubmit: (payload: CreateAppointmentPayload, id?: number) => Promise<void>;
   onAddProspect?: (searchedName: string) => void;
   addedContact?: Prospect | null;
+  /** Opens the filed result for correction; shown in the Outcome section. */
+  onEditResult?: (appointment: AppointmentDetail) => void;
 }
 
 interface FormState {
@@ -131,6 +133,9 @@ function isAppointmentDetail(appointment: AppointmentFormAppointment): appointme
   return 'types_detail' in appointment;
 }
 
+// Audit fields of a result: not answers, so not shown in the outcome grid.
+const RESULT_META_KEYS = ['submitted_by', 'last_edited_by', 'created_at', 'updated_at'];
+
 function displayValue(value: unknown) {
   if (value === null || value === undefined || value === '') return '—';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
@@ -183,6 +188,7 @@ export function AppointmentFormModal({
   onSubmit,
   onAddProspect,
   addedContact,
+  onEditResult,
 }: AppointmentFormModalProps) {
   const [form, setForm] = useState<FormState>(defaultForm);
   const [error, setError] = useState<string | null>(null);
@@ -235,7 +241,7 @@ export function AppointmentFormModal({
   }, [addedContact, open]);
 
   const selectedTypeText = useMemo(() => {
-    if (!form.types.length) return 'Select at least one appointment type.';
+    if (!form.types.length) return 'Select one appointment type.';
     return appointmentTypes
       .filter((type) => form.types.includes(type.id))
       .map((type) => type.name)
@@ -251,12 +257,12 @@ export function AppointmentFormModal({
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  // An appointment carries exactly one type: picking another replaces the
+  // current one, and picking the current one clears it.
   const toggleType = (typeId: number) => {
     setForm((prev) => ({
       ...prev,
-      types: prev.types.includes(typeId)
-        ? prev.types.filter((id) => id !== typeId)
-        : [...prev.types, typeId],
+      types: prev.types.includes(typeId) ? [] : [typeId],
     }));
   };
 
@@ -330,7 +336,9 @@ export function AppointmentFormModal({
   /** The first required field left empty, named — or null when the form is complete. */
   const validationError = (): string | null => {
     if (!form.start_at) return 'Start is required.';
-    if (!form.types.length) return 'Select at least one appointment type.';
+    if (!form.types.length) return 'Select one appointment type.';
+    // Older appointments may still carry several types; make the editor pick one.
+    if (form.types.length > 1) return 'Only one appointment type is allowed. Keep one and clear the rest.';
     if (!form.contact) {
       return form.kind === 'REQUEST_TRAINER'
         ? 'Contact is required for Request Trainer appointments.'
@@ -682,10 +690,17 @@ export function AppointmentFormModal({
 
             {detail.result ? (
               <section className="matchup-details-section">
-                <h3>Outcome</h3>
+                <div className="matchup-outcome-header">
+                  <h3>Outcome</h3>
+                  {onEditResult ? (
+                    <Button type="button" variant="outline" size="sm" onClick={() => onEditResult(detail)}>
+                      <ClipboardPen size={14} /> Edit Result
+                    </Button>
+                  ) : null}
+                </div>
                 <div className="matchup-result-grid">
                   {Object.entries(detail.result)
-                    .filter(([key]) => !['submitted_by', 'created_at', 'updated_at'].includes(key))
+                    .filter(([key]) => !RESULT_META_KEYS.includes(key))
                     .map(([key, resultValue]) => (
                       <div key={key}><small>{key.replace(/_/g, ' ')}</small><strong>{displayValue(resultValue)}</strong></div>
                     ))}

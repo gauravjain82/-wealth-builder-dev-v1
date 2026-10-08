@@ -171,6 +171,7 @@ export default function MatchupPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [assignTarget, setAssignTarget] = useState<AppointmentListItem | null>(null);
   const [completeTarget, setCompleteTarget] = useState<AppointmentListItem | null>(null);
+  const [resultEditTarget, setResultEditTarget] = useState<AppointmentDetail | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<ReschedulableAppointment | null>(null);
   const [editingTarget, setEditingTarget] = useState<AppointmentDetail | null>(null);
   const [detailsTarget, setDetailsTarget] = useState<AppointmentDetail | null>(null);
@@ -431,6 +432,36 @@ export default function MatchupPage() {
       await matchupService.complete(completeTarget.id, payload);
       setCompleteTarget(null);
     });
+  };
+
+  const saveResultEdit = async (payload: CompleteAppointmentPayload) => {
+    if (!resultEditTarget) return;
+    await runMutation('Result updated.', async () => {
+      await matchupService.editResult(resultEditTarget.id, payload);
+      setResultEditTarget(null);
+    });
+  };
+
+  // From the list the row has no result fields, so load the detail first. The
+  // details and edit-appointment modals already hold it, and close first.
+  const openResultEditor = (appointment: AppointmentDetail) => {
+    setDetailsTarget(null);
+    setFormOpen(false);
+    setEditingTarget(null);
+    setResultEditTarget(appointment);
+  };
+
+  const openResultEditorFromList = async (item: AppointmentListItem) => {
+    setBusy(true);
+    try {
+      const detail = await matchupService.appointment(item.id);
+      if (detail.result) setResultEditTarget(detail);
+      else addToast({ type: 'error', message: 'This appointment has no result to edit yet.' });
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load the result.' });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const acceptAppointment = async (appointment: AppointmentListItem) => {
@@ -797,6 +828,7 @@ export default function MatchupPage() {
             onOpenContact={(userId, name) => setContactProfileOpenFor({ userId, name })}
             onAssign={setAssignTarget}
             onComplete={setCompleteTarget}
+            onEditResult={(item) => void openResultEditorFromList(item)}
             onReschedule={openRescheduleAppointment}
             onCancel={(item) => void cancelAppointment(item)}
             onExport={() => void exportAppointments()}
@@ -830,6 +862,14 @@ export default function MatchupPage() {
         onAddToProduction={openProductionModal}
         onRescheduleAppointment={openRescheduleAppointment}
       />
+      <CompleteAppointmentModal
+        open={Boolean(resultEditTarget)}
+        appointment={null}
+        editing={resultEditTarget}
+        saving={busy}
+        onClose={() => setResultEditTarget(null)}
+        onComplete={saveResultEdit}
+      />
       <AppointmentFormModal
         open={formOpen}
         appointment={editingTarget}
@@ -840,6 +880,7 @@ export default function MatchupPage() {
         onSubmit={saveAppointment}
         onAddProspect={openAddProspect}
         addedContact={newAppointmentContact}
+        onEditResult={openResultEditor}
       />
       <AppointmentDetailsModal
         appointment={detailsTarget}
@@ -851,6 +892,7 @@ export default function MatchupPage() {
           setFormOpen(true);
         }}
         onReschedule={openRescheduleAppointment}
+        onEditResult={openResultEditor}
       />
       <RescheduleAppointmentModal
         open={Boolean(rescheduleTarget)}

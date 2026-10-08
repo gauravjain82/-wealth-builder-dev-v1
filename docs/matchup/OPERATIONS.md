@@ -18,7 +18,7 @@ client** rather than compiled in:
 
 | Configured | Where | Effect |
 |---|---|---|
-| Appointment types | `matchup` reference data | the type multi-select |
+| Appointment types | `matchup` reference data | the type picker (one per appointment) |
 | Status labels and colours | `/appointments/statuses/` | `StatusBadge`. **A recolour needs no release** |
 | Allowed transitions | `matchup/services/workflow.py` | what `canReschedule` mirrors |
 | Google OAuth client, `FRONTEND_URL` | backend | the connection flow this module links to |

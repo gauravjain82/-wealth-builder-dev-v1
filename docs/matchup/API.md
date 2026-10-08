@@ -25,18 +25,20 @@ across the module rather than one per modal.
 
 ## 2. Endpoints consumed
 
-### `matchup` — 11
+### `matchup` — 13
 
 | Method | Path | Purpose |
 |---|---|---|
 | GET · POST | `/api/matchup/appointments/` | list and create |
 | GET · PATCH · DELETE | `/api/matchup/appointments/{id}/` | detail, edit, remove |
 | POST | `/api/matchup/appointments/{id}/reschedule/` | **move in place**, with an audit record |
+| POST | `/api/matchup/appointments/{id}/complete/` | file the follow-up result; sets `DONE` |
+| PATCH | `/api/matchup/appointments/{id}/result/` | **correct a filed result** (M18) — same payload as `complete/`, status unchanged, `400` if no result yet, sets `last_edited_by` |
 | GET | `/api/matchup/appointments/action-required/` | the three queues plus `can_view` / `can_take_action` |
 | GET | `/api/matchup/appointments/calendar/` | a month of calendar items |
 | GET | `/api/matchup/appointments/day/` | one day, grouped |
 | GET | `/api/matchup/appointments/metrics/` | the metrics cards |
-| GET | `/api/matchup/appointments/statuses/` | **status metadata: value, label, colour** |
+| GET | `/api/matchup/appointments/statuses/` | **status metadata: value, label, colour**, and the list's filter `presets` (sent back as `?preset=`) |
 | GET | `/api/matchup/appointment-types/` | the type catalogue |
 | GET | `/api/matchup/trainer-search/` | company-wide, with segment filtering |
 | GET | `/api/matchup/appointments/export/` | server-side export |

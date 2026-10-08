@@ -195,6 +195,13 @@ export const matchupService = {
       body: JSON.stringify(payload),
     }),
 
+  /** Correct an already-filed result. Same payload as complete; the status does not change. */
+  editResult: (appointmentId: number, payload: CompleteAppointmentPayload) =>
+    request<AppointmentDetail>(`/api/matchup/appointments/${appointmentId}/result/`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
   notInterested: (appointmentId: number) =>
     request<AppointmentDetail>(`/api/matchup/appointments/${appointmentId}/not-interested/`, { method: 'POST' }),
 
