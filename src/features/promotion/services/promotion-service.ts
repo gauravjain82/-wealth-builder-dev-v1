@@ -5,6 +5,7 @@ import type {
   QuizSubmitResult,
   TeamResponse,
   TeamSort,
+  WatchProgress,
 } from "../types";
 
 const API_BASE_URL =
@@ -57,7 +58,11 @@ export const promotionService = {
     }),
   questions: (id: number) =>
     request<QuizQuestion[]>(`modules/${id}/questions/`),
-  watch: (id: number) => request(`modules/${id}/watch/`, { method: "POST" }),
+  watchProgress: (id: number, watchedSeconds: number, duration: number) =>
+    request<WatchProgress>(`modules/${id}/watch-progress/`, {
+      method: "POST",
+      body: JSON.stringify({ watched_seconds: watchedSeconds, duration }),
+    }),
   submitQuiz: (id: number, answers: Record<string, number>) =>
     request<QuizSubmitResult>(`modules/${id}/quiz/`, {
       method: "POST",

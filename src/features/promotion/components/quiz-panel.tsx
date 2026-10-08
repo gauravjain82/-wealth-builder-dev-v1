@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { VideoModal } from "@/features/education/components";
 import { promotionService } from "../services/promotion-service";
 import type {
   PromotionModule,
   QuizQuestion,
   QuizSubmitResult,
+  WatchProgress,
 } from "../types";
 import { getEmbedVideoUrl } from "../video-url";
+import { TrackedVideoModal } from "./tracked-video-modal";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
@@ -31,6 +32,8 @@ export function QuizPanel({
   onComplete: () => void;
 }) {
   const [watched, setWatched] = useState(module.status !== "watch");
+  const [watchedSeconds, setWatchedSeconds] = useState(module.watch_seconds);
+  const [duration, setDuration] = useState(module.video_duration);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [phase, setPhase] = useState<Phase>("intro");
   const [index, setIndex] = useState(0);
@@ -60,19 +63,18 @@ export function QuizPanel({
     if (phase === "question") questionRef.current?.focus();
   }, [phase, index]);
 
-  const markWatched = async () => {
-    setBusy(true);
-    setMessage("");
-    try {
-      await promotionService.watch(module.id);
+  const onWatchProgress = (progress: WatchProgress) => {
+    setWatchedSeconds(progress.watch_seconds);
+    setDuration(progress.video_duration);
+    if (progress.watched_at && !watched) {
       setWatched(true);
-      if (!module.has_quiz) onComplete();
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Unable to update video");
-    } finally {
-      setBusy(false);
+      onComplete();
     }
   };
+
+  const watchedPct = duration
+    ? Math.min(100, Math.round((watchedSeconds / duration) * 100))
+    : 0;
 
   const startAttempt = () => {
     setOptionOrder(
@@ -150,27 +152,42 @@ export function QuizPanel({
           {module.title} — {module.duration_label}
         </span>
       </div>
-      <VideoModal
+      <TrackedVideoModal
         open={videoOpen}
         onClose={() => setVideoOpen(false)}
+        moduleId={module.id}
         src={getEmbedVideoUrl(module.video_url)}
         title={module.title}
+        watchedSeconds={watchedSeconds}
+        alreadyWatched={watched}
+        onProgress={onWatchProgress}
       />
 
       {!watched && (
         <div className="promo-watch-cta">
-          <span>
-            {module.has_quiz
-              ? "Finished the video? Mark it watched to unlock the quiz."
-              : "Finished the video? Mark it watched to complete this module."}
-          </span>
+          <div className="promo-watch-progress">
+            <span>
+              {module.has_quiz
+                ? "Watch the full video to unlock the quiz."
+                : "Watch the full video to complete this module."}
+              {watchedPct > 0 && ` ${watchedPct}% watched.`}
+            </span>
+            <div
+              className="promo-watch-bar"
+              role="progressbar"
+              aria-valuenow={watchedPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <i style={{ width: `${watchedPct}%` }} />
+            </div>
+          </div>
           <button
             type="button"
-            disabled={busy}
-            onClick={markWatched}
+            onClick={() => setVideoOpen(true)}
             className="promo-gold-btn"
           >
-            {busy ? "Saving…" : "Mark as Watched"}
+            {watchedPct > 0 ? "Continue Watching" : "Watch Video"}
           </button>
         </div>
       )}

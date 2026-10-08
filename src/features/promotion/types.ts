@@ -10,8 +10,18 @@ export interface PromotionModule {
   duration_label: string;
   has_quiz: boolean;
   status: ModuleStatus;
+  watched_at: string | null;
+  /** Furthest point of the video played so far, in seconds. */
+  watch_seconds: number;
+  video_duration: number;
   quiz_score: number | null;
   quiz_total: number | null;
+}
+/** The server's view of a learner's playback after a progress report. */
+export interface WatchProgress {
+  watch_seconds: number;
+  video_duration: number;
+  watched_at: string | null;
 }
 export interface PromotionSkill {
   id: number;
