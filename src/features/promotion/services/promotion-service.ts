@@ -1,4 +1,5 @@
 import type {
+  AIPracticeStartResult,
   AITestAnswer,
   AITestAttemptReview,
   AITestFinishResult,
@@ -80,6 +81,15 @@ export const promotionService = {
     request<MemberAITests>(`team/${userId}/ai-tests/`),
   teamAIAttempt: (attemptId: number) =>
     request<AITestAttemptReview>(`team/ai-attempts/${attemptId}/`),
+  aiPracticeStart: (id: number) =>
+    request<AIPracticeStartResult>(`modules/${id}/ai-practice/start/`, {
+      method: "POST",
+    }),
+  aiPracticeEnd: (sessionId: number, conversation: ConversationTurn[]) =>
+    request<{ session_id: number; ended_at: string }>(
+      `ai-practice/${sessionId}/end/`,
+      { method: "POST", body: JSON.stringify({ conversation }) },
+    ),
   aiTestState: (id: number) => request<AITestState>(`modules/${id}/ai-test/`),
   aiTestStart: (id: number, mode: AITestMode) =>
     request<AITestStartResult>(`modules/${id}/ai-test/start/`, {

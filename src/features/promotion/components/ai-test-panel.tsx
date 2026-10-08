@@ -13,7 +13,14 @@ import type {
   PromotionModule,
 } from "../types";
 
-type Phase = "idle" | "connecting" | "live" | "typed" | "finishing" | "result";
+type Phase =
+  | "idle"
+  | "connecting"
+  | "live"
+  | "typed"
+  | "finishing"
+  | "result"
+  | "practice";
 
 const errorText = (e: unknown, fallback: string) =>
   e instanceof Error ? e.message : fallback;
@@ -67,6 +74,7 @@ export function AITestPanel({
   const [grading, setGrading] = useState<number | null>(null);
   const [result, setResult] = useState<AITestFinishResult | null>(null);
   const [micBlocked, setMicBlocked] = useState(false);
+  const [practiceId, setPracticeId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const sessionRef = useRef<RealtimeCoachSession | null>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -121,6 +129,43 @@ export function AITestPanel({
     }
   };
 
+  /** Sophia teaches the lesson (her teaching prompt, no grading tool). */
+  const startPractice = async () => {
+    reset();
+    setPhase("connecting");
+    try {
+      await RealtimeCoachSession.checkMicrophone();
+      const started = await promotionService.aiPracticeStart(module.id);
+      setPracticeId(started.session_id);
+      const session = new RealtimeCoachSession({
+        onAgentText: (text) => setTurns((t) => [...t, { role: "agent", text }]),
+        onLearnerText: (text) => setTurns((t) => [...t, { role: "learner", text }]),
+        // Teaching sessions carry no grading tool, so the model never calls this.
+        onGrade: async () => ({ error: "Grading is not part of practice." }),
+        onLive: () => setPhase("practice"),
+        onError: (text) => setMessage(text),
+      });
+      sessionRef.current = session;
+      await session.start(started.client_secret);
+    } catch (e) {
+      sessionRef.current = null;
+      if (e instanceof MicrophoneUnavailableError) setMicBlocked(true);
+      setMessage(errorText(e, "Unable to start practice"));
+      setPhase("idle");
+    }
+  };
+
+  const endPractice = () => {
+    sessionRef.current?.stop();
+    sessionRef.current = null;
+    if (practiceId !== null) {
+      promotionService.aiPracticeEnd(practiceId, turns).catch(() => undefined);
+    }
+    setPracticeId(null);
+    setPhase("idle");
+    load();
+  };
+
   const startTyped = async () => {
     reset();
     setPhase("connecting");
@@ -173,6 +218,25 @@ export function AITestPanel({
   const minQuestions = state.min_questions ?? 3;
   const left = Math.max(0, (state.daily_limit ?? 0) - (state.attempts_today ?? 0));
   const distinctGraded = new Set(graded.map((a) => a.question.toLowerCase())).size;
+  const practiceLeft = Math.max(
+    0,
+    (state.practice_limit ?? 0) - (state.practice_today ?? 0),
+  );
+  const practiceButton = (
+    <button
+      type="button"
+      className="promo-ghost-btn"
+      disabled={practiceLeft === 0}
+      onClick={startPractice}
+      title={
+        practiceLeft === 0
+          ? "You've used today's practice sessions"
+          : `${practiceLeft} practice session${practiceLeft === 1 ? "" : "s"} left today`
+      }
+    >
+      Practice with Sophia
+    </button>
+  );
 
   if (state.status === "locked") {
     return (
@@ -183,11 +247,13 @@ export function AITestPanel({
     );
   }
 
-  if (state.status === "passed" && phase !== "result") {
+  if (state.status === "passed" && phase === "idle") {
     return (
       <div className="promo-quiz promo-quiz-passed">
         <strong>✓ AI Test Complete</strong>
         {state.best_score != null && <span>Score {state.best_score}/100</span>}
+        {practiceButton}
+        {message && <span className="promo-message">{message}</span>}
       </div>
     );
   }
@@ -198,7 +264,7 @@ export function AITestPanel({
         phase === "result" && result ? `promo-quiz-result ${result.passed ? "pass" : "fail"}` : ""
       }`}
     >
-      <h4>AI Test · Sophia</h4>
+      <h4>{phase === "practice" ? "Practice · Sophia" : "AI Test · Sophia"}</h4>
 
       {phase === "idle" && (
         <>
@@ -222,6 +288,7 @@ export function AITestPanel({
             </p>
           )}
           <div className="promo-quiz-nav">
+            {practiceButton}
             {micBlocked && (
               <button
                 type="button"
@@ -245,11 +312,35 @@ export function AITestPanel({
             {left === 0
               ? "You've used today's AI tests. Come back tomorrow."
               : `${left} AI test${left === 1 ? "" : "s"} left today`}
+            {" · "}
+            Practice isn't graded — Sophia walks you through the lesson first (
+            {practiceLeft} left today).
           </p>
         </>
       )}
 
       {phase === "connecting" && <p className="promo-quiz-meta">Connecting…</p>}
+
+      {phase === "practice" && (
+        <>
+          <p className="promo-quiz-meta">
+            <span className="promo-ai-live" /> Live — Sophia is teaching this lesson.
+            Ask her anything about it. Nothing here is graded.
+          </p>
+          <div className="promo-ai-transcript" ref={transcriptRef}>
+            {turns.map((turn, i) => (
+              <p key={i} className={turn.role}>
+                <b>{turn.role === "agent" ? "Sophia" : "You"}:</b> {turn.text}
+              </p>
+            ))}
+          </div>
+          <div className="promo-quiz-nav">
+            <button type="button" className="promo-gold-btn" onClick={endPractice}>
+              End Practice
+            </button>
+          </div>
+        </>
+      )}
 
       {phase === "live" && (
         <>

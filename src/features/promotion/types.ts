@@ -181,6 +181,9 @@ export interface AITestState {
   min_questions?: number;
   attempts_today?: number;
   daily_limit?: number;
+  /** Sophia teaching sessions (not graded) in the last 24 hours, and the cap. */
+  practice_today?: number;
+  practice_limit?: number;
   passed_at?: string | null;
   best_score?: number | null;
   last_attempt?: AITestAttempt | null;
@@ -250,4 +253,13 @@ export interface MemberAITests {
   user: number;
   name: string;
   modules: MemberAITestModule[];
+}
+
+/** A teaching session with Sophia: same voice call as the test, nothing graded. */
+export interface AIPracticeStartResult {
+  session_id: number;
+  client_secret: string;
+  expires_at: number;
+  model: string;
+  voice: string;
 }
