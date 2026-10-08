@@ -16,6 +16,7 @@ import '../code-of-honor.css';
 import { useCodeOfHonorAccess, useWallState } from '../hooks/use-code-of-honor';
 import type { Capability } from '../types';
 import { CoinsTab } from './coins-tab';
+import { HonorCoins } from './honor-coin';
 import { PostTab } from './post-tab';
 import { ErrorNotice, Loading } from './states';
 import { VoteTab } from './vote-tab';
@@ -62,12 +63,13 @@ export function CodeOfHonorCard({ onOpenCommittee }: CodeOfHonorCardProps) {
                 : `Posting for ${state.data.open_cycle.label}`
               : 'Loading…'}
           </p>
+          {showCommitteeLink && (
+            <Button type="button" variant="outline" className="wb-coh-card__committee" onClick={onOpenCommittee}>
+              Committee
+            </Button>
+          )}
         </div>
-        {showCommitteeLink && (
-          <Button type="button" variant="outline" onClick={onOpenCommittee}>
-            Committee
-          </Button>
-        )}
+        <HonorCoins />
       </CardHeader>
 
       <CardContent className="wb-coh-card__content">

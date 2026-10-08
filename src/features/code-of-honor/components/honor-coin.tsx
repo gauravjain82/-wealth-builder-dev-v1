@@ -1,7 +1,7 @@
 /**
- * The Code of Honor challenge coin, both faces side by side above the Post tab's feed: the
- * front ("Guardian of the Month") and the back ("Protect the Standard"), each swaying
- * and floating out of step with the other.
+ * The Code of Honor challenge coin, both faces side by side in the card header, over the
+ * right-hand column (the Post tab's feed): the front ("Guardian of the Month") and the
+ * back ("Protect the Standard"), each swaying and floating out of step with the other.
  *
  * Decorative: the card carries all the content, so the coins are hidden from assistive
  * tech. Under `prefers-reduced-motion` they hold still.

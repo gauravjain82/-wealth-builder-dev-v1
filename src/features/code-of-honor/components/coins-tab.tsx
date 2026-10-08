@@ -15,7 +15,7 @@ export function CoinsTab() {
   const data = board.data;
 
   return (
-    <div className="wb-coh-coins">
+    <div className="wb-coh-coins-tab">
       {data.years.length > 1 && (
         <div className="wb-coh-toolbar">
           <label className="wb-coh-label" htmlFor="wb-coh-year">Year</label>

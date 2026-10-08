@@ -23,12 +23,30 @@
   color: #fff;
 }
 
-.wb-coh-card__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
+/*
+ * Two columns with the same gap as `.wb-coh-post__columns` (header and content share
+ * the card's horizontal padding), so the coins sit directly over the Post tab's feed.
+ * The doubled selector outranks CardHeader's `flex flex-col space-y-1.5` utilities.
+ */
+.wb-coh-card .wb-coh-card__header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  column-gap: 1.5rem;
+}
+
+.wb-coh-card .wb-coh-card__header > * {
+  margin: 0;
+}
+
+.wb-coh-card__committee {
+  margin-top: 0.75rem;
+}
+
+@container (max-width: 640px) {
+  .wb-coh-card .wb-coh-card__header {
+    grid-template-columns: 1fr auto;
+  }
 }
 
 .wb-coh-card__title,
@@ -44,18 +62,17 @@
   opacity: 0.75;
 }
 
-/* Top of the Post tab's right column, above the feed. */
+/* In the card header, over the right-hand column. */
 .wb-coh-coins {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
   perspective: 600px;
 }
 
 .wb-coh-coins__coin {
-  height: 140px;
+  height: 120px;
   width: auto;
   filter: drop-shadow(0 6px 12px rgb(0 0 0 / 0.45));
   user-select: none;
@@ -131,6 +148,36 @@
 
 .wb-coh-panel {
   min-width: 0;
+}
+
+/*
+ * The feed column takes the form column's height and scrolls inside it. `contain: size`
+ * keeps the feed out of the row's height, so the grid row is sized by the form and the
+ * stretched feed fills it; `min-height` is the floor when the form is short.
+ */
+.wb-coh-panel--feed {
+  contain: size;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-coh-feed {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+@container (max-width: 640px) {
+  .wb-coh-panel--feed {
+    contain: none;
+    min-height: 0;
+  }
+
+  .wb-coh-feed {
+    overflow-y: visible;
+  }
 }
 
 .wb-coh-heading {
