@@ -9,7 +9,8 @@ import { matchupService } from '../../services/matchup-service';
 import type { AppointmentDetail } from '../../types';
 import { AttentionStrip } from '../components/attention-strip';
 import { FunnelStrip } from '../components/funnel-strip';
-import { OutcomeHero } from '../components/outcome-hero';
+import { formatWindow } from '../components/format';
+import { type Comparison, OutcomeHero } from '../components/outcome-hero';
 import { ProspectJourneyView } from '../components/prospect-journey';
 import { type RowSort, RowsTable } from '../components/rows-table';
 import { StepBars } from '../components/step-bars';
@@ -17,7 +18,9 @@ import { StepTable } from '../components/step-table';
 import {
   type DrillPath,
   useMatchupMetricsAccess,
+  previousWindow,
   useMetricsReport,
+  usePreviousReport,
   useProspectJourney,
 } from '../hooks/use-matchup-metrics';
 import type {
@@ -95,7 +98,9 @@ export default function MatchupMetricsPage() {
     prospect: optionalNumber(params.get('prospect')),
   };
 
+  const compare = params.get('compare') !== 'off';
   const report = useMetricsReport(path, query, Boolean(access));
+  const previous = usePreviousReport(path, query, Boolean(access) && compare);
   const journey = useProspectJourney(path.prospect, query);
 
   function update(changes: Record<string, string | null>, push = false) {
@@ -144,6 +149,12 @@ export default function MatchupMetricsPage() {
 
   const data = report.data;
   const current = data?.sections[section];
+  // While the main report shows the last selection's data, a delta would compare mismatched windows.
+  const baseline = previous.data && !report.isPlaceholderData ? previous.data.sections[section].summary : null;
+  const priorWindow = previousWindow(query);
+  const comparison: Comparison | undefined = compare
+    ? { window: formatWindow(priorWindow.start, priorWindow.end), previous: baseline }
+    : undefined;
   const rowKind = path.agent != null ? 'prospect' : path.smd !== undefined ? 'agent' : 'smd';
   const segmentOptions: { value: string; label: string }[] = [
     ...(access?.org_wide ? [{ value: '', label: 'Whole organisation' }] : []),
@@ -177,6 +188,13 @@ export default function MatchupMetricsPage() {
           <select value={query.mode} onChange={(event) => update({ mode: event.target.value })}>
             <option value="prospects">Each prospect once</option>
             <option value="appointments">Every appointment</option>
+          </select>
+        </label>
+        <label>
+          Compare
+          <select value={compare ? 'previous' : 'off'} onChange={(event) => update({ compare: event.target.value === 'off' ? 'off' : null })}>
+            <option value="previous">Previous period</option>
+            <option value="off">Off</option>
           </select>
         </label>
         {segmentOptions.length > 1 && (
@@ -235,7 +253,7 @@ export default function MatchupMetricsPage() {
 
           {data && current && (
             <div className={report.isFetching ? 'mm-body is-fetching' : 'mm-body'}>
-              <OutcomeHero summary={current.summary} mode={data.mode} section={section} />
+              <OutcomeHero summary={current.summary} mode={data.mode} section={section} comparison={comparison} />
               <AttentionStrip summary={current.summary} mode={data.mode} section={section} onShow={showRowsBy} />
               <div className="mm-grid">
                 <section className="mm-panel">

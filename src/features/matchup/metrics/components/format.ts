@@ -64,6 +64,23 @@ export function unitCount(count: number, mode: CountMode): string {
   return `${count.toLocaleString()} ${noun}${count === 1 ? '' : 's'}`;
 }
 
+/**
+ * Below this many booked, a rate is too noisy to shade, rank, sort on, or
+ * compare with another period.
+ */
+export const MIN_SAMPLE = 5;
+
+/** "9 Jun – 8 Aug 2026" for an inclusive ISO date window. */
+export function formatWindow(start: string, end: string): string {
+  const day = (iso: string) => {
+    const [year, month, date] = iso.split('-').map(Number);
+    return new Date(year, month - 1, date);
+  };
+  const short = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' });
+  const long = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  return `${short.format(day(start))} – ${long.format(day(end))}`;
+}
+
 /** Ratio as a whole percent, or an em dash when there is no denominator. */
 export function percent(part: number, whole: number): string {
   if (!whole) return '—';

@@ -159,8 +159,8 @@
 @media (max-width: 900px) { .mm-hero-top { grid-template-columns: 1fr; } }
 
 .mm-gauge { position: relative; margin: 0; display: flex; flex-direction: column; align-items: center; }
-.mm-gauge svg { display: block; width: 200px; height: auto; }
-.mm-gauge path { fill: none; stroke-width: 12; stroke-linecap: round; }
+.mm-gauge > svg { display: block; width: 200px; height: auto; }
+.mm-gauge > svg path { fill: none; stroke-width: 12; stroke-linecap: round; }
 .mm-gauge-track { stroke: var(--mm-bar-track); }
 .mm-gauge-fill { stroke: var(--mm-bar); }
 .dark .mm-gauge-fill { filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.35)); }
@@ -387,6 +387,22 @@
 }
 .mm-timeline-card:hover,
 .mm-timeline-card:focus-visible { border-color: var(--mm-bar); outline: none; }
+
+/* -- Previous-period deltas -- */
+.mm-page { --mm-up: #047857; --mm-down: #b91c1c; }
+.dark .mm-page { --mm-up: #34d399; --mm-down: #f87171; }
+.mm-delta {
+  display: inline-flex; align-items: center; gap: 3px; width: fit-content; margin-top: 4px; padding: 1px 7px;
+  border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.mm-delta.is-up { color: var(--mm-up); background: color-mix(in srgb, var(--mm-up) 12%, transparent); }
+.mm-delta.is-down { color: var(--mm-down); background: color-mix(in srgb, var(--mm-down) 12%, transparent); }
+.mm-delta.is-flat { color: var(--mm-muted); background: var(--mm-bar-track); }
+.mm-gauge .mm-delta { margin-top: 6px; }
+.mm-branches.has-delta .mm-branch { grid-template-columns: 44px 64px minmax(0, 1fr) 40px 72px; }
+.mm-branch .mm-delta { margin-top: 0; justify-self: end; }
+.mm-compare { flex-basis: 100%; }
+.mm-compare strong { font-weight: 600; }
 
 /* Keep last: must override every animated rule above. */
 @keyframes mm-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }

@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Check } from 'lucide-react';
 
 import type { CountMode, MetricsRow, MetricsSection, StepMeta } from '../types';
-import { OUTCOME_LABELS, bestOutcome, outcomeSegment, rate } from './format';
+import { MIN_SAMPLE as MIN_RATED, OUTCOME_LABELS, bestOutcome, outcomeSegment, rate } from './format';
 
 /** Which column the table is sorted by; owned by the page so other panels can set it. */
 export interface RowSort {
@@ -36,8 +36,6 @@ interface RowsTableProps {
   onOpen: (row: MetricsRow) => void;
 }
 
-/** Below this many booked, a row's rates are too noisy to shade or rank. */
-const MIN_RATED = 5;
 const RANK_COUNT = 3;
 
 const count = (value: (row: MetricsRow) => number) => ({ value, render: (row: MetricsRow) => value(row).toLocaleString() });

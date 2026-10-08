@@ -18,9 +18,10 @@ function queryString(query?: MetricsQuery): string {
   return `?${params.toString()}`;
 }
 
-async function getJson<T>(path: string, query?: MetricsQuery): Promise<T> {
+async function getJson<T>(path: string, query?: MetricsQuery, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}${queryString(query)}`, {
     headers: authHeaders(),
+    signal,
   });
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { detail?: string } | null;
@@ -31,18 +32,18 @@ async function getJson<T>(path: string, query?: MetricsQuery): Promise<T> {
 
 export const matchupMetricsService = {
   /** Whether the viewer may open the page, and which team scopes they get. */
-  access: () => getJson<MetricsAccess>('/api/matchup/metrics/my-access/'),
+  access: (signal?: AbortSignal) => getJson<MetricsAccess>('/api/matchup/metrics/my-access/', undefined, signal),
 
-  organisation: (query: MetricsQuery) =>
-    getJson<MetricsReport>('/api/matchup/metrics/organisation/', query),
+  organisation: (query: MetricsQuery, signal?: AbortSignal) =>
+    getJson<MetricsReport>('/api/matchup/metrics/organisation/', query, signal),
 
   /** `smdId` null = agents with no SMD above them. */
-  smd: (smdId: number | null, query: MetricsQuery) =>
-    getJson<MetricsReport>(`/api/matchup/metrics/smd/${smdId ?? 'none'}/`, query),
+  smd: (smdId: number | null, query: MetricsQuery, signal?: AbortSignal) =>
+    getJson<MetricsReport>(`/api/matchup/metrics/smd/${smdId ?? 'none'}/`, query, signal),
 
-  agent: (agentId: number, query: MetricsQuery) =>
-    getJson<MetricsReport>(`/api/matchup/metrics/agent/${agentId}/`, query),
+  agent: (agentId: number, query: MetricsQuery, signal?: AbortSignal) =>
+    getJson<MetricsReport>(`/api/matchup/metrics/agent/${agentId}/`, query, signal),
 
-  prospect: (prospectId: number, query: MetricsQuery) =>
-    getJson<ProspectJourney>(`/api/matchup/metrics/prospect/${prospectId}/`, query),
+  prospect: (prospectId: number, query: MetricsQuery, signal?: AbortSignal) =>
+    getJson<ProspectJourney>(`/api/matchup/metrics/prospect/${prospectId}/`, query, signal),
 };

@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { useCountUp } from './use-count-up';
 
 interface ShowRateGaugeProps {
@@ -6,10 +8,12 @@ interface ShowRateGaugeProps {
   showed: number;
   total: number;
   unit: string;
+  /** Change vs the previous period, when there is one. */
+  delta?: ReactNode;
 }
 
 /** Half-ring gauge for the headline show rate — the one hero figure on the page. */
-export function ShowRateGauge({ rate, showed, total, unit }: ShowRateGaugeProps) {
+export function ShowRateGauge({ rate, showed, total, unit, delta }: ShowRateGaugeProps) {
   const target = rate == null ? 0 : Math.round(Math.min(rate, 1) * 100);
   const shown = useCountUp(target);
 
@@ -34,6 +38,7 @@ export function ShowRateGauge({ rate, showed, total, unit }: ShowRateGaugeProps)
       <figcaption>
         {showed.toLocaleString()} of {total.toLocaleString()} {unit} showed up
       </figcaption>
+      {delta}
     </figure>
   );
 }
