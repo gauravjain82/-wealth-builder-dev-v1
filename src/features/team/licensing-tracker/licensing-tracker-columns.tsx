@@ -7,6 +7,8 @@ import {
   resolveTrackerUserIdByName,
 } from '@/features/team/services/tracker-user-profile-service';
 import type { LicensingTrackerRecord } from './services/licensing-tracker-service';
+import { ScoreInputCell } from './components/score-input-cell';
+import { formatScore } from './score-format';
 
 function asYesNo(value: boolean): string {
   return value ? 'Yes' : 'No';
@@ -239,6 +241,26 @@ export function buildLicensingColumns(
       searchable: false,
       value: (row) => asYesNo(row.is_xcel),
       render: (row) => renderCheckbox(row, 'is_xcel', options),
+    },
+    {
+      key: 'xcel_completion_percent',
+      label: 'Completion %',
+      width: 130,
+      align: 'center',
+      sortable: true,
+      searchable: false,
+      value: (row) => formatScore(row.xcel_completion_percent),
+      render: (row) => <ScoreInputCell row={row} field="xcel_completion_percent" saving={isSaving(row, 'xcel_completion_percent', options)} onPatch={options.onPatch} />,
+    },
+    {
+      key: 'xcel_final_score',
+      label: 'Final Score',
+      width: 130,
+      align: 'center',
+      sortable: true,
+      searchable: false,
+      value: (row) => formatScore(row.xcel_final_score),
+      render: (row) => <ScoreInputCell row={row} field="xcel_final_score" saving={isSaving(row, 'xcel_final_score', options)} onPatch={options.onPatch} />,
     },
     {
       key: 'test_date',

@@ -34,6 +34,9 @@ export interface LicensingTrackerRecord {
   test_date: string | null;
   test_result_date: string | null;
   is_xcel: boolean;
+  /** Decimal strings (0-100) as serialized by DRF; null when not entered. */
+  xcel_completion_percent: string | null;
+  xcel_final_score: string | null;
   created_at: string;
   updated_at: string;
 }
