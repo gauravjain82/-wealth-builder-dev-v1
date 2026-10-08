@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 
@@ -7,15 +7,20 @@ import { Button } from '@shared/components/ui';
 import { AppointmentDetailsModal } from '../../components/appointment-details-modal';
 import { matchupService } from '../../services/matchup-service';
 import type { AppointmentDetail } from '../../types';
+import { AttentionStrip } from '../components/attention-strip';
 import { FunnelStrip } from '../components/funnel-strip';
+import { formatWindow } from '../components/format';
+import { type Comparison, OutcomeHero } from '../components/outcome-hero';
 import { ProspectJourneyView } from '../components/prospect-journey';
-import { RowsTable } from '../components/rows-table';
+import { type RowSort, RowsTable } from '../components/rows-table';
+import { StepBars } from '../components/step-bars';
 import { StepTable } from '../components/step-table';
-import { SummaryTiles } from '../components/summary-tiles';
 import {
   type DrillPath,
   useMatchupMetricsAccess,
+  previousWindow,
   useMetricsReport,
+  usePreviousReport,
   useProspectJourney,
 } from '../hooks/use-matchup-metrics';
 import type {
@@ -69,6 +74,10 @@ export default function MatchupMetricsPage() {
   const addToast = useToastStore((state) => state.addToast);
   const [params, setParams] = useSearchParams();
   const [openAppointment, setOpenAppointment] = useState<AppointmentDetail | null>(null);
+  const [rowSort, setRowSort] = useState<RowSort>({ key: 'total', descending: true });
+  const [stepView, setStepView] = useState<'chart' | 'table'>('chart');
+  const [rowsDetailed, setRowsDetailed] = useState(false);
+  const rowsPanel = useRef<HTMLElement>(null);
   const { data: access } = useMatchupMetricsAccess();
 
   const range = useMemo(defaultRange, []);
@@ -89,7 +98,9 @@ export default function MatchupMetricsPage() {
     prospect: optionalNumber(params.get('prospect')),
   };
 
+  const compare = params.get('compare') !== 'off';
   const report = useMetricsReport(path, query, Boolean(access));
+  const previous = usePreviousReport(path, query, Boolean(access) && compare);
   const journey = useProspectJourney(path.prospect, query);
 
   function update(changes: Record<string, string | null>, push = false) {
@@ -105,6 +116,13 @@ export default function MatchupMetricsPage() {
     if (row.kind === 'smd') update({ smd: row.id == null ? 'none' : String(row.id), smdName: row.name }, true);
     else if (row.kind === 'agent' && row.id != null) update({ agent: String(row.id), agentName: row.name }, true);
     else if (row.kind === 'prospect' && row.id != null) update({ prospect: String(row.id), prospectName: row.name }, true);
+  }
+
+  /** "See who" on an attention item: sort the rows by that problem and scroll to them. */
+  function showRowsBy(columnKey: string) {
+    setRowSort({ key: columnKey, descending: true });
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    rowsPanel.current?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
   }
 
   async function showAppointment(appointment: JourneyAppointment) {
@@ -131,6 +149,12 @@ export default function MatchupMetricsPage() {
 
   const data = report.data;
   const current = data?.sections[section];
+  // While the main report shows the last selection's data, a delta would compare mismatched windows.
+  const baseline = previous.data && !report.isPlaceholderData ? previous.data.sections[section].summary : null;
+  const priorWindow = previousWindow(query);
+  const comparison: Comparison | undefined = compare
+    ? { window: formatWindow(priorWindow.start, priorWindow.end), previous: baseline }
+    : undefined;
   const rowKind = path.agent != null ? 'prospect' : path.smd !== undefined ? 'agent' : 'smd';
   const segmentOptions: { value: string; label: string }[] = [
     ...(access?.org_wide ? [{ value: '', label: 'Whole organisation' }] : []),
@@ -164,6 +188,13 @@ export default function MatchupMetricsPage() {
           <select value={query.mode} onChange={(event) => update({ mode: event.target.value })}>
             <option value="prospects">Each prospect once</option>
             <option value="appointments">Every appointment</option>
+          </select>
+        </label>
+        <label>
+          Compare
+          <select value={compare ? 'previous' : 'off'} onChange={(event) => update({ compare: event.target.value === 'off' ? 'off' : null })}>
+            <option value="previous">Previous period</option>
+            <option value="off">Off</option>
           </select>
         </label>
         {segmentOptions.length > 1 && (
@@ -222,21 +253,54 @@ export default function MatchupMetricsPage() {
 
           {data && current && (
             <div className={report.isFetching ? 'mm-body is-fetching' : 'mm-body'}>
-              <SummaryTiles summary={current.summary} mode={data.mode} />
+              <OutcomeHero summary={current.summary} mode={data.mode} section={section} comparison={comparison} />
+              <AttentionStrip summary={current.summary} mode={data.mode} section={section} onShow={showRowsBy} />
               <div className="mm-grid">
                 <section className="mm-panel">
                   <h2>Funnel</h2>
                   <FunnelStrip stages={current.summary.funnel} />
                 </section>
                 <section className="mm-panel">
-                  <h2>By step</h2>
-                  <StepTable steps={data.steps} counts={current.summary.steps} section={section} />
+                  <div className="mm-panel-head">
+                    <h2>By step</h2>
+                    <div className="mm-toggle" role="group" aria-label="Step view">
+                      {(['chart', 'table'] as const).map((view) => (
+                        <button
+                          key={view}
+                          type="button"
+                          aria-pressed={stepView === view}
+                          className={stepView === view ? 'is-active' : ''}
+                          onClick={() => setStepView(view)}
+                        >
+                          {view === 'chart' ? 'Chart' : 'Table'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {stepView === 'chart' ? (
+                    <StepBars steps={data.steps} counts={current.summary.steps} section={section} />
+                  ) : (
+                    <StepTable steps={data.steps} counts={current.summary.steps} section={section} />
+                  )}
                 </section>
               </div>
-              <section className="mm-panel">
-                <h2>
-                  {rowKind === 'smd' ? 'By SMD' : rowKind === 'agent' ? 'By agent' : 'By prospect'}
-                </h2>
+              <section className="mm-panel mm-rows-panel" ref={rowsPanel}>
+                <div className="mm-panel-head">
+                  <h2>{rowKind === 'smd' ? 'By SMD' : rowKind === 'agent' ? 'By agent' : 'By prospect'}</h2>
+                  <div className="mm-toggle" role="group" aria-label="Columns">
+                    {[false, true].map((detailed) => (
+                      <button
+                        key={String(detailed)}
+                        type="button"
+                        aria-pressed={rowsDetailed === detailed}
+                        className={rowsDetailed === detailed ? 'is-active' : ''}
+                        onClick={() => setRowsDetailed(detailed)}
+                      >
+                        {detailed ? 'Detailed' : 'Summary'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 {rowKind === 'agent' && data.mode === 'prospects' && (
                   <p className="mm-note">
                     A prospect worked by two agents counts once for each, so agent rows can add up to more than the SMD total.
@@ -244,8 +308,12 @@ export default function MatchupMetricsPage() {
                 )}
                 <RowsTable
                   rows={current.rows}
+                  sort={rowSort}
+                  onSortChange={setRowSort}
                   steps={data.steps}
                   section={section}
+                  mode={data.mode}
+                  detailed={rowsDetailed}
                   title={ROW_TITLES[rowKind]}
                   onOpen={openRow}
                 />
