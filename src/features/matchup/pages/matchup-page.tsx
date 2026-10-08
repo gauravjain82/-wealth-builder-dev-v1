@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { CalendarCheck, Plus } from 'lucide-react';
+import { BarChart3, CalendarCheck, Plus } from 'lucide-react';
 import { useToastStore } from '@/store';
 import { Button, Input, Select } from '@shared/components/ui';
 import { TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange } from '@/shared/components';
@@ -35,6 +35,7 @@ import {
   type ReschedulePayload,
 } from '../components/reschedule-appointment-modal';
 import { useMatchupDashboard } from '../hooks/use-matchup-dashboard';
+import { useMatchupMetricsAccess } from '../metrics/hooks/use-matchup-metrics';
 import { matchupService } from '../services/matchup-service';
 import type {
   AppointmentFilters,
@@ -143,6 +144,7 @@ export default function MatchupPage() {
   const addToast = useToastStore((state) => state.addToast);
   const location = useLocation();
   const navigate = useNavigate();
+  const { data: metricsAccess } = useMatchupMetricsAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const [preset, setPreset] = useState('all');
   const [status, setStatus] = useState('');
@@ -684,6 +686,11 @@ export default function MatchupPage() {
               selectedUserId={null}
               onChange={handleScopeChange}
             />
+            {metricsAccess?.can_view && (
+              <Button variant="outline" onClick={() => navigate('/matchup/metrics')}>
+                <BarChart3 size={16} /> Metrics
+              </Button>
+            )}
             <Button variant="outline" onClick={() => navigate('/settings#settings-calendar-sync')}>
               <CalendarCheck size={16} /> {googleStatus?.connected ? 'Calendar sync: Connected' : 'Manage calendar sync'}
             </Button>
