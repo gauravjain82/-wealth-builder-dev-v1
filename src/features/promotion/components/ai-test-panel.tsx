@@ -57,13 +57,18 @@ function AnswerCard({ answer }: { answer: AITestAnswer }) {
  * questions and every answer is graded by our backend; when the microphone can't be
  * used, the learner can type answers to question-bank questions instead. Passing is
  * decided by the server when the test is finished.
+ *
+ * `preview` is the admin page's "Test with Sophia": no quiz lock, no daily limits,
+ * retakes allowed, and disabled lessons can be tried before learners see them.
  */
 export function AITestPanel({
   module,
   onComplete,
+  preview = false,
 }: {
-  module: PromotionModule;
-  onComplete: () => void;
+  module: Pick<PromotionModule, "id" | "status">;
+  onComplete?: () => void;
+  preview?: boolean;
 }) {
   const [state, setState] = useState<AITestState | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -81,10 +86,10 @@ export function AITestPanel({
 
   const load = useCallback(() => {
     promotionService
-      .aiTestState(module.id)
+      .aiTestState(module.id, preview)
       .then(setState)
       .catch((e) => setMessage(errorText(e, "Unable to load the AI test")));
-  }, [module.id]);
+  }, [module.id, preview]);
 
   useEffect(load, [load, module.status]);
   useEffect(() => () => sessionRef.current?.stop(), []);
@@ -106,7 +111,7 @@ export function AITestPanel({
     try {
       // Ask for the microphone first, so a refusal doesn't use up a test.
       await RealtimeCoachSession.checkMicrophone();
-      const started = await promotionService.aiTestStart(module.id, "voice");
+      const started = await promotionService.aiTestStart(module.id, "voice", preview);
       setAttempt(started);
       const session = new RealtimeCoachSession({
         onAgentText: (text) => setTurns((t) => [...t, { role: "agent", text }]),
@@ -135,7 +140,7 @@ export function AITestPanel({
     setPhase("connecting");
     try {
       await RealtimeCoachSession.checkMicrophone();
-      const started = await promotionService.aiPracticeStart(module.id);
+      const started = await promotionService.aiPracticeStart(module.id, preview);
       setPracticeId(started.session_id);
       const session = new RealtimeCoachSession({
         onAgentText: (text) => setTurns((t) => [...t, { role: "agent", text }]),
@@ -170,7 +175,7 @@ export function AITestPanel({
     reset();
     setPhase("connecting");
     try {
-      setAttempt(await promotionService.aiTestStart(module.id, "text"));
+      setAttempt(await promotionService.aiTestStart(module.id, "text", preview));
       setPhase("typed");
     } catch (e) {
       setMessage(errorText(e, "Unable to start the AI test"));
@@ -204,7 +209,7 @@ export function AITestPanel({
       const finished = await promotionService.aiTestFinish(attempt.attempt_id, turns);
       setResult(finished);
       setPhase("result");
-      if (finished.passed) onComplete();
+      if (finished.passed) onComplete?.();
       load();
     } catch (e) {
       setMessage(errorText(e, "Unable to finish the test"));
@@ -212,16 +217,20 @@ export function AITestPanel({
     }
   };
 
-  if (!state?.available) return null;
+  if (!state?.available) {
+    // Learners just don't see a module without an AI test; an admin should know why.
+    return preview && message ? <div className="promo-message">{message}</div> : null;
+  }
 
   const threshold = state.pass_threshold ?? 75;
   const minQuestions = state.min_questions ?? 3;
-  const left = Math.max(0, (state.daily_limit ?? 0) - (state.attempts_today ?? 0));
+  const left = preview
+    ? Infinity
+    : Math.max(0, (state.daily_limit ?? 0) - (state.attempts_today ?? 0));
   const distinctGraded = new Set(graded.map((a) => a.question.toLowerCase())).size;
-  const practiceLeft = Math.max(
-    0,
-    (state.practice_limit ?? 0) - (state.practice_today ?? 0),
-  );
+  const practiceLeft = preview
+    ? Infinity
+    : Math.max(0, (state.practice_limit ?? 0) - (state.practice_today ?? 0));
   const practiceButton = (
     <button
       type="button"
@@ -231,7 +240,9 @@ export function AITestPanel({
       title={
         practiceLeft === 0
           ? "You've used today's practice sessions"
-          : `${practiceLeft} practice session${practiceLeft === 1 ? "" : "s"} left today`
+          : preview
+            ? "Admin preview — no daily limit"
+            : `${practiceLeft} practice session${practiceLeft === 1 ? "" : "s"} left today`
       }
     >
       Practice with Sophia
@@ -265,6 +276,13 @@ export function AITestPanel({
       }`}
     >
       <h4>{phase === "practice" ? "Practice · Sophia" : "AI Test · Sophia"}</h4>
+      {preview && (
+        <p className="promo-ai-preview-note">
+          Admin preview
+          {state.lesson_enabled === false && " · lesson is off, learners don't see it yet"}
+          {" · "}no quiz lock or daily limit · attempts are saved under your account
+        </p>
+      )}
 
       {phase === "idle" && (
         <>
@@ -276,7 +294,8 @@ export function AITestPanel({
           {state.last_attempt && (
             <div className="promo-ai-last">
               <strong>
-                Last attempt: {state.last_attempt.score ?? 0}/100 — not passed yet
+                Last attempt: {state.last_attempt.score ?? 0}/100 —{" "}
+                {state.last_attempt.passed ? "passed" : "not passed yet"}
               </strong>
               <p>{state.last_attempt.feedback}</p>
             </div>
@@ -308,14 +327,16 @@ export function AITestPanel({
               {state.last_attempt ? "Try Again" : "Start AI Test"}
             </button>
           </div>
-          <p className="promo-quiz-hint">
-            {left === 0
-              ? "You've used today's AI tests. Come back tomorrow."
-              : `${left} AI test${left === 1 ? "" : "s"} left today`}
-            {" · "}
-            Practice isn't graded — Sophia walks you through the lesson first (
-            {practiceLeft} left today).
-          </p>
+          {!preview && (
+            <p className="promo-quiz-hint">
+              {left === 0
+                ? "You've used today's AI tests. Come back tomorrow."
+                : `${left} AI test${left === 1 ? "" : "s"} left today`}
+              {" · "}
+              Practice isn't graded — Sophia walks you through the lesson first (
+              {practiceLeft} left today).
+            </p>
+          )}
         </>
       )}
 
@@ -436,10 +457,10 @@ export function AITestPanel({
               <AnswerCard key={a.id} answer={a} />
             ))}
           </ul>
-          {!result.passed && (
+          {(!result.passed || preview) && (
             <div className="promo-quiz-nav">
               <button type="button" className="promo-gold-btn" onClick={() => setPhase("idle")}>
-                Try Again
+                {result.passed ? "Run Again" : "Try Again"}
               </button>
             </div>
           )}

@@ -1486,3 +1486,15 @@
     justify-content: flex-start;
   }
 }
+/* Admin "Test with Sophia": the learner panel inside an admin modal. */
+.promo-page.promo-preview {
+  max-width: none;
+  min-height: 0;
+  padding: 16px;
+  border-radius: 12px;
+}
+.promo-ai-preview-note {
+  margin: -4px 0 12px;
+  font-size: 12px;
+  color: var(--amber);
+}

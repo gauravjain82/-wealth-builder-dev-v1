@@ -40,6 +40,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+/** Admin previews of the AI test skip the learner gates; the backend checks promotion:manage. */
+const previewQuery = (preview: boolean) => (preview ? "?preview=1" : "");
+
 export const promotionService = {
   dashboard: async (): Promise<PromotionDashboard[]> => {
     const data = await request<PromotionDashboardResponse>("my-dashboard/");
@@ -81,18 +84,20 @@ export const promotionService = {
     request<MemberAITests>(`team/${userId}/ai-tests/`),
   teamAIAttempt: (attemptId: number) =>
     request<AITestAttemptReview>(`team/ai-attempts/${attemptId}/`),
-  aiPracticeStart: (id: number) =>
-    request<AIPracticeStartResult>(`modules/${id}/ai-practice/start/`, {
-      method: "POST",
-    }),
+  aiPracticeStart: (id: number, preview = false) =>
+    request<AIPracticeStartResult>(
+      `modules/${id}/ai-practice/start/${previewQuery(preview)}`,
+      { method: "POST" },
+    ),
   aiPracticeEnd: (sessionId: number, conversation: ConversationTurn[]) =>
     request<{ session_id: number; ended_at: string }>(
       `ai-practice/${sessionId}/end/`,
       { method: "POST", body: JSON.stringify({ conversation }) },
     ),
-  aiTestState: (id: number) => request<AITestState>(`modules/${id}/ai-test/`),
-  aiTestStart: (id: number, mode: AITestMode) =>
-    request<AITestStartResult>(`modules/${id}/ai-test/start/`, {
+  aiTestState: (id: number, preview = false) =>
+    request<AITestState>(`modules/${id}/ai-test/${previewQuery(preview)}`),
+  aiTestStart: (id: number, mode: AITestMode, preview = false) =>
+    request<AITestStartResult>(`modules/${id}/ai-test/start/${previewQuery(preview)}`, {
       method: "POST",
       body: JSON.stringify({ mode }),
     }),
