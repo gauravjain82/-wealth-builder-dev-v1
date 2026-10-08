@@ -10,10 +10,12 @@ interface ShowRateGaugeProps {
   unit: string;
   /** Change vs the previous period, when there is one. */
   delta?: ReactNode;
+  /** Weekly show-rate sparkline, when the trend has loaded. */
+  trend?: ReactNode;
 }
 
 /** Half-ring gauge for the headline show rate — the one hero figure on the page. */
-export function ShowRateGauge({ rate, showed, total, unit, delta }: ShowRateGaugeProps) {
+export function ShowRateGauge({ rate, showed, total, unit, delta, trend }: ShowRateGaugeProps) {
   const target = rate == null ? 0 : Math.round(Math.min(rate, 1) * 100);
   const shown = useCountUp(target);
 
@@ -39,6 +41,7 @@ export function ShowRateGauge({ rate, showed, total, unit, delta }: ShowRateGaug
         {showed.toLocaleString()} of {total.toLocaleString()} {unit} showed up
       </figcaption>
       {delta}
+      {trend}
     </figure>
   );
 }

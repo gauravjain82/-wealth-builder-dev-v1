@@ -92,8 +92,8 @@ One day, grouped, with trainer references and row actions.
 ### 2.9 Appointment metrics — `metrics/pages/matchup-metrics-page.tsx`
 
 Organisation → SMD → agent → prospect drill-down. Filters, section and drill position live in the URL.
-This section covers the screen as of the phase 1–3 visual redesign (2026-10-08, PHASES M10–M13); the
-API and query keys are not yet documented in this set.
+This section covers the screen as of the phase 1–3 visual redesign and the weekly trend (2026-10-08,
+PHASES M10–M14); the endpoints are in [API.md](API.md#metrics-endpoints--metricsservicesmetrics-servicets).
 
 Above the prospect level, top to bottom:
 
@@ -112,6 +112,32 @@ show rate and the FNA / AMA / Sales shares in percentage points, Booked and Show
 The hero's meta line names the compared window, says "Loading comparison…" or "Too little data…" (baseline
 under 5 booked), and adds a caveat when this window is ≥ 5 pts more upcoming / form-pending than the
 baseline. Deltas are hidden while the main report shows placeholder data (M13).
+
+**Weekly trend** (`components/sparkline.tsx`, series built in `components/trend-series.ts`). A third request,
+`useMetricsTrend` (query key `['matchup-metrics', 'trend', smd, agent, {end, mode, segment, weeks}]`, no
+`start`, no placeholder data, no retry), returns the last 12 ISO weeks ending with the week containing
+`end`. Not requested at the prospect level. It draws:
+
+- in the hero, a weekly **show rate** line under the gauge, a weekly **booked** count under Booked, and a
+  weekly **AMA % of booked** line under the FNA / AMA / Sales branches (labelled as such — the branch
+  figures above it are shares of those who showed up, M10), plus one key line in the hero meta;
+- in the rows table (SMD and agent rows only), a non-sortable **Trend** column after Shape with each row's
+  weekly show rate, joined on `kind` + `id`. A row the trend lacks gets an empty cell.
+
+Encoding: one 2px line, round joins, no axes. The whole line is `--mm-muted`; segments between weeks that
+overlap the selected dates are `--mm-bar` (gold). A rate week with nothing booked is a **gap**, never 0 (a
+count week of 0 is a real 0). Weeks under `MIN_SAMPLE` booked are hollow points and are left out of the
+y-range (a 1-of-3 week would flatten the rest), sitting on the edge if outside it. A segment into an
+**unsettled** week — `(upcoming + result_pending) / total ≥ 0.2`, summary series only since rows carry no
+such counts — or into the in-progress (`partial`) week is dashed and lighter. The last point is an 8px end
+marker with a 2px surface ring, hollow when its week is partial or small. Rates use the data's own range
+widened to at least 10 points; counts start at 0. Hover snaps to the nearest week across the full height
+(a hairline and a ringed marker) and shows a fixed-position `.mm-tip` with the week dates, the value, the
+counts ("48 of 71 showed") and "Week in progress" / "Still settling" / "Too few booked" notes. Each SVG has
+`role="img"` and an `aria-label` with first → last value and the high and low weeks. While the trend
+loads, or when the main report is showing placeholder data, nothing is drawn; a 404 (`null`) or an error
+draws nothing and shows no banner, so the page looks as it did before the trend existed (M14). At phone
+width the hero lines fit their column and the table's Trend column scrolls with the table.
 
 Rows with fewer than 5 booked (`MIN_SAMPLE`) get no heat or rank, render their rates muted and italic, and
 sort last on any rate column (M12).

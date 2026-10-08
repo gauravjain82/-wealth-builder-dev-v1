@@ -125,3 +125,58 @@ export interface MetricsQuery {
   /** Undefined = whole organisation (org-wide viewers only). */
   segment?: Segment;
 }
+
+/**
+ * `/api/matchup/metrics/trend/*`: the same numbers as the report endpoints,
+ * once per ISO week (Monday–Sunday, UTC). Every array is aligned
+ * index-for-index with `weeks`, oldest first; an empty week is 0.
+ */
+export interface TrendWeek {
+  start: string;
+  end: string;
+  /** The week still in progress (it contains today). */
+  partial: boolean;
+}
+
+export interface TrendCounts {
+  total: number;
+  showed: number;
+  upcoming: number;
+  result_pending: number;
+  fna: number;
+  ama: number;
+  sale: number;
+}
+
+/** Weekly series for one row of the existing report; join on `kind` + `id`. */
+export interface TrendRow {
+  id: number | null;
+  kind: RowKind;
+  name: string;
+  total: number[];
+  showed: number[];
+  ama: number[];
+}
+
+export interface TrendSection {
+  summary: TrendCounts[];
+  /** SMDs at organisation level, agents at SMD level, `[]` at agent level. */
+  rows: TrendRow[];
+}
+
+export interface MetricsTrend {
+  mode: CountMode;
+  org_wide: boolean;
+  segment: Segment | null;
+  weeks: TrendWeek[];
+  sections: Record<MetricsSection, TrendSection>;
+}
+
+/** `start` is not sent: the trend is anchored on `end` alone. */
+export interface TrendQuery {
+  end: string;
+  mode: CountMode;
+  segment?: Segment;
+  /** 4–26; the backend defaults to 12. */
+  weeks: number;
+}

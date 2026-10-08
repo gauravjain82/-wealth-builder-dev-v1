@@ -1,8 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Check } from 'lucide-react';
 
-import type { CountMode, MetricsRow, MetricsSection, StepMeta } from '../types';
+import type { CountMode, MetricsRow, MetricsSection, StepMeta, TrendRow, TrendWeek } from '../types';
 import { MIN_SAMPLE as MIN_RATED, OUTCOME_LABELS, bestOutcome, outcomeSegment, rate } from './format';
+import { Sparkline } from './sparkline';
+import { rateSeries } from './trend-series';
 
 /** Which column the table is sorted by; owned by the page so other panels can set it. */
 export interface RowSort {
@@ -23,6 +25,16 @@ interface Column {
   cell?: (row: MetricsRow) => { className?: string; style?: CSSProperties; title?: string };
 }
 
+/** Weekly series per row, for the Trend column. */
+export interface RowsTrend {
+  weeks: TrendWeek[];
+  window: { start: string; end: string };
+  rows: TrendRow[];
+}
+
+/** Report rows and trend rows join on kind + id (`id` null = the "No SMD" group). */
+const rowKey = (row: { kind: string; id: number | null }) => `${row.kind}-${row.id ?? 'none'}`;
+
 interface RowsTableProps {
   rows: MetricsRow[];
   sort: RowSort;
@@ -34,6 +46,8 @@ interface RowsTableProps {
   detailed: boolean;
   title: string;
   onOpen: (row: MetricsRow) => void;
+  /** Absent while loading, or when the trend endpoint is missing or failed: no Trend column. */
+  trend?: RowsTrend;
 }
 
 const RANK_COUNT = 3;
@@ -113,7 +127,7 @@ function Tick({ value }: { value: number }) {
  * default; `detailed` adds the per-step counts. Click a header to sort, a
  * row to drill in.
  */
-export function RowsTable({ rows, sort, onSortChange, steps, section, mode, detailed, title, onOpen }: RowsTableProps) {
+export function RowsTable({ rows, sort, onSortChange, steps, section, mode, detailed, title, onOpen, trend }: RowsTableProps) {
   const isProspect = rows[0]?.kind === 'prospect';
   const maxTotal = Math.max(...rows.map((row) => row.total), 1);
   const stepIndex = (key?: string | null) => steps.findIndex((step) => step.key === key);
@@ -150,6 +164,32 @@ export function RowsTable({ rows, sort, onSortChange, steps, section, mode, deta
     ),
   };
 
+  // Weekly show rate per SMD / agent. A row the trend does not have renders an empty cell, never 0.
+  const trendRows = new Map((trend?.rows ?? []).map((row) => [rowKey(row), row]));
+  const trendColumn: Column[] =
+    trend && !isProspect
+      ? [{
+          key: 'trend',
+          label: 'Trend',
+          title: `Weekly show rate, last ${trend.weeks.length} weeks; selected dates in gold`,
+          render: (row) => {
+            const series = trendRows.get(rowKey(row));
+            if (!series) return null;
+            return (
+              <Sparkline
+                weeks={trend.weeks}
+                window={trend.window}
+                points={rateSeries(series.total, series.showed, 'showed')}
+                format="rate"
+                label={`${row.name}, weekly show rate`}
+                width={96}
+                height={22}
+              />
+            );
+          },
+        }]
+      : [];
+
   const summary: Column[] = isProspect
     ? [
         {
@@ -169,6 +209,7 @@ export function RowsTable({ rows, sort, onSortChange, steps, section, mode, deta
     : [
         booked,
         { key: 'shape', label: 'Shape', title: 'Booked → showed → FNA → AMA → sale, as a share of booked', render: (row) => <MiniFunnel row={row} /> },
+        ...trendColumn,
         rateColumn('show_rate', 'Show %', (row) => row.rates.show),
         rateColumn('fna_rate', 'FNA %', (row) => row.rates.fna),
         rateColumn('ama_rate', 'AMA %', (row) => row.rates.ama),
@@ -252,7 +293,7 @@ export function RowsTable({ rows, sort, onSortChange, steps, section, mode, deta
           {sorted.map((row) => {
             const rank = ranks.get(row);
             return (
-              <tr key={`${row.kind}-${row.id ?? 'none'}`} onClick={() => onOpen(row)}>
+              <tr key={rowKey(row)} onClick={() => onOpen(row)}>
                 <td>
                   <span className="mm-name">
                     {rank && (

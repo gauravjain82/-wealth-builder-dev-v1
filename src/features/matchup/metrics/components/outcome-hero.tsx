@@ -1,12 +1,14 @@
 import { ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import type { CountMode, MetricsBlock, MetricsSection } from '../types';
+import type { CountMode, MetricsBlock, MetricsSection, TrendCounts, TrendWeek } from '../types';
 import { CountUp } from './count-up';
 import { Delta } from './delta';
 import { MIN_SAMPLE, percent } from './format';
 import { OutcomeBar, OutcomeLegend } from './outcome-bar';
 import { ShowRateGauge } from './show-rate-gauge';
+import { Sparkline } from './sparkline';
+import { countSeries, rateSeries } from './trend-series';
 
 /** The previous-period baseline; `previous` is null while it loads. */
 export interface Comparison {
@@ -14,11 +16,21 @@ export interface Comparison {
   previous: MetricsBlock | null;
 }
 
+/** Weekly summary series for the sparklines, aligned with `weeks`. */
+export interface HeroTrend {
+  weeks: TrendWeek[];
+  summary: TrendCounts[];
+  /** The page's selected dates, highlighted on each line. */
+  window: { start: string; end: string };
+}
+
 interface OutcomeHeroProps {
   summary: MetricsBlock;
   mode: CountMode;
   section: MetricsSection;
   comparison?: Comparison;
+  /** Absent while loading, or when the trend endpoint is missing or failed: no sparklines. */
+  trend?: HeroTrend;
 }
 
 /** Share of a block still upcoming or waiting on a form — not yet able to count as showed. */
@@ -38,7 +50,7 @@ const UNRESOLVED_GAP = 0.05;
  * in one chain — so each is shown as a share of those who showed up rather
  * than as a conversion from the stage before it.
  */
-export function OutcomeHero({ summary, mode, section, comparison }: OutcomeHeroProps) {
+export function OutcomeHero({ summary, mode, section, comparison, trend }: OutcomeHeroProps) {
   const unit = mode === 'prospects' ? 'prospects' : 'appointments';
   // Deltas only against a baseline big enough to mean something.
   const base = comparison?.previous && comparison.previous.total >= MIN_SAMPLE ? comparison.previous : null;
@@ -66,6 +78,48 @@ export function OutcomeHero({ summary, mode, section, comparison }: OutcomeHeroP
     }
   }
 
+  // Sparklines: weekly show rate, booked and AMA rate (AMA of booked, as `rates.ama`).
+  let sparks: { show: ReactNode; booked: ReactNode; ama: ReactNode } | null = null;
+  if (trend && trend.weeks.length) {
+    const series = (pick: (week: TrendCounts) => number) => trend.summary.map(pick);
+    const totals = series((week) => week.total);
+    const pending = series((week) => week.upcoming + week.result_pending);
+    const common = { weeks: trend.weeks, window: trend.window };
+    sparks = {
+      show: (
+        <Sparkline
+          {...common}
+          className="mm-trend--gauge"
+          points={rateSeries(totals, series((week) => week.showed), 'showed', pending)}
+          format="rate"
+          label="Weekly show rate"
+          width={180}
+          height={34}
+        />
+      ),
+      booked: (
+        <Sparkline
+          {...common}
+          points={countSeries(totals, `${unit} booked`)}
+          format="count"
+          label={`Weekly ${unit} booked`}
+          width={112}
+          height={28}
+        />
+      ),
+      ama: (
+        <Sparkline
+          {...common}
+          points={rateSeries(totals, series((week) => week.ama), 'joined as agents (AMA)', pending)}
+          format="rate"
+          label="Weekly AMA rate"
+          width={150}
+          height={26}
+        />
+      ),
+    };
+  }
+
   const branches = [
     { key: 'fna', label: 'FNA', value: summary.outcomes.fna, before: (b: MetricsBlock) => b.outcomes.fna },
     { key: 'ama', label: 'AMA', value: summary.outcomes.ama, before: (b: MetricsBlock) => b.outcomes.ama },
@@ -81,6 +135,7 @@ export function OutcomeHero({ summary, mode, section, comparison }: OutcomeHeroP
           total={summary.total}
           unit={unit}
           delta={delta((previous) => <Delta current={summary.rates.show} previous={previous.rates.show} kind="points" />)}
+          trend={sparks?.show}
         />
 
         <div className="mm-chain">
@@ -89,6 +144,7 @@ export function OutcomeHero({ summary, mode, section, comparison }: OutcomeHeroP
             <strong><CountUp value={summary.total} /></strong>
             <small>{unit} · {summary.agents.toLocaleString()} agents</small>
             {delta((previous) => <Delta current={summary.total} previous={previous.total} kind="count" />)}
+            {sparks?.booked}
           </div>
           <ChevronRight className="mm-chain-arrow" size={20} aria-hidden="true" />
           <div className="mm-stage">
@@ -120,6 +176,12 @@ export function OutcomeHero({ summary, mode, section, comparison }: OutcomeHeroP
                 </div>
               );
             })}
+            {sparks && (
+              <div className="mm-branch-trend">
+                <div>AMA % of booked, weekly</div>
+                {sparks.ama}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -135,6 +197,11 @@ export function OutcomeHero({ summary, mode, section, comparison }: OutcomeHeroP
       <p className="mm-hero-meta">
         <span><strong>{summary.outcomes.referrals.toLocaleString()}</strong> referrals</span>
         <span><strong>{summary.new_recruit_bookings.toLocaleString()}</strong> booked by new recruits</span>
+        {sparks && (
+          <span className="mm-trend-key">
+            Lines: last {trend?.weeks.length} weeks · selected dates in gold · dashed = still settling · hollow = in progress or too few booked
+          </span>
+        )}
         {compareNote && <span className="mm-compare">{compareNote}</span>}
       </p>
     </section>
