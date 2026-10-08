@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 import type { MetricsRow, MetricsSection, StepMeta } from '../types';
 import { rate } from './format';
 
@@ -9,8 +7,16 @@ interface Column {
   value: (row: MetricsRow) => number;
 }
 
+/** Which column the table is sorted by; owned by the page so other panels can set it. */
+export interface RowSort {
+  key: string;
+  descending: boolean;
+}
+
 interface RowsTableProps {
   rows: MetricsRow[];
+  sort: RowSort;
+  onSortChange: (sort: RowSort) => void;
   steps: StepMeta[];
   section: MetricsSection;
   title: string;
@@ -21,9 +27,7 @@ interface RowsTableProps {
  * The next level down (SMDs, agents or prospects). Click a column header to
  * sort, a row to drill in.
  */
-export function RowsTable({ rows, steps, section, title, onOpen }: RowsTableProps) {
-  const [sortKey, setSortKey] = useState('total');
-  const [descending, setDescending] = useState(true);
+export function RowsTable({ rows, sort, onSortChange, steps, section, title, onOpen }: RowsTableProps) {
   const stepLabel: Record<string, string> = Object.fromEntries(steps.map((step) => [step.key, step.label]));
   const isProspect = rows[0]?.kind === 'prospect';
 
@@ -45,18 +49,14 @@ export function RowsTable({ rows, steps, section, title, onOpen }: RowsTableProp
       : []),
   ];
 
-  const sortColumn = columns.find((candidate) => candidate.key === sortKey) ?? columns[0];
+  const sortColumn = columns.find((candidate) => candidate.key === sort.key) ?? columns[0];
   const sorted = [...rows].sort((a, b) => {
     const delta = sortColumn.value(b) - sortColumn.value(a);
-    return descending ? delta : -delta;
+    return sort.descending ? delta : -delta;
   });
 
   function sortBy(key: string) {
-    if (key === sortKey) setDescending(!descending);
-    else {
-      setSortKey(key);
-      setDescending(true);
-    }
+    onSortChange(key === sortColumn.key ? { key, descending: !sort.descending } : { key, descending: true });
   }
 
   if (!rows.length) return <p className="mm-empty">No appointments in this window.</p>;
@@ -68,9 +68,13 @@ export function RowsTable({ rows, steps, section, title, onOpen }: RowsTableProp
           <tr>
             <th>{title}</th>
             {columns.map((column) => (
-              <th key={column.key} onClick={() => sortBy(column.key)} className="mm-sortable">
+              <th
+                key={column.key}
+                onClick={() => sortBy(column.key)}
+                className={sortColumn.key === column.key ? 'mm-sortable is-sorted' : 'mm-sortable'}
+              >
                 {column.label}
-                {sortKey === column.key ? (descending ? ' ↓' : ' ↑') : ''}
+                {sortColumn.key === column.key ? (sort.descending ? ' ↓' : ' ↑') : ''}
               </th>
             ))}
             <th>{isProspect ? 'Furthest step' : 'AMA rate'}</th>
@@ -85,7 +89,9 @@ export function RowsTable({ rows, steps, section, title, onOpen }: RowsTableProp
                 {row.kind === 'smd' && <small className="mm-sub">{row.agents} agents</small>}
               </td>
               {columns.map((column) => (
-                <td key={column.key}>{column.value(row)}</td>
+                <td key={column.key} className={sortColumn.key === column.key ? 'is-sorted' : undefined}>
+                  {column.value(row)}
+                </td>
               ))}
               <td>
                 {isProspect

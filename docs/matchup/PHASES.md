@@ -31,6 +31,7 @@
 | ~4 | 2026-09-04 → 09-05 | Shipped | Form defaults, optional URL, editing from the details modal; `GoogleSyncCard` removed |
 | ~5 | 2026-09-15 | Shipped | **Reschedule as a first-class operation**; **imported Google events** on the calendar |
 | ~6 | 2026-09-25 | Shipped | BPM v2 Phase 4 integration — reschedule / 1-on-1 from Guest Invites |
+| ~7 | 2026-10-08 | Shipped | Appointment metrics page (`479a427`), then its phase-1 visual redesign: hero band, attention strip, stacked step bars |
 
 ## 2. Phases
 
@@ -116,6 +117,8 @@ changed the label and left the lifecycle fields stale:
 | M6 | `source: 'IMPORTED'` is the single branch every consumer checks | One flag, so "is this editable" has one answer | `hooks/use-matchup-dashboard.ts` |
 | M7 | Status **labels and colours come from the server** | `MatchupStatusMeta` carries value, label and colour, so adding a status or recolouring one needs no frontend release, and the badge cannot drift from the backend's vocabulary | `types.ts` `MatchupStatusMeta`; `/appointments/statuses/` |
 | M8 | Time helpers live in the **service**, not a `utils/` module | `browserTimezone`, `formatAppointmentTime`, `localDateTimeValue` are used by six modals. Keeping them beside the client that sends the timestamps means one timezone convention rather than one per modal | `services/matchup-service.ts` |
+| **M10** | **The metrics hero shows FNA, AMA and Sale as branches of "showed up", never as a chain with stage-to-stage conversion** | They are independent yes/no answers on the results form. AMA (joined as an agent) and Sale (became a client) are parallel outcomes, and the backend's own leadership funnel lists Clients *before* AMA. A Booked → Showed → FNA → AMA → Sale chain would print conversions that describe nothing. Each is therefore a share of those who showed up, computed client-side; the rows table's AMA rate stays the backend's share of all booked | `mlm_platform` `matchup/services/metrics.py` `RESULT_FLAGS`, `funnel()`; `metrics/components/outcome-hero.tsx` |
+| M11 | Fixable problems (form pending, no trainer) sit in their **own attention strip**, not beside the results | They are work someone can do today, not outcomes; as equal-weight tiles they read like results. Each item sorts the rows table by its column, so the strip answers "who" as well as "how many" | `metrics/components/attention-strip.tsx` |
 | M9 | The Google connection is **linked to, not controlled here** | Shared with `calendar-sync`'s CS2. The orphaned `GoogleSyncCard` was deleted rather than wired up | commit 2026-09-04; `pages/matchup-page.tsx:684` |
 
 ## 4. Deliberately not built

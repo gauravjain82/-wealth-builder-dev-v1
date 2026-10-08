@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 
@@ -7,11 +7,13 @@ import { Button } from '@shared/components/ui';
 import { AppointmentDetailsModal } from '../../components/appointment-details-modal';
 import { matchupService } from '../../services/matchup-service';
 import type { AppointmentDetail } from '../../types';
+import { AttentionStrip } from '../components/attention-strip';
 import { FunnelStrip } from '../components/funnel-strip';
+import { OutcomeHero } from '../components/outcome-hero';
 import { ProspectJourneyView } from '../components/prospect-journey';
-import { RowsTable } from '../components/rows-table';
+import { type RowSort, RowsTable } from '../components/rows-table';
+import { StepBars } from '../components/step-bars';
 import { StepTable } from '../components/step-table';
-import { SummaryTiles } from '../components/summary-tiles';
 import {
   type DrillPath,
   useMatchupMetricsAccess,
@@ -69,6 +71,9 @@ export default function MatchupMetricsPage() {
   const addToast = useToastStore((state) => state.addToast);
   const [params, setParams] = useSearchParams();
   const [openAppointment, setOpenAppointment] = useState<AppointmentDetail | null>(null);
+  const [rowSort, setRowSort] = useState<RowSort>({ key: 'total', descending: true });
+  const [stepView, setStepView] = useState<'chart' | 'table'>('chart');
+  const rowsPanel = useRef<HTMLElement>(null);
   const { data: access } = useMatchupMetricsAccess();
 
   const range = useMemo(defaultRange, []);
@@ -105,6 +110,13 @@ export default function MatchupMetricsPage() {
     if (row.kind === 'smd') update({ smd: row.id == null ? 'none' : String(row.id), smdName: row.name }, true);
     else if (row.kind === 'agent' && row.id != null) update({ agent: String(row.id), agentName: row.name }, true);
     else if (row.kind === 'prospect' && row.id != null) update({ prospect: String(row.id), prospectName: row.name }, true);
+  }
+
+  /** "See who" on an attention item: sort the rows by that problem and scroll to them. */
+  function showRowsBy(columnKey: string) {
+    setRowSort({ key: columnKey, descending: true });
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    rowsPanel.current?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
   }
 
   async function showAppointment(appointment: JourneyAppointment) {
@@ -222,18 +234,38 @@ export default function MatchupMetricsPage() {
 
           {data && current && (
             <div className={report.isFetching ? 'mm-body is-fetching' : 'mm-body'}>
-              <SummaryTiles summary={current.summary} mode={data.mode} />
+              <OutcomeHero summary={current.summary} mode={data.mode} section={section} />
+              <AttentionStrip summary={current.summary} mode={data.mode} section={section} onShow={showRowsBy} />
               <div className="mm-grid">
                 <section className="mm-panel">
                   <h2>Funnel</h2>
                   <FunnelStrip stages={current.summary.funnel} />
                 </section>
                 <section className="mm-panel">
-                  <h2>By step</h2>
-                  <StepTable steps={data.steps} counts={current.summary.steps} section={section} />
+                  <div className="mm-panel-head">
+                    <h2>By step</h2>
+                    <div className="mm-toggle" role="group" aria-label="Step view">
+                      {(['chart', 'table'] as const).map((view) => (
+                        <button
+                          key={view}
+                          type="button"
+                          aria-pressed={stepView === view}
+                          className={stepView === view ? 'is-active' : ''}
+                          onClick={() => setStepView(view)}
+                        >
+                          {view === 'chart' ? 'Chart' : 'Table'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {stepView === 'chart' ? (
+                    <StepBars steps={data.steps} counts={current.summary.steps} section={section} />
+                  ) : (
+                    <StepTable steps={data.steps} counts={current.summary.steps} section={section} />
+                  )}
                 </section>
               </div>
-              <section className="mm-panel">
+              <section className="mm-panel mm-rows-panel" ref={rowsPanel}>
                 <h2>
                   {rowKind === 'smd' ? 'By SMD' : rowKind === 'agent' ? 'By agent' : 'By prospect'}
                 </h2>
@@ -244,6 +276,8 @@ export default function MatchupMetricsPage() {
                 )}
                 <RowsTable
                   rows={current.rows}
+                  sort={rowSort}
+                  onSortChange={setRowSort}
                   steps={data.steps}
                   section={section}
                   title={ROW_TITLES[rowKind]}

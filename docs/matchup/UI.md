@@ -17,6 +17,7 @@
 |---|---|---|
 | `/matchup` | `ProtectedRoute` only | `MatchupPage` |
 | `/calendar` | `ProtectedRoute` only | `CalendarPage` |
+| `/matchup/metrics` | `router/matchup-metrics-route.tsx` (`my-access` → `can_view`) | `MatchupMetricsPage` |
 
 `/calendar` belongs to **this** module, not to [calendar-sync](../calendar-sync/) — which has no route at
 all. That is the single most commonly mistaken fact about either module.
@@ -87,6 +88,27 @@ is what the in-place reschedule buys.
 ### 2.8 Day view — `components/day-appointments-modal.tsx` (408 lines)
 
 One day, grouped, with trainer references and row actions.
+
+### 2.9 Appointment metrics — `metrics/pages/matchup-metrics-page.tsx`
+
+Organisation → SMD → agent → prospect drill-down. Filters, section and drill position live in the URL.
+This section covers the screen as of the phase-1 visual redesign (2026-10-08, PHASES M10–M11); the
+API and query keys are not yet documented in this set.
+
+Above the prospect level, top to bottom:
+
+| Block | Component | Shows |
+|---|---|---|
+| Hero band | `components/outcome-hero.tsx` | Show-rate half-ring gauge (the one hero figure); Booked → Showed up; FNA / AMA / Sales each as a share **of those who showed up**; one 100% bar of `summary.overall` with legend; referrals and new-recruit bookings |
+| Needs attention | `components/attention-strip.tsx` | Form pending (`overall.result_pending`), no trainer / not accepted (trainer requests only), unlinked appointments. "See who" sorts the rows table by that column and scrolls to it. "All clear" when nothing is pending |
+| Funnel | `components/funnel-strip.tsx` | The backend's leadership funnel, % of the first stage |
+| By step | `components/step-bars.tsx` / `step-table.tsx` | Chart/Table toggle. Chart: one stacked bar per step, booked, show rate over past bookings; "Biggest leak" callout for the lowest show rate among steps with ≥ 5 past bookings (needs ≥ 2 such steps) |
+| Rows | `components/rows-table.tsx` | Next level down; sort is owned by the page (`RowSort`) so the attention strip can set it; the sorted column is highlighted |
+
+Outcome colours are fixed CSS tokens (`--mm-o-*`), separately stepped for dark mode and validated together
+for colour-blind separation. Amber (form pending) is below 3:1 on white, so every bar carries a legend,
+a hover tooltip, an `aria-label` with the counts, and a table view. Counters and bar growth animate on
+load and are disabled under `prefers-reduced-motion`.
 
 ## 3. States
 
