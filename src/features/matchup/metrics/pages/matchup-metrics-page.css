@@ -399,7 +399,7 @@
 .mm-delta.is-down { color: var(--mm-down); background: color-mix(in srgb, var(--mm-down) 12%, transparent); }
 .mm-delta.is-flat { color: var(--mm-muted); background: var(--mm-bar-track); }
 .mm-gauge .mm-delta { margin-top: 6px; }
-.mm-branches.has-delta .mm-branch { grid-template-columns: 44px 64px minmax(0, 1fr) 40px 72px; }
+.mm-branches.has-delta .mm-branch { grid-template-columns: 44px 64px minmax(0, 1fr) 40px 92px; }
 .mm-branch .mm-delta { margin-top: 0; justify-self: end; }
 .mm-compare { flex-basis: 100%; }
 .mm-compare strong { font-weight: 600; }
