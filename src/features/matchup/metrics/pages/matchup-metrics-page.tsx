@@ -10,9 +10,9 @@ import type { AppointmentDetail } from '../../types';
 import { AttentionStrip } from '../components/attention-strip';
 import { FunnelStrip } from '../components/funnel-strip';
 import { formatWindow } from '../components/format';
-import { type Comparison, OutcomeHero } from '../components/outcome-hero';
+import { type Comparison, type HeroTrend, OutcomeHero } from '../components/outcome-hero';
 import { ProspectJourneyView } from '../components/prospect-journey';
-import { type RowSort, RowsTable } from '../components/rows-table';
+import { type RowSort, type RowsTrend, RowsTable } from '../components/rows-table';
 import { StepBars } from '../components/step-bars';
 import { StepTable } from '../components/step-table';
 import {
@@ -20,6 +20,7 @@ import {
   useMatchupMetricsAccess,
   previousWindow,
   useMetricsReport,
+  useMetricsTrend,
   usePreviousReport,
   useProspectJourney,
 } from '../hooks/use-matchup-metrics';
@@ -101,6 +102,7 @@ export default function MatchupMetricsPage() {
   const compare = params.get('compare') !== 'off';
   const report = useMetricsReport(path, query, Boolean(access));
   const previous = usePreviousReport(path, query, Boolean(access) && compare);
+  const trend = useMetricsTrend(path, query, Boolean(access));
   const journey = useProspectJourney(path.prospect, query);
 
   function update(changes: Record<string, string | null>, push = false) {
@@ -155,6 +157,14 @@ export default function MatchupMetricsPage() {
   const comparison: Comparison | undefined = compare
     ? { window: formatWindow(priorWindow.start, priorWindow.end), previous: baseline }
     : undefined;
+  // Sparklines only when the trend is in and matches what the hero shows. A 404 (null) or an
+  // error draws nothing and shows no banner: the page looks as it did before the trend existed.
+  const trendSection = trend.data && !report.isPlaceholderData ? trend.data.sections[section] : undefined;
+  const trendWindow = { start: query.start, end: query.end };
+  const heroTrend: HeroTrend | undefined =
+    trend.data && trendSection ? { weeks: trend.data.weeks, summary: trendSection.summary, window: trendWindow } : undefined;
+  const rowsTrend: RowsTrend | undefined =
+    trend.data && trendSection ? { weeks: trend.data.weeks, rows: trendSection.rows, window: trendWindow } : undefined;
   const rowKind = path.agent != null ? 'prospect' : path.smd !== undefined ? 'agent' : 'smd';
   const segmentOptions: { value: string; label: string }[] = [
     ...(access?.org_wide ? [{ value: '', label: 'Whole organisation' }] : []),
@@ -253,7 +263,13 @@ export default function MatchupMetricsPage() {
 
           {data && current && (
             <div className={report.isFetching ? 'mm-body is-fetching' : 'mm-body'}>
-              <OutcomeHero summary={current.summary} mode={data.mode} section={section} comparison={comparison} />
+              <OutcomeHero
+                summary={current.summary}
+                mode={data.mode}
+                section={section}
+                comparison={comparison}
+                trend={heroTrend}
+              />
               <AttentionStrip summary={current.summary} mode={data.mode} section={section} onShow={showRowsBy} />
               <div className="mm-grid">
                 <section className="mm-panel">
@@ -316,6 +332,7 @@ export default function MatchupMetricsPage() {
                   detailed={rowsDetailed}
                   title={ROW_TITLES[rowKind]}
                   onOpen={openRow}
+                  trend={rowsTrend}
                 />
               </section>
             </div>

@@ -3,7 +3,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { matchupMetricsService } from '../services/metrics-service';
-import type { MetricsQuery } from '../types';
+import type { MetricsQuery, TrendQuery } from '../types';
 
 const STALE_MS = 2 * 60 * 1000;
 
@@ -72,6 +72,35 @@ export function usePreviousReport(path: DrillPath, query: MetricsQuery, enabled 
     queryFn: ({ signal }) => fetchReport(path, previous, signal),
     enabled: enabled && path.prospect == null,
     staleTime: STALE_MS,
+  });
+}
+
+/** Weeks of history behind every sparkline. */
+export const TREND_WEEKS = 12;
+
+function fetchTrend(path: DrillPath, query: TrendQuery, signal: AbortSignal) {
+  if (path.agent != null) return matchupMetricsService.trendAgent(path.agent, query, signal);
+  if (path.smd !== undefined) return matchupMetricsService.trendSmd(path.smd, query, signal);
+  return matchupMetricsService.trendOrganisation(query, signal);
+}
+
+/**
+ * Weekly series for the hero sparklines and the rows table's Trend column,
+ * for the `TREND_WEEKS` ISO weeks ending with the week containing
+ * `query.end`. `start` is not part of the key: the backend ignores it.
+ *
+ * `data` is null when the trend endpoint is not deployed (404). No
+ * placeholder data — a sparkline for the last selection would be wrong — and
+ * no retry, since a missing or failing trend only means no sparklines.
+ */
+export function useMetricsTrend(path: DrillPath, query: MetricsQuery, enabled = true) {
+  const trendQuery: TrendQuery = { end: query.end, mode: query.mode, segment: query.segment, weeks: TREND_WEEKS };
+  return useQuery({
+    queryKey: ['matchup-metrics', 'trend', path.smd, path.agent, trendQuery],
+    queryFn: ({ signal }) => fetchTrend(path, trendQuery, signal),
+    enabled: enabled && path.prospect == null,
+    staleTime: STALE_MS,
+    retry: false,
   });
 }
 

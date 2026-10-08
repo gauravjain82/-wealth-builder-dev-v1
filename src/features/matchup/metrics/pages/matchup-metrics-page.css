@@ -404,6 +404,45 @@
 .mm-compare { flex-basis: 100%; }
 .mm-compare strong { font-weight: 600; }
 
+/* -- Weekly trend sparklines (hero + rows table) -- */
+/* --mm-trend-surface: what the line sits on, for the end-marker ring and hollow points. */
+.mm-page { --mm-trend-surface: #ffffff; }
+.dark .mm-page { --mm-trend-surface: #272727; }
+.mm-stage { --mm-trend-surface: #f3f4f6; }
+.dark .mm-stage { --mm-trend-surface: #383838; }
+.mm-trend { position: relative; display: inline-block; max-width: 100%; line-height: 0; vertical-align: middle; }
+.mm-trend > svg { display: block; max-width: 100%; height: auto; overflow: visible; }
+/* A table cell would otherwise shrink the line to fit; the table scrolls instead. */
+.mm-rows .mm-trend > svg { max-width: none; }
+.mm-trend-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.mm-trend-line.is-muted { stroke: var(--mm-muted); opacity: 0.55; }
+.mm-trend-line.is-accent { stroke: var(--mm-bar); }
+.mm-trend-line.is-soft { stroke-dasharray: 2 4; opacity: 0.6; }
+.mm-trend-dot.is-muted { fill: var(--mm-muted); }
+.mm-trend-dot.is-accent { fill: var(--mm-bar); }
+.mm-trend-dot.is-hollow { fill: var(--mm-trend-surface); stroke-width: 1.5; }
+.mm-trend-dot.is-hollow.is-muted { stroke: var(--mm-muted); }
+.mm-trend-dot.is-hollow.is-accent { stroke: var(--mm-bar); }
+.mm-trend-ring { fill: var(--mm-trend-surface); }
+.mm-trend-hair { stroke: var(--mm-border); stroke-width: 1; }
+.mm-trend-hit { fill: transparent; }
+.mm-trend-tip {
+  position: fixed; bottom: auto; transform: translate(-50%, calc(-100% - 8px)); z-index: 50;
+  flex-direction: column; align-items: flex-start; gap: 2px; line-height: 1.3;
+  font-size: 12px; font-weight: 400; letter-spacing: normal; text-transform: none; text-align: left;
+}
+.mm-trend-tip-head { color: var(--mm-muted); }
+.mm-trend-tip-value { display: flex; align-items: baseline; gap: 6px; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.mm-trend-tip-detail { font-size: 12px; font-weight: 400; color: var(--mm-muted); }
+.mm-trend-tip-note { font-size: 11px; font-style: italic; color: var(--mm-muted); }
+.mm-trend--gauge { margin-top: 8px; }
+.mm-stage > .mm-trend { margin-top: 8px; }
+.mm-branch-trend {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px;
+  margin-top: 2px; padding-top: 8px; border-top: 1px dashed var(--mm-border); font-size: 11px; color: var(--mm-muted);
+}
+.mm-trend-key { flex-basis: 100%; }
+
 /* Keep last: must override every animated rule above. */
 @keyframes mm-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes mm-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }

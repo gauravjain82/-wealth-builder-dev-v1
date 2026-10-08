@@ -46,6 +46,33 @@ across the module rather than one per modal.
 Statuses and types being **served rather than hard-coded** is what lets the backend add a status or
 recolour one with no frontend release.
 
+### Metrics endpoints — `metrics/services/metrics-service.ts`
+
+Read-only, for `/matchup/metrics`. Every request forwards React Query's `signal`. Query: `start`, `end`
+(YYYY-MM-DD, both inclusive), `mode` (`prospects` | `appointments`), optional `segment`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/matchup/metrics/my-access/` | `can_view`, `org_wide`, `segments` — the route guard |
+| GET | `/api/matchup/metrics/organisation/` | report: per-section `summary` + SMD `rows` |
+| GET | `/api/matchup/metrics/smd/{id\|none}/` | report for one SMD (`none` = agents with no SMD) + agent rows |
+| GET | `/api/matchup/metrics/agent/{id}/` | report for one agent + prospect rows |
+| GET | `/api/matchup/metrics/prospect/{id}/` | one prospect's appointment journey |
+| GET | `/api/matchup/metrics/trend/organisation/` | weekly trend, SMD rows |
+| GET | `/api/matchup/metrics/trend/smd/{id\|none}/` | weekly trend, agent rows |
+| GET | `/api/matchup/metrics/trend/agent/{id}/` | weekly trend, no rows (`[]`) |
+
+**Trend** (`MetricsTrend` in `metrics/types.ts`): query `end`, `weeks` (4–26; the page sends 12), `mode`,
+`segment`; **`start` is not sent** — the backend ignores it. The last week returned is the ISO week
+(Monday–Sunday, UTC) containing `end`. `weeks[]` is oldest first with a `partial` flag on the week in
+progress; every array under `sections.<SECTION>.summary` (`total`, `showed`, `upcoming`,
+`result_pending`, `fna`, `ama`, `sale`) and `rows[]` (`total`, `showed`, `ama`) is aligned with it, and an
+empty week is `0`. Rows join to the report's rows on `kind` + `id`. Each week's numbers equal the report
+endpoint's for that week; rates are derived client-side (show = showed / total, AMA = ama / total).
+**A 404 resolves to `null`** rather than throwing, so the trend endpoint and this page can deploy in either
+order — until it exists the page draws no sparklines (PHASES M14). Other errors throw, and the page ignores
+them the same way.
+
 ### `notifications` — 3, via `inapp-notification-service.ts`
 
 | Method | Path |
