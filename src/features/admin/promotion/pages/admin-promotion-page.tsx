@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button, ConfirmationDialog, ErrorState, LoadingState } from '@/shared/components';
 import { cn } from '@core/utils';
+import { AIAttemptsModal } from '../components/ai-attempts-modal';
 import { AILessonModal } from '../components/ai-lesson-modal';
 import { QuizEditorModal } from '../components/quiz-editor-modal';
 import { SkillFormModal } from '../components/skill-form-modal';
@@ -48,6 +49,7 @@ export default function AdminPromotionPage() {
   } | null>(null);
   const [quizVideoId, setQuizVideoId] = useState<number | null>(null);
   const [aiLessonVideo, setAILessonVideo] = useState<AdminVideo | null>(null);
+  const [attemptsOpen, setAttemptsOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -106,11 +108,16 @@ export default function AdminPromotionPage() {
             {description} Drag <span aria-hidden>⠿</span> to reorder.
           </p>
         </div>
-        {track && (
-          <Button onClick={() => setSkillForm({ editing: null })}>
-            <Plus className="h-4 w-4" /> Add skill
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setAttemptsOpen(true)}>
+            <Sparkles className="h-4 w-4" /> AI test attempts
           </Button>
-        )}
+          {track && (
+            <Button onClick={() => setSkillForm({ editing: null })}>
+              <Plus className="h-4 w-4" /> Add skill
+            </Button>
+          )}
+        </div>
       </div>
 
       {tracks.length === 0 ? (
@@ -282,6 +289,7 @@ export default function AdminPromotionPage() {
       />
       <QuizEditorModal video={quizVideo} onClose={() => setQuizVideoId(null)} />
       <AILessonModal video={aiLessonVideo} onClose={() => setAILessonVideo(null)} />
+      <AIAttemptsModal open={attemptsOpen} onClose={() => setAttemptsOpen(false)} />
       <ConfirmationDialog
         open={deleteTarget !== null}
         title={deleteTarget?.kind === 'skill' ? 'Delete skill?' : 'Delete video?'}

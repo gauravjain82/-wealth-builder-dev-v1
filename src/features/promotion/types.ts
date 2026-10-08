@@ -114,6 +114,15 @@ export interface TeamMember {
   overall: number;
   skill_progress: TeamSkillProgress[];
   routes: Omit<PromotionRoute, "id" | "is_selected">[];
+  ai_tests: {
+    /** Modules on their track with a required AI test. */
+    required: number;
+    passed: number;
+    /** Quiz passed, AI test still to pass. */
+    pending: number;
+    attempts: number;
+    best_score: number | null;
+  };
 }
 export interface TeamResponse {
   stats: {
@@ -195,4 +204,50 @@ export interface AITestFinishResult extends AITestAttempt {
 export interface ConversationTurn {
   role: "agent" | "learner";
   text: string;
+}
+
+/** An attempt in a list (no answers). */
+export interface AITestAttemptSummary {
+  id: number;
+  user: number;
+  user_name: string;
+  module: number;
+  module_title: string;
+  attempt_number: number;
+  mode: AITestMode;
+  status: "in_progress" | "finished";
+  pass_threshold: number;
+  score: number | null;
+  passed: boolean;
+  passed_at: string | null;
+  answer_count: number;
+  started_at: string;
+  finished_at: string | null;
+}
+
+/** One attempt in full, for a leader or admin, with the call transcript. */
+export interface AITestAttemptReview extends AITestAttempt {
+  user: number;
+  user_name: string;
+  module: number;
+  module_title: string;
+  skill_label: string;
+  conversation: ConversationTurn[];
+}
+
+export interface MemberAITestModule {
+  module_id: number;
+  title: string;
+  skill: string;
+  required: boolean;
+  status: ModuleStatus;
+  best_score: number | null;
+  passed_at: string | null;
+  attempts: AITestAttemptSummary[];
+}
+
+export interface MemberAITests {
+  user: number;
+  name: string;
+  modules: MemberAITestModule[];
 }

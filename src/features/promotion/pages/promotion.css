@@ -1398,3 +1398,91 @@
   font: inherit;
   resize: vertical;
 }
+
+/* ── Team: AI tests per member ── */
+.promo-member-detail > .promo-team-ai {
+  grid-column: 1 / -1;
+}
+.promo-team-ai-pending {
+  color: var(--gold);
+  font-style: normal;
+}
+.promo-team-ai-note {
+  margin: 0;
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.promo-team-ai-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  border-bottom: 1px solid #2a2a2a80;
+  font-size: 12px;
+}
+.promo-team-ai-module {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.promo-team-ai-module strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.promo-team-ai-module small {
+  color: var(--muted);
+}
+.promo-team-ai-row > i {
+  font: 10px "Barlow Condensed";
+  font-style: normal;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.promo-team-ai-row > i.ai_test {
+  color: var(--gold);
+}
+.promo-team-ai-row > i.done {
+  color: var(--green);
+}
+.promo-team-ai-row > b {
+  text-align: right;
+}
+.promo-team-ai-attempts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.promo-team-ai-attempts small {
+  color: var(--muted);
+}
+.promo-team-ai-attempts button {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: none;
+  color: var(--dim);
+  font-size: 11px;
+  cursor: pointer;
+}
+.promo-team-ai-attempts button.pass {
+  border-color: #2ecc714d;
+  color: var(--green);
+}
+.promo-team-ai-attempts button.fail {
+  border-color: #e74c3c4d;
+  color: var(--red);
+}
+@media (max-width: 640px) {
+  .promo-team-ai-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .promo-team-ai-attempts {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}

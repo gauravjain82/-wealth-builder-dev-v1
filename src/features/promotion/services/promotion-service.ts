@@ -1,10 +1,12 @@
 import type {
   AITestAnswer,
+  AITestAttemptReview,
   AITestFinishResult,
   AITestMode,
   AITestStartResult,
   AITestState,
   ConversationTurn,
+  MemberAITests,
   PromotionDashboard,
   PromotionDashboardResponse,
   QuizQuestion,
@@ -74,6 +76,10 @@ export const promotionService = {
       method: "POST",
       body: JSON.stringify({ answers }),
     }),
+  teamMemberAITests: (userId: number) =>
+    request<MemberAITests>(`team/${userId}/ai-tests/`),
+  teamAIAttempt: (attemptId: number) =>
+    request<AITestAttemptReview>(`team/ai-attempts/${attemptId}/`),
   aiTestState: (id: number) => request<AITestState>(`modules/${id}/ai-test/`),
   aiTestStart: (id: number, mode: AITestMode) =>
     request<AITestStartResult>(`modules/${id}/ai-test/start/`, {
