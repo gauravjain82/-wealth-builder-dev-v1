@@ -87,28 +87,6 @@
   color: #fff;
 }
 
-.wb-coh-hero__prize {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.625rem;
-  font-size: 0.875rem;
-  color: rgb(255 255 255 / 0.8);
-}
-
-.wb-coh-hero__place {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-weight: 700;
-  color: #fde68a;
-}
-
-.wb-coh-hero__coin {
-  width: 1rem;
-  height: 1rem;
-}
-
 .wb-coh-hero__chips {
   display: flex;
   flex-wrap: wrap;

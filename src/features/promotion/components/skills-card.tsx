@@ -37,6 +37,8 @@ export function SkillsCard({
       </div>
       {skills.map((skill) => {
         const multipleModules = skill.total_modules > 1;
+        // A one-video skill opens straight into its video and quiz — no inner list to click.
+        const onlyModule = skill.modules.length === 1 ? skill.modules[0] : null;
         const badge = skill.is_complete
           ? "Course Complete"
           : skill.modules_done
@@ -64,7 +66,11 @@ export function SkillsCard({
                 <small>
                   {multipleModules
                     ? `${skill.total_modules} videos · ${skill.modules_done}/${skill.total_modules} complete`
-                    : "1 video"}
+                    : onlyModule
+                      ? [onlyModule.duration_label, moduleLabel(onlyModule.status)]
+                          .filter(Boolean)
+                          .join(" · ")
+                      : "1 video"}
                 </small>
               </div>
               <span className={`promo-tag ${skill.tag}`}>
@@ -83,7 +89,12 @@ export function SkillsCard({
               </span>
               <b className={openSkill === skill.id ? "open" : ""}>▼</b>
             </div>
-            {openSkill === skill.id && (
+            {openSkill === skill.id && onlyModule && (
+              <div className="promo-modules">
+                <QuizPanel module={onlyModule} onComplete={onRefresh} />
+              </div>
+            )}
+            {openSkill === skill.id && !onlyModule && (
               <div className="promo-modules">
                 {skill.modules.map((module, index) => (
                   <div key={module.id}>
