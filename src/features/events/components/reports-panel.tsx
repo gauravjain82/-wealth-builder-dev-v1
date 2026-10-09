@@ -15,14 +15,13 @@ interface ReportsPanelProps {
   onFilterPending: () => void;
 }
 
-/** Render a seller's arrivals as `arrived (pct%)`, or `—` with no tickets. */
-function formatCheckedIn(row: SmdBreakdownRow): string {
-  const arrived = row.checked_in_count ?? 0;
+/** Render a seller's arrivals as a share of their tickets, or `—` with no tickets. */
+function formatCheckInRate(row: SmdBreakdownRow): string {
   if (row.ticket_count === 0) return '—';
-  return `${arrived} (${Math.round((arrived / row.ticket_count) * 100)}%)`;
+  return `${Math.round(((row.checked_in_count ?? 0) / row.ticket_count) * 100)}%`;
 }
 
-type SmdSortKey = 'seller' | 'tickets' | 'checked_in' | 'total';
+type SmdSortKey = 'seller' | 'tickets' | 'checked_in' | 'checkin_rate' | 'total';
 type SortDirection = 'asc' | 'desc';
 
 /** Sortable SMD breakdown columns; text starts ascending, numbers descending. */
@@ -30,6 +29,7 @@ const SMD_COLUMNS: { key: SmdSortKey; label: string; firstDirection: SortDirecti
   { key: 'seller', label: 'Seller', firstDirection: 'asc' },
   { key: 'tickets', label: 'Tickets', firstDirection: 'desc' },
   { key: 'checked_in', label: 'Checked in', firstDirection: 'desc' },
+  { key: 'checkin_rate', label: 'Check-in %', firstDirection: 'desc' },
   { key: 'total', label: 'Total', firstDirection: 'desc' },
 ];
 
@@ -38,7 +38,7 @@ function checkedInRatio(row: SmdBreakdownRow): number {
   return row.ticket_count === 0 ? -1 : (row.checked_in_count ?? 0) / row.ticket_count;
 }
 
-/** Compare two rows on one column, ascending; ties fall back to arrived count then name. */
+/** Compare two rows on one column, ascending; callers break ties by name. */
 function compareSmdRows(a: SmdBreakdownRow, b: SmdBreakdownRow, key: SmdSortKey): number {
   switch (key) {
     case 'seller':
@@ -46,6 +46,8 @@ function compareSmdRows(a: SmdBreakdownRow, b: SmdBreakdownRow, key: SmdSortKey)
     case 'tickets':
       return a.ticket_count - b.ticket_count;
     case 'checked_in':
+      return (a.checked_in_count ?? 0) - (b.checked_in_count ?? 0);
+    case 'checkin_rate':
       return (
         checkedInRatio(a) - checkedInRatio(b) ||
         (a.checked_in_count ?? 0) - (b.checked_in_count ?? 0)
@@ -251,7 +253,8 @@ export function ReportsPanel({
                           ) : null}
                         </td>
                         <td className="py-1.5">{row.ticket_count}</td>
-                        <td className="py-1.5">{formatCheckedIn(row)}</td>
+                        <td className="py-1.5">{row.checked_in_count ?? 0}</td>
+                        <td className="py-1.5">{formatCheckInRate(row)}</td>
                         <td className="py-1.5">{formatPrice(row.total, currency)}</td>
                       </tr>
                     ))}
