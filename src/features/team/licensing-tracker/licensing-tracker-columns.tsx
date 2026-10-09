@@ -250,7 +250,7 @@ export function buildLicensingColumns(
       sortable: true,
       searchable: false,
       value: (row) => formatScore(row.xcel_completion_percent),
-      render: (row) => <ScoreInputCell row={row} field="xcel_completion_percent" saving={isSaving(row, 'xcel_completion_percent', options)} onPatch={options.onPatch} />,
+      render: (row) => <ScoreInputCell row={row} field="xcel_completion_percent" display="progress" saving={isSaving(row, 'xcel_completion_percent', options)} onPatch={options.onPatch} />,
     },
     {
       key: 'xcel_final_score',

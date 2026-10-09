@@ -103,6 +103,11 @@ separate product from [builder-ai](../builder-ai/): someone can rank here and be
 The smallest complete tracker, and therefore **the one to read first**: a page, a columns file, a
 service, a modal, and nothing else.
 
+The two Xcel score columns are edited inline (0–100, saved on blur or Enter, Escape reverts).
+**Final Score** is always a number input. **Completion %** renders as a progress bar — rose
+below 40, amber below 75, emerald from 75 — with the value beside it, and becomes the same input
+when clicked. An unset value shows an empty track and `-`, never `0%`.
+
 ### 2.8 Onboarding game — `onboarding-game/` (858 LOC)
 
 A gamified onboarding path. Routed at `/onboarding-game`.
