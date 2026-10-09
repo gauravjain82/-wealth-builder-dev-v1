@@ -75,6 +75,23 @@ function sortSmdRows(
   return [...sorted, ...unassigned];
 }
 
+/** Event-wide ticket and arrival totals across every SMD row, Unassigned included. */
+interface SmdTotals {
+  tickets: number;
+  checkedIn: number;
+}
+
+/** Sum tickets and arrivals over the SMD rows. */
+function sumSmdRows(rows: SmdBreakdownRow[]): SmdTotals {
+  return rows.reduce<SmdTotals>(
+    (acc, row) => ({
+      tickets: acc.tickets + row.ticket_count,
+      checkedIn: acc.checkedIn + (row.checked_in_count ?? 0),
+    }),
+    { tickets: 0, checkedIn: 0 },
+  );
+}
+
 /** SMD breakdown + add-on stats, with Excel export actions. */
 export function ReportsPanel({
   eventId,
@@ -93,6 +110,10 @@ export function ReportsPanel({
     () => sortSmdRows(smd, smdSort.key, smdSort.direction),
     [smd, smdSort],
   );
+  const smdTotals = useMemo(() => sumSmdRows(smd), [smd]);
+  /** Overall rate (all arrivals / all tickets), so big SMDs weigh more than a mean of row %s. */
+  const smdCheckInRate =
+    smdTotals.tickets === 0 ? '—' : `${Math.round((smdTotals.checkedIn / smdTotals.tickets) * 100)}%`;
 
   /** Sort by a column; clicking the active column flips its direction. */
   const sortSmdBy = (key: SmdSortKey) => {
@@ -210,6 +231,19 @@ export function ReportsPanel({
                   No settled orders yet.
                 </Text>
               ) : (
+                <>
+                  <dl className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                    {[
+                      { label: 'Total tickets', value: smdTotals.tickets.toLocaleString() },
+                      { label: 'Total checked in', value: smdTotals.checkedIn.toLocaleString() },
+                      { label: 'Avg check-in %', value: smdCheckInRate },
+                    ].map((stat) => (
+                      <div key={stat.label} className="flex items-baseline gap-1.5">
+                        <dt className="text-slate-500">{stat.label}</dt>
+                        <dd className="font-semibold">{stat.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
@@ -260,6 +294,7 @@ export function ReportsPanel({
                     ))}
                   </tbody>
                 </table>
+                </>
               )}
             </CardContent>
           </Card>
