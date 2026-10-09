@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge, Button, Card, CardContent, Text } from '@shared/components';
 import { useToastStore } from '@/store';
 import { formatPrice } from '../utils/public-pricing';
@@ -22,6 +22,57 @@ function formatCheckedIn(row: SmdBreakdownRow): string {
   return `${arrived} (${Math.round((arrived / row.ticket_count) * 100)}%)`;
 }
 
+type SmdSortKey = 'seller' | 'tickets' | 'checked_in' | 'total';
+type SortDirection = 'asc' | 'desc';
+
+/** Sortable SMD breakdown columns; text starts ascending, numbers descending. */
+const SMD_COLUMNS: { key: SmdSortKey; label: string; firstDirection: SortDirection }[] = [
+  { key: 'seller', label: 'Seller', firstDirection: 'asc' },
+  { key: 'tickets', label: 'Tickets', firstDirection: 'desc' },
+  { key: 'checked_in', label: 'Checked in', firstDirection: 'desc' },
+  { key: 'total', label: 'Total', firstDirection: 'desc' },
+];
+
+/** Return a row's attendance as a 0–1 ratio (-1 with no tickets, so they sort below 0%). */
+function checkedInRatio(row: SmdBreakdownRow): number {
+  return row.ticket_count === 0 ? -1 : (row.checked_in_count ?? 0) / row.ticket_count;
+}
+
+/** Compare two rows on one column, ascending; ties fall back to arrived count then name. */
+function compareSmdRows(a: SmdBreakdownRow, b: SmdBreakdownRow, key: SmdSortKey): number {
+  switch (key) {
+    case 'seller':
+      return a.display_name.localeCompare(b.display_name, undefined, { sensitivity: 'base' });
+    case 'tickets':
+      return a.ticket_count - b.ticket_count;
+    case 'checked_in':
+      return (
+        checkedInRatio(a) - checkedInRatio(b) ||
+        (a.checked_in_count ?? 0) - (b.checked_in_count ?? 0)
+      );
+    case 'total':
+      return Number(a.total) - Number(b.total);
+  }
+}
+
+/** Sort SMD rows by a column, keeping the Unassigned row last; `null` keeps server order. */
+function sortSmdRows(
+  rows: SmdBreakdownRow[],
+  key: SmdSortKey | null,
+  direction: SortDirection,
+): SmdBreakdownRow[] {
+  if (key === null) return rows;
+  const sign = direction === 'asc' ? 1 : -1;
+  const assigned = rows.filter((row) => row.seller_id !== null);
+  const unassigned = rows.filter((row) => row.seller_id === null);
+  const sorted = [...assigned].sort(
+    (a, b) =>
+      sign * compareSmdRows(a, b, key) ||
+      a.display_name.localeCompare(b.display_name, undefined, { sensitivity: 'base' }),
+  );
+  return [...sorted, ...unassigned];
+}
+
 /** SMD breakdown + add-on stats, with Excel export actions. */
 export function ReportsPanel({
   eventId,
@@ -32,6 +83,23 @@ export function ReportsPanel({
 }: ReportsPanelProps) {
   const addToast = useToastStore((state) => state.addToast);
   const [smd, setSmd] = useState<SmdBreakdownRow[]>([]);
+  const [smdSort, setSmdSort] = useState<{ key: SmdSortKey | null; direction: SortDirection }>({
+    key: null,
+    direction: 'desc',
+  });
+  const sortedSmd = useMemo(
+    () => sortSmdRows(smd, smdSort.key, smdSort.direction),
+    [smd, smdSort],
+  );
+
+  /** Sort by a column; clicking the active column flips its direction. */
+  const sortSmdBy = (key: SmdSortKey) => {
+    setSmdSort((current) =>
+      current.key === key
+        ? { key, direction: current.direction === 'asc' ? 'desc' : 'asc' }
+        : { key, direction: SMD_COLUMNS.find((col) => col.key === key)?.firstDirection ?? 'desc' },
+    );
+  };
   const [addons, setAddons] = useState<AddOnStatsRow[]>([]);
   const [escrow, setEscrow] = useState<EscrowReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -143,14 +211,33 @@ export function ReportsPanel({
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-                      <th className="py-1">Seller</th>
-                      <th className="py-1">Tickets</th>
-                      <th className="py-1">Checked in</th>
-                      <th className="py-1">Total</th>
+                      {SMD_COLUMNS.map((col) => (
+                        <th
+                          key={col.key}
+                          scope="col"
+                          className="py-1"
+                          aria-sort={
+                            smdSort.key === col.key
+                              ? smdSort.direction === 'asc'
+                                ? 'ascending'
+                                : 'descending'
+                              : 'none'
+                          }
+                        >
+                          <button
+                            type="button"
+                            className="uppercase tracking-wide hover:text-slate-700 dark:hover:text-white/80"
+                            onClick={() => sortSmdBy(col.key)}
+                          >
+                            {col.label}
+                            {smdSort.key === col.key ? (smdSort.direction === 'asc' ? ' ▲' : ' ▼') : ''}
+                          </button>
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {smd.map((row) => (
+                    {sortedSmd.map((row) => (
                       <tr key={row.seller_id ?? 'unassigned'} className="border-t border-slate-100 dark:border-white/10">
                         <td className="py-1.5">
                           {row.display_name}
