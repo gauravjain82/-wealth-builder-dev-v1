@@ -44,6 +44,8 @@ export interface SmdBreakdownRow {
   team_name: string;
   order_count: number;
   ticket_count: number;
+  /** Of `ticket_count`, tickets that arrived at the door (absent on older servers). */
+  checked_in_count?: number;
   total: string;
 }
 

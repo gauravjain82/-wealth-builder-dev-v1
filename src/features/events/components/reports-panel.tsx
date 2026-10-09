@@ -15,6 +15,13 @@ interface ReportsPanelProps {
   onFilterPending: () => void;
 }
 
+/** Render a seller's arrivals as `arrived (pct%)`, or `—` with no tickets. */
+function formatCheckedIn(row: SmdBreakdownRow): string {
+  const arrived = row.checked_in_count ?? 0;
+  if (row.ticket_count === 0) return '—';
+  return `${arrived} (${Math.round((arrived / row.ticket_count) * 100)}%)`;
+}
+
 /** SMD breakdown + add-on stats, with Excel export actions. */
 export function ReportsPanel({
   eventId,
@@ -138,6 +145,7 @@ export function ReportsPanel({
                     <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
                       <th className="py-1">Seller</th>
                       <th className="py-1">Tickets</th>
+                      <th className="py-1">Checked in</th>
                       <th className="py-1">Total</th>
                     </tr>
                   </thead>
@@ -156,6 +164,7 @@ export function ReportsPanel({
                           ) : null}
                         </td>
                         <td className="py-1.5">{row.ticket_count}</td>
+                        <td className="py-1.5">{formatCheckedIn(row)}</td>
                         <td className="py-1.5">{formatPrice(row.total, currency)}</td>
                       </tr>
                     ))}
