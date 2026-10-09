@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
 import { Badge, Button } from '@shared/components';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import type { CheckinAttendee, CheckinPurchase } from '../types/checkin';
 import { credentialLabel } from '../types/door';
 import { TICKET_STATUS_LABEL } from '../utils/ticket-status';
@@ -86,6 +87,19 @@ function ticketIds(attendee: CheckinAttendee, purchase: CheckinPurchase): Array<
     ['Invoice ID', purchase.external_invoice_reference || purchase.invoice_number],
   ];
   return ids.filter(([, value]) => Boolean(value));
+}
+
+/** "ext-wealth-bowl-2026-T00141" → "T00141" — what fits on a button. */
+function shortTicketNumber(ticketNumber: string): string {
+  return ticketNumber.split('-').pop() || ticketNumber;
+}
+
+/** A "Check in next unnamed" press waiting for staff to confirm it is another person. */
+interface PendingUnnamed {
+  attendee: CheckinAttendee;
+  purchase: CheckinPurchase;
+  /** Unnamed tickets of this purchase already checked in. */
+  arrived: number;
 }
 
 /** Door view: the buyer's name, email and mobile — one line each. */
@@ -380,6 +394,7 @@ export function CheckinPurchaseList({
   onAssign,
 }: CheckinPurchaseListProps) {
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
+  const [pendingUnnamed, setPendingUnnamed] = useState<PendingUnnamed | null>(null);
   const pageCount = Math.max(1, Math.ceil(count / pageSize));
   const detailed = view === 'detailed';
   const columns = detailed ? 5 : 4;
@@ -399,6 +414,17 @@ export function CheckinPurchaseList({
       </p>
     );
   }
+
+  /**
+   * The fold's button stays put and keeps its label while it moves on to the
+   * next ticket, so repeated presses used to admit a whole purchase for one
+   * person. Once any unnamed ticket of the purchase is in, ask first.
+   */
+  const checkInNextUnnamed = (attendee: CheckinAttendee, purchase: CheckinPurchase) => {
+    const arrived = purchase.tickets.filter((t) => !t.holder_name && t.checked_in).length;
+    if (arrived > 0) setPendingUnnamed({ attendee, purchase, arrived });
+    else onCheckIn(attendee);
+  };
 
   const row = (attendee: CheckinAttendee, purchase: CheckinPurchase, first: boolean) => (
     <TicketRow
@@ -519,11 +545,14 @@ export function CheckinPurchaseList({
                                 type="button"
                                 size="sm"
                                 disabled={busyTicketId === next.id}
-                                onClick={() => onCheckIn(next)}
-                                className="h-10 whitespace-normal px-3 text-sm leading-tight"
-                                title={`Checks in ${next.ticket_number}`}
+                                onClick={() => checkInNextUnnamed(next, purchase)}
+                                className="h-auto min-h-10 flex-col whitespace-normal px-3 py-1 text-sm leading-tight"
+                                title={`Checks in ${next.ticket_number} — one person per press`}
                               >
-                                Check in next unnamed
+                                <span>Check in next unnamed</span>
+                                <span className="text-xs font-normal opacity-80">
+                                  {shortTicketNumber(next.ticket_number)}
+                                </span>
                               </Button>
                             ) : null}
                           </div>
@@ -537,6 +566,25 @@ export function CheckinPurchaseList({
           </tbody>
         </table>
       </div>
+      <ConfirmDialog
+        open={pendingUnnamed !== null}
+        title="Check in another person?"
+        message={
+          pendingUnnamed
+            ? `${pendingUnnamed.arrived} unnamed ${pendingUnnamed.arrived === 1 ? 'ticket' : 'tickets'} from ${
+                pendingUnnamed.purchase.purchaser_name || 'this purchase'
+              }'s purchase ${pendingUnnamed.arrived === 1 ? 'is' : 'are'} already checked in. ` +
+              `Only continue if someone else from this group is here — this checks in ${pendingUnnamed.attendee.ticket_number}.`
+            : ''
+        }
+        confirmLabel="Check in another"
+        cancelLabel="Cancel"
+        onConfirm={() => {
+          if (pendingUnnamed) onCheckIn(pendingUnnamed.attendee);
+          setPendingUnnamed(null);
+        }}
+        onCancel={() => setPendingUnnamed(null)}
+      />
       {pageCount > 1 ? (
         <div className="flex items-center justify-end gap-2">
           <Button type="button" variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
