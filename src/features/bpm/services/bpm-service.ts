@@ -108,17 +108,6 @@ export function browserTimezone() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
 }
 
-export function supportedTimezones(): string[] {
-  const intl = Intl as typeof Intl & {
-    supportedValuesOf?: (key: 'timeZone') => string[];
-  };
-  try {
-    return intl.supportedValuesOf?.('timeZone') ?? [];
-  } catch {
-    return [];
-  }
-}
-
 export function formatOccurrenceTime(value: string, options: Intl.DateTimeFormatOptions = {}) {
   return new Intl.DateTimeFormat(undefined, {
     weekday: 'short',

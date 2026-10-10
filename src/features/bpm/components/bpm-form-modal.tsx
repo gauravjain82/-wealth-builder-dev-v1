@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   ConfirmationDialog,
@@ -11,6 +11,7 @@ import {
   Label,
   Modal,
   Select,
+  TimezoneSelect,
 } from '@shared/components';
 import { useToastStore } from '@/store';
 import {
@@ -18,7 +19,6 @@ import {
   browserTimezone,
   DAY_OF_WEEK_OPTIONS,
   formatOccurrenceTime,
-  supportedTimezones,
 } from '../services/bpm-service';
 import type {
   BPMEventAttachment,
@@ -146,11 +146,6 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
       setLoadingSmds(false);
     }
   };
-
-  const timezoneOptions = useMemo(
-    () => Array.from(new Set([browserTimezone(), form.timezone, ...supportedTimezones()])).filter(Boolean),
-    [form.timezone],
-  );
 
   const submit = async () => {
     if (!form.name.trim()) {
@@ -294,13 +289,7 @@ export function BPMFormModal({ open, onClose, onSaved, event }: BPMFormModalProp
         <FormRowGroup columns={3}>
           <FormRow>
             <Label>Timezone</Label>
-            <Select variant="surface" value={form.timezone} onChange={(e) => update('timezone', e.target.value)}>
-              {timezoneOptions.map((timezone) => (
-                <option key={timezone} value={timezone}>
-                  {timezone}
-                </option>
-              ))}
-            </Select>
+            <TimezoneSelect value={form.timezone} onChange={(timezone) => update('timezone', timezone)} />
           </FormRow>
           <FormRow>
             <Label>Time</Label>
