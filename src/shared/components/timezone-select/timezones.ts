@@ -4,8 +4,8 @@
 export interface TimezoneOption {
   value: string;
   label: string;
-  /** The zone's spoken name, e.g. "Eastern Time", so a search for it matches. */
-  keywords?: string;
+  /** The zone's spoken names, e.g. "Eastern Time EST EDT", so a search for one matches. */
+  keywords?: () => string;
 }
 
 function supportedTimezones(): string[] {
@@ -17,11 +17,18 @@ function supportedTimezones(): string[] {
   }
 }
 
-/** One named part of today's date in `timeZone` — or null when the browser does not know the zone. */
-function zoneName(timeZone: string, style: 'shortOffset' | 'longGeneric' | 'short'): string | null {
+type ZoneNameStyle = 'shortOffset' | 'longGeneric' | 'short' | 'long';
+
+/** The zone's name on `date` in `timeZone` — or null when the browser does not know the zone. */
+function zoneName(
+  timeZone: string,
+  style: ZoneNameStyle,
+  date: Date = new Date(),
+  locale: string = 'en-US',
+): string | null {
   try {
-    const part = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: style })
-      .formatToParts(new Date())
+    const part = new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: style })
+      .formatToParts(date)
       .find((p) => p.type === 'timeZoneName');
     return part?.value ?? '';
   } catch {
@@ -31,6 +38,34 @@ function zoneName(timeZone: string, style: 'shortOffset' | 'longGeneric' | 'shor
 
 export function browserTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+}
+
+// A browser only abbreviates the zones its locale is at home in: "IST" comes from
+// en-IN, "BST"/"CET" from en-GB, "AEST" from en-AU. Elsewhere it gives an offset.
+const ABBREVIATION_LOCALES = ['en-US', 'en-IN', 'en-GB', 'en-AU'];
+
+/**
+ * Every name the zone goes by across the year. Names are seasonal — in October
+ * Los Angeles is "PDT", not "PST" — so both a winter and a summer date are read,
+ * letting a search for either the standard or the daylight name find the zone.
+ */
+function searchKeywords(timeZone: string): string {
+  const year = new Date().getFullYear();
+  const seasons = [new Date(Date.UTC(year, 0, 15)), new Date(Date.UTC(year, 6, 15))];
+  const names = new Set<string>([zoneName(timeZone, 'longGeneric') ?? '']);
+  for (const season of seasons) {
+    for (const locale of ABBREVIATION_LOCALES) {
+      names.add(zoneName(timeZone, 'short', season, locale) ?? '');
+    }
+    names.add(zoneName(timeZone, 'long', season) ?? '');
+  }
+  return Array.from(names).filter(Boolean).join(' ');
+}
+
+/** `searchKeywords`, deferred and computed once — it is the costly part of an option. */
+function lazyKeywords(timeZone: string): () => string {
+  let keywords: string | null = null;
+  return () => (keywords ??= searchKeywords(timeZone));
 }
 
 const optionCache = new Map<string, TimezoneOption>();
@@ -46,7 +81,7 @@ function optionFor(name: string): TimezoneOption {
       : {
           value: name,
           label: offset ? `${name} (${offset})` : name,
-          keywords: `${zoneName(name, 'longGeneric') ?? ''} ${zoneName(name, 'short') ?? ''}`,
+          keywords: lazyKeywords(name),
         };
   optionCache.set(name, option);
   return option;

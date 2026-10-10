@@ -5,8 +5,11 @@ import { cn } from '@core/utils';
 export interface SearchableSelectOption {
   value: string;
   label: string;
-  /** Extra text the search matches against but the row does not show. */
-  keywords?: string;
+  /**
+   * Extra text the search matches against but the row does not show. Pass a
+   * function when it is costly to build — it is only called once the panel opens.
+   */
+  keywords?: string | (() => string);
 }
 
 export interface SearchableSelectProps {
@@ -23,9 +26,17 @@ export interface SearchableSelectProps {
   'aria-label'?: string;
 }
 
-/** Lower-cased with `_`, `/` and `-` read as spaces, so "new york" finds `America/New_York`. */
-function normalize(text: string): string {
-  return text.toLowerCase().replace(/[_/-]+/g, ' ').replace(/\s+/g, ' ').trim();
+/**
+ * Lower-cased words, with `_`, `/`, brackets and in-word hyphens read as spaces, so
+ * "new york" finds `America/New_York`. A hyphen before a digit is kept: "gmt-4".
+ */
+function toWords(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[_/()[\],]+/g, ' ')
+    .replace(/-(?!\d)/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
 }
 
 /**
@@ -62,16 +73,24 @@ export function SearchableSelect({
 
   const selected = options.find((option) => option.value === value);
 
-  const haystacks = React.useMemo(
-    () => options.map((option) => normalize(`${option.label} ${option.value} ${option.keywords ?? ''}`)),
-    [options],
-  );
+  // Built on first open, not on mount, so a long list costs nothing until it is used.
+  const haystacks = React.useMemo(() => {
+    if (!open) return null;
+    return options.map((option) => {
+      const keywords = typeof option.keywords === 'function' ? option.keywords() : option.keywords;
+      return toWords(`${option.label} ${option.value} ${keywords ?? ''}`);
+    });
+  }, [options, open]);
 
-  // Every typed word must appear, in any order: "york america" still matches.
+  // Every typed word must start a word of the option, in any order: "york amer"
+  // still matches. Matching word starts — not any substring — keeps short codes
+  // exact, so "est" finds EST zones and not every "West …" one.
   const filtered = React.useMemo(() => {
-    const words = normalize(query).split(' ').filter(Boolean);
-    if (words.length === 0) return options;
-    return options.filter((_, index) => words.every((word) => haystacks[index].includes(word)));
+    const words = toWords(query);
+    if (words.length === 0 || !haystacks) return options;
+    return options.filter((_, index) =>
+      words.every((word) => haystacks[index].some((candidate) => candidate.startsWith(word))),
+    );
   }, [options, haystacks, query]);
 
   function openPanel() {
