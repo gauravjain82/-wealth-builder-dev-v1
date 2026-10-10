@@ -23,6 +23,7 @@ import type {
 const LEVELS: { value: ExternalLeaderLevel; label: string }[] = [
   { value: 'SMD', label: 'SMD' },
   { value: 'CEO-MD', label: 'CEO-MD' },
+  { value: 'EVC', label: 'EVC' },
 ];
 
 const errorMessage = (err: unknown, fallback: string) =>

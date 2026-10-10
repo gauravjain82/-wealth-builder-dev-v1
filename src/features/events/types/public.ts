@@ -49,8 +49,6 @@ export interface PublicSeller {
   display_name: string;
   agent_code: string;
   level_code: string;
-  /** External team name; empty for our own leaders. */
-  team_name: string;
 }
 
 /** The full landing-page payload — one request renders the whole page. */

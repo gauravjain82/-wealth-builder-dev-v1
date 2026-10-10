@@ -86,7 +86,7 @@ export interface EventTrackedSeller {
 }
 
 /** Rank of a leader from an external team (values match our Level codes). */
-export type ExternalLeaderLevel = 'SMD' | 'CEO-MD';
+export type ExternalLeaderLevel = 'SMD' | 'CEO-MD' | 'EVC';
 
 /** An SMD / CEO-MD from a team outside WealthBuilder. */
 export interface ExternalTeamMember {
