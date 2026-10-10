@@ -63,8 +63,8 @@ interface StripePaymentStepProps {
   purchaserEmail: string;
   /** Called after Stripe reports the payment succeeded. */
   onSucceeded: () => void;
-  /** Called when Stripe declines or errors. */
-  onFailed: (message: string) => void;
+  /** Called when Stripe declines or errors; this step shows the message itself. */
+  onFailed: () => void;
   onBack: () => void;
   /** Render without the surrounding card (when already inside one). */
   bare?: boolean;
@@ -109,7 +109,7 @@ export function StripePaymentStep({
       if (result.error) {
         const message = result.error.message ?? 'Your payment could not be processed.';
         setCardError(message);
-        onFailed(message);
+        onFailed();
         return;
       }
 
@@ -123,7 +123,7 @@ export function StripePaymentStep({
 
       const message = `Payment is ${result.paymentIntent?.status ?? 'incomplete'}. Please try again.`;
       setCardError(message);
-      onFailed(message);
+      onFailed();
     } finally {
       setSubmitting(false);
     }

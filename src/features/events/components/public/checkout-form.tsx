@@ -247,6 +247,22 @@ export function CheckoutForm({
       )
     ) : null;
 
+  // Stripe has taken the payment and the hook is polling for the tickets. Say
+  // so: falling back to the greyed-out form here read as "nothing happened".
+  const confirmingBody =
+    checkout.stage === 'confirming' ? (
+      <div role="status" aria-live="polite" className="py-6 text-center">
+        <h2 className="text-lg font-semibold">Payment received</h2>
+        <p className={cn('mt-2 text-sm', MUTED)}>
+          Issuing your tickets — this takes a few seconds. Please keep this page open.
+        </p>
+      </div>
+    ) : null;
+  const confirmingStep =
+    confirmingBody && !inline ? <PublicCard>{confirmingBody}</PublicCard> : confirmingBody;
+  // What replaces the form once the order exists: the card, then the wait.
+  const activeStep = paymentStep ?? confirmingStep;
+
   const quantityField = (
     <QuantitySelector
       quantity={quantity}
@@ -379,7 +395,7 @@ export function CheckoutForm({
         {/* While paying, the card step is all there is, so the error leads it. */}
         {paymentStep ? errorBanner : null}
 
-        {paymentStep ?? (
+        {activeStep ?? (
           <>
             {quantityField}
             {purchaserFields}
@@ -413,7 +429,7 @@ export function CheckoutForm({
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
-          {paymentStep ?? (
+          {activeStep ?? (
             <>
               <PublicCard className="space-y-5">
                 <h2 className="text-lg font-semibold">Your Details</h2>

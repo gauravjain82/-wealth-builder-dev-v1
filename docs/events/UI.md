@@ -9,7 +9,7 @@
 | **API prefix** | `/api/events/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `7e3b7f1` — 2026-09-27; guest checkout confirmation against `fix/event-payment-confirmation` — 2026-10-10 |
 
 ## 1. Routes and entry points
 
@@ -134,7 +134,7 @@ use the theme this tab last saw for the event (sessionStorage), else classic.
 | Promo entry | previewed server-side before it is applied |
 | `OrderSummary` | **the server prices the order** — the client does not compute a total |
 | `StripePaymentStep` | `CardElement` in a Stripe-hosted iframe; **never sees a card number** |
-| Confirming | polls until the webhook issues tickets |
+| Confirming | "Payment received — issuing your tickets"; polls until the order is `PAID` |
 
 ### 2.4 Public ticket management — `event-transfer-page.tsx`, `event-ticket-page.tsx`
 
@@ -228,9 +228,9 @@ duplicate does not flash; its amber "Already checked in" line stands. BPM's scan
 | Sold out | `SOLD_OUT` | stated; no checkout |
 | Creating order | `creating` | a disabled form with progress |
 | Paying | `paying` | the Stripe step |
-| **Confirming** | `confirming` | **waiting for the webhook — not yet done** |
+| **Confirming** | `confirming` | **"Payment received" — waiting for the server to settle the order; not yet done** |
 | Done | `done` | tickets issued |
-| Payment failed | Stripe declined | the Stripe error; the order stays unpaid |
+| Payment failed | Stripe declined | the Stripe error on the card step; the buyer retries the same order |
 | Claim failed | wrong email or invoice | rejected, rate-limited |
 | Unassigned ticket | `UNASSIGNED` | prompts for a holder |
 | Transferred | `TRANSFERRED` | the holder is **cleared** |

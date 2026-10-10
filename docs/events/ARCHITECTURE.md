@@ -9,7 +9,7 @@
 | **API prefix** | `/api/events/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `7e3b7f1` — 2026-09-27; guest checkout confirmation against `fix/event-payment-confirmation` — 2026-10-10 |
 
 ## 1. Layering
 
@@ -81,12 +81,20 @@ The state machine is `hooks/use-event-checkout.ts`, and its stages are
    PaymentIntent client secret.
 2. **Stripe** — the caller confirms the card with that secret, via `CardElement` and
    `confirmCardPayment`.
-3. **`confirmed()`** — **poll the order** until the `payment_intent.succeeded` webhook has flipped it
-   to `PAID` and issued tickets.
+3. **`confirmed()`** — **poll the order** until the server has settled it to `PAID` and issued
+   tickets. While it waits the buyer sees "Payment received — issuing your tickets".
 
 **Step 3 is not defensive padding.** Ticket issuance is asynchronous: Stripe returning `succeeded` in
-the browser means the charge went through, *not* that our webhook has run. Treating the Stripe result
+the browser means the charge went through, *not* that the server knows. Treating the Stripe result
 as completion would show a success page with no tickets behind it.
+
+**The poll is also what settles the order when the webhook does not** (PHASES E23). The server
+settles on `payment_intent.succeeded`, and on every poll of an unpaid order it reads the
+PaymentIntent from Stripe itself and settles if Stripe says `succeeded`. The browser's word is still
+never trusted — the check is server to Stripe.
+
+**A declined card keeps the buyer on the card step**, with Stripe's message, retrying the same order
+and PaymentIntent. Returning to the form would make the next submit a second order.
 
 The client never sees card data — `CardElement` is a Stripe-hosted iframe, so a raw card number never
 enters this application.
@@ -205,7 +213,7 @@ browsing, Stripe for payment, and email-plus-invoice-number (rate-limited) for t
 |---|---|---|
 | The public service never sends a token | a separate service with no auth header | a token on a page a stranger can load |
 | Authenticated services fail loudly without a token | an explicit `throw` | a silent unauthenticated request |
-| **Checkout completes only after the webhook** | step 3 polls the order | a success page with no tickets behind it |
+| **Checkout completes only when the server reports the order `PAID`** | step 3 polls the order; only `PAID`/`COMP` ends it | a success page with no tickets behind it |
 | The client never sees card data | Stripe-hosted `CardElement` iframe | PCI scope this app does not want |
 | Assignment and lifecycle status are **independent** | two fields | a refunded ticket that cannot also be "assigned", or the reverse |
 | Attendance is a record, not a status | a separate check-in row | attendance lost when a status changes |
