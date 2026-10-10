@@ -1,27 +1,24 @@
 /**
- * A scan-to-buy QR code for the inline purchase form.
+ * A scan-to-buy QR code for the landing page's top bar, beside "Get Tickets".
  *
- * Built for the room: the organizer opens the event page on a projector, clicks
- * the code to enlarge it, and guests scan it to land on the form on their own
- * phones. It encodes this page's `#tickets` URL (`ticketsShareUrl`), which
- * `InlineCheckoutSection` scrolls to on arrival.
+ * Built for the room: the organizer has the event page on a projector, clicks
+ * the code to enlarge it, and guests scan it to land on the purchase form on
+ * their own phones. It sits in the sticky header so it is one click away from
+ * anywhere on the page. It encodes this page's `#tickets` URL
+ * (`ticketsShareUrl`), which `InlineCheckoutSection` scrolls to on arrival.
  *
- * Hidden below `sm`: a phone cannot scan its own screen, and the form is
- * already right there. The enlarged view is a native `<dialog>` like
- * `VideoModal`, on white so the code reads off a dark theme and a washed-out
- * projector alike.
+ * Hidden below `sm`: a phone cannot scan its own screen. The enlarged view is
+ * a native `<dialog>` like `VideoModal`, on white so the code reads off a dark
+ * theme and a washed-out projector alike.
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Maximize2, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
-import { cn } from '@core/utils';
 import { QrCode } from '@shared/components';
 
 import type { PublicEvent } from '../../types/public';
 import { ticketsShareUrl } from '../../utils/ticket-links';
-
-const MUTED = 'text-slate-600 dark:text-white/70 [[data-event-surface=tokens]_&]:text-[color:var(--event-muted)]';
 
 /** Share of the shorter viewport side the enlarged code fills. */
 const ENLARGED_FRACTION = 0.6;
@@ -50,26 +47,20 @@ export function TicketsQr({ event }: { event: Pick<PublicEvent, 'shortcut' | 'na
       <button
         type="button"
         onClick={open}
-        aria-label="Enlarge the ticket QR code"
-        className={cn(
-          'mx-auto mb-6 hidden w-full max-w-xl items-center gap-5 rounded-lg border border-slate-200 p-4 text-left',
-          'hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5 sm:flex',
-          '[[data-event-surface=tokens]_&]:rounded-sm [[data-event-surface=tokens]_&]:border-[color:var(--event-hairline)]',
-        )}
+        aria-label="Show the ticket QR code"
+        title="Show the QR code to book on a phone"
+        className="hidden items-center gap-2.5 rounded-md text-left hover:opacity-80 sm:flex"
       >
-        <QrCode value={url} size={112} alt="QR code to this ticket form" className="shrink-0 !p-2" />
-        <span>
-          <span className="block text-base font-semibold">Scan to book on your phone</span>
-          <span className={cn('mt-1 block text-sm', MUTED)}>
-            Point your camera at the code to open this form.
-          </span>
-          <span
-            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide"
-            style={{ color: 'var(--event-brand)' }}
-          >
-            <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
-            Enlarge
-          </span>
+        <QrCode
+          value={url}
+          size={40}
+          alt=""
+          className="shrink-0 !rounded-md !p-1"
+        />
+        <span className="text-xs font-bold uppercase leading-tight tracking-[0.12em]">
+          Scan to
+          <br />
+          book
         </span>
       </button>
 
