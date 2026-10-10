@@ -34,11 +34,25 @@ function youTubeId(url: URL): string | null {
   return null;
 }
 
-/** Extract a numeric Vimeo id from vimeo.com and player.vimeo.com links. */
-function vimeoId(url: URL): string | null {
-  if (!url.hostname.endsWith('vimeo.com')) return null;
-  const match = url.pathname.match(/(\d{6,})/);
-  return match ? match[1] : null;
+/** A Vimeo video reference: its numeric id plus the privacy hash, if any. */
+type VimeoRef = { id: string; hash: string | null };
+
+/**
+ * Extract the Vimeo id and privacy hash from vimeo.com and player.vimeo.com
+ * links.
+ *
+ * Unlisted videos only play when their hash travels with the id. Vimeo hands
+ * it out either as `?h=<hash>` (player/embed links) or as a path segment after
+ * the id (`vimeo.com/<id>/<hash>` share links), so both shapes are read.
+ */
+function vimeoRef(url: URL): VimeoRef | null {
+  const host = url.hostname.toLowerCase();
+  if (host !== 'vimeo.com' && !host.endsWith('.vimeo.com')) return null;
+  const match = url.pathname.match(/(\d{6,})(?:\/([0-9a-f]{6,}))?(?:\/|$)/i);
+  if (!match) return null;
+  const queryHash = url.searchParams.get('h');
+  const hash = queryHash && /^[0-9a-f]+$/i.test(queryHash) ? queryHash : null;
+  return { id: match[1], hash: hash ?? match[2] ?? null };
 }
 
 /**
@@ -73,11 +87,13 @@ export function resolveVideo(
     };
   }
 
-  const vimeo = vimeoId(url);
+  const vimeo = vimeoRef(url);
   if (vimeo) {
+    const params = new URLSearchParams({ autoplay: autoplay ? '1' : '0' });
+    if (vimeo.hash) params.set('h', vimeo.hash);
     return {
       kind: 'embed',
-      src: `https://player.vimeo.com/video/${vimeo}?autoplay=${autoplay ? 1 : 0}`,
+      src: `https://player.vimeo.com/video/${vimeo.id}?${params}`,
     };
   }
 
