@@ -1121,7 +1121,7 @@ function CheckoutContentEditor({ content, onChange }: EditorProps<CheckoutConten
           checked={content.show_qr !== false}
           onChange={(e) => onChange({ ...content, show_qr: e.target.checked })}
         />
-        Show a QR code above the form (opens this form on a phone; click it to enlarge)
+        Show a QR code in the top bar, beside Get Tickets (opens this form on a phone; click it to enlarge)
       </label>
       <Field
         label="Name of our own team"

@@ -13,6 +13,8 @@ import { useParams } from 'react-router-dom';
 import { usePublicEvent } from '../../hooks/use-public-event';
 import { EventHero } from '../../components/public/event-hero';
 import { LandingSections } from '../../components/public/landing-sections';
+import { TicketsQr } from '../../components/public/tickets-qr';
+import { showsTicketsQr } from '../../utils/ticket-links';
 import {
   PublicAlert,
   PublicEventShell,
@@ -61,11 +63,14 @@ export default function EventLandingPage() {
       hero={<EventHero event={event} />}
       headerAction={
         event.sales_state.is_open ? (
-          // Scrolls to the inline form when the layout has one (`#tickets`),
-          // else links to the checkout route.
-          <TicketsLink event={event} className="px-4 py-2">
-            Get Tickets
-          </TicketsLink>
+          <div className="flex items-center gap-4">
+            {showsTicketsQr(event) ? <TicketsQr event={event} /> : null}
+            {/* Scrolls to the inline form when the layout has one (`#tickets`),
+                else links to the checkout route. */}
+            <TicketsLink event={event} className="px-4 py-2">
+              Get Tickets
+            </TicketsLink>
+          </div>
         ) : null
       }
     >

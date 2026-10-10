@@ -9,9 +9,6 @@
  * Stripe.js is not loaded with the page: it is requested once the section
  * comes within ~800px of the viewport (or on submit, whichever is first).
  * Closed sales show the server's message and no form.
- *
- * Above the form sits a scan-to-buy QR code (`TicketsQr`) unless the section's
- * content turns it off; it goes away once the buyer is past the form.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -23,13 +20,12 @@ import { getStripe } from '../../utils/stripe-loader';
 import { TICKETS_ANCHOR_ID } from '../../utils/ticket-links';
 import { CheckoutConfirmation, CheckoutForm } from './checkout-form';
 import { PublicCard, PublicSection } from './public-event-shell';
-import { TicketsQr } from './tickets-qr';
 
 export interface InlineCheckoutSectionProps {
   event: PublicEvent;
   /** Heading override; blank uses the default heading. */
   title: string;
-  /** Optional anchor price and QR switch; absent from an older backend. */
+  /** Optional copy (the anchor price); absent from an older backend. */
   content?: CheckoutContent;
 }
 
@@ -86,9 +82,6 @@ export function InlineCheckoutSection({ event, title, content }: InlineCheckoutS
 
   return (
     <PublicSection id={TICKETS_ANCHOR_ID} title={title || DEFAULT_TITLE}>
-      {sales.is_open && checkout.stage === 'form' && content?.show_qr !== false ? (
-        <TicketsQr event={event} />
-      ) : null}
       <div ref={anchorRef}>
         {checkout.stage === 'complete' ? (
           <div className="mx-auto max-w-xl">

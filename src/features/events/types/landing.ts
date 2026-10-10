@@ -138,7 +138,7 @@ export interface PricingContent {
 export interface CheckoutContent {
   /** Struck-through regular price before the current one, e.g. "$49". Free text. */
   anchor_price?: string;
-  /** The scan-to-buy QR code above the form. Absent → shown. */
+  /** The scan-to-buy QR code in the top bar. Absent → shown. */
   show_qr?: boolean;
   /**
    * What our own leaders' team is called in the buyer's team list, e.g.

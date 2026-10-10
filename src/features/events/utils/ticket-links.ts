@@ -9,6 +9,7 @@
 
 import type { MouseEvent } from 'react';
 
+import type { CheckoutContent } from '../types/landing';
 import type { PublicEvent } from '../types/public';
 
 /** DOM id of the inline purchase section (`InlineCheckoutSection`). */
@@ -21,6 +22,18 @@ export function hasInlineCheckout(event: Pick<PublicEvent, 'sections'>): boolean
       (section) => section.section_type === 'checkout' && section.is_enabled,
     ),
   );
+}
+
+/**
+ * True when the top bar should offer the scan-to-buy QR code: the form is on
+ * the page (so `#tickets` lands on it) and the organizer has not turned the
+ * code off on the `checkout` section (`show_qr`, absent → shown).
+ */
+export function showsTicketsQr(event: Pick<PublicEvent, 'sections'>): boolean {
+  const checkout = event.sections?.find(
+    (section) => section.section_type === 'checkout' && section.is_enabled,
+  );
+  return Boolean(checkout) && (checkout?.content as CheckoutContent).show_qr !== false;
 }
 
 /** `#tickets` when the form is on the page, else the checkout route. */
