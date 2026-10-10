@@ -49,6 +49,11 @@ export interface PublicSeller {
   display_name: string;
   agent_code: string;
   level_code: string;
+  /**
+   * The external team's name; empty for our own leaders. Absent from a backend
+   * that predates the team step — treat as empty.
+   */
+  team_name?: string;
 }
 
 /** The full landing-page payload — one request renders the whole page. */

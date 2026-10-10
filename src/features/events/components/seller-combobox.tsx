@@ -37,6 +37,23 @@ function searchSellers<T extends SellerOption>(sellers: readonly T[], query: str
   return [...leading, ...rest];
 }
 
+/** Room left above the field for a sticky page header when the list opens on a phone. */
+const TOUCH_TOP_OFFSET = 88;
+
+/**
+ * On a touch screen, bring the field to the top of what the on-screen keyboard
+ * leaves visible, so the list below it is not opened underneath the keyboard.
+ * Waits for the keyboard to finish sliding in before measuring.
+ */
+function liftAboveKeyboard(input: HTMLInputElement) {
+  if (!window.matchMedia?.('(pointer: coarse)').matches) return;
+  window.setTimeout(() => {
+    if (document.activeElement !== input) return;
+    const top = input.getBoundingClientRect().top - (window.visualViewport?.offsetTop ?? 0);
+    window.scrollBy({ top: top - TOUCH_TOP_OFFSET, behavior: 'smooth' });
+  }, 300);
+}
+
 /**
  * Type-to-search SMD picker: the list narrows on every keystroke, matching the
  * name or the agency code. Replaces a native `<select>`, which is unusable once
@@ -44,6 +61,10 @@ function searchSellers<T extends SellerOption>(sellers: readonly T[], query: str
  *
  * Editing the text clears the current pick, so a half-typed search is never
  * submitted as the previous answer. Supports ↑/↓, Enter and Escape.
+ *
+ * Phone use: rows are finger-sized below `sm`, the keyboard does not
+ * autocorrect or capitalise a name, and the field scrolls up on focus so the
+ * list stays above the keyboard.
  */
 export function SellerCombobox({
   sellers,
@@ -142,6 +163,10 @@ export function SellerCombobox({
         aria-controls={listboxId}
         aria-autocomplete="list"
         autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        enterKeyHint="search"
         className={inputClassName}
         placeholder={placeholder}
         disabled={disabled}
@@ -157,6 +182,7 @@ export function SellerCombobox({
           setOpen(true);
           setActiveIndex(0);
           event.target.select();
+          liftAboveKeyboard(event.target);
         }}
         onKeyDown={handleKeyDown}
       />
@@ -165,7 +191,7 @@ export function SellerCombobox({
           ref={listRef}
           id={listboxId}
           role="listbox"
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-slate-200 bg-white py-1 text-left shadow-lg dark:border-white/15 dark:bg-[#252c3b] [[data-event-surface=tokens]_&]:rounded-sm [[data-event-surface=tokens]_&]:border-[color:var(--event-hairline-strong)] [[data-event-surface=tokens]_&]:bg-[var(--event-surface)]"
+          className="absolute z-50 mt-1 max-h-52 w-full overscroll-contain sm:max-h-60 overflow-y-auto rounded-md border border-slate-200 bg-white py-1 text-left shadow-lg dark:border-white/15 dark:bg-[#252c3b] [[data-event-surface=tokens]_&]:rounded-sm [[data-event-surface=tokens]_&]:border-[color:var(--event-hairline-strong)] [[data-event-surface=tokens]_&]:bg-[var(--event-surface)]"
         >
           {visible.map((seller, index) => (
             <li
@@ -179,7 +205,7 @@ export function SellerCombobox({
                 pick(seller);
               }}
               className={cn(
-                'flex cursor-pointer items-baseline justify-between gap-3 px-3 py-2 text-sm text-slate-700 dark:text-white/80 [[data-event-surface=tokens]_&]:text-[color:var(--event-text)]',
+                'flex cursor-pointer items-baseline justify-between gap-3 px-3 py-3 text-base text-slate-700 sm:py-2 sm:text-sm dark:text-white/80 [[data-event-surface=tokens]_&]:text-[color:var(--event-text)]',
                 index === activeIndex &&
                   'bg-slate-100 dark:bg-white/10 [[data-event-surface=tokens]_&]:bg-white/10',
                 seller.id === value && 'font-semibold',

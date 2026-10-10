@@ -15,6 +15,8 @@
  * - `page`   — form cards beside a sticky order summary (the checkout route);
  * - `inline` — one column inside a single card: price, seats left, fields,
  *              summary, agreement, button; the card step replaces it in place.
+ *              An `anchorPrice` (the section's copy) is struck through before
+ *              the price.
  */
 
 import { useMemo, useState } from 'react';
@@ -25,6 +27,7 @@ import type { Stripe } from '@stripe/stripe-js';
 import { cn } from '@core/utils';
 import { useToastStore } from '@/store';
 
+import { sellersByTeam } from '../../utils/public-sellers';
 import type { useEventCheckout } from '../../hooks/use-event-checkout';
 import { publicEventService } from '../../services/public-event-service';
 import {
@@ -66,12 +69,15 @@ export function CheckoutForm({
   checkout,
   stripe,
   layout,
+  anchorPrice,
 }: {
   event: PublicEvent;
   checkout: CheckoutController;
   /** From `getStripe()`; `null` means payments are not configured. */
   stripe: Promise<Stripe | null> | null;
   layout: 'page' | 'inline';
+  /** Inline only: the regular price, shown struck through. Copy, never charged. */
+  anchorPrice?: string;
 }) {
   const addToast = useToastStore((state) => state.addToast);
   const shortcut = event.shortcut;
@@ -93,6 +99,7 @@ export function CheckoutForm({
   const [agreed, setAgreed] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
+  const sellers = useMemo(() => sellersByTeam(event), [event]);
   const summary = useMemo(
     () => computeSummary(event, quantity, addOns, promo),
     [event, quantity, addOns, promo],
@@ -215,7 +222,7 @@ export function CheckoutForm({
         disabled={locked}
       />
       <SellerSelect
-        sellers={event.sellers}
+        sellers={sellers}
         value={sellerId}
         onChange={setSellerId}
         disabled={locked}
@@ -280,6 +287,7 @@ export function CheckoutForm({
   if (inline) {
     const tier = event.current_tier;
     const remaining = event.sales_state.tickets_remaining;
+    const anchor = anchorPrice?.trim();
     return (
       <PublicCard emphasis className="mx-auto max-w-xl space-y-6 text-left sm:p-8">
         <div className="text-center">
@@ -287,6 +295,12 @@ export function CheckoutForm({
             <>
               <Eyebrow>{tier.label}</Eyebrow>
               <p className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
+                {anchor ? (
+                  <s className={cn('mr-3 align-middle text-2xl font-semibold sm:text-3xl', MUTED)}>
+                    <span className="sr-only">Regular price </span>
+                    {anchor}
+                  </s>
+                ) : null}
                 {formatPrice(tier.price, event.payment_currency)}
                 <span className={cn('ml-1 text-sm font-semibold', MUTED)}>/ seat</span>
               </p>

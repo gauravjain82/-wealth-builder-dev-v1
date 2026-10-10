@@ -17,6 +17,7 @@ import type {
   LandingSection,
   MarqueeContent,
   PillarsContent,
+  CheckoutContent,
   PricingContent,
   RichTextContent,
   SectionType,
@@ -66,7 +67,13 @@ const RENDERERS: Record<SectionType, Renderer> = {
       content={s.content as PricingContent}
     />
   ),
-  checkout: (event, s) => <InlineCheckoutSection event={event} title={s.title} />,
+  checkout: (event, s) => (
+    <InlineCheckoutSection
+      event={event}
+      title={s.title}
+      content={s.content as CheckoutContent}
+    />
+  ),
   speakers: (event, s) => (
     <SpeakersSection speakers={event.speakers} title={s.title} />
   ),

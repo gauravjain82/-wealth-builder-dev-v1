@@ -8,6 +8,7 @@ import type {
   AgendaContent,
   AgendaItem,
   AgendaSource,
+  CheckoutContent,
   CtaBandContent,
   CtaBandSize,
   FaqContent,
@@ -77,6 +78,8 @@ export function SectionContentEditor({
       return <MarqueeEditor {...props} />;
     case 'pricing':
       return <PricingContentEditor {...props} />;
+    case 'checkout':
+      return <CheckoutContentEditor {...props} />;
     default:
       return null;
   }
@@ -1092,6 +1095,43 @@ function PricingContentEditor({ content, onChange }: EditorProps<PricingContent>
           value={content.fine_print ?? ''}
           maxLength={1000}
           onChange={(e) => onChange({ ...content, fine_print: e.target.value })}
+        />
+      </Field>
+    </div>
+  );
+}
+
+/** Optional regular price and QR switch for the model-backed Ticket checkout section. */
+function CheckoutContentEditor({ content, onChange }: EditorProps<CheckoutContent>) {
+  return (
+    <div className="grid gap-3">
+      <Field
+        label="Regular price"
+        help="Optional. Shown struck through before the current price. Free text, e.g. $49 — the price charged always comes from the Ticket Price tab."
+      >
+        <Input
+          value={content.anchor_price ?? ''}
+          maxLength={24}
+          placeholder="$49"
+          onChange={(e) => onChange({ ...content, anchor_price: e.target.value })}
+        />
+      </Field>
+      <label className="flex items-center gap-2 text-sm text-slate-800 dark:text-white/90">
+        <Checkbox
+          checked={content.show_qr !== false}
+          onChange={(e) => onChange({ ...content, show_qr: e.target.checked })}
+        />
+        Show a QR code above the form (opens this form on a phone; click it to enlarge)
+      </label>
+      <Field
+        label="Name of our own team"
+        help="Buyers pick a team, then an SMD. External teams appear under their directory names; this names the team of our own leaders. Blank shows Wealth Builder."
+      >
+        <Input
+          value={content.own_team_label ?? ''}
+          maxLength={60}
+          placeholder="Wealth Builder"
+          onChange={(e) => onChange({ ...content, own_team_label: e.target.value })}
         />
       </Field>
     </div>
