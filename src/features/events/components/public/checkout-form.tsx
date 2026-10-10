@@ -8,6 +8,9 @@
  * component owns the draft: quantity, purchaser, seller, add-ons, custom
  * fields, promo, refund-policy agreement — and the Stripe card step.
  *
+ * The draft is remembered on the buyer's device (`utils/checkout-draft.ts`), so
+ * a refresh or a closed tab does not empty the form; it is cleared on purchase.
+ *
  * Every amount shown here is a preview (`computeSummary`). The server prices
  * each order and the PaymentIntent it creates is what is charged (PHASES E9).
  *
@@ -19,7 +22,7 @@
  *              the price.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Elements } from '@stripe/react-stripe-js';
 import type { Stripe } from '@stripe/stripe-js';
@@ -27,6 +30,7 @@ import type { Stripe } from '@stripe/stripe-js';
 import { cn } from '@core/utils';
 import { useToastStore } from '@/store';
 
+import { loadCheckoutDraft, saveCheckoutDraft } from '../../utils/checkout-draft';
 import { sellersByTeam } from '../../utils/public-sellers';
 import type { useEventCheckout } from '../../hooks/use-event-checkout';
 import { publicEventService } from '../../services/public-event-service';
@@ -83,21 +87,34 @@ export function CheckoutForm({
   const shortcut = event.shortcut;
   const inline = layout === 'inline';
 
-  const [quantity, setQuantity] = useState(1);
-  const [purchaser, setPurchaser] = useState({
-    purchaser_first_name: '',
-    purchaser_last_name: '',
-    purchaser_email: '',
-    purchaser_phone: '',
-  });
-  const [sellerId, setSellerId] = useState<number | null>(null);
-  const [addOns, setAddOns] = useState<CheckoutAddOnSpec[]>([]);
-  const [customValues, setCustomValues] = useState<Record<string, string | boolean>>({});
-  const [promoCode, setPromoCode] = useState('');
+  // What this buyer typed last time on this device, if anything (see
+  // utils/checkout-draft.ts). Read once; the form owns the values from here.
+  const [draft] = useState(() => loadCheckoutDraft(event));
+  const [quantity, setQuantity] = useState(draft?.quantity ?? 1);
+  const [purchaser, setPurchaser] = useState(
+    draft?.purchaser ?? {
+      purchaser_first_name: '',
+      purchaser_last_name: '',
+      purchaser_email: '',
+      purchaser_phone: '',
+    },
+  );
+  const [sellerId, setSellerId] = useState<number | null>(draft?.sellerId ?? null);
+  const [addOns, setAddOns] = useState<CheckoutAddOnSpec[]>(draft?.addOns ?? []);
+  const [customValues, setCustomValues] = useState<Record<string, string | boolean>>(
+    draft?.customValues ?? {},
+  );
+  const [promoCode, setPromoCode] = useState(draft?.promoCode ?? '');
   const [promo, setPromo] = useState<PromoPreview | null>(null);
   const [checkingPromo, setCheckingPromo] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+
+  // Keep the draft current. `useEventCheckout` forgets it once the purchase
+  // completes — by then the host has swapped this form for the confirmation.
+  useEffect(() => {
+    saveCheckoutDraft(shortcut, { quantity, purchaser, sellerId, addOns, customValues, promoCode });
+  }, [shortcut, quantity, purchaser, sellerId, addOns, customValues, promoCode]);
 
   const sellers = useMemo(() => sellersByTeam(event), [event]);
   const summary = useMemo(

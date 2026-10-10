@@ -11,11 +11,16 @@
  * Step 3 is necessary because ticket issuance is asynchronous: Stripe returning
  * `succeeded` on the client only means the charge went through, not that our
  * webhook has run yet.
+ *
+ * Reaching `complete` also forgets the buyer's saved form draft
+ * (`utils/checkout-draft.ts`): the purchase is done, so the next visit on this
+ * device starts empty.
  */
 
 import { useCallback, useRef, useState } from 'react';
 
 import { PublicApiError, publicEventService } from '../services/public-event-service';
+import { clearCheckoutDraft } from '../utils/checkout-draft';
 import type {
   CheckoutPayload,
   CheckoutResult,
@@ -118,6 +123,7 @@ export function useEventCheckout(shortcut: string): UseEventCheckoutResult {
         );
         if (status.status !== 'PENDING') {
           setSettled(status);
+          clearCheckoutDraft(shortcut);
           setStage('complete');
           return;
         }
@@ -131,6 +137,7 @@ export function useEventCheckout(shortcut: string): UseEventCheckoutResult {
     // The payment succeeded but we never saw the webhook land. The order is
     // real, so show success with a caveat instead of implying payment failed.
     setSettled(null);
+    clearCheckoutDraft(shortcut);
     setStage('complete');
   }, [shortcut]);
 
