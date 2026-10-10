@@ -15,15 +15,18 @@ interface CardSpec {
 /**
  * Dashboard stat cards. Tickets and purchases are split by who sold them (WB vs
  * the partner the event imports from); ticket status uses the shown statuses
- * (Assigned / Not assigned / Transferred, which add up to the total). Money is
- * what WB collected — a partner's export carries no amounts, so it is excluded and
- * the card says so.
+ * (Assigned / Not assigned / Transferred, which add up to the total). Revenue is
+ * WB's own collections plus what each partner collected (from the partner's
+ * transactions export); the two are never merged into one figure without the
+ * split beside it. A server without partner revenue shows WB collections only.
  */
 export function StatsCards({ summary }: StatsCardsProps) {
   const currency = summary.currency || 'USD';
   const partner = summary.external_provider || '';
   const imported = summary.external_tickets ?? 0;
   const wbTickets = summary.wb_tickets ?? summary.total_tickets - imported;
+  const partners = summary.external_partners ?? [];
+  const unpriced = summary.external_unpriced_purchases ?? 0;
   const cards: CardSpec[] = [
     {
       label: 'Tickets',
@@ -46,13 +49,25 @@ export function StatsCards({ summary }: StatsCardsProps) {
       value: `${summary.assigned} / ${summary.unassigned} / ${summary.transferred}`,
       hint: `${summary.checked_in.toLocaleString()} checked in`,
     },
-    {
-      label: 'Collected through WB',
-      value: formatPrice(summary.collected, currency),
-      hint: partner
-        ? `${partner} amounts aren't in its export · projected ${formatPrice(summary.projected, currency)}`
-        : `${summary.pending_count} pending · projected ${formatPrice(summary.projected, currency)}`,
-    },
+    summary.total_revenue !== undefined && partners.length
+      ? {
+          label: 'Total revenue',
+          value: formatPrice(summary.total_revenue, currency),
+          hint: [
+            `WB ${formatPrice(summary.collected, currency)}`,
+            ...partners.map((p) => `${p.label} ${formatPrice(p.revenue, currency)}`),
+            unpriced ? `${unpriced.toLocaleString()} partner purchases have no price yet` : '',
+          ]
+            .filter(Boolean)
+            .join(' · '),
+        }
+      : {
+          label: 'Collected through WB',
+          value: formatPrice(summary.collected, currency),
+          hint: partner
+            ? `No ${partner} payment data imported yet · projected ${formatPrice(summary.projected, currency)}`
+            : `${summary.pending_count} pending · projected ${formatPrice(summary.projected, currency)}`,
+        },
   ];
 
   return (

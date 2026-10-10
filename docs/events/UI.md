@@ -220,6 +220,39 @@ duplicate does not flash; its amber "Already checked in" line stands. BPM's scan
 | Access | per-event permission grants, scoped `EVENT`/`PURCHASE`/`CHECKIN`/`QUESTION` |
 | Reports panel | the escrow report — Stripe funds held pending SMD payout |
 
+### External Tickets — step 7, Partner payments (E26)
+
+`transactions-panel.tsx`, on `event-external-tickets-page.tsx`. Upload the partner's
+transactions export (one row per purchase), confirm it belongs to the event, then review:
+purchases in file, new, changed, unchanged, unmatched, and the matched total. **Apply** writes
+the payments; until then nothing changes. Unmatched invoices are listed (invoice, buyer, method,
+quantity, total, paid date) and their money is stated as not counted.
+
+States: no upload yet → a one-line empty message; a rejected file → the backend's row-numbered
+error under the form, nothing stored; applied → the Apply button is gone and the applied time
+shows; more than one upload → a history list to switch between them.
+
+The dashboard's fourth stat card reads **Total revenue** with the WB / partner split in its
+hint once a partner has priced purchases, and **Collected through WB** otherwise. The order
+detail of an imported order shows how it was paid, or "No payment data from BSCPro yet".
+
+### External Tickets — Fetch from BSCPro (E27)
+
+By default the card has only the BSCPro event name (pre-filled from the WB event until saved), the
+BSCPro event number, **Save** and **Run now**; nothing runs on its own. The schedule controls
+described below appear only when the server reports `schedule_available`.
+
+
+`fetch-panel.tsx`. A schedule card (partner event name exactly as listed, partner event number, how often, on/off — off by default, next run time,
+**Run now**, **Save schedule**) above the run history. Each run shows when it started, whether it
+was scheduled or run by hand, what changed, and a status badge: Queued, Running…, Updated,
+No change, Needs review, Failed. Needs-review and failed runs have an amber or red left edge and
+show their reason; the header counts how many on the page need attention. Expanding a run lists
+its steps and offers **Open conflicts & review** when it left review items.
+
+States: schedule switched off by the server after repeated failures → a red notice with the reason; no schedule saved → Run now is disabled; a run in progress → Run now reads "Run in
+progress…" and the list refreshes itself; no runs → "No runs yet."
+
 ## 3. States
 
 | State | Trigger | What the user sees |

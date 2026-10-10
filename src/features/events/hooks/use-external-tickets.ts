@@ -1,6 +1,13 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { externalTicketService } from '../services/external-ticket-service';
-import type { DecidePayload, ExternalImport, ResolvePayload, RowFilters, SponsorFilters } from '../types/external-tickets';
+import type {
+  DecidePayload,
+  ExternalImport,
+  ResolvePayload,
+  RowFilters,
+  SponsorFilters,
+  TransactionAction,
+} from '../types/external-tickets';
 
 /** States in which the backend is still working; the import is polled until it settles. */
 const WORKING = new Set(['queued', 'validating', 'applying']);
@@ -16,6 +23,13 @@ const keys = {
   sponsors: (eventId: number, importId: number, filters: SponsorFilters) =>
     ['external-tickets', eventId, 'sponsors', importId, filters] as const,
   changes: (eventId: number, params: object) => ['external-tickets', eventId, 'changes', params] as const,
+  fetchConfig: (eventId: number) => ['external-tickets', eventId, 'fetch-config'] as const,
+  fetchRuns: (eventId: number, page: number) => ['external-tickets', eventId, 'fetch-runs', page] as const,
+  transactionImports: (eventId: number) => ['external-tickets', eventId, 'transaction-imports'] as const,
+  transactionImport: (eventId: number, importId: number) =>
+    ['external-tickets', eventId, 'transaction-import', importId] as const,
+  transactionRows: (eventId: number, importId: number, params: object) =>
+    ['external-tickets', eventId, 'transaction-rows', importId, params] as const,
 };
 
 /** Snapshot history for the event. */
@@ -112,4 +126,91 @@ export function useExternalTicketActions(eventId: number) {
     onSuccess: refresh,
   });
   return { upload, analyze, preview, apply, decide, resolve, refresh };
+}
+
+/** Upload history of the partner's transactions exports. */
+export function useTransactionImports(eventId: number) {
+  return useQuery({
+    queryKey: keys.transactionImports(eventId),
+    queryFn: ({ signal }) => externalTicketService.listTransactionImports(eventId, signal),
+  });
+}
+
+/** One transactions import; the backend recomputes its preview while it is unapplied. */
+export function useTransactionImport(eventId: number, importId: number | null) {
+  return useQuery({
+    queryKey: keys.transactionImport(eventId, importId ?? 0),
+    queryFn: ({ signal }) => externalTicketService.getTransactionImport(eventId, importId as number, signal),
+    enabled: importId !== null,
+  });
+}
+
+/** Rows of a transactions import, optionally one action (e.g. `unmatched`). */
+export function useTransactionRows(
+  eventId: number,
+  importId: number | null,
+  params: { action?: TransactionAction; page?: number },
+) {
+  return useQuery({
+    queryKey: keys.transactionRows(eventId, importId ?? 0, params),
+    queryFn: ({ signal }) => externalTicketService.listTransactionRows(eventId, importId as number, params, signal),
+    enabled: importId !== null,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Upload and apply a transactions export. Applying changes order totals, so event queries refresh too. */
+export function useTransactionActions(eventId: number) {
+  const client = useQueryClient();
+  const refresh = () => client.invalidateQueries({ queryKey: keys.all(eventId) });
+  const upload = useMutation({
+    mutationFn: ({ file, capturedAt }: { file: File; capturedAt: string }) =>
+      externalTicketService.uploadTransactions(eventId, file, capturedAt),
+    onSuccess: refresh,
+  });
+  const apply = useMutation({
+    mutationFn: (importId: number) => externalTicketService.applyTransactions(eventId, importId),
+    onSuccess: refresh,
+  });
+  return { upload, apply };
+}
+
+/** The event's fetch schedule (`config` is null until one is saved). */
+export function useFetchConfig(eventId: number) {
+  return useQuery({
+    queryKey: keys.fetchConfig(eventId),
+    queryFn: ({ signal }) => externalTicketService.getFetchConfig(eventId, signal),
+  });
+}
+
+/** Fetch run history, polled every 3 s while a run on the page is queued or running. */
+export function useFetchRuns(eventId: number, page: number) {
+  return useQuery({
+    queryKey: keys.fetchRuns(eventId, page),
+    queryFn: ({ signal }) => externalTicketService.listFetchRuns(eventId, page, signal),
+    placeholderData: keepPreviousData,
+    refetchInterval: (q) =>
+      q.state.data?.rows.some((run) => run.status === 'queued' || run.status === 'running') ? 3000 : false,
+  });
+}
+
+/** Save the schedule or start a run now. A finished run changes tickets and totals, so everything refreshes. */
+export function useFetchActions(eventId: number) {
+  const client = useQueryClient();
+  const refresh = () => client.invalidateQueries({ queryKey: keys.all(eventId) });
+  const save = useMutation({
+    mutationFn: (payload: {
+      external_event_id: string;
+      external_event_name: string;
+      enabled: boolean;
+      interval_minutes: number;
+    }) =>
+      externalTicketService.saveFetchConfig(eventId, payload),
+    onSuccess: refresh,
+  });
+  const runNow = useMutation({
+    mutationFn: () => externalTicketService.startFetchRun(eventId),
+    onSuccess: refresh,
+  });
+  return { save, runNow };
 }

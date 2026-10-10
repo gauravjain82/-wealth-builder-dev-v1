@@ -74,8 +74,31 @@ export interface EventOrder extends EventOrderListItem {
   custom_field_values: Record<string, unknown>;
   tickets: EventTicket[];
   add_on_items: AddOnOrderItem[];
+  /**
+   * How an imported order was paid at the partner; `null` until a transactions
+   * export prices it, absent on older servers. Reference only — WB cannot refund
+   * `processor_transaction_id`, it is the partner's charge.
+   */
+  external_payment?: ExternalOrderPayment | null;
   updated_at: string;
   client_secret?: string;
+}
+
+export interface ExternalOrderPayment {
+  provider: string;
+  invoice: string;
+  provider_purchase_id: string;
+  payment_method: string;
+  processor_transaction_id: string;
+  purchase_type: string;
+  quantity: number;
+  unit_price: string;
+  tickets_total: string;
+  addons_total: string;
+  fees: string;
+  total: string;
+  currency: string;
+  paid_at: string | null;
 }
 
 export interface OrderCreatePayload {

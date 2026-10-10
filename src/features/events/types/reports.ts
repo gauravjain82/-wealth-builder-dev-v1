@@ -9,6 +9,14 @@ export interface TicketSummary {
   remaining_capacity: number | null;
 }
 
+/** What one outside ticketing partner collected for the event. */
+export interface ExternalPartnerRevenue {
+  provider: string;
+  label: string;
+  revenue: string;
+  purchases: number;
+}
+
 export interface ReportSummary {
   total_tickets: number;
   /** Shown statuses; they add up to `total_tickets`. */
@@ -30,6 +38,16 @@ export interface ReportSummary {
   refunded: string;
   escrow_balance: string;
   currency: string;
+  /**
+   * Money partners collected, from their transactions exports. Never part of
+   * `collected`, which stays WB-only. All four are absent on older servers.
+   */
+  external_revenue?: string;
+  /** `collected` + `external_revenue`. */
+  total_revenue?: string;
+  external_partners?: ExternalPartnerRevenue[];
+  /** Imported purchases no transactions export has priced yet (they add $0). */
+  external_unpriced_purchases?: number;
   pending_count: number;
   unassigned_smd_count: number;
   order_count: number;

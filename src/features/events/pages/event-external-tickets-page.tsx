@@ -21,11 +21,13 @@ import { RowDetailModal } from '../components/external-tickets/row-detail-modal'
 import { ApplyPanel } from '../components/external-tickets/apply-panel';
 import { ReviewQueue } from '../components/external-tickets/review-queue';
 import { HolderEmailsPanel } from '../components/external-tickets/holder-emails-panel';
+import { TransactionsPanel } from '../components/external-tickets/transactions-panel';
+import { FetchPanel } from '../components/external-tickets/fetch-panel';
 import { errorText } from '../components/external-tickets/labels';
 import type { BigEvent } from '../types/event';
 import type { AccountMap, DecidePayload, RowFilters, SponsorFilters } from '../types/external-tickets';
 
-type Step = 'upload' | 'sponsors' | 'holders' | 'apply' | 'review' | 'emails';
+type Step = 'upload' | 'sponsors' | 'holders' | 'apply' | 'review' | 'emails' | 'payments' | 'fetch';
 
 const STEPS: Array<{ key: Step; label: string }> = [
   { key: 'upload', label: '1. Upload export' },
@@ -34,6 +36,8 @@ const STEPS: Array<{ key: Step; label: string }> = [
   { key: 'apply', label: '4. Apply update' },
   { key: 'review', label: '5. Conflicts & review' },
   { key: 'emails', label: '6. Email holders' },
+  { key: 'payments', label: '7. Partner payments' },
+  { key: 'fetch', label: 'Fetch from BSCPro' },
 ];
 
 /**
@@ -175,9 +179,23 @@ export default function EventExternalTicketsPage() {
       ) : null}
 
       {step === 'emails' ? <HolderEmailsPanel eventId={id} /> : null}
+      {step === 'fetch' ? (
+        <FetchPanel
+          eventId={id}
+          eventName={event?.name ?? ''}
+          onShowReview={() => {
+            setReviewKind('');
+            setReviewPage(1);
+            setStep('review');
+          }}
+        />
+      ) : null}
+      {step === 'payments' ? (
+        <TransactionsPanel eventId={id} eventName={event?.name ?? 'this event'} currency={event?.payment_currency || 'USD'} />
+      ) : null}
 
-      {step !== 'upload' && step !== 'review' && step !== 'emails' && !imp ? <Text variant="muted">Upload an export first.</Text> : null}
-      {step !== 'upload' && step !== 'review' && step !== 'emails' && imp && !ready ? (
+      {step !== 'upload' && step !== 'review' && step !== 'emails' && step !== 'payments' && step !== 'fetch' && !imp ? <Text variant="muted">Upload an export first.</Text> : null}
+      {step !== 'upload' && step !== 'review' && step !== 'emails' && step !== 'payments' && step !== 'fetch' && imp && !ready ? (
         <Text variant="muted" aria-live="polite">
           {imp.state === 'failed' ? `This upload failed validation: ${imp.safe_error.replace(/_/g, ' ')}.` : 'Validating the export…'}
         </Text>

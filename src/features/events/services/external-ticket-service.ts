@@ -8,6 +8,8 @@ import type {
   EmailRecipientsPage,
   EmailRun,
   ExternalImport,
+  FetchConfigResponse,
+  FetchRun,
   ImportRow,
   ImportRowDetail,
   Paged,
@@ -17,6 +19,9 @@ import type {
   SponsorFilters,
   SponsorRow,
   SponsorSummary,
+  TransactionAction,
+  TransactionImport,
+  TransactionRow,
 } from '../types/external-tickets';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -133,6 +138,50 @@ export const externalTicketService = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+
+  // --- Partner transactions exports: what each imported purchase cost and how it was paid. ---
+
+  listTransactionImports: (eventId: number, signal?: AbortSignal) =>
+    request<Paged<TransactionImport>>(`${base(eventId)}/transactions/imports/`, { signal }),
+
+  getTransactionImport: (eventId: number, importId: number, signal?: AbortSignal) =>
+    request<TransactionImport>(`${base(eventId)}/transactions/imports/${importId}/`, { signal }),
+
+  uploadTransactions: (eventId: number, file: File, capturedAt: string) => {
+    const body = new FormData();
+    body.append('file', file);
+    body.append('provider', 'bscpro');
+    body.append('captured_at', capturedAt);
+    return request<TransactionImport>(`${base(eventId)}/transactions/imports/`, { method: 'POST', body });
+  },
+
+  applyTransactions: (eventId: number, importId: number) =>
+    request<TransactionImport>(`${base(eventId)}/transactions/imports/${importId}/apply/`, { method: 'POST', body: '{}' }),
+
+  listTransactionRows: (
+    eventId: number,
+    importId: number,
+    params: { action?: TransactionAction; page?: number },
+    signal?: AbortSignal,
+  ) =>
+    request<Paged<TransactionRow>>(`${base(eventId)}/transactions/imports/${importId}/rows/${query(params)}`, { signal }),
+
+  // --- Scheduled fetch: the backend downloads the partner's exports and applies them. ---
+
+  getFetchConfig: (eventId: number, signal?: AbortSignal) =>
+    request<FetchConfigResponse>(`${base(eventId)}/fetch/config/`, { signal }),
+
+  saveFetchConfig: (
+    eventId: number,
+    payload: { external_event_id: string; external_event_name: string; enabled: boolean; interval_minutes: number },
+  ) =>
+    request<FetchConfigResponse>(`${base(eventId)}/fetch/config/`, { method: 'PUT', body: JSON.stringify(payload) }),
+
+  listFetchRuns: (eventId: number, page: number, signal?: AbortSignal) =>
+    request<Paged<FetchRun>>(`${base(eventId)}/fetch/runs/${query({ page, page_size: 20 })}`, { signal }),
+
+  startFetchRun: (eventId: number) =>
+    request<FetchRun>(`${base(eventId)}/fetch/runs/`, { method: 'POST', body: '{}' }),
 
   // --- Emails to imported-ticket holders. Nothing is sent until a draft is confirmed. ---
 
