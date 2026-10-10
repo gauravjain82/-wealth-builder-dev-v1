@@ -48,6 +48,7 @@ export function PromosTab({ event }: TabProps) {
       eventId={event.id}
       api={api}
       fields={FIELDS}
+      timeZone={event.timezone}
       titleField="code"
       itemNoun="promo code"
       defaults={{ discount_type: 'FLAT' }}

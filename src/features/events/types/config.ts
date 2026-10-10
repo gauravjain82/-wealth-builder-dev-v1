@@ -1,11 +1,17 @@
+export interface QuantityBreak {
+  id?: number;
+  min_qty: number;
+  unit_price: string;
+}
+
 export interface PricingTier {
   id: number;
   label: string;
   price: string;
   active_from: string | null;
   expiration_date: string | null;
-  multi_ticket_min_qty: number | null;
-  multi_ticket_price: string | null;
+  /** "`min_qty` or more tickets cost `unit_price` each", lowest quantity first. */
+  quantity_breaks: QuantityBreak[];
   sort_order: number;
   is_active: boolean;
 }

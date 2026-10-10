@@ -97,13 +97,12 @@ export function PricingTiersSection({
                 {formatEventDate(current.expiration_date, event.timezone)}
               </p>
             ) : null}
-            {current.multi_ticket_min_qty !== null &&
-            current.multi_ticket_price !== null ? (
-              <p className="mt-2 text-xs text-slate-600 dark:text-white/60">
-                {formatPrice(current.multi_ticket_price, event.payment_currency)} each
-                when you buy {current.multi_ticket_min_qty} or more
+            {(current.quantity_breaks ?? []).map((row) => (
+              <p key={row.min_qty} className="mt-2 text-xs text-slate-600 dark:text-white/60">
+                {formatPrice(row.unit_price, event.payment_currency)} each when you buy{' '}
+                {row.min_qty} or more
               </p>
-            ) : null}
+            ))}
           </PublicCard>
         ) : null}
 

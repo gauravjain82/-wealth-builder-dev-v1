@@ -1,6 +1,5 @@
 import {
   Checkbox,
-  DateTimePicker,
   FormRow,
   FormRowGroup,
   Input,
@@ -8,6 +7,7 @@ import {
   Select,
   Text,
 } from '@shared/components';
+import { EventDateTimePicker } from '../event-date-time-picker';
 import { SellerListEditor } from '../seller-list-editor';
 import { TabForm } from './tab-form';
 import type { TabProps } from './types';
@@ -22,6 +22,7 @@ interface TicketingForm {
   convention_tracking: boolean;
   max_tickets: string;
   per_transaction_limit: string;
+  ticket_face_price: string;
   price_display_mode: PriceDisplayMode;
   stop_transfer_at: string;
   allow_transfers: boolean;
@@ -47,6 +48,7 @@ export function TicketingTab({ event, saving, onSave }: TabProps) {
       convention_tracking: event.convention_tracking ?? false,
       max_tickets: event.max_tickets === null ? '' : String(event.max_tickets),
       per_transaction_limit: String(event.per_transaction_limit ?? 10),
+      ticket_face_price: event.ticket_face_price ?? '',
       price_display_mode: event.price_display_mode ?? 'CURRENT_ONLY',
       stop_transfer_at: event.stop_transfer_at ?? '',
       allow_transfers: event.allow_transfers,
@@ -59,6 +61,7 @@ export function TicketingTab({ event, saving, onSave }: TabProps) {
         convention_tracking: data.convention_tracking,
         max_tickets: data.max_tickets === '' ? null : Number(data.max_tickets),
         per_transaction_limit: Number(data.per_transaction_limit) || 1,
+        ticket_face_price: emptyToNull(data.ticket_face_price.trim()),
         price_display_mode: data.price_display_mode,
         stop_transfer_at: emptyToNull(data.stop_transfer_at),
         allow_transfers: data.allow_transfers,
@@ -117,9 +120,27 @@ export function TicketingTab({ event, saving, onSave }: TabProps) {
         </FormRowGroup>
 
         <FormRow>
+          <Label variant="form">Ticket face price</Label>
+          <Input
+            type="number"
+            step="0.01"
+            min={0}
+            value={form.ticket_face_price}
+            placeholder="199.00"
+            onChange={(e) => set('ticket_face_price', e.target.value)}
+          />
+          <Text variant="muted" className="text-xs">
+            Printed on every ticket. Launch-day, bulk and promo prices appear only on the
+            buyer&apos;s invoice, so a person a ticket is assigned to never sees what was paid.
+            Blank prints no price.
+          </Text>
+        </FormRow>
+
+        <FormRow>
           <Label variant="form">Stop transfers at</Label>
-          <DateTimePicker
+          <EventDateTimePicker
             value={form.stop_transfer_at}
+            timeZone={event.timezone}
             onChange={(v) => set('stop_transfer_at', v)}
           />
           <Text variant="muted" className="text-xs">

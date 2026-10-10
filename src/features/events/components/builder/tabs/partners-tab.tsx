@@ -37,6 +37,7 @@ export function PartnersTab({ event }: TabProps) {
       eventId={event.id}
       api={api}
       fields={FIELDS}
+      timeZone={event.timezone}
       titleField="company_name"
       itemNoun="partner"
       image={{ urlField: 'logo_url', label: 'Logo', help: 'PNG with a transparent background.' }}

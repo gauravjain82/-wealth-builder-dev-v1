@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
 import {
   Checkbox,
-  DateTimePicker,
   FormRow,
   FormRowGroup,
   Input,
   Label,
   Select,
 } from '@shared/components';
+import { EventDateTimePicker } from '../event-date-time-picker';
 import { RichTextEditor } from '../rich-text-editor';
 import { timezoneOptions } from '../../../utils/timezones';
 import { TabForm } from './tab-form';
@@ -90,11 +90,19 @@ export function EventTab({ event, saving, onSave }: TabProps) {
       <FormRowGroup columns={2}>
         <FormRow>
           <Label variant="form">Start date &amp; time</Label>
-          <DateTimePicker value={form.begin_at} onChange={(v) => set('begin_at', v)} />
+          <EventDateTimePicker
+            value={form.begin_at}
+            timeZone={form.timezone}
+            onChange={(v) => set('begin_at', v)}
+          />
         </FormRow>
         <FormRow>
           <Label variant="form">End date &amp; time</Label>
-          <DateTimePicker value={form.end_at} onChange={(v) => set('end_at', v)} />
+          <EventDateTimePicker
+            value={form.end_at}
+            timeZone={form.timezone}
+            onChange={(v) => set('end_at', v)}
+          />
         </FormRow>
       </FormRowGroup>
 
@@ -122,15 +130,17 @@ export function EventTab({ event, saving, onSave }: TabProps) {
       <FormRowGroup columns={2}>
         <FormRow>
           <Label variant="form">Sales start</Label>
-          <DateTimePicker
+          <EventDateTimePicker
             value={form.sales_start_at}
+            timeZone={form.timezone}
             onChange={(v) => set('sales_start_at', v)}
           />
         </FormRow>
         <FormRow>
           <Label variant="form">Sales stop</Label>
-          <DateTimePicker
+          <EventDateTimePicker
             value={form.sales_stop_at}
+            timeZone={form.timezone}
             onChange={(v) => set('sales_stop_at', v)}
           />
         </FormRow>

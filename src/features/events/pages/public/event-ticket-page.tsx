@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { formatEventRange } from '../../utils/public-dates';
+import { formatPrice } from '../../utils/public-pricing';
 import { publicEventService } from '../../services/public-event-service';
 import type { PublicTicket } from '../../types/public';
 import { TicketQr } from '../../components/public/ticket-qr';
@@ -128,6 +129,9 @@ function TicketView({ ticket }: { ticket: PublicTicket }) {
             <DetailRow label="Email" value={ticket.holder_email} />
           ) : null}
           {ticket.address ? <DetailRow label="Address" value={ticket.address} /> : null}
+          {ticket.face_price ? (
+            <DetailRow label="Price" value={formatPrice(ticket.face_price, ticket.currency)} />
+          ) : null}
         </dl>
 
         {ticket.assignment_status === 'UNASSIGNED' && !isVoid ? (

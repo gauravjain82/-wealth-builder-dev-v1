@@ -66,6 +66,8 @@ export interface BigEvent extends BigEventListItem {
   // Ticket settings (inlined)
   max_tickets: number | null;
   per_transaction_limit: number;
+  /** Printed on every ticket; what a buyer paid stays on their invoice. */
+  ticket_face_price: string | null;
   stop_transfer_at: string | null;
   price_display_mode: 'CURRENT_ONLY' | 'CURRENT_AND_EXPIRATION';
   // Policy (inlined)

@@ -43,6 +43,7 @@ export function AddOnsTab({ event }: TabProps) {
       eventId={event.id}
       api={api}
       fields={FIELDS}
+      timeZone={event.timezone}
       titleField="product_name"
       itemNoun="add-on"
       image={{ urlField: 'image_url', label: 'Image' }}
