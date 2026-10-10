@@ -1,15 +1,13 @@
-import { useMemo } from 'react';
 import {
   Checkbox,
   FormRow,
   FormRowGroup,
   Input,
   Label,
-  Select,
+  TimezoneSelect,
 } from '@shared/components';
 import { EventDateTimePicker } from '../event-date-time-picker';
 import { RichTextEditor } from '../rich-text-editor';
-import { timezoneOptions } from '../../../utils/timezones';
 import { TabForm } from './tab-form';
 import type { TabProps } from './types';
 import { emptyToNull, useTabForm } from './use-tab-form';
@@ -68,7 +66,6 @@ export function EventTab({ event, saving, onSave }: TabProps) {
         notes: data.notes,
       }),
   );
-  const timezones = useMemo(() => timezoneOptions(form.timezone), [form.timezone]);
 
   return (
     <TabForm dirty={dirty} saving={saving} onSubmit={submit}>
@@ -109,13 +106,7 @@ export function EventTab({ event, saving, onSave }: TabProps) {
       <FormRowGroup columns={2}>
         <FormRow>
           <Label variant="form">Timezone</Label>
-          <Select value={form.timezone} onChange={(e) => set('timezone', e.target.value)}>
-            {timezones.map((tz) => (
-              <option key={tz.value} value={tz.value}>
-                {tz.label}
-              </option>
-            ))}
-          </Select>
+          <TimezoneSelect value={form.timezone} onChange={(timezone) => set('timezone', timezone)} />
         </FormRow>
         <FormRow>
           <Label variant="form">Contact email</Label>

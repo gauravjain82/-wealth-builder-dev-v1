@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { CalendarClock } from 'lucide-react';
-import { Button, Input, Modal, Select, Textarea } from '@shared/components/ui';
+import { Button, Input, Modal, Textarea } from '@shared/components/ui';
+import { TimezoneSelect } from '@shared/components/timezone-select';
 import { browserTimezone, formatAppointmentTime, localDateTimeValue } from '../services/matchup-service';
 import type { AppointmentListItem, AppointmentStatus } from '../types';
 
@@ -41,21 +42,6 @@ interface RescheduleAppointmentModalProps {
   onSubmit: (payload: ReschedulePayload, id: number) => Promise<void>;
 }
 
-/** IANA zones the browser knows about, for the timezone picker. */
-function browserSupportedTimezones(): string[] {
-  const intl = Intl as typeof Intl & {
-    supportedValuesOf?: (key: 'timeZone') => string[];
-  };
-
-  try {
-    return intl.supportedValuesOf?.('timeZone') ?? [];
-  } catch {
-    return [];
-  }
-}
-
-const SUPPORTED_TIMEZONES = browserSupportedTimezones();
-
 /**
  * Dedicated reschedule flow. Unlike the generic edit form it only touches the
  * schedule (date/time, duration, timezone) and posts to the backend's dedicated
@@ -84,11 +70,6 @@ export function RescheduleAppointmentModal({
     setReason('');
     setError(null);
   }, [open, appointment]);
-
-  const timezoneOptions = useMemo(() => {
-    const currentTimezone = browserTimezone();
-    return Array.from(new Set([currentTimezone, timezone, ...SUPPORTED_TIMEZONES])).filter(Boolean);
-  }, [timezone]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -136,13 +117,7 @@ export function RescheduleAppointmentModal({
           </label>
           <label>
             <span>Timezone</span>
-            <Select value={timezone} onChange={(event) => setTimezone(event.target.value)}>
-              {timezoneOptions.map((tz) => (
-                <option key={tz} value={tz}>
-                  {tz}
-                </option>
-              ))}
-            </Select>
+            <TimezoneSelect value={timezone} onChange={setTimezone} />
           </label>
           <label>
             <span>Duration (minutes)</span>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { ClipboardPen, Info } from 'lucide-react';
 import { Button, Input, Modal, Select, Textarea } from '@shared/components/ui';
+import { TimezoneSelect } from '@shared/components/timezone-select';
 import { UserAutocompleteDropdown, type UserAutocompleteOption } from '@shared/components/user-autocomplete-dropdown';
 import { browserTimezone, formatAppointmentTime, localDateTimeValue } from '../services/matchup-service';
 import { fetchProspectDetails, updateProspectDetails } from '@/features/team/prospect/services/prospect-service';
@@ -17,20 +18,6 @@ import type {
 } from '../types';
 
 type AppointmentFormAppointment = AppointmentListItem | AppointmentDetail;
-
-const browserSupportedTimezones = (): string[] => {
-  const intl = Intl as typeof Intl & {
-    supportedValuesOf?: (key: 'timeZone') => string[];
-  };
-
-  try {
-    return intl.supportedValuesOf?.('timeZone') ?? [];
-  } catch {
-    return [];
-  }
-};
-
-const SUPPORTED_TIMEZONES = browserSupportedTimezones();
 
 const PROFILE_FLAGS = [
   ['age25Plus', '25+ Y.O'],
@@ -248,11 +235,6 @@ export function AppointmentFormModal({
       .join(', ');
   }, [appointmentTypes, form.types]);
 
-  const timezoneOptions = useMemo(() => {
-    const currentTimezone = browserTimezone();
-    return Array.from(new Set([currentTimezone, form.timezone, ...SUPPORTED_TIMEZONES])).filter(Boolean);
-  }, [form.timezone]);
-
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -465,13 +447,7 @@ export function AppointmentFormModal({
           </label>
           <label>
             <span>Timezone</span>
-            <Select value={form.timezone} onChange={(event) => update('timezone', event.target.value)}>
-              {timezoneOptions.map((timezone) => (
-                <option key={timezone} value={timezone}>
-                  {timezone}
-                </option>
-              ))}
-            </Select>
+            <TimezoneSelect value={form.timezone} onChange={(timezone) => update('timezone', timezone)} />
           </label>
           <label>
             <span>Duration</span>
