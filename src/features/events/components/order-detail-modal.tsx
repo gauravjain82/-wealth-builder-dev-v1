@@ -318,6 +318,31 @@ export function OrderDetailModal({
                     <Fact label={`${order.channel ?? 'Partner'} invoice`} value={order.external_invoice_reference || '—'} />
                   </>
                 ) : null}
+                {order.external_payment ? (
+                  // Paid at the partner, from its transactions export. Reference only:
+                  // the charge is the partner's, so there is nothing here WB can refund.
+                  <>
+                    <Fact label="Paid by" value={order.external_payment.payment_method || '—'} />
+                    <Fact
+                      label="Ticket price"
+                      value={`${order.external_payment.quantity} × ${formatPrice(order.external_payment.unit_price, order.external_payment.currency)}`}
+                    />
+                    <Fact
+                      label="Total paid"
+                      value={formatPrice(order.external_payment.total, order.external_payment.currency)}
+                    />
+                    <Fact
+                      label="Paid on"
+                      value={order.external_payment.paid_at ? new Date(order.external_payment.paid_at).toLocaleString() : '—'}
+                    />
+                    <Fact
+                      label={`${order.channel ?? 'Partner'} charge`}
+                      value={order.external_payment.processor_transaction_id || '—'}
+                    />
+                  </>
+                ) : imported ? (
+                  <Fact label="Paid by" value={`No payment data from ${order.channel ?? 'the partner'} yet`} />
+                ) : null}
                 <Fact label="SMD" value={order.attributed_seller_name ?? 'None credited'} />
                 <Fact label="Promo" value={order.promo_code} />
                 <Fact label="Notes" value={order.notes} />

@@ -95,6 +95,29 @@ preview**, attendee questions, `EventPermission` grants, and the escrow report.
 | Assign / transfer | both re-send the proof and **return the refreshed claim payload** |
 | Ticket by QR token | `/event/ticket/:qrToken` |
 
+### Partner transactions (E26)
+
+`external-ticket-service.ts`, under `/api/events/events/{id}/external-tickets/transactions/`:
+
+| Call | Method and path | Notes |
+|---|---|---|
+| `listTransactionImports` | GET `imports/` | Upload history |
+| `uploadTransactions` | POST `imports/` | Multipart `file`, `captured_at`, `provider=bscpro`; returns preview counts. `created: false` when the same bytes were uploaded before |
+| `getTransactionImport` | GET `imports/{id}/` | Preview recomputed while unapplied |
+| `listTransactionRows` | GET `imports/{id}/rows/?action=` | The panel reads `action=unmatched` |
+| `applyTransactions` | POST `imports/{id}/apply/` | Idempotent; `409 historical_snapshot` if a newer capture is applied |
+
+`EventOrder.external_payment` (order detail) and `ReportSummary.external_revenue`,
+`total_revenue`, `external_partners`, `external_unpriced_purchases` are optional: an older
+server omits them and the UI falls back to WB-only figures.
+
+### Scheduled fetch (E27)
+
+Under `/api/events/events/{id}/external-tickets/fetch/`: `getFetchConfig` (GET `config/`),
+`saveFetchConfig` (PUT `config/`), `listFetchRuns` (GET `runs/?page=`), `startFetchRun`
+(POST `runs/`, `409 busy` while one is active). Query keys: `['external-tickets', eventId,
+'fetch-config']` and `[…, 'fetch-runs', page]`; both forward `signal`.
+
 ## 3. Payload types
 
 Eight type modules, one per concern. The ones carrying real design:
