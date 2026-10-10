@@ -182,6 +182,7 @@ const MENU_ITEMS = {
   PERMISSIONS: { label: 'Permissions', icon: '🔐', path: '/events/permissions' } as MenuItem,
   RECOGNITION_ORDERS: { label: 'Recognition Orders', icon: '🏆', path: '/events/recognition' } as MenuItem,
   EXTERNAL_TEAMS: { label: 'External Teams', icon: '🤝', path: '/events/external-teams' } as MenuItem,
+  CONVENTION_TRACKING: { label: 'Convention Tracking', icon: '🎟️', path: '/events/convention-tracking' } as MenuItem,
   
   // Admin items
   MISSION_RING_PROOF_ADMIN: { label: 'Mission Ring Proof', icon: '💍', path: '/admin/mission-ring-proof' } as MenuItem,
@@ -254,6 +255,7 @@ const BIG_EVENT_ENTRIES: Array<[BigEventScreen, MenuItem]> = [
   ['permissions', MENU_ITEMS.PERMISSIONS],
   ['recognition', MENU_ITEMS.RECOGNITION_ORDERS],
   ['external_teams', MENU_ITEMS.EXTERNAL_TEAMS],
+  ['convention_tracking', MENU_ITEMS.CONVENTION_TRACKING],
 ];
 
 /**

@@ -1,14 +1,15 @@
-import { useMemo } from 'react';
-import { FormRow, Label, Select, Text } from '@shared/components';
+import { FormRow, Label, Text } from '@shared/components';
 import type { EventTrackedSeller } from '../types/config';
+import { SellerCombobox } from './seller-combobox';
 
 /**
  * "Which SMD is this person with?" for the in-app assign / transfer modals.
  *
  * One SMD can buy many tickets and hand them to people from other SMDs or
- * external teams; the answer re-credits the ticket to that person's SMD. Our own
- * leaders are listed first, then each external team as its own group. Renders
- * nothing when the event has no seller list.
+ * external teams; the answer re-credits the ticket to that person's SMD. Only
+ * the SMDs are listed — an external leader's team is an internal grouping and is
+ * not shown. The list is A–Z and narrows as you type a name or agency code.
+ * Renders nothing when the event has no seller list.
  */
 export function TicketSellerSelect({
   sellers,
@@ -24,41 +25,23 @@ export function TicketSellerSelect({
   /** Leave the answer optional (keeps the current SMD when unanswered). */
   optional?: boolean;
 }) {
-  const groups = useMemo(() => {
-    const byTeam = new Map<string, EventTrackedSeller[]>([['', []]]);
-    for (const seller of sellers) {
-      byTeam.set(seller.team_name, [...(byTeam.get(seller.team_name) ?? []), seller]);
-    }
-    return [...byTeam];
-  }, [sellers]);
-
   if (sellers.length === 0) return null;
-
-  const option = (seller: EventTrackedSeller) => (
-    <option key={seller.id} value={seller.id}>
-      {seller.display_name} ({seller.agent_code})
-    </option>
-  );
 
   return (
     <FormRow>
       <Label variant="form">{label}</Label>
-      <Select
+      <SellerCombobox
+        sellers={sellers}
+        value={value}
+        onChange={onChange}
         required={!optional}
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
-      >
-        <option value="">{optional ? 'Keep the current SMD' : 'Select an SMD'}</option>
-        {groups.map(([team, list]) =>
-          team ? (
-            <optgroup key={team} label={team}>
-              {list.map(option)}
-            </optgroup>
-          ) : (
-            list.map(option)
-          ),
-        )}
-      </Select>
+        inputClassName="input w-full"
+        placeholder={
+          optional
+            ? 'Keep the current SMD, or type a name or agency code'
+            : 'Type a name or agency code'
+        }
+      />
       <Text variant="muted" className="text-xs">
         The ticket is credited to this SMD in the event reports.
       </Text>

@@ -13,7 +13,9 @@ export type BigEventScreen =
   | 'questions'
   | 'permissions'
   /** The shared External Teams directory — not tied to one event (events:manage). */
-  | 'external_teams';
+  | 'external_teams'
+  /** Who is registered for each convention and the tracker time log (events:manage). */
+  | 'convention_tracking';
 
 export interface EventDelegation {
   event: number;

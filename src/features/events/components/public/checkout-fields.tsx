@@ -21,6 +21,7 @@ import {
   PUBLIC_SECONDARY_BUTTON_CLASS,
   TOKEN_FIELD_CLASS,
 } from '../../utils/public-brand';
+import { SellerCombobox } from '../seller-combobox';
 import { PublicCard, PublicField } from './public-event-shell';
 
 /** Quantity stepper, capped by the server-computed `max_per_order`. */
@@ -122,34 +123,11 @@ export function PurchaserFields({
 }
 
 /**
- * Split sellers into our own leaders (team `''`, listed first and ungrouped) and
- * one group per external team, in the order each team first appears.
- */
-function groupSellersByTeam(
-  sellers: PublicSeller[],
-): Array<{ team: string; sellers: PublicSeller[] }> {
-  const groups = new Map<string, PublicSeller[]>([['', []]]);
-  for (const seller of sellers) {
-    const team = seller.team_name || '';
-    groups.set(team, [...(groups.get(team) ?? []), seller]);
-  }
-  return [...groups].map(([team, list]) => ({ team, sellers: list }));
-}
-
-function SellerOption({ seller }: { seller: PublicSeller }) {
-  return (
-    <option value={seller.id}>
-      {seller.display_name}
-      {seller.agent_code ? ` (${seller.agent_code})` : ''}
-    </option>
-  );
-}
-
-/**
  * "Which SMD are you with?" — asked at checkout, and again when a ticket is
  * assigned or transferred, so every ticket is credited to its holder's SMD.
- * Leaders from external teams are grouped under their team name so people from
- * other teams can find their SMD.
+ * Leaders from external teams are listed like our own: the team they belong to
+ * is an internal grouping and is never shown to buyers. The list is A–Z and
+ * narrows as the buyer types a name or agency code.
  *
  * Renders nothing when the event doesn't track attribution — the backend
  * already returns an empty `sellers` list for `DONT_TRACK`, and then the answer
@@ -174,25 +152,13 @@ export function SellerSelect({
 
   return (
     <PublicField label={label} hint={hint} required>
-      <select
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+      <SellerCombobox
+        sellers={sellers}
+        value={value}
+        onChange={onChange}
         disabled={disabled}
-        className={PUBLIC_FIELD_CLASS}
-      >
-        <option value="">Select an SMD</option>
-        {groupSellersByTeam(sellers).map(({ team, sellers }) =>
-          team ? (
-            <optgroup key={team} label={team}>
-              {sellers.map((seller) => (
-                <SellerOption key={seller.id} seller={seller} />
-              ))}
-            </optgroup>
-          ) : (
-            sellers.map((seller) => <SellerOption key={seller.id} seller={seller} />)
-          ),
-        )}
-      </select>
+        inputClassName={PUBLIC_FIELD_CLASS}
+      />
     </PublicField>
   );
 }
