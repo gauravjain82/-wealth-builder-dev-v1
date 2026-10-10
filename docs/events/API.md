@@ -110,6 +110,7 @@ Eight type modules, one per concern. The ones carrying real design:
 | `SalesState`, `SalesReason` | `public.ts` | `OPEN \| NOT_STARTED \| ENDED \| SOLD_OUT \| NO_TIER` |
 | `PublicEvent.tickets_sold` | `public.ts` | **optional**: present only when an enabled `stats` section has a `tickets_sold` item ([E16](PHASES.md#3-decision-log)) |
 | `PublicSeller.team_name` | `public.ts` | **optional**: the external team's name, `""` for our own leaders; absent from a backend that predates it, and then read as `""` ([E23](PHASES.md#3-decision-log)) |
+| `BuyerProfile` | `public.ts` | `GET public/{shortcut}/me/` via `buyer-profile-service.ts` — **sent with the token**, only when one exists; `seller_id` is an id from `PublicEvent.sellers` or `null` ([E25](PHASES.md#3-decision-log)) |
 | `EventSpeaker.group` | `config.ts` | `keynote \| speaker`; the public list returns keynotes first |
 | `SectionType`, `*Content` | `landing.ts` | adds `tagline`, `stats`, `marquee` (content) and `checkout` (model-backed, at most one); `pricing` takes optional `PricingContent` and `checkout` optional `CheckoutContent` (`anchor_price` ≤24, `show_qr`, `own_team_label` ≤60; a backend that predates it drops both on save and returns `{}`); `cta_band` gains `size`/`body`/`highlight`/`signoff`. Limits are enforced by `events/services/landing_sections.py` |
 | `EventThemeKey` | `themes/registry.ts` | must match backend `EventTheme`; `champion` is the model default |

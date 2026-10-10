@@ -56,6 +56,19 @@ export interface PublicSeller {
   team_name?: string;
 }
 
+/**
+ * A signed-in member's own details (`GET public/{shortcut}/me/`), used to
+ * prefill the ticket form. `seller_id` is the SMD their line credits on this
+ * event — an id from the event's `sellers` — or `null` when there is none.
+ */
+export interface BuyerProfile {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  seller_id: number | null;
+}
+
 /** The full landing-page payload — one request renders the whole page. */
 export interface PublicEvent {
   uuid: string;

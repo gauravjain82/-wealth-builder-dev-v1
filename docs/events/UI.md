@@ -117,7 +117,9 @@ that team (ours is named by the checkout section's `own_team_label`, else "Wealt
 the teams and the pay button stays disabled until one is cleared. The public assign and transfer forms
 (§2.4) use the same control. A failed submit shows its message directly above the pay button in the inline host —
 the top of the card is off-screen by then, and an error there read as a button that did nothing. When the stage reaches `paying` or `complete`
-the inline host scrolls back to `#tickets`, since the card step is much shorter than the form. **The form is remembered on the device** ([E24](PHASES.md#3-decision-log)): both hosts restore what
+the inline host scrolls back to `#tickets`, since the card step is much shorter than the form. **Members are prefilled** ([E25](PHASES.md#3-decision-log)): with an app login in the browser, name,
+email, phone and SMD are filled from the account (empty fields only) and a line says so; a guest sees
+"Already a Wealth Builder member? Log in", which returns to the form. **The form is remembered on the device** ([E24](PHASES.md#3-decision-log)): both hosts restore what
 the buyer last typed for this event from `localStorage` (`utils/checkout-draft.ts`) — everything except
 the refund agreement and an applied promo — and forget it once the purchase completes. When the event has a refund policy, both hosts require an "I agree to the
 refund policy" checkbox, and the payload carries `refund_policy_accepted: true`. **The server enforces
