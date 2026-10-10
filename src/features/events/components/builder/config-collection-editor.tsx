@@ -3,7 +3,6 @@ import type { FormEvent } from 'react';
 import {
   Button,
   Checkbox,
-  DateTimePicker,
   ErrorState,
   Input,
   Label,
@@ -14,6 +13,7 @@ import {
 } from '@shared/components';
 import { useToastStore } from '@/store';
 import { useConfigList, type ConfigListApi } from '../../hooks/use-config-list';
+import { EventDateTimePicker } from './event-date-time-picker';
 import { ImageUploadField } from './image-upload-field';
 
 /** Input kinds the schema-driven editor knows how to render and serialize. */
@@ -25,7 +25,8 @@ export type FieldType =
   | 'select'
   | 'checkbox'
   | 'datetime'
-  | 'stringList';
+  | 'stringList'
+  | 'quantityBreaks';
 
 /** Declarative description of one editable field on a config row. */
 export interface FieldSpec<T> {
@@ -50,13 +51,21 @@ export interface ImageSpec<T> {
   help?: string;
 }
 
-type DraftValue = string | boolean | string[];
+/** One editable "N or more tickets cost X each" row (inputs hold strings). */
+interface QuantityBreakDraft {
+  min_qty: string;
+  unit_price: string;
+}
+
+type DraftValue = string | boolean | string[] | QuantityBreakDraft[];
 type Draft = Record<string, DraftValue>;
 
 interface ConfigCollectionEditorProps<T extends { id: number }> {
   eventId: number;
   api: ConfigListApi<T>;
   fields: FieldSpec<T>[];
+  /** The event's IANA timezone; `datetime` fields are entered and shown in it. */
+  timeZone: string;
   /** Field whose value labels each existing row. */
   titleField: keyof T & string;
   /** Per-type defaults for a fresh row (overrides the built-in blank). */
@@ -81,6 +90,12 @@ function seedDraft<T extends { id: number }>(
       draft[field.key] = item ? Boolean(raw) : Boolean(defaults?.[field.key] ?? false);
     } else if (field.type === 'stringList') {
       draft[field.key] = Array.isArray(raw) ? raw.join('\n') : '';
+    } else if (field.type === 'quantityBreaks') {
+      const rows = Array.isArray(raw) ? (raw as { min_qty: number; unit_price: string }[]) : [];
+      draft[field.key] = rows.map((row) => ({
+        min_qty: String(row.min_qty),
+        unit_price: String(row.unit_price),
+      }));
     } else if (item) {
       draft[field.key] = raw === null || raw === undefined ? '' : String(raw);
     } else {
@@ -124,6 +139,12 @@ function toPayload<T extends { id: number }>(
         payload[field.key] = str === '' ? (field.nullable ? null : str) : str;
         break;
       }
+      case 'quantityBreaks':
+        // Half-filled rows are dropped rather than sent as a 0 quantity/price.
+        payload[field.key] = (value as QuantityBreakDraft[])
+          .filter((row) => row.min_qty.trim() !== '' && row.unit_price.trim() !== '')
+          .map((row) => ({ min_qty: Number(row.min_qty), unit_price: row.unit_price.trim() }));
+        break;
       default:
         payload[field.key] = String(value);
     }
@@ -135,10 +156,12 @@ function toPayload<T extends { id: number }>(
 function FieldControl<T extends { id: number }>({
   field,
   value,
+  timeZone,
   onChange,
 }: {
   field: FieldSpec<T>;
   value: DraftValue;
+  timeZone: string;
   onChange: (v: DraftValue) => void;
 }) {
   switch (field.type) {
@@ -171,8 +194,14 @@ function FieldControl<T extends { id: number }>({
       );
     case 'datetime':
       return (
-        <DateTimePicker value={String(value)} onChange={(v) => onChange(v)} />
+        <EventDateTimePicker
+          value={String(value)}
+          timeZone={timeZone}
+          onChange={(v) => onChange(v)}
+        />
       );
+    case 'quantityBreaks':
+      return <QuantityBreaksControl rows={value as QuantityBreakDraft[]} onChange={onChange} />;
     case 'number':
       return (
         <Input
@@ -193,9 +222,68 @@ function FieldControl<T extends { id: number }>({
   }
 }
 
+/** Editable list of "N or more tickets cost X each" rows for a pricing tier. */
+function QuantityBreaksControl({
+  rows,
+  onChange,
+}: {
+  rows: QuantityBreakDraft[];
+  onChange: (rows: QuantityBreakDraft[]) => void;
+}) {
+  const patch = (index: number, change: Partial<QuantityBreakDraft>) =>
+    onChange(rows.map((row, i) => (i === index ? { ...row, ...change } : row)));
+
+  return (
+    <div className="flex flex-col gap-2">
+      {rows.map((row, index) => (
+        <div key={index} className="flex flex-wrap items-center gap-2 text-sm">
+          <Input
+            type="number"
+            min={2}
+            className="w-24"
+            value={row.min_qty}
+            placeholder="5"
+            aria-label="Minimum quantity"
+            onChange={(e) => patch(index, { min_qty: e.target.value })}
+          />
+          <span>or more tickets cost</span>
+          <Input
+            type="number"
+            step="0.01"
+            min={0}
+            className="w-32"
+            value={row.unit_price}
+            placeholder="179.00"
+            aria-label="Price per ticket"
+            onChange={(e) => patch(index, { unit_price: e.target.value })}
+          />
+          <span>each</span>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => onChange(rows.filter((_, i) => i !== index))}
+          >
+            Remove
+          </Button>
+        </div>
+      ))}
+      <div>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => onChange([...rows, { min_qty: '', unit_price: '' }])}
+        >
+          Add quantity price
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /** Add/edit form for a single row (shared by the create and edit flows). */
 function ItemForm<T extends { id: number }>({
   fields,
+  timeZone,
   initial,
   busy,
   submitLabel,
@@ -203,6 +291,7 @@ function ItemForm<T extends { id: number }>({
   onCancel,
 }: {
   fields: FieldSpec<T>[];
+  timeZone: string;
   initial: Draft;
   busy: boolean;
   submitLabel: string;
@@ -226,7 +315,12 @@ function ItemForm<T extends { id: number }>({
           className={`flex flex-col gap-1.5 ${field.colSpan === 2 ? 'sm:col-span-2' : ''}`}
         >
           {field.type !== 'checkbox' && <Label variant="form">{field.label}</Label>}
-          <FieldControl field={field} value={draft[field.key]} onChange={(v) => set(field.key, v)} />
+          <FieldControl
+            field={field}
+            value={draft[field.key]}
+            timeZone={timeZone}
+            onChange={(v) => set(field.key, v)}
+          />
           {field.help && field.type !== 'checkbox' && (
             <Text variant="muted" className="text-xs">
               {field.help}
@@ -257,6 +351,7 @@ export function ConfigCollectionEditor<T extends { id: number }>({
   eventId,
   api,
   fields,
+  timeZone,
   titleField,
   defaults,
   itemNoun,
@@ -338,6 +433,7 @@ export function ConfigCollectionEditor<T extends { id: number }>({
                   )}
                   <ItemForm
                     fields={fields}
+                    timeZone={timeZone}
                     initial={seedDraft(fields, item, defaults)}
                     busy={busy}
                     submitLabel="Save"
@@ -401,6 +497,7 @@ export function ConfigCollectionEditor<T extends { id: number }>({
           )}
           <ItemForm
             fields={fields}
+            timeZone={timeZone}
             initial={seedDraft(fields, null, defaults)}
             busy={busy}
             submitLabel={`Add ${itemNoun}`}

@@ -17,6 +17,7 @@ import type {
   EventProductPartner,
   EventSpeaker,
   PricingTier,
+  QuantityBreak,
 } from './config';
 
 /** Why tickets are or aren't currently purchasable. */
@@ -39,8 +40,7 @@ export interface CurrentTier {
   label: string;
   price: string;
   expiration_date: string | null;
-  multi_ticket_min_qty: number | null;
-  multi_ticket_price: string | null;
+  quantity_breaks: QuantityBreak[];
 }
 
 /** A tracked seller offered in the "who referred you" selector. */
@@ -226,6 +226,9 @@ export interface PublicTicket {
   holder_name: string;
   holder_email: string;
   is_checked_in: boolean;
+  /** The event's face price — never what the buyer paid. `null` shows no price. */
+  face_price: string | null;
+  currency: string;
   event_name: string;
   event_shortcut: string;
   event_begin_at: string | null;

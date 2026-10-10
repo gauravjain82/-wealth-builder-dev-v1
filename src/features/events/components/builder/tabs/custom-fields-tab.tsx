@@ -45,6 +45,7 @@ export function CustomFieldsTab({ event }: TabProps) {
       eventId={event.id}
       api={api}
       fields={FIELDS}
+      timeZone={event.timezone}
       titleField="name"
       itemNoun="custom field"
       defaults={{ field_type: 'TEXT', sort_order: '0' }}

@@ -55,21 +55,22 @@ export function formatPrice(value: string | null | undefined, currency: string):
 }
 
 /**
- * Resolve the per-ticket price for a quantity, honouring multi-ticket pricing.
+ * Resolve the per-ticket price for a quantity, honouring quantity prices.
  *
- * Mirrors `PricingService.effective_unit_price`: the tier's multi-ticket price
- * applies once the quantity reaches `multi_ticket_min_qty`.
+ * Mirrors `PricingService.effective_unit_price`: the break with the highest
+ * `min_qty` the quantity reaches prices every ticket; below every break the
+ * tier's base price applies.
  */
 export function effectiveUnitCents(
   tier: CurrentTier | PricingTier | null,
   quantity: number,
 ): number {
   if (!tier) return 0;
-  const { multi_ticket_min_qty: minQty, multi_ticket_price: multiPrice } = tier;
-  if (minQty !== null && multiPrice !== null && quantity >= minQty) {
-    return toCents(multiPrice);
-  }
-  return toCents(tier.price);
+  // `?? []` tolerates a backend that predates quantity prices.
+  const reached = (tier.quantity_breaks ?? []).filter((row) => quantity >= row.min_qty);
+  if (reached.length === 0) return toCents(tier.price);
+  const best = reached.reduce((a, b) => (b.min_qty > a.min_qty ? b : a));
+  return toCents(best.unit_price);
 }
 
 /** A fully-computed checkout summary, all amounts in integer cents. */

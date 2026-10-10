@@ -23,28 +23,28 @@ const FIELDS: FieldSpec<PricingTier>[] = [
     help: 'Blank makes this the default/initial tier.',
   },
   { key: 'expiration_date', label: 'Expires', type: 'datetime', nullable: true },
-  {
-    key: 'multi_ticket_min_qty',
-    label: 'Multi-ticket min qty',
-    type: 'number',
-    nullable: true,
-    help: 'Quantity at which the multi-ticket price applies.',
-  },
-  { key: 'multi_ticket_price', label: 'Multi-ticket price', type: 'price', nullable: true },
   { key: 'sort_order', label: 'Sort order', type: 'number' },
+  {
+    key: 'quantity_breaks',
+    label: 'Quantity prices',
+    type: 'quantityBreaks',
+    colSpan: 2,
+    help: 'Optional. An order that reaches a quantity pays that price for every ticket in it; the highest quantity reached wins. Smaller orders pay the tier price. Counted per order, not across orders.',
+  },
 ];
 
-/** Ticket pricing tiers (date-driven, with optional multi-ticket pricing). */
+/** Ticket pricing tiers (date-driven, with optional quantity prices). */
 export function PricingTab({ event }: TabProps) {
   return (
     <ConfigCollectionEditor<PricingTier>
       eventId={event.id}
       api={api}
       fields={FIELDS}
+      timeZone={event.timezone}
       titleField="label"
       itemNoun="pricing tier"
-      defaults={{ sort_order: '0' }}
-      description="Define one or more pricing tiers. The active tier is resolved by date at checkout; leave 'Active from' blank for the default tier. Value copy for the public ticket card (comparison price, inclusions, fine print) is edited on the Page tab, under Ticket prices."
+      defaults={{ sort_order: '0', quantity_breaks: [] }}
+      description="Define one or more pricing tiers. The active tier is resolved by date at checkout; leave 'Active from' blank for the default tier. Dates are in the event's timezone. These are the prices buyers pay — the price printed on tickets is the face price on the Ticketing tab. Value copy for the public ticket card (comparison price, inclusions, fine print) is edited on the Page tab, under Ticket prices."
     />
   );
 }

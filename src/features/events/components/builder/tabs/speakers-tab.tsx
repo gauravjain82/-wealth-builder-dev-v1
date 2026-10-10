@@ -39,6 +39,7 @@ export function SpeakersTab({ event }: TabProps) {
       eventId={event.id}
       api={api}
       fields={FIELDS}
+      timeZone={event.timezone}
       titleField="name"
       itemNoun="speaker"
       image={{ urlField: 'image_url', label: 'Photo', help: 'Square headshot works best.' }}
