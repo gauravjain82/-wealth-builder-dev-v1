@@ -115,7 +115,9 @@ one team, `SellerSelect` renders a picker per team, A–Z, each headed "<team>'s
 that team (ours is named by the checkout section's `own_team_label`, else "Wealth Builder";
 `utils/public-sellers.ts`). A pick shows a "Clear" link. Picks under two teams show an error naming
 the teams and the pay button stays disabled until one is cleared. The public assign and transfer forms
-(§2.4) use the same control. When the event has a refund policy, both hosts require an "I agree to the
+(§2.4) use the same control. A failed submit shows its message directly above the pay button in the inline host —
+the top of the card is off-screen by then, and an error there read as a button that did nothing. When the stage reaches `paying` or `complete`
+the inline host scrolls back to `#tickets`, since the card step is much shorter than the form. When the event has a refund policy, both hosts require an "I agree to the
 refund policy" checkbox, and the payload carries `refund_policy_accepted: true`. **The server enforces
 it** (PHASES E18): a checkout without it gets a 400 field error keyed `refund_policy_accepted`, which
 `PublicApiError.fieldErrors` carries through `use-event-checkout` and the form shows under the checkbox
