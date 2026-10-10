@@ -172,7 +172,7 @@ export function CheckoutForm({
     refundError !== null &&
     Object.keys(checkout.fieldErrors).length === 1;
   const errorBanner = checkout.error && !refundErrorInline ? (
-    <div className="mb-4">
+    <div className={inline ? undefined : 'mb-4'}>
       <PublicAlert message={checkout.error} />
     </div>
   ) : null;
@@ -313,7 +313,8 @@ export function CheckoutForm({
           ) : null}
         </div>
 
-        {errorBanner}
+        {/* While paying, the card step is all there is, so the error leads it. */}
+        {paymentStep ? errorBanner : null}
 
         {paymentStep ?? (
           <>
@@ -334,6 +335,8 @@ export function CheckoutForm({
             {promoField}
             {summaryCard}
             {agreement}
+            {/* Beside the button that caused it: the top of the card is off-screen by now. */}
+            {errorBanner}
             {submitButton}
           </>
         )}

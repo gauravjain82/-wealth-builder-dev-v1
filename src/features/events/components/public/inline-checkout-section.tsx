@@ -75,6 +75,15 @@ export function InlineCheckoutSection({ event, title, content }: InlineCheckoutS
     }
   }, []);
 
+  // The card step and the confirmation are far shorter than the form they
+  // replace, so the page would be left showing whatever section came next.
+  const stage = checkout.stage;
+  useEffect(() => {
+    if (stage === 'paying' || stage === 'complete') {
+      document.getElementById(TICKETS_ANCHOR_ID)?.scrollIntoView({ block: 'start' });
+    }
+  }, [stage]);
+
   return (
     <PublicSection id={TICKETS_ANCHOR_ID} title={title || DEFAULT_TITLE}>
       {sales.is_open && checkout.stage === 'form' && content?.show_qr !== false ? (
