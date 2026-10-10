@@ -9,7 +9,7 @@
 | **API prefix** | `/api/events/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-27 |
+| **Verified against** | commit `7e3b7f1` — 2026-09-27; guest checkout confirmation against `fix/event-payment-confirmation` — 2026-10-10 |
 
 ## 1. Environment and configuration
 
@@ -106,9 +106,11 @@ Three deployment-time hazards, all about money:
 
 - **A missing or wrong `VITE_STRIPE_PUBLISHABLE_KEY` breaks checkout silently for guests** — the
   payment step simply cannot mount. It is baked in at build time, so a wrong value needs a rebuild.
-- **The webhook is the system of record for a paid order.** If it is misconfigured, guests are charged
-  and receive no tickets, and the frontend will sit in `confirming` looking like a slow network. Verify
-  the webhook before any event goes on sale.
+- **The Stripe endpoint must be subscribed to `payment_intent.succeeded`,
+  `payment_intent.payment_failed` and `charge.refunded`.** On 2026-10-10 it was not: two buyers were
+  charged and their orders stayed `PENDING`. The status poll now settles a paid order by asking Stripe
+  (PHASES E23), so a buyer who keeps the page open gets tickets regardless — but one who closes the
+  tab is settled only by the webhook, or by `manage.py reconcile_stripe_orders` on the backend.
 - **`stripe_account_id` is per event.** A wrong value routes money to the wrong account, and nothing in
   the client can detect that.
 
@@ -116,8 +118,9 @@ Three deployment-time hazards, all about money:
 
 | Symptom | Likely cause | Check |
 |---|---|---|
-| A guest paid and got no tickets | **the webhook did not run** | the backend's webhook log. Stripe succeeding in the browser is not issuance — this is the exact case step 3 exists to expose |
-| Checkout sits on "confirming" forever | the same | as above. A still-running poll is normal; a never-resolving one is the webhook |
+| A guest paid and got no tickets | they left before the poll settled it, **and the webhook did not run** | Stripe dashboard → the endpoint's subscribed events and delivery log. Repair: `manage.py reconcile_stripe_orders` (dry run), then `--apply` |
+| "Payment received — issuing your tickets" for 45 s, then a success page with no tickets | the server could not settle the order — Stripe unreachable from the backend, or ticket issue failed (capacity) | the backend log for that order; the same command once fixed |
+| A declined card produced a second order | should not happen since E23 — the buyer stays on the card step | `use-event-checkout.ts` `fail()` |
 | The payment step will not render | `VITE_STRIPE_PUBLISHABLE_KEY` missing | it is build-time; rebuild after setting it |
 | Money reached the wrong account | the event's `stripe_account_id` | the Payments tab |
 | An authenticated page threw "No authentication token found" | the service throws rather than sending anonymously | expected — it is a bug signal, not a state |

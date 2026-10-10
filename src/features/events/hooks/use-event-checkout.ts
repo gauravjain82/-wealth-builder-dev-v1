@@ -5,12 +5,14 @@
  *
  *   1. `submit()`   — POST checkout → order + PaymentIntent client secret.
  *   2. Stripe       — the caller confirms the card with that client secret.
- *   3. `confirmed()`— poll the order until the `payment_intent.succeeded`
- *                     webhook has flipped it to PAID and issued tickets.
+ *   3. `confirmed()`— poll the order until the server has settled it (PAID)
+ *                     and issued tickets.
  *
  * Step 3 is necessary because ticket issuance is asynchronous: Stripe returning
- * `succeeded` on the client only means the charge went through, not that our
- * webhook has run yet.
+ * `succeeded` on the client only means the charge went through, not that the
+ * server knows. The server settles on the `payment_intent.succeeded` webhook,
+ * and each poll also makes it check the payment with Stripe itself, so a
+ * missing webhook no longer strands a paid order (docs/events/PHASES.md E19).
  *
  * Reaching `complete` also forgets the buyer's saved form draft
  * (`utils/checkout-draft.ts`): the purchase is done, so the next visit on this
@@ -36,7 +38,10 @@ export type CheckoutStage =
   | 'complete'
   | 'error';
 
-/** How long to keep polling for webhook-issued tickets before giving up. */
+/** Order states that mean the money is in and the tickets exist. */
+const SETTLED: ReadonlyArray<PublicOrderStatus['status']> = ['PAID', 'COMP'];
+
+/** How long to keep polling for the issued tickets before giving up. */
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 45_000;
 
@@ -59,8 +64,11 @@ interface UseEventCheckoutResult {
   beginPayment: () => void;
   /** Called after Stripe confirms — polls until the webhook issues tickets. */
   confirmed: () => Promise<void>;
-  /** Report a Stripe-side failure and return the buyer to the form. */
-  fail: (message: string) => void;
+  /**
+   * A Stripe-side failure (declined card, failed 3-D Secure). The buyer stays on
+   * the card step, which shows Stripe's message, and retries the same order.
+   */
+  fail: () => void;
   reset: () => void;
 }
 
@@ -121,7 +129,9 @@ export function useEventCheckout(shortcut: string): UseEventCheckoutResult {
           shortcut,
           current.order_uuid,
         );
-        if (status.status !== 'PENDING') {
+        // Only a settled order ends the wait. A declined first attempt leaves
+        // it CANCELLED until the server sees this successful retry.
+        if (SETTLED.includes(status.status)) {
           setSettled(status);
           clearCheckoutDraft(shortcut);
           setStage('complete');
@@ -134,16 +144,19 @@ export function useEventCheckout(shortcut: string): UseEventCheckoutResult {
       await sleep(POLL_INTERVAL_MS);
     }
 
-    // The payment succeeded but we never saw the webhook land. The order is
-    // real, so show success with a caveat instead of implying payment failed.
+    // Stripe took the payment but the server has not settled the order yet.
+    // The order is real, so show success with a caveat instead of implying
+    // the payment failed.
     setSettled(null);
     clearCheckoutDraft(shortcut);
     setStage('complete');
   }, [shortcut]);
 
-  const fail = useCallback((message: string) => {
-    setError(message);
-    setStage('form');
+  const fail = useCallback(() => {
+    // Not back to the form: submitting it again would create a second order
+    // for the same purchase. The order and its PaymentIntent are still good.
+    setError(null);
+    setStage('paying');
   }, []);
 
   const reset = useCallback(() => {
