@@ -9,6 +9,11 @@ import type {
   ExternalTeam,
   ExternalTeamMember,
 } from '../types/config';
+import type {
+  ConventionEventSummary,
+  ConventionRegistrationPage,
+  ConventionStatusFilter,
+} from '../types/convention';
 import type { LandingLayout, LandingSection } from '../types/landing';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -225,5 +230,22 @@ export const configService = {
   },
   deleteExternalMember(memberId: number): Promise<void> {
     return request(`/api/events/external-team-members/${memberId}/`, { method: 'DELETE' });
+  },
+
+  // --- Convention tracking (read-only) ---
+  conventionSummary(): Promise<ConventionEventSummary[]> {
+    return request('/api/events/convention-registrations/summary/');
+  },
+  listConventionRegistrations(filters: {
+    event: number | null;
+    status: ConventionStatusFilter;
+    search: string;
+    page: number;
+  }): Promise<ConventionRegistrationPage> {
+    const params = new URLSearchParams({ page: String(filters.page) });
+    if (filters.event !== null) params.set('event', String(filters.event));
+    if (filters.status) params.set('status', filters.status);
+    if (filters.search.trim()) params.set('search', filters.search.trim());
+    return request(`/api/events/convention-registrations/?${params.toString()}`);
   },
 };

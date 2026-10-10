@@ -30,6 +30,8 @@ export interface BigEvent extends BigEventListItem {
   confirmation_email_template: string;
   track_by: 'SMD' | 'NET_CEO_MD' | 'DONT_TRACK' | 'LEADER';
   show_seller_rankings: boolean;
+  /** Holding a ticket marks the holder's Mission / Associate tracker Big Event. */
+  convention_tracking: boolean;
   // Location
   address: string;
   location_phone: string;

@@ -19,6 +19,7 @@ type PriceDisplayMode = 'CURRENT_ONLY' | 'CURRENT_AND_EXPIRATION';
 interface TicketingForm {
   track_by: TrackBy;
   show_seller_rankings: boolean;
+  convention_tracking: boolean;
   max_tickets: string;
   per_transaction_limit: string;
   price_display_mode: PriceDisplayMode;
@@ -43,6 +44,7 @@ export function TicketingTab({ event, saving, onSave }: TabProps) {
     {
       track_by: event.track_by ?? 'DONT_TRACK',
       show_seller_rankings: event.show_seller_rankings,
+      convention_tracking: event.convention_tracking ?? false,
       max_tickets: event.max_tickets === null ? '' : String(event.max_tickets),
       per_transaction_limit: String(event.per_transaction_limit ?? 10),
       price_display_mode: event.price_display_mode ?? 'CURRENT_ONLY',
@@ -54,6 +56,7 @@ export function TicketingTab({ event, saving, onSave }: TabProps) {
       onSave({
         track_by: data.track_by,
         show_seller_rankings: data.show_seller_rankings,
+        convention_tracking: data.convention_tracking,
         max_tickets: data.max_tickets === '' ? null : Number(data.max_tickets),
         per_transaction_limit: Number(data.per_transaction_limit) || 1,
         price_display_mode: data.price_display_mode,
@@ -131,6 +134,21 @@ export function TicketingTab({ event, saving, onSave }: TabProps) {
               onChange={(e) => set('show_seller_rankings', e.target.checked)}
             />
             Show seller rankings publicly
+          </label>
+          <label className="flex items-start gap-2 text-sm">
+            <Checkbox
+              className="mt-0.5"
+              checked={form.convention_tracking}
+              onChange={(e) => set('convention_tracking', e.target.checked)}
+            />
+            <span>
+              Convention tracking
+              <Text variant="muted" className="block text-xs">
+                When one of our agents buys or is given a ticket, Big Event is ticked on their
+                Mission Tracker and Associate Tracker, and un-ticked if the ticket leaves them.
+                See Big Event → Convention Tracking. Applies to tickets from now on.
+              </Text>
+            </span>
           </label>
           <label className="flex items-center gap-2 text-sm">
             <Checkbox
