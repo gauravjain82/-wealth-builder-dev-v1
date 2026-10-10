@@ -31,6 +31,14 @@ export function ticketsHref(event: Pick<PublicEvent, 'sections' | 'shortcut'>): 
 }
 
 /**
+ * The absolute link that opens an event's landing page at the purchase form —
+ * what the scan-to-buy QR code encodes (`TicketsQr`).
+ */
+export function ticketsShareUrl(shortcut: string): string {
+  return `${window.location.origin}/event/${shortcut}#${TICKETS_ANCHOR_ID}`;
+}
+
+/**
  * Smooth-scroll to an in-page anchor (instant under reduced motion) and keep
  * the hash in the URL without adding a history entry. Falls back to the
  * browser's own jump when the target isn't mounted.

@@ -45,6 +45,7 @@ export const SECTION_META: Record<SectionType, SectionMeta> = {
     modelBacked: true,
     sourceTab: 'Ticket Price',
     defaultTitle: 'Get Your Ticket',
+    hasContent: true,
   },
   speakers: {
     label: 'Speakers',

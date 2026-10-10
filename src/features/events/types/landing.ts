@@ -131,6 +131,22 @@ export interface PricingContent {
   fine_print?: string;
 }
 
+/**
+ * Optional framing for the model-backed `checkout` section. The price charged
+ * still comes from the server (`current_tier`); nothing here is computed.
+ */
+export interface CheckoutContent {
+  /** Struck-through regular price before the current one, e.g. "$49". Free text. */
+  anchor_price?: string;
+  /** The scan-to-buy QR code above the form. Absent → shown. */
+  show_qr?: boolean;
+  /**
+   * What our own leaders' team is called in the buyer's team list, e.g.
+   * "Kash Rastan". Blank → "Wealth Builder". External teams use their own names.
+   */
+  own_team_label?: string;
+}
+
 /** Hook lines under the hero, a rotating word strip and secondary links. */
 export interface TaglineContent {
   /** 1–4 lines; the last renders in the accent colour when `highlight_last`. */

@@ -6,6 +6,8 @@
  * together by that one page, and each is small.
  */
 
+import { useMemo, useState } from 'react';
+
 import { formatPrice } from '../../utils/public-pricing';
 import type {
   CheckoutAddOnSpec,
@@ -122,12 +124,29 @@ export function PurchaserFields({
   );
 }
 
+/** How our own leaders' team reads when the organizer has not named it (`team_name` blank). */
+const OWN_TEAM_LABEL = 'Wealth Builder';
+
+const teamOf = (seller: PublicSeller) => seller.team_name || OWN_TEAM_LABEL;
+
+const FIELD_LABEL_CLASS =
+  'block text-sm font-medium [[data-event-surface=tokens]_&]:text-xs [[data-event-surface=tokens]_&]:font-bold [[data-event-surface=tokens]_&]:uppercase [[data-event-surface=tokens]_&]:tracking-[0.12em]';
+const FIELD_HINT_CLASS =
+  'block text-xs text-slate-500 dark:text-white/50 [[data-event-surface=tokens]_&]:text-[color:var(--event-muted)]';
+
 /**
  * "Which SMD are you with?" — asked at checkout, and again when a ticket is
  * assigned or transferred, so every ticket is credited to its holder's SMD.
- * Leaders from external teams are listed like our own: the team they belong to
- * is an internal grouping and is never shown to buyers. The list is A–Z and
- * narrows as the buyer types a name or agency code.
+ *
+ * When the event lists more than one team (PHASES E23) there is one picker per
+ * team, each headed "<team>'s SMD" and listing only that team's SMDs, so the
+ * buyer sees which team they are choosing from. Teams come from the event's
+ * seller list, A–Z. Exactly one team may hold a pick: with picks under two
+ * teams an error names them and `onChange(null)` is reported, which keeps the
+ * form from being submitted until one is cleared. With a single team there is
+ * one picker, labelled `label`, listing every SMD.
+ *
+ * Each list is A–Z and narrows as the buyer types a name or agency code.
  *
  * Renders nothing when the event doesn't track attribution — the backend
  * already returns an empty `sellers` list for `DONT_TRACK`, and then the answer
@@ -148,18 +167,91 @@ export function SellerSelect({
   label?: string;
   hint?: string;
 }) {
+  const teams = useMemo(
+    () =>
+      [...new Set(sellers.map(teamOf))].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: 'base' }),
+      ),
+    [sellers],
+  );
+  /** The SMD picked under each team. More than one entry is the error state. */
+  const [picks, setPicks] = useState<Record<string, number>>(() => {
+    const picked = sellers.find((seller) => seller.id === value);
+    return picked ? { [teamOf(picked)]: picked.id } : {};
+  });
+
   if (sellers.length === 0) return null;
 
+  if (teams.length <= 1) {
+    return (
+      <PublicField label={label} hint={hint} required>
+        <SellerCombobox
+          sellers={sellers}
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          inputClassName={PUBLIC_FIELD_CLASS}
+        />
+      </PublicField>
+    );
+  }
+
+  const setPick = (team: string, id: number | null) => {
+    const next = { ...picks };
+    if (id === null) delete next[team];
+    else next[team] = id;
+    setPicks(next);
+    // Only an unambiguous answer is an answer.
+    const ids = Object.values(next);
+    onChange(ids.length === 1 ? ids[0] : null);
+  };
+  const pickedTeams = teams.filter((team) => team in picks);
+  const conflict = pickedTeams.length > 1;
+
   return (
-    <PublicField label={label} hint={hint} required>
-      <SellerCombobox
-        sellers={sellers}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        inputClassName={PUBLIC_FIELD_CLASS}
-      />
-    </PublicField>
+    <div role="group" aria-label={label} className="space-y-4">
+      <div>
+        <span className={FIELD_LABEL_CLASS}>
+          {label}
+          <span className="ml-0.5 text-red-500">*</span>
+        </span>
+        <span className={cn('mt-1', FIELD_HINT_CLASS)}>
+          Find your SMD under your team. Choose from one team only.
+        </span>
+      </div>
+      {teams.map((team) => (
+        <div key={team}>
+          <PublicField label={`${team}’s SMD`}>
+            <SellerCombobox
+              sellers={sellers.filter((seller) => teamOf(seller) === team)}
+              value={picks[team] ?? null}
+              onChange={(id) => setPick(team, id)}
+              disabled={disabled}
+              inputClassName={PUBLIC_FIELD_CLASS}
+            />
+          </PublicField>
+          {team in picks ? (
+            <button
+              type="button"
+              onClick={() => setPick(team, null)}
+              disabled={disabled}
+              className="mt-1 py-1 text-sm font-semibold underline underline-offset-2 disabled:opacity-50"
+              style={{ color: 'var(--event-brand)' }}
+            >
+              Clear {team}’s SMD
+            </button>
+          ) : null}
+        </div>
+      ))}
+      {conflict ? (
+        <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
+          You picked an SMD under more than one team ({pickedTeams.join(', ')}). Keep only
+          the one for your team and clear the other{pickedTeams.length > 2 ? 's' : ''}.
+        </p>
+      ) : (
+        <span className={FIELD_HINT_CLASS}>{hint}</span>
+      )}
+    </div>
   );
 }
 

@@ -16,6 +16,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useToastStore } from '@/store';
 
 import { usePublicEvent } from '../../hooks/use-public-event';
+import { sellersByTeam } from '../../utils/public-sellers';
 import { useTicketClaim } from '../../hooks/use-ticket-claim';
 import { ClaimedTicketRow } from '../../components/public/claimed-ticket-row';
 import type { AssignHolderInput, TransferRecipientInput } from '../../types/public';
@@ -115,7 +116,7 @@ export default function EventTransferPage() {
                 key={ticket.id}
                 ticket={ticket}
                 claim={claim}
-                sellers={event?.sellers ?? []}
+                sellers={event ? sellersByTeam(event) : []}
                 busy={claimState.pendingTicketId === ticket.id}
                 onAssign={(holder) => handleAssign(ticket.id, holder)}
                 onTransfer={(recipient) => handleTransfer(ticket.id, recipient)}

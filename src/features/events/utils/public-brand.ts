@@ -58,8 +58,11 @@ export function readableTextOn(hex: string): string {
 export const TOKEN_FIELD_CLASS =
   '[[data-event-surface=tokens]_&]:rounded-sm [[data-event-surface=tokens]_&]:border-[color:var(--event-hairline)] [[data-event-surface=tokens]_&]:bg-[var(--event-surface)] [[data-event-surface=tokens]_&]:py-2.5 [[data-event-surface=tokens]_&]:text-[color:var(--event-text)] [[data-event-surface=tokens]_&]:placeholder:text-[color:var(--event-muted)] [[data-event-surface=tokens]_&]:focus:border-[color:var(--event-brand)] [[data-event-surface=tokens]_&]:focus:outline-none [[data-event-surface=tokens]_&]:focus:ring-1 [[data-event-surface=tokens]_&]:focus:ring-[color:var(--event-brand)]';
 
-/** Shared input/select/textarea classes so public forms stay visually consistent. */
-export const PUBLIC_FIELD_CLASS = `w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 disabled:opacity-60 dark:border-white/20 dark:bg-black/30 dark:text-white dark:placeholder:text-white/50 ${TOKEN_FIELD_CLASS}`;
+/**
+ * Shared input/select/textarea classes so public forms stay visually consistent.
+ * 16px text below `sm`: iOS Safari zooms the page into any field smaller than that.
+ */
+export const PUBLIC_FIELD_CLASS = `w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 placeholder:text-slate-500 disabled:opacity-60 sm:text-sm dark:border-white/20 dark:bg-black/30 dark:text-white dark:placeholder:text-white/50 ${TOKEN_FIELD_CLASS}`;
 
 /**
  * Secondary (outline) button classes for public forms — "Apply", "Remove",

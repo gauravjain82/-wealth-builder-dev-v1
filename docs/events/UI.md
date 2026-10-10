@@ -91,7 +91,7 @@ or the theme's default when the page was never customised.
 | `tagline` | `TaglineSection` (`showcase-sections.tsx`) | hook lines, a word strip whose highlight cycles (static under reduced motion), ticket CTA + up to two links. The CTA reads `content.button_label`; blank → `TicketCta`'s theme default |
 | `stats` | `StatsSection` | 1–4 tiles. Live items read `sales_state.tickets_remaining` / `tickets_sold`; **an absent live value hides the tile**, never shows `0`. Sold out shows "Sold out" |
 | `marquee` | `MarqueeSection` | scrolling photo strip; a static grid under reduced motion; nothing when empty |
-| `checkout` | `InlineCheckoutSection` | the purchase form inline at `#tickets` — see §2.3 |
+| `checkout` | `InlineCheckoutSection` | the purchase form inline at `#tickets` — see §2.3. Above the form, from `sm` up and while sales are open and the buyer is still on the form, `TicketsQr` shows a QR code of this page's `#tickets` URL; clicking it opens a large code on white for a projector. `content.show_qr: false` hides it. `content.anchor_price` is struck through before the current price ([E22](PHASES.md#3-decision-log)) — the price itself is still `current_tier` |
 | `pricing` | `PricingTiersSection` | with value copy in its content: one value card (struck comparison price, inclusions, motto). The price is still `current_tier` from the server. `eyebrow` (blank → "Your ticket") and `button_label` (blank → theme default) relabel the card but **do not by themselves switch to it** — only anchor, inclusions, motto or fine print do |
 | `cta_band` | `CtaBandSection` | `size: 'final'` is a full-height closing call; `banner` (and rows saved before sizes) unchanged |
 | `speakers` | `SpeakersSection` | when any speaker is `keynote`, a large-card keynote group, then the rest |
@@ -110,7 +110,12 @@ Five stages, driven by `use-event-checkout`: `form → creating → paying → c
 The form is `CheckoutForm` (`components/public/checkout-form.tsx`), **shared with the inline
 `checkout` landing section** — one form, two hosts (`layout: 'page' | 'inline'`). The inline host
 requests Stripe.js only once the section is within ~800px of the viewport, or on submit
-(`utils/stripe-loader.ts`). When the event has a refund policy, both hosts require an "I agree to the
+(`utils/stripe-loader.ts`). **One SMD picker per team** ([E23](PHASES.md#3-decision-log)): when the event's sellers span more than
+one team, `SellerSelect` renders a picker per team, A–Z, each headed "<team>'s SMD" and listing only
+that team (ours is named by the checkout section's `own_team_label`, else "Wealth Builder";
+`utils/public-sellers.ts`). A pick shows a "Clear" link. Picks under two teams show an error naming
+the teams and the pay button stays disabled until one is cleared. The public assign and transfer forms
+(§2.4) use the same control. When the event has a refund policy, both hosts require an "I agree to the
 refund policy" checkbox, and the payload carries `refund_policy_accepted: true`. **The server enforces
 it** (PHASES E18): a checkout without it gets a 400 field error keyed `refund_policy_accepted`, which
 `PublicApiError.fieldErrors` carries through `use-event-checkout` and the form shows under the checkbox
