@@ -8,6 +8,13 @@
  * component owns the draft: quantity, purchaser, seller, add-ons, custom
  * fields, promo, refund-policy agreement — and the Stripe card step.
  *
+ * The draft is remembered on the buyer's device (`utils/checkout-draft.ts`), so
+ * a refresh or a closed tab does not empty the form; it is cleared on purchase.
+ *
+ * A buyer signed in to the app gets their name, email, phone and SMD filled in
+ * from their account (`useBuyerProfile`); a guest is offered a login link that
+ * returns here.
+ *
  * Every amount shown here is a preview (`computeSummary`). The server prices
  * each order and the PaymentIntent it creates is what is charged (PHASES E9).
  *
@@ -19,7 +26,7 @@
  *              the price.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Elements } from '@stripe/react-stripe-js';
 import type { Stripe } from '@stripe/stripe-js';
@@ -27,7 +34,10 @@ import type { Stripe } from '@stripe/stripe-js';
 import { cn } from '@core/utils';
 import { useToastStore } from '@/store';
 
+import { loadCheckoutDraft, saveCheckoutDraft } from '../../utils/checkout-draft';
 import { sellersByTeam } from '../../utils/public-sellers';
+import { TICKETS_ANCHOR_ID } from '../../utils/ticket-links';
+import { useBuyerProfile } from '../../hooks/use-buyer-profile';
 import type { useEventCheckout } from '../../hooks/use-event-checkout';
 import { publicEventService } from '../../services/public-event-service';
 import {
@@ -83,21 +93,52 @@ export function CheckoutForm({
   const shortcut = event.shortcut;
   const inline = layout === 'inline';
 
-  const [quantity, setQuantity] = useState(1);
-  const [purchaser, setPurchaser] = useState({
-    purchaser_first_name: '',
-    purchaser_last_name: '',
-    purchaser_email: '',
-    purchaser_phone: '',
-  });
-  const [sellerId, setSellerId] = useState<number | null>(null);
-  const [addOns, setAddOns] = useState<CheckoutAddOnSpec[]>([]);
-  const [customValues, setCustomValues] = useState<Record<string, string | boolean>>({});
-  const [promoCode, setPromoCode] = useState('');
+  // What this buyer typed last time on this device, if anything (see
+  // utils/checkout-draft.ts). Read once; the form owns the values from here.
+  const [draft] = useState(() => loadCheckoutDraft(event));
+  const [quantity, setQuantity] = useState(draft?.quantity ?? 1);
+  const [purchaser, setPurchaser] = useState(
+    draft?.purchaser ?? {
+      purchaser_first_name: '',
+      purchaser_last_name: '',
+      purchaser_email: '',
+      purchaser_phone: '',
+    },
+  );
+  const [sellerId, setSellerId] = useState<number | null>(draft?.sellerId ?? null);
+  const [addOns, setAddOns] = useState<CheckoutAddOnSpec[]>(draft?.addOns ?? []);
+  const [customValues, setCustomValues] = useState<Record<string, string | boolean>>(
+    draft?.customValues ?? {},
+  );
+  const [promoCode, setPromoCode] = useState(draft?.promoCode ?? '');
   const [promo, setPromo] = useState<PromoPreview | null>(null);
   const [checkingPromo, setCheckingPromo] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+
+  // A signed-in member's own details fill whatever is still empty, once: what
+  // the buyer typed (or the draft restored) wins over the account.
+  const { signedIn, profile } = useBuyerProfile(shortcut);
+  const [prefilled, setPrefilled] = useState(false);
+  useEffect(() => {
+    if (!profile || prefilled) return;
+    setPrefilled(true);
+    setPurchaser((prev) => ({
+      purchaser_first_name: prev.purchaser_first_name || profile.first_name,
+      purchaser_last_name: prev.purchaser_last_name || profile.last_name,
+      purchaser_email: prev.purchaser_email || profile.email,
+      purchaser_phone: prev.purchaser_phone || profile.phone,
+    }));
+    if (event.sellers.some((seller) => seller.id === profile.seller_id)) {
+      setSellerId((prev) => prev ?? profile.seller_id);
+    }
+  }, [profile, prefilled, event.sellers]);
+
+  // Keep the draft current. `useEventCheckout` forgets it once the purchase
+  // completes — by then the host has swapped this form for the confirmation.
+  useEffect(() => {
+    saveCheckoutDraft(shortcut, { quantity, purchaser, sellerId, addOns, customValues, promoCode });
+  }, [shortcut, quantity, purchaser, sellerId, addOns, customValues, promoCode]);
 
   const sellers = useMemo(() => sellersByTeam(event), [event]);
   const summary = useMemo(
@@ -214,14 +255,36 @@ export function CheckoutForm({
       disabled={locked}
     />
   );
+  const here = `/event/${shortcut}${inline ? `#${TICKETS_ANCHOR_ID}` : '/checkout'}`;
+  const memberNote = prefilled ? (
+    <p className={cn('text-sm', MUTED)}>
+      Filled in from your Wealth Builder account. Check the details, then choose how many tickets.
+    </p>
+  ) : signedIn ? null : (
+    <p className={cn('text-sm', MUTED)}>
+      Already a Wealth Builder member?{' '}
+      <Link
+        to="/login"
+        state={{ from: here }}
+        className="font-semibold underline underline-offset-2"
+        style={{ color: 'var(--event-brand)' }}
+      >
+        Log in
+      </Link>{' '}
+      and we&rsquo;ll fill this in for you.
+    </p>
+  );
   const purchaserFields = (
     <>
+      {memberNote}
       <PurchaserFields
         values={purchaser}
         onChange={(field, value) => setPurchaser((prev) => ({ ...prev, [field]: value }))}
         disabled={locked}
       />
       <SellerSelect
+        // Remount when the account fills in the SMD, so the picker shows it.
+        key={prefilled ? 'member' : 'guest'}
         sellers={sellers}
         value={sellerId}
         onChange={setSellerId}
