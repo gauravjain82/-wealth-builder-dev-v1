@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ErrorState, Heading, LoadingState, Text } from '@shared/components';
+import { Button, ErrorState, Heading, LoadingState, Text } from '@shared/components';
 import { useToastStore } from '@/store';
 import { eventService } from '../services/event-service';
 import { EventSubnav } from '../components/event-subnav';
@@ -110,12 +110,39 @@ export default function EventExternalTicketsPage() {
       const message = errorText(err);
       if (reviewMap) setReviewError(message);
       else addToast({ type: 'error', message });
-      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'stale_revision') {
+      const code = err && typeof err === 'object' && 'code' in err ? (err as { code: string }).code : '';
+      if (code === 'stale_revision') {
         void rows.refetch();
         void sponsors.refetch();
       }
+      if (code === 'import_not_open') {
+        // A newer export superseded the one on screen: drop it and show the current one.
+        setReviewMap(null);
+        setSelectedId(null);
+        setOverrides({});
+        void imports.refetch();
+      }
     } finally {
       setBusyMapId(null);
+    }
+  };
+
+  // Matching is safe to repeat: decisions made by hand are kept, and people
+  // remembered since (in this or another event) are confirmed on their own.
+  const canRerun = imp !== null && (imp.state === 'preview_ready' || imp.state === 'applied');
+  const rerunMatching = async () => {
+    if (!imp) return;
+    try {
+      await actions.analyze.mutateAsync({ importId: imp.id, stage: 'all' });
+      setOverrides({});
+      addToast({ type: 'success', message: 'Matching re-run. Remembered people are confirmed automatically.' });
+      // The job may still be finishing on the worker; look again shortly.
+      window.setTimeout(() => {
+        void rows.refetch();
+        void sponsors.refetch();
+      }, 4000);
+    } catch (err) {
+      addToast({ type: 'error', message: errorText(err) });
     }
   };
 
@@ -199,6 +226,17 @@ export default function EventExternalTicketsPage() {
         <Text variant="muted" aria-live="polite">
           {imp.state === 'failed' ? `This upload failed validation: ${imp.safe_error.replace(/_/g, ' ')}.` : 'Validating the export…'}
         </Text>
+      ) : null}
+
+      {(step === 'sponsors' || step === 'holders') && canRerun ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Text variant="muted" className="text-sm">
+            People confirmed before — in this or an earlier event — are matched automatically.
+          </Text>
+          <Button type="button" variant="outline" size="sm" disabled={actions.analyze.isPending} onClick={() => void rerunMatching()}>
+            {actions.analyze.isPending ? 'Matching…' : 'Re-run matching'}
+          </Button>
+        </div>
       ) : null}
 
       {step === 'sponsors' && ready ? (

@@ -102,7 +102,7 @@ export function useExternalTicketActions(eventId: number) {
     onSuccess: refresh,
   });
   const analyze = useMutation({
-    mutationFn: ({ importId, stage }: { importId: number; stage: 'sponsors' | 'holders' }) =>
+    mutationFn: ({ importId, stage }: { importId: number; stage: 'sponsors' | 'holders' | 'all' }) =>
       externalTicketService.analyze(eventId, importId, stage),
     onSuccess: refresh,
   });

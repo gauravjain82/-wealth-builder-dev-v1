@@ -87,7 +87,7 @@ export const externalTicketService = {
     return request<ExternalImport>(`${base(eventId)}/imports/`, { method: 'POST', body });
   },
 
-  analyze: (eventId: number, importId: number, stage: 'sponsors' | 'holders') =>
+  analyze: (eventId: number, importId: number, stage: 'sponsors' | 'holders' | 'all') =>
     request<{ counts: Record<string, number> | null }>(`${base(eventId)}/imports/${importId}/analyze/`, {
       method: 'POST',
       body: JSON.stringify({ stage }),

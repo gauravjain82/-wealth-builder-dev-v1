@@ -27,6 +27,7 @@ export function errorText(err: unknown): string {
     const code = String((err as { code: string }).code);
     const known: Record<string, string> = {
       stale_revision: 'This changed since you opened it — it has been reloaded, please review again.',
+      import_not_open: 'A newer export replaced this one — the page has been reloaded, please review again.',
       stale_preview: 'Something changed since this preview. Rebuild the preview, then apply.',
       group_conflict: 'Some rows in this group were already decided differently — review them one by one.',
       quick_confirm_not_allowed: 'This group cannot be quick-confirmed. Use Review instead.',
