@@ -195,6 +195,14 @@ Two rules here are load-bearing:
   partial save cannot destroy a tier it simply did not send.
 - **A 409 is not retried.** Retrying would be exactly the silent overwrite the concurrency model
   exists to prevent (`components/contest-settings.tsx:8`).
+- **Every threshold metric travels, a blank one as `null`.** The backend leaves an absent metric
+  as stored, so dropping a cleared field from the payload keeps the old requirement while the
+  screen says "Saved." (`components/contest-settings.tsx`, `handleSave`).
+- **Only Save, Reload and a change of contest replace the draft.** Hide, delete and the flyer
+  controls write immediately and trigger the shared invalidation; the re-read is ignored while the
+  form has unsaved edits. Those actions fold only their own response's `revision`, `hidden` and
+  flyer fields into the draft — not the re-read list's — so a save that follows still 409s if
+  somebody else wrote in between.
 
 ## 4. Server state and caching
 

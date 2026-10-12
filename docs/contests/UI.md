@@ -345,6 +345,11 @@ And it carries the `BR`/`BP`/`LIC` single-hop warning, at the moment somebody ty
   `dismissible`: a stray key does not discard a draft.
 - **A name in a proof opens the profile over it**; the proof stays open underneath.
 - **A 409 offers Reload.** Do not retry a save.
+- **Unsaved settings edits survive Hide and the flyer controls**, are flagged "Unsaved changes."
+  beside Save, and ask before being discarded by selecting or creating another contest.
+- **Tier Hide and Delete are draft changes** — they take effect on Save. Contest Hide, Delete and
+  the flyer controls are immediate.
+- **Clearing a threshold removes the requirement.** It is sent as `null`, never omitted.
 - **Send the whole tier collection with `replace_tiers`**, and mark removals `pending_delete` so
   intent is explicit in the payload rather than inferred from an absence.
 - **The card never sets its own height.**

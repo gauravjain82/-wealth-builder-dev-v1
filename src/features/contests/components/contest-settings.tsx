@@ -18,9 +18,16 @@
  * which is the case `docs/contests/API.md` §6 and `ARCHITECTURE.md` §3.5 describe. Tiers
  * marked for deletion travel as `pending_delete` rather than simply being dropped, so the
  * intent is explicit in the payload instead of inferred from an absence.
+ *
+ * **Only Save, Reload and a change of contest replace the draft.** Hide, delete and the
+ * flyer controls write immediately and re-read the list, and that re-read must not
+ * re-seed a form somebody is halfway through — it would discard their tier edits
+ * without a word. Those actions fold only what they changed into the draft, taken from
+ * their own response, so a save that follows still conflicts if anyone else got in
+ * between.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import '../contests.css';
 import {
@@ -54,6 +61,18 @@ function selectedLevelsFor(tier: EditableTier, levels: LevelOption[]): string[] 
   return codes;
 }
 
+/** The contest fields the immediate actions own; everything else is the form's. */
+function immediateFields(contest: EditableContest): Partial<EditableContest> {
+  return {
+    revision: contest.revision,
+    hidden: contest.hidden,
+    flyer_visible: contest.flyer_visible,
+    flyer_original_name: contest.flyer_original_name,
+    has_visible_flyer: contest.has_visible_flyer,
+    flyer_kind: contest.flyer_kind,
+  };
+}
+
 /** A brand-new tier: anyone. Under C19 the contract's "everyone except NON" blocks nobody. */
 function blankTier(order: number): EditableTier {
   return {
@@ -83,30 +102,54 @@ export function ContestSettings() {
   const [levelSelection, setLevelSelection] = useState<Record<number, string[]>>({});
   const [message, setMessage] = useState<string>('');
   const [conflict, setConflict] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  // Mirrors of `dirty` and the seeded contest for the re-seed effect, which has to
+  // read them without re-running when they change.
+  const dirtyRef = useRef(false);
+  const seededId = useRef<number | null>(null);
 
   const active = useMemo(
     () => contests?.find((contest) => contest.id === selectedId) ?? null,
     [contests, selectedId]
   );
 
-  // Re-seed the draft whenever a different contest is selected, or the server hands
-  // back a fresh payload after a save — the new revisions have to reach the form or
-  // the next save conflicts with itself.
-  useEffect(() => {
-    if (!active || !options) return;
-    setDraft(structuredClone(active));
+  const markDirty = (value: boolean) => {
+    dirtyRef.current = value;
+    setDirty(value);
+  };
+
+  const seed = useCallback((contest: EditableContest, levels: LevelOption[]) => {
+    seededId.current = contest.id;
+    dirtyRef.current = false;
+    setDirty(false);
+    setDraft(structuredClone(contest));
     setLevelSelection(
       Object.fromEntries(
-        active.tiers.map((tier, index) => [
+        contest.tiers.map((tier, index) => [
           tier.id ?? -index - 1,
-          selectedLevelsFor(tier, options.levels),
+          selectedLevelsFor(tier, levels),
         ])
       )
     );
     setConflict(false);
-  }, [active, options]);
+  }, []);
 
-  const patchTier = (index: number, patch: Partial<EditableTier>) =>
+  // Seed the draft when a different contest is selected, and follow the list while
+  // the form is untouched. A re-read that lands on unsaved edits is ignored: the
+  // edits win until Save or Reload, and a stale revision is then a 409, not a loss.
+  useEffect(() => {
+    if (!active || !options) return;
+    if (dirtyRef.current && seededId.current === active.id) return;
+    seed(active, options.levels);
+  }, [active, options, seed]);
+
+  const patchDraft = (patch: Partial<EditableContest>) => {
+    markDirty(true);
+    setDraft((current) => (current ? { ...current, ...patch } : current));
+  };
+
+  const patchTier = (index: number, patch: Partial<EditableTier>) => {
+    markDirty(true);
     setDraft((current) =>
       current
         ? {
@@ -115,11 +158,30 @@ export function ContestSettings() {
           }
         : current
     );
+  };
+
+  /** What an immediate action reports back: its own changes, or why it failed. */
+  const immediate = {
+    onSuccess: (saved: EditableContest) =>
+      setDraft((current) =>
+        current && current.id === saved.id
+          ? { ...current, ...immediateFields(saved) }
+          : current
+      ),
+    onError: (error: Error) => {
+      if ((error as { code?: string }).code === 'edit_conflict') setConflict(true);
+      setMessage(error.message);
+    },
+  };
+
+  const confirmDiscard = () =>
+    !dirty ||
+    window.confirm(`Discard the unsaved changes to "${draft?.name ?? 'this contest'}"?`);
 
   const tierKey = (tier: EditableTier, index: number) => tier.id ?? -index - 1;
 
   const handleSave = async () => {
-    if (!draft) return;
+    if (!draft || !options) return;
     setMessage('');
     setConflict(false);
 
@@ -138,17 +200,20 @@ export function ContestSettings() {
       tier_end: tier.tier_end,
       tier_rolling_days: tier.tier_rolling_days,
       // Sent as strings so the backend's own parser owns grouping, maxima and the
-      // whole-number rule rather than this form re-implementing them.
+      // whole-number rule rather than this form re-implementing them. Every metric
+      // travels, a blank one as `null`: the backend leaves an absent metric as it
+      // was, so omitting a cleared field would silently keep the old requirement.
       thresholds: Object.fromEntries(
-        Object.entries(tier.thresholds)
-          .filter(([, value]) => value !== null && value !== undefined)
-          .map(([metric, value]) => [metric as ThresholdMetric, String(value)])
-      ),
+        options.metrics.map(({ metric }) => {
+          const value = tier.thresholds[metric];
+          return [metric, value === null || value === undefined ? null : String(value)];
+        })
+      ) as Partial<Record<ThresholdMetric, string | null>>,
       pending_delete: tier.pending_delete,
     }));
 
     try {
-      await mutations.save.mutateAsync({
+      const saved = await mutations.save.mutateAsync({
         contestId: draft.id,
         body: {
           revision: draft.revision,
@@ -164,6 +229,9 @@ export function ContestSettings() {
           replace_tiers: true,
         },
       });
+      // The new revisions have to reach the form now, not when the list re-reads,
+      // or a second save in between conflicts with the first.
+      seed(saved, options.levels);
       setMessage('Saved.');
     } catch (error) {
       const failure = error as { code?: string; message?: string };
@@ -173,6 +241,7 @@ export function ContestSettings() {
   };
 
   const handleCreate = async () => {
+    if (!confirmDiscard()) return;
     const today = new Date().toISOString().slice(0, 10);
     try {
       const created = await mutations.create.mutateAsync({
@@ -183,6 +252,7 @@ export function ContestSettings() {
         qualifying_end: today,
       });
       setSelectedId(created.id);
+      if (options) seed(created, options.levels);
       setMessage('Created. It stays out of every reader surface until you announce it.');
     } catch (error) {
       setMessage((error as Error).message);
@@ -209,7 +279,12 @@ export function ContestSettings() {
                 className={`wb-ct-settings-item${
                   contest.id === selectedId ? ' wb-ct-settings-item--active' : ''
                 }`}
-                onClick={() => setSelectedId(contest.id)}
+                onClick={() => {
+                  if (contest.id === selectedId || !confirmDiscard()) return;
+                  markDirty(false);
+                  setMessage('');
+                  setSelectedId(contest.id);
+                }}
               >
                 <span>{contest.name}</span>
                 <small>
@@ -234,7 +309,7 @@ export function ContestSettings() {
                 <input
                   type="text"
                   value={draft.name}
-                  onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+                  onChange={(event) => patchDraft({ name: event.target.value })}
                 />
               </label>
 
@@ -242,9 +317,7 @@ export function ContestSettings() {
                 <span>Status</span>
                 <select
                   value={draft.contest_status}
-                  onChange={(event) =>
-                    setDraft({ ...draft, contest_status: event.target.value })
-                  }
+                  onChange={(event) => patchDraft({ contest_status: event.target.value })}
                 >
                   {options.contest_statuses.map((status) => (
                     <option key={status.value} value={status.value}>
@@ -258,9 +331,7 @@ export function ContestSettings() {
                 <span>Period</span>
                 <select
                   value={draft.period_mode}
-                  onChange={(event) =>
-                    setDraft({ ...draft, period_mode: event.target.value })
-                  }
+                  onChange={(event) => patchDraft({ period_mode: event.target.value })}
                 >
                   {options.period_modes.map((mode) => (
                     <option key={mode.value} value={mode.value}>
@@ -280,7 +351,7 @@ export function ContestSettings() {
                       type="date"
                       value={draft.qualifying_start ?? ''}
                       onChange={(event) =>
-                        setDraft({ ...draft, qualifying_start: event.target.value || null })
+                        patchDraft({ qualifying_start: event.target.value || null })
                       }
                     />
                   </label>
@@ -290,7 +361,7 @@ export function ContestSettings() {
                       type="date"
                       value={draft.qualifying_end ?? ''}
                       onChange={(event) =>
-                        setDraft({ ...draft, qualifying_end: event.target.value || null })
+                        patchDraft({ qualifying_end: event.target.value || null })
                       }
                     />
                   </label>
@@ -306,8 +377,7 @@ export function ContestSettings() {
                     max={3650}
                     value={draft.rolling_days ?? ''}
                     onChange={(event) =>
-                      setDraft({
-                        ...draft,
+                      patchDraft({
                         rolling_days: event.target.value ? Number(event.target.value) : null,
                       })
                     }
@@ -320,7 +390,7 @@ export function ContestSettings() {
                 <input
                   type="text"
                   value={draft.notes}
-                  onChange={(event) => setDraft({ ...draft, notes: event.target.value })}
+                  onChange={(event) => patchDraft({ notes: event.target.value })}
                 />
               </label>
             </div>
@@ -335,12 +405,13 @@ export function ContestSettings() {
                 metrics={options.metrics}
                 selectedLevels={levelSelection[tierKey(tier, index)] ?? []}
                 onChange={(patch) => patchTier(index, patch)}
-                onLevelsChange={(codes) =>
+                onLevelsChange={(codes) => {
+                  markDirty(true);
                   setLevelSelection((current) => ({
                     ...current,
                     [tierKey(tier, index)]: codes,
-                  }))
-                }
+                  }));
+                }}
                 onToggleHidden={() => patchTier(index, { is_hidden: !tier.is_hidden })}
                 onDelete={() => patchTier(index, { pending_delete: !tier.pending_delete })}
               />
@@ -350,16 +421,18 @@ export function ContestSettings() {
               type="button"
               className="wb-ct-more"
               onClick={() =>
-                setDraft({
-                  ...draft,
-                  tiers: [...draft.tiers, blankTier(draft.tiers.length + 1)],
-                })
+                patchDraft({ tiers: [...draft.tiers, blankTier(draft.tiers.length + 1)] })
               }
             >
               Add a tier
             </button>
 
-            <FlyerPanel draft={draft} mutations={mutations} onMessage={setMessage} />
+            <FlyerPanel
+              draft={draft}
+              mutations={mutations}
+              immediate={immediate}
+              onMessage={setMessage}
+            />
 
             <div className="wb-ct-header-actions wb-ct-settings-actions">
               <button
@@ -370,15 +443,15 @@ export function ContestSettings() {
               >
                 {mutations.save.isPending ? 'Saving…' : 'Save'}
               </button>
+              {dirty ? <small>Unsaved changes.</small> : null}
               <button
                 type="button"
                 className="wb-ct-pill"
                 onClick={() =>
-                  mutations.setHidden.mutate({
-                    contestId: draft.id,
-                    hidden: !draft.hidden,
-                    revision: draft.revision,
-                  })
+                  mutations.setHidden.mutate(
+                    { contestId: draft.id, hidden: !draft.hidden, revision: draft.revision },
+                    immediate
+                  )
                 }
               >
                 {draft.hidden ? 'Unhide contest' : 'Hide contest'}
@@ -393,11 +466,18 @@ export function ContestSettings() {
                         'but there is no screen to restore it from.'
                     )
                   ) {
-                    mutations.remove.mutate({
-                      contestId: draft.id,
-                      revision: draft.revision,
-                    });
-                    setSelectedId(null);
+                    mutations.remove.mutate(
+                      { contestId: draft.id, revision: draft.revision },
+                      {
+                        onSuccess: () => {
+                          markDirty(false);
+                          seededId.current = null;
+                          setSelectedId(null);
+                          setDraft(null);
+                        },
+                        onError: immediate.onError,
+                      }
+                    );
                   }
                 }}
               >
@@ -414,10 +494,11 @@ export function ContestSettings() {
                     <button
                       type="button"
                       className="wb-ct-pill"
-                      onClick={() => {
-                        refetch();
-                        setConflict(false);
+                      onClick={async () => {
                         setMessage('');
+                        const { data } = await refetch();
+                        const fresh = data?.find((contest) => contest.id === draft.id);
+                        if (fresh) seed(fresh, options.levels);
                       }}
                     >
                       Reload
@@ -444,10 +525,15 @@ export function ContestSettings() {
 function FlyerPanel({
   draft,
   mutations,
+  immediate,
   onMessage,
 }: {
   draft: EditableContest;
   mutations: ReturnType<typeof useContestSettingsMutations>;
+  immediate: {
+    onSuccess: (saved: EditableContest) => void;
+    onError: (error: Error) => void;
+  };
   onMessage: (message: string) => void;
 }) {
   return (
@@ -461,16 +547,17 @@ function FlyerPanel({
             const file = event.target.files?.[0];
             if (!file) return;
             try {
-              await mutations.uploadFlyer.mutateAsync({
+              const saved = await mutations.uploadFlyer.mutateAsync({
                 contestId: draft.id,
                 file,
                 revision: draft.revision,
               });
+              immediate.onSuccess(saved);
               onMessage('Flyer uploaded.');
             } catch (error) {
               // The server checks the real bytes, so a renamed file is refused here
               // rather than by the accept attribute, which is only a hint.
-              onMessage((error as Error).message);
+              immediate.onError(error as Error);
             } finally {
               event.target.value = '';
             }
@@ -489,11 +576,10 @@ function FlyerPanel({
           checked={draft.flyer_visible}
           disabled={!draft.flyer_original_name}
           onChange={(event) =>
-            mutations.setFlyerVisible.mutate({
-              contestId: draft.id,
-              visible: event.target.checked,
-              revision: draft.revision,
-            })
+            mutations.setFlyerVisible.mutate(
+              { contestId: draft.id, visible: event.target.checked, revision: draft.revision },
+              immediate
+            )
           }
         />
         <span>Show to readers</span>
@@ -504,10 +590,10 @@ function FlyerPanel({
           type="button"
           className="wb-ct-pill"
           onClick={() =>
-            mutations.removeFlyer.mutate({
-              contestId: draft.id,
-              revision: draft.revision,
-            })
+            mutations.removeFlyer.mutate(
+              { contestId: draft.id, revision: draft.revision },
+              immediate
+            )
           }
         >
           Remove

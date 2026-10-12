@@ -411,6 +411,7 @@ export interface TierSubmission {
   tier_start: string | null;
   tier_end: string | null;
   tier_rolling_days: number | null;
-  thresholds: Partial<Record<ThresholdMetric, string>>;
+  /** `null` clears a requirement; an absent metric is left as stored. */
+  thresholds: Partial<Record<ThresholdMetric, string | null>>;
   pending_delete?: boolean;
 }

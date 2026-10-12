@@ -160,6 +160,10 @@ this one must **reload**, because retrying is the silent overwrite the revisions
 - **Optimistic concurrency.** Revisions are issued and checked server-side; a tier edit bumps the
   contest's revision too.
 - **Whether an omitted tier is deleted** — only on explicit `replace_tiers`.
+- **Whether an omitted threshold is cleared** — it is not; the stored value stays. The editor
+  sends every metric and `null` for a blank one.
+- **The order tier positions are written in** — a save may swap or shift positions, or give a new
+  tier a deleted one's slot; only the final set has to be unique (`invalid_tier_order`).
 - **Flyer storage and signing.** URLs are short-lived (≈15 minutes).
 - **Status derivation** — three reader values from five stored ones.
 - **The editor's own options.** Levels, metrics, statuses, period modes and flyer limits are served,
