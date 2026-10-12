@@ -1,7 +1,7 @@
 /**
  * The standalone contest route, laid out as dtez's `wb_contests.php` (parity phase 18).
  *
- * `ContestsBoard` reads the same state as the Home v2 card (`useContestBoard`), so it
+ * `ContestsBoard` reads the same state as the Home card (`useContestBoard`), so it
  * uses the same qualification rules, APIs, filters and tier toggles; only the layout
  * differs. `docs/contests/UI.md` §2.1a.
  *

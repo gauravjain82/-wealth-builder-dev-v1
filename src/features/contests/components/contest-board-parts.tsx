@@ -20,7 +20,7 @@ import { ContestStandings } from './contest-standings';
  * (the containment contract at the top of `contests.css`). On the page it is neither:
  * the page scrolls, and the grid scrolls sideways inside `.wb-ct-results`.
  *
- * `variant` picks the grid: `card` (default) is the Home v2 card's `ContestStandings`,
+ * `variant` picks the grid: `card` (default) is the Home card's `ContestStandings`,
  * `page` is dtez's `ContestResults`.
  */
 export function StandingsRegion({

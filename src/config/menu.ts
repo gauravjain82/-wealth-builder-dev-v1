@@ -88,10 +88,6 @@ const MENU_ITEMS = {
   } as MenuItem,
   // Product catalog management (gated per-user by products:read)
   PRODUCTS: { label: 'Products', icon: '📦', path: '/admin/products' } as MenuItem,
-  // Home v2 (gated per-user by homev2:read — a named rollout list, not a role, so
-  // no plan grants it). Leaderboards and Contests have no entry of their own: their
-  // cards on Home v2 link to the full pages.
-  HOME_V2: { label: 'Home (new)', icon: '✨', path: '/home-v2' } as MenuItem,
   // Contest configuration, gated per-user by wbreporting:manage (not homev2:read).
   CONTEST_SETTINGS: {
     label: 'Contest Settings',
@@ -99,7 +95,7 @@ const MENU_ITEMS = {
     path: '/admin/contest-settings',
   } as MenuItem,
   // Code of Honor committee review and admin rules/values, gated per-user by the
-  // code_of_honor:* access-console permissions. Members use the card on Home v2.
+  // code_of_honor:* access-console permissions. Members use the card on Home.
   CODE_OF_HONOR: { label: 'Code of Honor', icon: '🏅', path: '/code-of-honor/committee' } as MenuItem,
   // Guidance library and review queue, gated per-user by gms:author (no role holds it).
   GUIDANCE: { label: 'Guidance', icon: '🧭', path: '/admin/guidance' } as MenuItem,
@@ -734,7 +730,6 @@ export function getMenuForUser(
   canAccessMisalignments: boolean = false,
   canAccessProducts: boolean = false,
   canAccessReportingPipeline: boolean = false,
-  canAccessLeaderboards: boolean = false,
   // wbreporting:manage. Separate from canAccessReportingPipeline, which is the
   // read gate for the operations screen — configuring a contest needs manage.
   canManageReporting: boolean = false,
@@ -860,19 +855,6 @@ export function getMenuForUser(
       icon: '💼',
       children: pluginFeesAdminEntries,
     });
-  }
-
-  // Home v2 is gated by backend access (homev2:read), not by plan. It goes just
-  // under Home because it is a home page: burying it under the admin entries would
-  // read as an admin tool, which it is not. Leaderboards and Contests ride the same
-  // grant but have no menu entry; the Full Report links on their Home v2 cards open
-  // `/leaderboards` and `/contests`.
-  if (
-    canAccessLeaderboards &&
-    !menuItems.some((item) => item.label === MENU_ITEMS.HOME_V2.label)
-  ) {
-    const homeIdx = menuItems.findIndex((item) => item.label === MENU_ITEMS.HOME.label);
-    menuItems.splice(homeIdx >= 0 ? homeIdx + 1 : 0, 0, cloneMenuItems([MENU_ITEMS.HOME_V2])[0]);
   }
 
   // Big Event sits after BPM (or at the end when a plan has no BPM group), where every

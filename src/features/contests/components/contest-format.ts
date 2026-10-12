@@ -1,5 +1,5 @@
 /**
- * Formatting and gestures shared by the two placements' grids: the Home v2 card
+ * Formatting and gestures shared by the two placements' grids: the Home card
  * (`contest-standings.tsx`, `contest-cell.tsx`, `tier-selector.tsx`) and the standalone
  * page (`contest-results.tsx`, `tier-cards.tsx`). One implementation, so a number reads
  * the same in both.

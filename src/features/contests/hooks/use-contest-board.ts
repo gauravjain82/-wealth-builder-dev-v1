@@ -2,7 +2,7 @@
  * The contest board's state: which contest, the applied filters, the tier selection,
  * the sort, and which dialog is open.
  *
- * Both placements read it — the compact card on `/home-v2` (`ContestsCard`) and the
+ * Both placements read it — the compact card on `/home` (`ContestsCard`) and the
  * standalone page (`ContestsBoard`) — so they share one set of rules and cannot drift:
  * the same default view, the same switch rule, the same standings key. Only what they
  * render differs (`docs/contests/ARCHITECTURE.md` §2).
@@ -42,7 +42,7 @@ export const DEFAULT_FILTERS: FilterDraft = {
 interface UseContestBoardOptions {
   /**
    * Warm the other contests' standings once the first is shown, so a switch is served
-   * from cache. `/contests` only: `/home-v2` is every gated user's landing page, and a
+   * from cache. `/contests` only: `/home` is everyone's landing page, and a
    * background standings request per contest on each visit is a cost paid mostly for
    * switches nobody makes there (decision C24, `docs/contests/PHASES.md` §3).
    */

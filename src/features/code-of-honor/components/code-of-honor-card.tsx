@@ -1,5 +1,5 @@
 /**
- * The Code of Honor card on Home v2: title, tabs, and a body that scrolls inside the
+ * The Code of Honor card on Home: title, tabs, and a body that scrolls inside the
  * card (the card keeps its height; the page does not grow).
  *
  * Tabs appear only for capabilities the server reports in `state/`; the server enforces

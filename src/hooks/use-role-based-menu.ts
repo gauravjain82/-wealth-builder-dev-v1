@@ -4,7 +4,6 @@ import { useBuilderMyAccess } from '../features/builder-ai/hooks/use-builder-ai'
 import { useMisalignmentsAccess } from '../features/admin/misalignments/hooks/use-misalignments';
 import { useProductsAccess } from '../features/admin/products/hooks/use-products';
 import { usePipelineAccess } from '../features/admin/wb-pipeline';
-import { useLeaderboardAccess } from '../features/leaderboards';
 import { roleToPlan } from '../core/constants/roles';
 import { getMenuForUser, type MenuItem } from '../config/menu';
 import { useGmsAccess } from '@/features/gms';
@@ -44,9 +43,6 @@ export function useRoleBasedMenu(): MenuItem[] {
   // The reporting pipeline screen is gated per-user by the backend too.
   const { data: pipelineAccess } = usePipelineAccess();
   const canAccessReportingPipeline = Boolean(pipelineAccess?.can_view);
-  // Home v2 and Leaderboards ride the same limited rollout, gated by homev2:read.
-  const { data: leaderboardAccess } = useLeaderboardAccess();
-  const canAccessLeaderboards = Boolean(leaderboardAccess?.can_view_leaderboards);
   // Contest configuration needs wbreporting:manage, which the same payload reports.
   const canManageReporting = Boolean(pipelineAccess?.can_manage);
   // Guidance authoring is its own per-user grant (gms:author), reported by gms.
@@ -88,7 +84,6 @@ export function useRoleBasedMenu(): MenuItem[] {
         canAccessMisalignments,
         canAccessProducts,
         canAccessReportingPipeline,
-        canAccessLeaderboards,
         canManageReporting,
         canAuthorGuidance,
         canManageBpmSettings,
@@ -110,7 +105,6 @@ export function useRoleBasedMenu(): MenuItem[] {
       canAccessMisalignments,
       canAccessProducts,
       canAccessReportingPipeline,
-      canAccessLeaderboards,
       canManageReporting,
       canAuthorGuidance,
       canManageBpmSettings,
@@ -131,7 +125,6 @@ export function useRoleBasedMenu(): MenuItem[] {
     canAccessMisalignments,
     canAccessProducts,
     canAccessReportingPipeline,
-    canAccessLeaderboards,
     canManageReporting,
     canAuthorGuidance,
     canManageBpmSettings,

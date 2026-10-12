@@ -57,7 +57,7 @@ Two layers, and the first is a real kill switch:
 | `gms:author` | `/admin/guidance` redirects |
 
 **No role holds any `gms:*`**, so the feature stays invisible until someone is named in the access
-console — the same limited-rollout shape as Home v2 and misalignments.
+console — the same limited-rollout shape as Home and misalignments.
 
 **BPM is the first and only instrumented tool.** Add Guest is the first published walkthrough; the rest
 of BPM's workflows ship as **drafts** deliberately (G11), so publishing them is an operator action, not

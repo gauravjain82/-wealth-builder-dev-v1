@@ -7,9 +7,9 @@
  *
  * THE CONTAINMENT CONTRACT
  * ------------------------
- * The host owns the card's size. On `/home-v2` the contest card is a full-width block
+ * The host owns the card's size. On `/home` the contest card is a full-width block
  * inside a wrapper of `height: clamp(480px, 70vh, 760px)`, a flex column that clips
- * (`home-v2-page.tsx`). So the height arrives from the parent and is never guessed
+ * (`home-page.tsx`). So the height arrives from the parent and is never guessed
  * here.
  *
  * Three rules make that work, and all three are required — removing any one of them
@@ -23,7 +23,7 @@
  *   3. only `.wb-ct-scroll` scrolls, and it owns both axes — wide standings scroll
  *      horizontally *inside* the card, never at page level.
  *
- * The contract is the Home v2 card's. The standalone page's host (`/contests`) is not
+ * The contract is the Home card's. The standalone page's host (`/contests`) is not
  * height-bounded — the app shell's main area scrolls — so there the board grows with
  * its content and the page scrolls, as dtez's does (measured in parity phase 18, the
  * same before and after it). Since parity phase 19 the page also sets rules 1 and 3
@@ -1081,7 +1081,7 @@ div.wb-ct-modal .wb-ct-modal-title {
 
 /*
  * dtez's `render()` and its stylesheet, value for value, scoped to `/contests`. The
- * Home v2 card keeps its own tier strip, table and cards above (decision recorded in
+ * Home card keeps its own tier strip, table and cards above (decision recorded in
  * `docs/contests/PHASES.md` §3, parity phase 19).
  *
  * The palette is dtez's, as custom properties on the page's host, so the board reads
@@ -1093,7 +1093,7 @@ div.wb-ct-modal .wb-ct-modal-title {
  * that never scrolled — `.wb-ct` (`overflow: hidden`) and `.wb-ct-scroll`
  * (`overflow: auto`) — and a sticky element sticks to its nearest scroll container, so
  * nothing could stick to the page. Here, and only here, both are `overflow: visible`;
- * the Home v2 card is bounded and its rules are load-bearing, so they stay. The grid
+ * the Home card is bounded and its rules are load-bearing, so they stay. The grid
  * scrolls sideways inside `.wb-ct-results`, as dtez's `.standings` does, which is also
  * why its header row does not stick vertically on a wide screen — on dtez neither.
  */
@@ -1582,7 +1582,7 @@ div.wb-ct-modal .wb-ct-modal-title {
   padding-top: 0.5rem;
 }
 
-/* --- featured-contest showcase (`/home-v2`) -------------------------------
+/* --- featured-contest showcase (`/home`) -------------------------------
  *
  * dtez's `wb_contests_showcase.php`. Unlike the standings card this is content-sized:
  * ten rows and a banner, so the containment contract above does not apply and the

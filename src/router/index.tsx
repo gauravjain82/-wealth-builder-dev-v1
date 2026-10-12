@@ -23,7 +23,7 @@ import {
   canSeePayouts,
   canSeeSevcTotals,
 } from '@/features/plugin-fees/utils/plugin-fees-access';
-import { ContestsRoute, PrefetchContests } from './contests-route';
+import { ContestsRoute } from './contests-route';
 import { LeaderboardsRoute } from './leaderboards-route';
 import { ProductsRoute } from './products-route';
 import { PublicRoute } from './public-route';
@@ -125,9 +125,6 @@ const PluginFeesAdjustmentsPage = lazy(
 );
 const PluginFeesSettingsPage = lazy(
   () => import('@/features/plugin-fees/pages/plugin-fees-settings-page')
-);
-const HomeV2Page = lazy(
-  () => import('@/features/home-v2/pages/home-v2-page')
 );
 const WbPipelinePage = lazy(
   () => import('@/features/admin/wb-pipeline/pages/wb-pipeline-page')
@@ -359,24 +356,19 @@ const router = createBrowserRouter([
         element: <CodeOfHonorRoute>{lazyLoad(CodeOfHonorCommitteePage)}</CodeOfHonorRoute>,
       },
       {
-        // The next home page. Behind homev2:read — a named rollout list, not a
-        // role — while `/home` stays exactly as it is.
+        // Home v2 became `/home` (leaderboards decision L16); kept so old links resolve.
         path: 'home-v2',
-        element: (
-          <PrefetchContests>
-            <LeaderboardsRoute>{lazyLoad(HomeV2Page)}</LeaderboardsRoute>
-          </PrefetchContests>
-        ),
+        element: <Navigate to="/home" replace />,
       },
       {
-        // Expanded leaderboard and Full Report; same homev2:read gate.
+        // Expanded leaderboard and Full Report; behind homev2:read.
         path: 'leaderboards',
         element: <LeaderboardsRoute>{lazyLoad(LeaderboardsPage)}</LeaderboardsRoute>,
       },
       {
         // The optional standalone route from docs/contests/UI.md §1: ContestsBoard, dtez's
         // layout over the card's state and rules (UI.md §2.1a). Gated on can_view_contests,
-        // which reads the same homev2:read grant the Home v2 page does (decision C11).
+        // which reads the same homev2:read grant the leaderboards do (decision C11).
         path: 'contests',
         element: <ContestsRoute>{lazyLoad(ContestsPage)}</ContestsRoute>,
       },

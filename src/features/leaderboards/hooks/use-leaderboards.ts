@@ -52,7 +52,7 @@ const selectLeaderboardAccess = (access: WbReportingAccess): LeaderboardAccess =
 });
 
 /**
- * Whether the current user may see the leaderboards and the Home v2 page.
+ * Whether the current user may open the leaderboard routes.
  *
  * A selector over the shared `my-access` query (`@shared/wbreporting-access`), which
  * owns the key and the long `staleTime`. It is outside `['leaderboards']`, so the

@@ -1,6 +1,6 @@
 /**
  * `/code-of-honor/committee` — the culture committee's review screen and the
- * administrators' rules and values, on their own page (not in the Home v2 card).
+ * administrators' rules and values, on their own page (not in the Home card).
  * Guarded by `CodeOfHonorRoute`; each section also checks its own capability, and the
  * backend enforces every one of them independently.
  */

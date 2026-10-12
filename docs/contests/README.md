@@ -4,7 +4,7 @@
 |---|---|
 | **Module** | `contests` |
 | **Source** | `src/features/contests/` |
-| **Routes** | `/contests`, `/admin/contest-settings` — plus an embedded card on `/home-v2` |
+| **Routes** | `/contests`, `/admin/contest-settings` — plus an embedded card on `/home` |
 | **Backend module** | `wbreporting` → `mlm_platform/docs/wbreporting/` |
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
@@ -39,7 +39,7 @@ Because a contest is a promise, two properties matter more here than in a normal
 ## 2. Scope
 
 **In scope**
-- The embedded standings card on `/home-v2`, and a standalone `/contests` page laid out as dtez's
+- The embedded standings card on `/home`, and a standalone `/contests` page laid out as dtez's
   (title and status line, contests as buttons, an always-visible filter bar) over the same state.
 - Draft filters (person, view, Net, Leaders, Agents; on the page also Upline and Leader) with
   explicit Apply.
@@ -105,8 +105,8 @@ Because a contest is a promise, two properties matter more here than in a normal
 - `/api/accounts/users/` — the standalone page's person search.
 
 **Downstream**
-- `src/features/home-v2/` — mounts `ContestsCard` as its own full-width section, in a
-  `clamp(480px, 70vh, 760px)` wrapper (`home-v2-page.tsx:109-130`). The "Event & Contests"
+- `src/features/home/` — mounts `ContestsCard` as its own full-width section, in a
+  `clamp(480px, 70vh, 760px)` wrapper (`home-page.tsx:109-130`). The "Event & Contests"
   `CanvaVideoCard` above it stays.
 - `src/router/contests-route.tsx`, `contest-settings-route.tsx` — two guards, two different gates.
 - `src/hooks/use-role-based-menu.ts` — Contest Settings only, inside the Admin group; `/contests` has no menu entry and is

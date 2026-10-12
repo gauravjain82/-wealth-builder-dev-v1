@@ -21,7 +21,7 @@ Baseline commit: `7e3b7f1` (2026-09-27).
 |---|---|---|---|
 | Full (six files) | 14 | **14** | 0 |
 | Lite (`README` + one) | 11 | **11** | 0 |
-| Indexed (a row in the index) | 3 | **3** | 0 |
+| Indexed (a row in the index) | 2 | **2** | 0 |
 | `platform` (the shell) | 1 | **1** | 0 |
 
 **Dangling citations in `src/`: 0.** All 28 folded in and repointed.
@@ -159,7 +159,7 @@ comments naming the decision behind a choice — the `leaderboards` set was writ
 ### 2.7 Modules with no decision source at all
 
 `education`, `insight-center`, `legal`, `showcase`, `training-schedule`, `systematic-tools`,
-`terminated-users`, `home`, `reports`, `home-v2`. For these, `PHASES.md` is reconstructed from
+`terminated-users`, `home`, `reports`. For these, `PHASES.md` is reconstructed from
 `git log` and marked `~`, and §3 may legitimately read *"none recorded"*.
 
 ## 3. The process, per module

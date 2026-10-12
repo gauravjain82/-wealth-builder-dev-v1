@@ -91,7 +91,7 @@ Associate Tracker · Licensing Tracker · Production Tracker · Team Promotion T
 Baseshop and Invitations for a builder), so the sidebar renders three levels there. The
 collapsed-rail flyout closes on a link click only, so the nested toggle can open.
 
-Not in the menu: **Leaderboards** and **Contests** — the Full Report actions on their Home v2
+Not in the menu: **Leaderboards** and **Contests** — the Full Report actions on their Home
 cards open `/leaderboards?view=report` and `/contests`; **Welcome Videos** — a section of File
 Vault, and still the `/welcome-videos` route the `/home` card links to.
 

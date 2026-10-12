@@ -4,7 +4,7 @@
  * One CSS grid, `240px repeat(n, minmax(260px, 1fr))`, not a table plus a card list:
  * a narrow board reflows the same rows into one stacked card per agent
  * (`contests.css`, "results grid"). So there is a single rendering to keep in step,
- * where the Home v2 card's `ContestStandings` keeps two.
+ * where the Home card's `ContestStandings` keeps two.
  *
  *   header   Agent | MD ↓ / "0 qualified · 0 close" / period | …
  *   agent    name / "07VIR · SMD" / "Leader: Barry Wong · Best 73%"

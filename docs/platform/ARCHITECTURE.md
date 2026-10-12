@@ -84,8 +84,7 @@ loader while it resolves, `<Navigate to="/home" replace />` on error or denial. 
 shared cache entry — §4.
 
 A guard may **start** a request its page will need, because it decides rendering, not
-permission (§6): `ContestsRoute` starts the contest list alongside its access check, and
-`PrefetchContests` does the same outside `LeaderboardsRoute` for `/home-v2`
+permission (§6): `ContestsRoute` starts the contest list alongside its access check
 (`router/contests-route.tsx`). An ungranted caller gets a 403 and is redirected.
 
 ## 3. Primary flows
@@ -155,7 +154,7 @@ Devtools mount in dev only (`provider.tsx:28`).
 
 `GET /api/wbreporting/my-access/` returns four flags (`can_view`, `can_manage`,
 `can_view_leaderboards`, `can_view_contests`) that the shell menu, the pipeline screen,
-leaderboards, Home v2 and contests all read. It has **one** cache entry, owned by
+leaderboards and contests all read. It has **one** cache entry, owned by
 `src/shared/wbreporting-access/` (types, service, hook — the platform layering inside one
 shell-level module, so no feature imports another's internals):
 

@@ -17,10 +17,10 @@
 |---|---|---|---|
 | `/leaderboards` | `LeaderboardsRoute` (`homev2:read`) | `LeaderboardsPage` | `view=report`, `metric=<key>`, `scope=<key>` |
 
-**Embedded entry point.** `LeaderboardsCard` is mounted by `src/features/home-v2/` inside the
-Home v2 page. It is the preferred integration: one metric, a short preview, and an expand
+**Embedded entry point.** `LeaderboardsCard` is mounted by `src/features/home/` inside the
+Home page. It is the preferred integration: one metric, a short preview, and an expand
 action that navigates to `/leaderboards` carrying the metric. There is no separate route for
-it. There is no sidebar entry either: Home v2's Full Report action is the way to the page
+it. There is no sidebar entry either: Home's Full Report action is the way to the page
 ([platform decision P8](../platform/PHASES.md#3-decision-log)).
 
 Query-string handling (`pages/leaderboards-page.tsx:33-43`):
@@ -157,7 +157,7 @@ caused a specific problem.
 ### Container queries
 
 The embedded card adapts to **its container**, not the viewport
-(`leaderboards.css:60`, `:357`), because it is mounted inside a Home v2 slot whose width does
+(`leaderboards.css:60`, `:357`), because it is mounted inside a Home slot whose width does
 not track the page width. A page-level media query alone would size it wrongly.
 
 ### Speedometer geometry

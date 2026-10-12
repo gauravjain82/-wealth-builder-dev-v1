@@ -1,10 +1,10 @@
-/** The view menu, shared by the Home v2 filter modal and the standalone filter bar. */
+/** The view menu, shared by the Home filter modal and the standalone filter bar. */
 
 import type { ContestScope } from '../types';
 
 /**
  * The views, in dtez's order (All, then the five person-based views). One list for the
- * Home v2 modal and the standalone filter bar, so the two menus cannot disagree.
+ * Home modal and the standalone filter bar, so the two menus cannot disagree.
  *
  * SMD base is offered for parity with dtez's menu. On the backend `base` and `smd_base`
  * are one walk (zero downline SMD generations, `population.py` `SCOPE_ALIASES`), so the

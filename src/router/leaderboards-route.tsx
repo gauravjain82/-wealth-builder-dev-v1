@@ -8,7 +8,8 @@ interface LeaderboardsRouteProps {
 }
 
 /**
- * Route guard for the Home v2 page and the Leaderboards routes.
+ * Route guard for the Leaderboards routes. `/home` embeds the same panel unguarded,
+ * because it is this guard's own denial target.
  *
  * Access is not plan-based: the backend `/api/wbreporting/my-access/` endpoint
  * decides, and `can_view_leaderboards` is true only for people granted `homev2:read`

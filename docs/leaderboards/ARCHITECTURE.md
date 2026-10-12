@@ -37,7 +37,7 @@ shared by five components, with no imports of its own.
        ├── view=report  → FullReport ────────┤
        └── view=settings→ LeaderboardSettings│   (only if can_manage)
                                              │
-/home-v2 ──── LeaderboardsCard ──────────────┤
+/home ─────── LeaderboardPanel (no guard) ───┤
                                              │
                         shared by the surfaces:
                         ├── LeaderList      one ranked panel (Top 5)
@@ -159,7 +159,7 @@ see [PHASES.md §5](PHASES.md#5-outstanding).
 
 | Capability | Read via | Gates |
 |---|---|---|
-| `can_view_leaderboards` (`homev2:read`) | `useLeaderboardAccess`, a selector over the shared access query | the `/leaderboards` and `/home-v2` routes, and their menu entries |
+| `can_view_leaderboards` (`homev2:read`) | `useLeaderboardAccess`, a selector over the shared access query | the `/leaderboards` route. `/home` mounts the panel without reading it (decision L16) |
 | `can_manage` (`wbreporting:manage`) | same payload | whether the Settings tab is offered (`pages/leaderboards-page.tsx:62`) |
 
 `homev2:read` is granted per user in the backend access console. **No plan and no role grants
@@ -175,7 +175,7 @@ thing to get wrong (decision L6).
 ## 7. Integration points
 
 - **`wbreporting`** — eight endpoints, all in [API.md](API.md).
-- **`home-v2`** — imports `LeaderboardsCard` from this module's `index.ts`. Its `onExpand`
+- **`home`** — imports `LeaderboardPanel` from this module's `index.ts`. Its `onExpand`
   navigates to `/leaderboards?metric=…`, which is why the page reads the query string.
 - **`contests`** — independent module, same API prefix, same grant, its own hook. The one
   cache entry they share is the `wbreporting` access payload (`@shared/wbreporting-access`),
@@ -183,7 +183,7 @@ thing to get wrong (decision L6).
 - **The reporting pipeline** — produces the tables these endpoints read. Its schedule being
   off is why every current answer has `source: daily_fallback` (decision L8).
 - **`index.ts`** exports exactly five components, one hook and three types. That narrow
-  surface is what lets the internals change without touching `home-v2` or the router.
+  surface is what lets the internals change without touching `home` or the router.
 
 ## 8. Invariants and failure modes
 

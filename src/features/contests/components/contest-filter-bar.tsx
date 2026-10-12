@@ -2,7 +2,7 @@
  * The standalone page's filter bar, always visible, as on dtez: Person, View, the net
  * filter, Leaders, Agents, Apply, Upline, Leader, and the summary line under them.
  *
- * Like the Home v2 modal (`contest-filters.tsx`) it is a **draft** until Apply, or
+ * Like the Home modal (`contest-filters.tsx`) it is a **draft** until Apply, or
  * Enter in the person search: nothing typed or ticked reaches the server before then
  * (`docs/contests/UI.md` §4).
  *

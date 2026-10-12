@@ -7,7 +7,7 @@
  * filter matrix lives in the expanded view.
  *
  * It works at its **container** width rather than the viewport's, so dropping it into
- * a narrow column on the Home v2 page does not need a media query — which matters
+ * a narrow column on the Home page does not need a media query — which matters
  * because the same card is used in a two-column grid and at iPhone width.
  */
 

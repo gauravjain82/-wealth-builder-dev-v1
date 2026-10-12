@@ -1,8 +1,8 @@
 /**
  * The contest card — the piece that owns containment.
  *
- * On `/home-v2` this is a full-width block of its own, like the leaderboard. The host
- * decides how big it is: `home-v2-page.tsx` wraps it in a clipping flex column of
+ * On `/home` this is a full-width block of its own, like the leaderboard. The host
+ * decides how big it is: `home-page.tsx` wraps it in a clipping flex column of
  * `height: clamp(480px, 70vh, 760px)`, and that height arrives here. Nothing in this
  * component or its stylesheet sets a pixel height, a `vh` unit, or a content-driven
  * minimum — see the containment contract at the top of `contests.css`.
@@ -33,7 +33,7 @@ interface ContestsCardProps {
   withChrome?: boolean;
   /**
    * Warm the other contests' standings once the first is shown. Off by default, and
-   * off on `/home-v2` (decision C24); see `useContestBoard`.
+   * off on `/home` (decision C24); see `useContestBoard`.
    */
   prefetchOtherContests?: boolean;
   /** Opens the standalone `/contests` page. Contests has no sidebar entry, so this is the way in. */
@@ -41,7 +41,7 @@ interface ContestsCardProps {
 }
 
 /**
- * The compact placement, on `/home-v2`. The standalone `/contests` page renders
+ * The compact placement, on `/home`. The standalone `/contests` page renders
  * `ContestsBoard` over the same state (`useContestBoard`) instead.
  */
 export function ContestsCard({

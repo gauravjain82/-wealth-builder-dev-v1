@@ -5,7 +5,7 @@
  * the host's translucent dark glass and the accent is the home page's yellow. The
  * vendor's black-and-gold theme is reference material, not a second theme.
  *
- * Containment (the Home v2 card): the card has a fixed height and is a flex column;
+ * Containment (the Home card): the card has a fixed height and is a flex column;
  * `min-height: 0` on each flex ancestor lets `.wb-coh-scroll` — the only scroller — own
  * the overflow, so long content scrolls inside the card instead of growing the page.
  * The committee page is not height-bounded; there the page scrolls.
@@ -1179,7 +1179,7 @@
   }
 }
 
-/* --- surfaces outside the Home v2 card ------------------------------------ */
+/* --- surfaces outside the Home card ------------------------------------ */
 
 /*
  * The committee page and the dialogs render in the app shell and the shared `Modal`,

@@ -8,12 +8,12 @@
  *   Reward: …                       ← only when the server sends one (show_rewards)
  *   Tap to show this tier           ← "Tap to add" once any is selected; "Selected · tap to remove"
  *
- * The cards are the tier toggles, with the same three-state gesture as the Home v2
+ * The cards are the tier toggles, with the same three-state gesture as the Home
  * card's `TierSelector` (`toggleTier`). A wide board lays them out as dtez's
  * auto-fit grid; a narrow one as a sideways strip that sticks to the top of the page
  * while the standings scroll under it (`contests.css`, "tier cards").
  *
- * The Home v2 card keeps `TierSelector`: its compact slot has no room for these
+ * The Home card keeps `TierSelector`: its compact slot has no room for these
  * (decision recorded in `docs/contests/PHASES.md` §3, parity phase 19).
  */
 

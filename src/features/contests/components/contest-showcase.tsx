@@ -1,9 +1,9 @@
 /**
- * The featured-contest card on `/home-v2` — dtez's `wb_contests_showcase.php`.
+ * The featured-contest card on `/home` — dtez's `wb_contests_showcase.php`.
  *
  * A banner (the contest's image flyer behind its name and period), then two boards of
  * five and a status line. With more than one contest the name is a picker; the choice
- * is not remembered (decision C25), so a reload opens on the first contest again. It replaces the compact standings card on Home v2: the full
+ * is not remembered (decision C25), so a reload opens on the first contest again. It replaces the compact standings card on Home: the full
  * grid, filters and proofs live on `/contests`, which "View all" opens.
  *
  * Nothing is ranked here. The backend's `showcase/` endpoint places each person at the

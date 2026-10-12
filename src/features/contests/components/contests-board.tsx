@@ -8,7 +8,7 @@
  *   the tier strip
  *   the standings
  *
- * It reads the same state as the Home v2 card (`useContestBoard`), so the rules are
+ * It reads the same state as the Home card (`useContestBoard`), so the rules are
  * one implementation; only the arrangement differs. The two banners the card shows
  * above the grid are absent here: the applied filters are the bar's summary line, and
  * the team-credit note (C5) is the BR/BP/LIC pills' tooltip and the proof dialog's

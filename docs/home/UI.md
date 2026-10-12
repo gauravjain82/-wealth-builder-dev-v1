@@ -5,11 +5,11 @@
 | **Module** | `home` |
 | **Source** | `src/features/home/` |
 | **Routes** | `/home` |
-| **Backend module** | `content`, `tracker` |
+| **Backend module** | `content`, `tracker`; `wbreporting` and Code of Honor through the embedded sections |
 | **API prefix** | `/api/content/`, `/api/tracker/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
-| **Verified against** | commit `7e3b7f1` — 2026-09-28 |
+| **Verified against** | commit `2fc8882` plus the L16 change — 2026-10-12 |
 
 ## 1. Routes and entry points
 
@@ -21,23 +21,27 @@
 guard's denial path all send users here ([auth UI §1](../auth/UI.md#1-routes-and-entry-points)). That makes
 it the one page that must always render for any authenticated user.
 
-`/dashboard` is a `<Navigate to="/home" replace />` stub kept so old links resolve.
-
-**Component reuse:** `/home-v2` imports `VideoHero`, both `CanvaVideoCard` slots and `PerformanceTable`
-from this module.
+`/dashboard` and `/home-v2` are `<Navigate to="/home" replace />` stubs kept so old links resolve.
 
 ## 2. Screens and components
 
-| Component | Shows | Source |
-|---|---|---|
-| `VideoHero` | the hero video and its copy | `/api/content/home-page/` |
-| `CarouselCard` | an image strip — contest or recognition | content + `use-carousel-images` |
-| `LeaderboardCard` | top SMD/MD by metric | `/api/tracker/policies/top_base_team_leaders/` |
-| `PerformanceTable` | the viewer's own figures | `/api/tracker/trackers/associate/` |
-| `WelcomeVideosHomeCard` | new agents only (`!isPaid`): a link to `/welcome-videos` | none — static; owned by [welcome-videos](../welcome-videos/) |
+Top to bottom:
+
+| Component | Who | Shows | Source |
+|---|---|---|---|
+| `VideoHero` | everyone | the hero video and its copy | `/api/content/home-page/` |
+| learning card, `WelcomeVideosHomeCard`, onboarding card | new agents (`!isPaid`) | links to `/learn/*`, `/welcome-videos`, `/onboarding-game` | none — static; the middle one is owned by [welcome-videos](../welcome-videos/) |
+| `CanvaVideoCard` × 2 | everyone | "Event & Contests" and "Recognition" embeds | `/api/content/home-page/` |
+| `LeaderboardPanel` | paid | the full leaderboard panel; Full Report opens `/leaderboards?view=report` | [leaderboards](../leaderboards/) — `wbreporting`, `homev2:read` |
+| `ContestShowcase` | paid | the featured contest; "View all" opens `/contests` | [contests](../contests/) — `wbreporting`, `homev2:read` |
+| `CodeOfHonorCard` | paid | the Code of Honor wall; renders nothing for a non-member | `src/features/code-of-honor/` |
+| `PerformanceTable` | paid | the viewer's own figures | `/api/tracker/trackers/associate/` |
+
+`isPaid` is the plan derived from `user.roles[0]`; no role means a new agent. The paid sections
+are **unmounted** for a new agent, not hidden, so none of their requests are sent.
 
 Each component has its own CSS file beside it (`video-hero.css`, `carousel-card.css`,
-`leaderboard-card.css`, `performance-table.css`) — a per-component convention this module uses and most
+`performance-table.css`) — a per-component convention this module uses and most
 others do not.
 
 ### `VideoHero` renders two different elements
@@ -51,21 +55,25 @@ The `hero_trailer` slot can hold either a media file or a player page, and they 
 
 `<video src>` pointed at a Vimeo or YouTube *player page* renders an empty box — the element has no media to
 decode. `VideoHero` picks the element from the optional `mediaType` prop, falling back to sniffing the URL
-(known player hosts, or any path without an `.mp4`/`.webm`/`.mov`/`.m4v`/`.ogv` extension). `/home-v2` passes
-the CMS `media_type`; `/home` relies on the sniff, because `home-page.tsx` is under the release freeze in §4.
+(known player hosts, or any path without an `.mp4`/`.webm`/`.mov`/`.m4v`/`.ogv` extension). The page passes the CMS
+`media_type`; the sniff covers the fallback URL and any slot without one.
 
 Embeds get `autoplay`, `loop`, `playsinline` and a mute parameter appended, preserving existing query params
 such as Vimeo's `h=` privacy hash. The `src` is built once from the *initial* mute state — re-deriving it on
 each toggle would reload the player and restart the video — so later toggles go through Vimeo's `postMessage`
 API. The mute button is hidden for non-Vimeo embeds (Canva), which expose no audio API.
 
-### The home leaderboard is not the Leaderboards feature
+### The leaderboard and contest sections are gated server-side, not here
 
-`HomeLeaderboardMetric` is `recruits | points | licenses | big_event` and `HomeLeaderboardLevel` is
-`SMD | MD`, read from **`tracker`**. The [leaderboards](../leaderboards/) module reads `wbreporting` and has
-eleven metrics, five scopes and proof rows. They are different surfaces with different numbers, and they can
-legitimately disagree — which is precisely why `/home-v2` was built beside `/home` rather than replacing it
-(decision L7: replacing `/home` waits on a QA comparison of the two cards' numbers).
+`/home` has no guard and reads no capability. `LeaderboardPanel` and `ContestShowcase` call
+`wbreporting` endpoints the backend answers only for `homev2:read` (or `wbreporting:manage`), so
+for a paid user without the grant each section renders its own error state. Showing the sections
+to everyone is deliberate (decision L16): the rollout is a grant of `homev2:read` to every level
+in the access console, and the page does not change when it lands.
+
+The original page's `LeaderboardCard` read `tracker` (`top_base_team_leaders`) and was deleted
+with it. Its numbers and the panel's come from different tables and could disagree; there is now
+one leaderboard on the page.
 
 ## 3. States
 
@@ -75,20 +83,21 @@ legitimately disagree — which is precisely why `/home-v2` was built beside `/h
 | No content configured | the section is absent rather than broken |
 | Hero href is a player page | framed in an iframe; a `<video>` element here would render an empty box |
 | Carousel images missing | the strip renders empty — images come from Firestore, not the content API |
+| Paid user without `homev2:read`, or `wbreporting` not deployed | the leaderboard panel shows the backend's permission message; the contest showcase reads "Unavailable" |
+| New agent | onboarding cards; no leaderboard, contests, Code of Honor or performance table |
 | Leaderboard empty | no rows |
 | No tracker record | an empty performance table |
 
 ## 4. Interaction rules
 
-- **Do not modify `pages/home-page.tsx` casually.** It is deliberately untouched, and
-  `git diff main -- src/features/home/pages/home-page.tsx` is a release check for the leaderboards work.
-- **Do not fork these components for another page.** `home-v2` composes them so the two pages cannot
-  drift.
-- **`/home` must always render.** Every guard's denial path lands here.
+- **`/home` must always render.** Every guard's denial path lands here, so the page takes no
+  guard, and an embedded section that fails must fail inside its own card.
+- **Do not add a client-side `homev2:read` check to hide a section** without revisiting L16.
+- **Embedded sections are imported from their module's `index.ts`**, never from its internals.
 
 ## 5. Responsive and print behaviour
 
-Four per-component stylesheets plus Tailwind. No print styles.
+Three per-component stylesheets plus Tailwind; the embedded sections bring their own prefixed CSS. No print styles.
 
 ## 6. Accessibility
 

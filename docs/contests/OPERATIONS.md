@@ -37,14 +37,14 @@ changed flyer limit appears without a frontend deploy.
 
 Standard ([platform OPERATIONS §2](../platform/OPERATIONS.md#2-build-and-run)). Two lazy chunks of
 its own — `/contests` (`pages/contests-page.tsx`) and the settings page (`router/index.tsx:63-65`);
-the card is imported statically by `home-v2-page.tsx`, so it ships in the Home v2 chunk. `contests.css` is imported by the components that need it, not
+the card is imported statically by `home-page.tsx`, so it ships in the Home chunk. `contests.css` is imported by the components that need it, not
 globally.
 
 Locally you need `homev2:read` on your own account to see anything, and `wbreporting:manage` for the
 settings screen. There is no dev bypass.
 
 **Testing the card properly means testing it in its slot.** Its height comes from the host — on
-`/home-v2` from its wrapper's `height: clamp(480px, 70vh, 760px)` (`home-v2-page.tsx`). Checking it
+`/home` from its wrapper's `height: clamp(480px, 70vh, 760px)` (`home-page.tsx`). Checking it
 only on `/contests`, where the box is tall, will not catch a containment regression.
 
 ## 3. Feature flags and rollout
@@ -56,7 +56,7 @@ No client-side flags. Two capabilities, both from one `my-access` payload:
 | `can_view_contests` (`homev2:read`, or `wbreporting:manage`) | `/contests`, the card, the menu entry | `/contests` → `/home`; no menu entry |
 | `can_manage` (`wbreporting:manage`) | `/admin/contest-settings`, its two reads and all seven writes | settings URL → `/contests` |
 
-`can_view_contests` rides the **same `homev2:read` grant** as Home v2 and Leaderboards (decision C11):
+`can_view_contests` rides the **same `homev2:read` grant** as Home and Leaderboards (decision C11):
 the contest card lives on the page that gate already opens, so a separate permission would have to be
 granted to exactly the same people.
 
@@ -74,7 +74,7 @@ chunks. `npm run lint` reports nothing in this module today.
 
 Manual checks, ordered by what they protect:
 
-1. **Containment, in the real slot.** Open `/home-v2` and confirm the card fills its
+1. **Containment, in the real slot.** Open `/home` and confirm the card fills its
    `clamp(480px, 70vh, 760px)` wrapper, that
    only the standings area scrolls, and that **the page itself does not grow**. Then narrow the window
    and confirm horizontal scrolling stays inside the card.
@@ -103,7 +103,7 @@ Manual checks, ordered by what they protect:
     focused, and **no** request. dtez shows the first person in its list instead.
 12. **Upline and Leader.** Apply a person; both stay disabled until their profile arrives, then each
     moves the person and re-applies. The profile endpoint can take seconds (UI.md §2.3).
-13. **Home v2 did not change.** Screenshot the card on `/home-v2` before and after any change to the
+13. **Home did not change.** Screenshot the card on `/home` before and after any change to the
     shared hook or parts (`use-contest-board.ts`, `contest-board-parts.tsx`); they must be
     identical.
 14. **Dialogs** (parity phase 20). Escape, a backdrop click and × each close the proof, profile,

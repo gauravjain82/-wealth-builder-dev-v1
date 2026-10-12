@@ -185,7 +185,7 @@ whenever none is running, which is the normal state and the reason `emit` is che
 | `can_view_analytics`, `can_administer` | analytics and administration |
 
 **No role holds any `gms:*`**, so the feature stays invisible until somebody is named in the access
-console — the same limited-rollout shape as Home v2 and misalignments.
+console — the same limited-rollout shape as Home and misalignments.
 
 `HelpAction` returns `null` without `can_view`, so a tool mounting it unconditionally is safe.
 

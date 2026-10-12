@@ -91,8 +91,10 @@ lines: [docs/platform/OPERATIONS.md §2](docs/platform/OPERATIONS.md#2-build-and
 `feature/wb-leaderboards`, `feature/wb-contests`, `feature/wb-gms`,
 `feature/wb-reporting-pipeline`, `feature/bpm-v2`, `feature/bpm-updates-oct`, `feature/wb-big-event-access`, `feature/event-champion-theme`, `feature/plugin-fee-card-reuse`, `feature/transfer-person-search`, `feature/checkin-door-assign`, `feature/followup-step3` and `feature/external-partner-transactions` each have a counterpart branch in
 `mlm_platform` and must merge and deploy together. Merging one side alone yields a page that
-renders and then fails every request. `leaderboards`, `contests`, `gms` and `home-v2` are on
+renders and then fails every request. `leaderboards`, `contests` and `gms` are on
 `main` but **not deployed** — their migrations are unapplied and nobody holds the grant.
+`/home` mounts the leaderboard and contest sections for every paid user, so until
+`homev2:read` is granted to every level those sections render their "unavailable" state.
 
 ## When you change code
 

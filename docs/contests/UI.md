@@ -18,10 +18,10 @@
 | `/contests` | `ContestsRoute` (`can_view_contests`) | `ContestsPage` → `ContestsBoard` | `/home` |
 | `/admin/contest-settings` | `ContestSettingsRoute` (`can_manage`) | `ContestSettingsPage` → `ContestSettings` | **`/contests`** |
 
-**Embedded entry point.** `ContestShowcase` (§2.0) is mounted by `src/features/home-v2/` as
+**Embedded entry point.** `ContestShowcase` (§2.0) is mounted by `src/features/home/` as
 its own full-width "Contests" section below the leaderboard (C31). It is content-sized and needs no
 wrapper. The `<CanvaVideoCard title="Event & Contests">` media card above it stays. There is no
-sidebar entry: the showcase's **View all** (`onViewAll`, passed by Home v2) opens `/contests`
+sidebar entry: the showcase's **View all** (`onViewAll`, passed by Home) opens `/contests`
 ([platform decision P8](../platform/PHASES.md#3-decision-log)). `ContestsCard` (§2.1) is still
 exported but no longer mounted anywhere.
 
@@ -34,7 +34,7 @@ Neither surface reads the query string.
 
 ### 2.0 The featured-contest showcase — `components/contest-showcase.tsx`
 
-dtez's `wb_contests_showcase.php`, on `/home-v2` (C31). It features `contests[0]` — the
+dtez's `wb_contests_showcase.php`, on `/home` (C31). It features `contests[0]` — the
 list's dtez order (C26) — and reads `GET contest-board/{id}/showcase/`. With more than one
 readable contest the title is a `<select>` (`.wb-ct-sc__picker`) over the same list; picking one
 refetches the showcase and the flyer for it. The choice is not remembered (C25).
@@ -52,7 +52,7 @@ Below a 620 px container the boards stack.
 
 ### 2.1 The card — `components/contests-card.tsx`
 
-The compact placement, on `/home-v2`. It and the standalone page (§2.1a) read one state hook,
+The compact placement, on `/home`. It and the standalone page (§2.1a) read one state hook,
 `useContestBoard`, so the default view, the switch rule and the standings key are one
 implementation; only the rows around the standings differ. The card did not change in parity
 phase 18: its screenshots at 1440 and 390 px were pixel-identical before and after.
@@ -81,7 +81,7 @@ turns internal scrolling into page growth, silently.
 | Tier cards | `TierCards` | dtez's tier cards (§2.2); a sticky sideways strip on a narrow board |
 | **`.wb-ct-scroll`** | `StandingsRegion variant="page"` | dtez's grid, `ContestResults` (§2.4, §2.5) |
 
-**Home v2 keeps its own grid** (decided 2026-09-29, [PHASES.md §3](PHASES.md#3-decision-log),
+**Home keeps its own grid** (decided 2026-09-29, [PHASES.md §3](PHASES.md#3-decision-log),
 parity phase 19). The two placements share `useContestBoard`, the region's loading and error
 states, and the number formatting (`contest-format.ts`); the page draws dtez's tier cards, grid,
 cells and pills, and the card keeps `TierSelector`, `ContestStandings` and `ContestCell`.
@@ -114,7 +114,7 @@ A selected card has a gold border and a gold tint. A wide board lays the cards o
 `repeat(auto-fit, minmax(220px, 1fr))` grid; a narrow one as a sideways, snapping strip that
 **sticks to the top of the page** while the agents scroll under it (§5).
 
-**On the Home v2 card**, the compact strip: name, period, reward and — when `show_tier_overview` —
+**On the Home card**, the compact strip: name, period, reward and — when `show_tier_overview` —
 the qualified / close / in-running counts. The response carries **every** tier, with `selected` flags, and the counts are
 for the whole contest: "in running" is everyone listed, the same on every card, and a selection does
 not change them (C18). A tier that requires a metric with no source says "no source, counts as 0"
@@ -129,7 +129,7 @@ contest's (C18), and the cards are the toggles.
 
 ### 2.3 Filters — `components/contest-filters.tsx` (card), `contest-filter-bar.tsx` (page)
 
-Two placements of the same controls: a modal behind the card's Filters pill on `/home-v2`, and an
+Two placements of the same controls: a modal behind the card's Filters pill on `/home`, and an
 always-visible bar on `/contests`.
 
 | Control | Card modal | Page bar |
@@ -190,7 +190,7 @@ leader is **absent** from the row (the display settings `show_agent_code`, `show
 *hidden*. The header row does not stick vertically: the grid is its own sideways scroll container,
 as dtez's `.standings` is, and there it does not stick either.
 
-**On the Home v2 card**, two renderings of the same data, **both always in the DOM**, with CSS
+**On the Home card**, two renderings of the same data, **both always in the DOM**, with CSS
 choosing one by container width. Keeping both mounted is what makes sort and focus state identical
 between them.
 
@@ -227,7 +227,7 @@ behaviour: the BR / BP / LIC tooltip is the team-credit note (C5), a sourceless 
 and italic with its reason as the tooltip (C15), and a pill is disabled when proof is not
 available.
 
-**On the Home v2 card**, a cell is one of three things:
+**On the Home card**, a cell is one of three things:
 
 | Cell | When |
 |---|---|
@@ -364,7 +364,7 @@ tier cards become a sticky sideways strip (cards `min(78cqw, 280px)` wide) and t
 card per agent; at 34rem the contests and the filter controls go to two columns, every column
 `minmax(0, 1fr)`. Inside the app shell a 390 px phone leaves the board about 220 px.
 
-On `/home-v2` scrolling is owned entirely by `.wb-ct-scroll`, on both axes. Wide standings scroll
+On `/home` scrolling is owned entirely by `.wb-ct-scroll`, on both axes. Wide standings scroll
 horizontally *inside* the card — never at page level. **`/contests` is different in practice:** its
 host has no bounded height (the app shell's main area scrolls), so the board grows with its content
 and the page scrolls, as dtez's does. Measured in parity phase 18, the same before and after it:
@@ -409,7 +409,7 @@ rule and nothing styles a shared component.
 `.wb-ct-host--page`: panel `#171a18`, cells `#0a0c0a`, lines `#373c36`, gold `#efc84a`, muted
 `#a2a8a3`, controls `#101310`, green `#4fb875`, yellow `#d5af35`, 6–7 px corners. The host paints its
 own background and text colour, so the page no longer depends on the app theme's (the stylesheet
-assumes light text, which in the light theme read as white on grey). The Home v2 card keeps its own
+assumes light text, which in the light theme read as white on grey). The Home card keeps its own
 colours.
 
 **The dialogs carry the same palette** (parity phase 20) on `.wb-ct-modal`, because they portal to

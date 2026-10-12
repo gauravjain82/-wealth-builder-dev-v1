@@ -1,7 +1,7 @@
 /**
  * The single cache entry for `GET /api/wbreporting/my-access/`.
  *
- * The shell menu, the pipeline screen, leaderboards, Home v2 and contests all read this
+ * The shell menu, the pipeline screen, leaderboards and contests all read this
  * one payload. They used to fetch it under three module keys, and React Query cannot
  * deduplicate across keys, so every `/contests` load sent the same request three
  * times — and the browser ran the three one after another, because it holds back an

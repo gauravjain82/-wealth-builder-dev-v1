@@ -91,7 +91,7 @@ flag. Every gated feature is gated by a backend capability the client asks about
 
 | Capability | Endpoint | Gates |
 |---|---|---|
-| `homev2:read` | `/api/wbreporting/my-access/` | `/home-v2`, `/leaderboards`, `/contests` |
+| `homev2:read` | `/api/wbreporting/my-access/` | `/leaderboards`, `/contests`; the data behind the leaderboard and contest sections on `/home` (the page itself is unguarded) |
 | `wbreporting:read` / `:manage` | `/api/wbreporting/my-access/` | `/admin/reporting-pipeline`, `/admin/contest-settings` |
 | `gms:author` | `/api/gms/my-access/` | `/admin/guidance` |
 | `products:read` | `/api/admin/products` access hook | `/admin/products` |
@@ -99,8 +99,8 @@ flag. Every gated feature is gated by a backend capability the client asks about
 | misalignments | `/api/misalignments/` access hook | the data-integrity reports |
 
 **Rolling a feature out is therefore a backend grant, not a frontend deploy.** Granting
-`homev2:read` to a user in the access console makes the route and its menu entry appear on
-their next page load. Revoking it makes them vanish. No release is involved.
+`homev2:read` to a user in the access console opens the routes, and fills the `/home` sections, on
+their next page load. Revoking it closes them. No release is involved.
 
 The corollary: a frontend deploy cannot turn a gated feature on, and shipping gated code is
 safe.

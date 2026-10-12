@@ -36,7 +36,7 @@ Settings surface:
 Standard ([platform OPERATIONS §2](../platform/OPERATIONS.md#2-build-and-run)). Two
 module-specific notes:
 
-- The module emits **two lazy chunks** — the page and the Home v2 card path. A successful
+- The module emits **two lazy chunks** — the page and the Home card path. A successful
   `npm run build` that does not produce both means a lazy import was inlined.
 - `leaderboards.css` is imported by the page component, not globally
   (`pages/leaderboards-page.tsx:22`), so its 940 lines load only on this route.
@@ -51,7 +51,7 @@ No client-side flag. Two backend capabilities:
 
 | Capability | Grants | Effect when absent |
 |---|---|---|
-| `homev2:read` | `/leaderboards`, `/home-v2`, and both menu entries | the route redirects to `/home`; no menu entry appears |
+| `homev2:read` | `/leaderboards`, and the data for the panel on `/home` | the route redirects to `/home`; the panel on `/home` shows the backend's permission message (decision L16) |
 | `wbreporting:manage` | the Settings tab, and every `PATCH` | the tab is not offered; a `PATCH` would 403 |
 
 Granted per user in the backend access console. **No plan and no role grants either one**
@@ -77,9 +77,7 @@ What was actually verified for this module, and what to repeat after a change:
    warnings are all in `systematic-tools` and `team`, so for leaderboards the useful check is
    that the module contributes none of them ([platform OPERATIONS §2](../platform/OPERATIONS.md#2-build-and-run)).
 3. `npm run build` — succeeds and emits both lazy chunks.
-4. `git diff main -- src/features/home/pages/home-page.tsx` — **must be empty.** `/home` is
-   deliberately untouched by this work (decision L7); this check is how that stays true.
-5. Manual: each of the seven states in [UI.md §3](UI.md#3-states), the draft/apply behaviour,
+4. Manual: each of the seven states in [UI.md §3](UI.md#3-states), the draft/apply behaviour,
    and a print preview of the Full Report at all three widths.
 
 ## 5. Deployment

@@ -27,7 +27,7 @@ deliberately shaped after `leaderboards` rather than diverging from it — same 
 | Components | `components/` (14 `.tsx`, plus `contest-format.ts` and `scope-options.ts`) | card, board, board parts, contest selector, filter bar, tier cards, results grid, standings, cell, tier selector, filters modal, dialogs, settings, tier editor |
 | Pages | `pages/` (2) | thin wrappers — 31 and 17 lines |
 
-Both pages are almost empty on purpose. `/contests` renders `ContestsBoard` and `/home-v2` embeds
+Both pages are almost empty on purpose. `/contests` renders `ContestsBoard` and `/home` embeds
 `ContestsCard`; both read `useContestBoard`, so an expanded placement may show more but cannot use
 different qualification rules. The two differ only in the rows they arrange around the shared
 standings region and dialogs (`contest-board-parts.tsx`).
@@ -37,7 +37,7 @@ standings region and dialogs (`contest-board-parts.tsx`).
 ```
                 useContestBoard   one state: contest, applied filters, tiers, sort, dialogs
                  │                (switchContest resets tiers + sort, keeps filters + direction)
-/home-v2 ─── ContestsCard                     compact; unchanged by parity phases 18 and 19
+/home ────── ContestsCard                     compact; unchanged by parity phases 18 and 19
               ├── <select> of contests · Flyer / Filters / Help pills
               ├── TierSelector
               ├── applied-filter line · team-credit note
@@ -73,8 +73,8 @@ contest-format.ts   formatPercent · formatAmount · pillTitle (C5 / C15) · tog
 
 Guards: `ContestsRoute` on `can_view_contests`, `ContestSettingsRoute` on `can_manage`. A reader who
 opens the settings URL is sent back to `/contests` rather than to a 403 they can do nothing about.
-`/home-v2` sits behind `LeaderboardsRoute`, wrapped in `PrefetchContests` (`router/contests-route.tsx`)
-so the contest list starts before that guard resolves.
+`/home` has no guard: it mounts `ContestShowcase` for every paid user, and a caller without the
+grant gets the showcase's "unavailable" state (decision C32).
 
 ## 3. Primary flows
 
@@ -94,7 +94,7 @@ check alongside the list, not ahead of it. The list goes out before the guard ha
 safe because the guard decides rendering, not permission: an ungranted caller gets a 403 and a
 redirect.
 
-1. `useContests()` lists readable contests for the selector; on `/contests` and `/home-v2` it finds
+1. `useContests()` lists readable contests for the selector; on `/contests` and `/home` it finds
    the guard's prefetch already in flight (same `contestListOptions`, same key). The backend sends
    them in dtez's order (C26); the default contest is `contests[0]`.
 2. `useContestBoard` composes a `StandingsQuery` with **`buildStandingsQuery`** — contest, applied
@@ -125,7 +125,7 @@ cancels any old one still in flight that nothing is observing. A switch alone do
 The latch that enables it (`firstStandingsShown`) stays on after the first success, so a tier toggle
 does not stop and restart the prefetch.
 
-On `/home-v2` the card does **not** prefetch other contests (decision C24).
+On `/home` the card does **not** prefetch other contests (decision C24).
 
 ### 3.2 Filtering — draft until Apply
 
@@ -249,7 +249,7 @@ Nothing is in the query string. Neither surface is deep-linkable to a filter sta
 | `can_view_contests` (`homev2:read`, or `wbreporting:manage`) | `useContestAccess`, a selector over the shared access query | `/contests`, the card, the menu entry |
 | `can_manage` (`wbreporting:manage`) | same payload | `/admin/contest-settings` and every write |
 
-`can_view_contests` rides the **same `homev2:read` grant** as Home v2 and Leaderboards — and is also
+`can_view_contests` rides the **same `homev2:read` grant** as Home and Leaderboards — and is also
 true for a `wbreporting:manage` holder, so an operator can see what they configure
 (`mlm_platform` `wbreporting/views.py`, `MyAccessView`) — because the
 contest card lives on the page that gate already opens. Configuring a contest is a different job for
@@ -262,9 +262,9 @@ never what is permitted.
 ## 7. Integration points
 
 - **`wbreporting`** — 12 paths from `contests-service.ts`, plus `my-access` ([API.md](API.md)).
-- **`home-v2`** — mounts the card as its own full-width section below the leaderboard, in a
-  `clamp(480px, 70vh, 760px)` wrapper (`home-v2-page.tsx:109-130`). The "Event & Contests"
-  `CanvaVideoCard` stays. `/home` is untouched.
+- **`home`** — mounts `ContestShowcase` as its own full-width section below the leaderboard
+  (`src/features/home/pages/home-page.tsx`), for paid users only. The "Event & Contests"
+  `CanvaVideoCard` stays.
 - **[leaderboards](../leaderboards/)** — same prefix and the same `my-access` payload, read from
   one shared cache entry (`@shared/wbreporting-access`) through each module's own selector. Nothing
   else is shared.
@@ -290,7 +290,7 @@ never what is permitted.
 | A save sends every revision | contest + per-tier `revision` | a silent overwrite of someone else's edit |
 | `replace_tiers` is explicit | the payload flag | a partial save deleting tiers it never sent |
 | A 409 reloads, never retries | the settings screen | the overwrite the revisions exist to prevent |
-| Only `.wb-ct-scroll` scrolls, on `/home-v2` | three CSS rules | internal scrolling becoming page growth. `/contests` has no bounded host, so there the page scrolls, as on dtez |
+| Only `.wb-ct-scroll` scrolls, on `/home` | three CSS rules | internal scrolling becoming page growth. `/contests` has no bounded host, so there the page scrolls, as on dtez |
 | On `/contests`, nothing between the tier strip and the app shell's scroller is a scroll container | `.wb-ct--page` and `.wb-ct--page .wb-ct-scroll` are `overflow: visible` (parity phase 19) | the phone's tier strip no longer sticking: `position: sticky` sticks to the nearest scroll container, even one that never scrolls |
 | A hidden identity field is absent, not blank | the backend omits `level` and `leader_name` when hidden; `ContestResults` shows a part only when present | "No level" or "Leader: -" shown for everyone when an admin hides the field |
 | Dialogs portal out of the card | shared `Modal` | overlays clipped by `overflow: hidden` |
@@ -300,8 +300,8 @@ never what is permitted.
 | `TR`/`TP`/`TE` are never threshold inputs | not rendered; backend rejects them | a result component used as a requirement |
 
 **The containment contract** (`contests.css:1-39`) is the one most easily broken by a well-meaning
-edit, and it fails *silently*. The host owns the card's height — on `/home-v2` it arrives from a
-wrapper of `height: clamp(480px, 70vh, 760px)` that clips (`home-v2-page.tsx`). Three rules make that
+edit, and it fails *silently*. The host owns the card's height — on `/home` it arrives from a
+wrapper of `height: clamp(480px, 70vh, 760px)` that clips (`home-page.tsx`). Three rules make that
 work and **all three are required**:
 
 1. the feature root takes `height: 100%` and `overflow: hidden`;

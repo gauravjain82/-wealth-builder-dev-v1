@@ -15,8 +15,8 @@ name is the feature directory name, so `src/features/calendar-sync/` is document
 - **Backend:** `mlm_platform/docs/` follows the same standard. Each module's front matter
   names its backend app, and that app's `API.md` is the authority on server behaviour.
 
-**All 29 feature modules are documented.** 26 have a doc directory — **15 Full** (six files) and
-**11 Lite** (two) — and **3 are Indexed**: a row in the table below with a stated reason, no directory. Plus
+**All 28 feature modules are documented.** 26 have a doc directory — **15 Full** (six files) and
+**11 Lite** (two) — and **2 are Indexed**: a row in the table below with a stated reason, no directory. Plus
 [`platform/`](platform/) for the shell.
 
 **No dangling doc citations remain in `src/`.** Every comment that once pointed at a vendor contract now cites
@@ -45,7 +45,7 @@ See [the standard §5](DOCUMENTATION_STANDARD.md#5-doc-tiers) for how a tier is 
 | [bpm](bpm/) | `/bpm/*` (8 children), `/bpm/pass/:token` | `bpm`, `matchup` | 11750 | Production | ✅ |
 | [builder-ai](builder-ai/) | `/builder-ai/*` (7 routes), `/team/builders/daily-six/:agencyCode` | `builderai` | 1781 | Production | ✅ |
 | [calendar-sync](calendar-sync/) | **none** — a section of `/settings` | `calendarsync`, `matchup` | 816 | Production | ✅ |
-| [contests](contests/) | `/contests`, `/admin/contest-settings`, embedded card on `/home-v2` | `wbreporting` | 4213 | **Gated** — deployed through dtez parity phase 19; ⟦P20⟧phase 20 deployed⟦/P20⟧; `homev2:read` not granted | ✅ |
+| [contests](contests/) | `/contests`, `/admin/contest-settings`, embedded showcase on `/home` | `wbreporting` | 4213 | **Gated** — deployed through dtez parity phase 19; ⟦P20⟧phase 20 deployed⟦/P20⟧; `homev2:read` not granted | ✅ |
 | [events](events/) | `/events/*` (14), `/event/:shortcut/*` (4 public) | `events` | 11366 | Production | ✅ |
 | [gms](gms/) | `/admin/guidance` + an embeddable `HelpAction` | `gms` | 2007 | **Merged-not-deployed** | ✅ |
 | [leaderboards](leaderboards/) | `/leaderboards` | `wbreporting` | 2123 | Merged-not-deployed | ✅ **reference** |
@@ -66,7 +66,7 @@ Two files each: `README.md` plus the one carrying the substance.
 | [education](education/) | 5 (3 public) | — | 520 | Production | `UI.md` | ✅ |
 | [file-vault](file-vault/) | `/file-vault` | `content` | 634 | Production | `API.md` | ✅ |
 | [helpdesk](helpdesk/) | `/help-needed` (public), `/helpdesk`, `/admin/helpdesk` | `helpdesk` | 934 | Production | `API.md` | ✅ |
-| [home](home/) | `/home` | `content`, `tracker` | 861 | Production | `UI.md` | ✅ |
+| [home](home/) | `/home` (`/home-v2` redirects here) | `content`, `tracker`, `wbreporting` | 809 | Production | `UI.md` | ✅ |
 | [insight-center](insight-center/) | `/insight-center`, `/public-insight-center` | — | 279 | Production | `UI.md` | ✅ |
 | [legal](legal/) | `/privacy-policy`, `/terms-and-conditions` (both public) | — | 490 | Production | `UI.md` | ✅ |
 | [systematic-tools](systematic-tools/) | `/systematic-tools` | — | 2948 | Production | `UI.md` | ✅ |
@@ -79,7 +79,6 @@ Two files each: `README.md` plus the one carrying the substance.
 
 | Module | What it is | Why no doc set |
 |---|---|---|
-| `home-v2` | `/home-v2`, 141 LOC, one page | Pure composition. Mounts `VideoHero`, both `CanvaVideoCard` slots and `PerformanceTable` from `home/`, `LeaderboardPanel` from [leaderboards](leaderboards/), and `ContestsCard` from [contests](contests/) as its own full-width section in a `clamp(480px, 70vh, 760px)` wrapper — nothing of its own to document. Gated on `homev2:read`, same rollout as leaderboards; see [leaderboards/PHASES.md](leaderboards/PHASES.md) decision L7 for why `/home` was not replaced. |
 | `reports` | `/reports`, 18 LOC, one page | Stub. A placeholder page behind a live route. Promote to Lite when it does something. |
 | `showcase` | `/components`, 455 LOC | Internal component gallery, not a product surface. `src/features/showcase/pages/components-showcase.tsx` is its own documentation. |
 

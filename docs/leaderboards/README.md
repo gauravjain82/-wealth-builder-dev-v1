@@ -4,7 +4,7 @@
 |---|---|
 | **Module** | `leaderboards` |
 | **Source** | `src/features/leaderboards/` |
-| **Routes** | `/leaderboards` — plus an embedded card mounted by `/home-v2` |
+| **Routes** | `/leaderboards` — plus an embedded card mounted by `/home` |
 | **Backend module** | `wbreporting` → `mlm_platform/docs/wbreporting/` |
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Merged-not-deployed |
@@ -50,9 +50,8 @@ that reading.
   [API.md §6](API.md#6-backend-ownership).
 - **Contests.** A sibling module — `docs/contests/` — on the same API prefix and the
   same capability grant.
-- **The Home v2 page itself.** `src/features/home-v2/` composes this module's card with
-  components from `docs/home/`; it is listed as Indexed in the
-  [index](../README.md#indexed).
+- **The Home page itself.** `src/features/home/` composes this module's panel with its own
+  components; see [home](../home/).
 - **The reporting pipeline that produces the numbers.** `admin/wb-pipeline` on the frontend,
   Package 1 on the backend.
 
@@ -93,7 +92,7 @@ that reading.
 - Nothing else. The module is otherwise self-contained.
 
 **Downstream (imports this module)**
-- `src/features/home-v2/` — mounts `LeaderboardsCard`.
+- `src/features/home/` — mounts `LeaderboardsCard`.
 - `src/router/leaderboards-route.tsx` — the guard imports `useLeaderboardAccess`.
 - `src/hooks/use-role-based-menu.ts` — same hook, for the Home (new) entry. Leaderboards has none.
 - `src/features/contests/` — shares the `homev2:read` grant, read through its own hook.

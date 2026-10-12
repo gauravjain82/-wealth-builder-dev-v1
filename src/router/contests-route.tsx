@@ -39,13 +39,3 @@ export function ContestsRoute({ children }: ContestsRouteProps) {
 
   return <>{children}</>;
 }
-
-/**
- * Starts the contest list for a page whose guard is not `ContestsRoute` — `/home-v2`,
- * behind `LeaderboardsRoute`, which `/leaderboards` shares and which has no use for
- * the list. Wrap it outside the guard so the list runs in parallel with the check.
- */
-export function PrefetchContests({ children }: { children: ReactNode }) {
-  usePrefetchContests();
-  return <>{children}</>;
-}

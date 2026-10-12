@@ -128,13 +128,10 @@ frontend consequences are expanded.
 | L14 | The personal list is positive-only, and is not a reconciliation of the gauge above it | "Positive Personal list" is what the contract asks for. A net-negative member is dropped from the list but still counted in the gauge, so visible rows can sum to less than the number above them | `WB_LEADERBOARDS_PROGRESS.md` Phase 9 "Known, deliberate", assigned here |
 
 | L15 | The expanded board's title sits centred in the controls row; the date-range status, the help action, and each row's director title and member count are dropped; rows gain a profile photo | Asked for on 2026-10-07 to shorten the card: the title row is gone, and every row is one line. The range select already names the period, and the panel title already says SMD or MD. Photos come from the backend (`photo_url`, one query per response via `wbreporting/services/photos.py`) — the client has no other source for them | user request 2026-10-07; branch `feature/wb-contest-showcase` in both repos |
+| L16 | Home v2 replaces `/home` for everyone; the original page and its `tracker` leaderboard card are deleted; `/home-v2` redirects. **Supersedes L7.** The panel is mounted without a client-side access check | One home page, not two. Chosen over keeping the old page at a side route for the L7 comparison, and over hiding the panel from users without `homev2:read`: the rollout is to be completed by granting `homev2:read` to every level, and until that grant lands the panel shows the backend's permission message. New agents keep the original page's onboarding cards and see none of the paid sections | user request 2026-10-12; `src/features/home/pages/home-page.tsx` |
 
 ## 4. Deliberately not built
 
-- **Replacing `/home` with Home v2.** Decision L7 puts that after a QA comparison of the two
-  cards' numbers. `src/features/home/pages/home-page.tsx` is unmodified, and
-  [OPERATIONS.md §4](OPERATIONS.md#4-tests-and-checks) has the `git diff` check that keeps it
-  that way.
 - **Four of the eight Settings sections.** The implemented four are goals, scopes and
   milestones, detail privacy, and date ranges. Absent:
   - **Settings managers** — superseded by the backend access console.
