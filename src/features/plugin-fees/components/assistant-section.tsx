@@ -129,7 +129,7 @@ export function AssistantSection({
         <p className="wb-pf-muted" style={{ margin: 0 }}>
           You count as having an assistant only while the assistant is verified. Assistants are
           re-verified every quarter.
-          {countsForRouting ? '' : ' For your level, an assistant does not change any plug-in fee.'}
+          {countsForRouting ? '' : ' For your level, an assistant does not change any White Glove Concierge fee.'}
         </p>
 
         {effective?.reverify_open ? (

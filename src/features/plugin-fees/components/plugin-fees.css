@@ -85,6 +85,25 @@ html:not(.dark) .wb-pf-form-error {
   line-height: 1.5;
 }
 
+/* The White Glove Concierge intro on the statement page. */
+.wb-pf-concierge-tagline {
+  margin: 4px 0 0;
+  font-weight: 600;
+}
+
+.wb-pf-concierge-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-pf-concierge-list li {
+  display: flex;
+  gap: 8px;
+}
+
 .wb-pf-callout--strong {
   font-weight: 600;
 }

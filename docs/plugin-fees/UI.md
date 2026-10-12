@@ -32,7 +32,7 @@
 | `/admin/plugin-fees/settings` | admin (edits), Hierarchy Assistant and approver (read-only) | `PluginFeesAccessRoute` (`canSeeFeeSettings`: `can_manage \|\| can_review \|\| can_approve_payouts`) |
 | `/admin/plugin-fees/review?tab=offices\|assistants&status=…` | overview deep link | read once (PF42) |
 | Settings → "View statement of account →" | `is_billable` | link under the plug-in fee sections |
-| Menu group "Plug-in Fees" 💼 | any of the children below | one collapsible group nested at the end of the Admin group (top level for a holder whose plan has no Admin group); added only when at least one child is visible, and opens itself when the current page is one of its children (PF53, PF57) |
+| Menu group "White Glove Concierge" 💼 (PF58) | any of the children below | one collapsible group nested at the end of the Admin group (top level for a holder whose plan has no Admin group); added only when at least one child is visible, and opens itself when the current page is one of its children (PF53, PF57) |
 | ↳ "Overview" 📊 | `can_manage \|\| can_review` | first child (PF41) |
 | ↳ "Reviews" 🗂️ | `can_review` | after "Overview" |
 | ↳ "Billing Cycles" 🧾 | `can_manage \|\| can_review \|\| can_approve_payouts` | after "Reviews" |
@@ -142,7 +142,8 @@ link, submitted time, decision, actions history) and the action buttons. Paginat
 
 ### 2.5 Statement of account (`/plugin-fees/statement`)
 
-Heading "My Plug-in Fees", a line pointing to Settings, then:
+Heading "My White Glove Concierge", a line pointing to Settings, the **White Glove Concierge
+intro** (static product copy: tagline, the six services, closing line — `components/concierge-intro.tsx`, PF58), then:
 
 0. **Get paid** (P5) — only for an SMD (a `ledger`, and `my-access/` level `SMD`, PF34):
    "Your positive balance is paid quarterly to your bank via Stripe. Stripe collects your
@@ -258,7 +259,7 @@ sign, `−$150.00`.
 
 ### 2.7 Agent statement lookup (`/admin/plugin-fees/agents/:id/statement`)
 
-"← Billing cycles" link (or "← Payments", "← Payouts", "← Plug-in Fees", "← Adjustments"
+"← Billing cycles" link (or "← Payments", "← Payouts", "← White Glove Concierge", "← Adjustments"
 — whichever page opened it, PF32/PF47), heading "Statement of account — *name*", a line
 "agency code · level · email" (plus "· read-only" unless `can_manage`), then the §2.5
 statement worded for a third party ("Owed to the agent…", "The agent owes"), without
@@ -306,7 +307,7 @@ SMD's next monthly cycle and itemised on their statement (§2.5).
 
 ### 2.9 Payments (`/admin/plugin-fees/payments`)
 
-Heading "Plug-in Fee Payments" (with "Read-only." for a `:review`-only user), then:
+Heading "White Glove Concierge Payments" (with "Read-only." for a `:review`-only user), then:
 
 1. **Month + Show** — `?month=YYYY-MM`, default the current UTC month.
 2. **Month card** — month, cycle badge (Awaiting approval / Approved) or "No cycle
@@ -368,7 +369,7 @@ Heading "Quarterly Payouts" and an explanation, then:
 
 ### 2.11 Overview (`/admin/plugin-fees`)
 
-Heading "Plug-in Fees", then cards (each header links to its page when the viewer may open
+Heading "White Glove Concierge", then cards (each header links to its page when the viewer may open
 it):
 
 1. **Payments — *Month*** → Payments (`?month=`): Outstanding, Paid, Processing, Retrying,
@@ -450,7 +451,7 @@ change" section.
 
 | Surface | Loading | Empty | Error | Denied |
 |---|---|---|---|---|
-| Settings block | nothing while `my-access/` loads; "Loading plug-in fee details…" while `me/` loads | n/a | "Unable to load your office, assistant and payment details." + Try again | renders nothing |
+| Settings block | nothing while `my-access/` loads; "Loading White Glove Concierge fee details…" while `me/` loads | n/a | "Unable to load your office, assistant and payment details." + Try again | renders nothing |
 | Office / assistant section | — | "No approved office…" / "No verified assistant." | form-level error box + toast; per-field errors for `validation_error` | section absent |
 | Review queue | "Loading…" | `NonIdealState` ("No submissions with this status." / "…match this search.") | `ErrorState` with retry | route redirects to `/home` |
 | Statement (own / agent) | "Loading…" | "No invoices yet." / "No ledger entries yet."; no ledger section for MDs | `ErrorState` with retry | route redirects to `/home`; bad `:id` → "Unknown agent" |

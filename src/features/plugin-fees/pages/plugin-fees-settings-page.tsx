@@ -48,7 +48,7 @@ export default function PluginFeesSettingsPage() {
           Fee Settings
         </Heading>
         <Text variant="muted">
-          The plug-in fee prices and the billing settings, with every change and its reason.{' '}
+          The White Glove Concierge fee prices and the billing settings, with every change and its reason.{' '}
           {canManage ? '' : 'Read-only.'}
         </Text>
       </div>

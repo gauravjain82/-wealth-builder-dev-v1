@@ -138,7 +138,7 @@ export function OfficeSection({
         <div className="wb-pf-callout">
           {billable
             ? 'The office rate applies only after your office is approved; until then you are billed at the no-office rate.'
-            : 'Your office is recorded once approved. It does not change any plug-in fee for your level.'}
+            : 'Your office is recorded once approved. It does not change any White Glove Concierge fee for your level.'}
           {billable && rates ? (
             <>
               {' '}

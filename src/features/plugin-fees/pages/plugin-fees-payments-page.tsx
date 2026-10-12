@@ -130,7 +130,7 @@ export default function PluginFeesPaymentsPage() {
     <div className="space-y-6">
       <div>
         <Heading as="h1" variant="h4" weight="bold">
-          Plug-in Fee Payments
+          White Glove Concierge Payments
         </Heading>
         <Text variant="muted">
           Collection for a billing month: what was sent, paid, retrying, overdue or failed, and

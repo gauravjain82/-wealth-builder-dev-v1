@@ -22,6 +22,7 @@ import { useToastStore } from '@/store';
 
 import { useCreateInvoicePayLink, useMyStatement, usePluginFeesAccess } from '../hooks/use-plugin-fees';
 import { PluginFeesError } from '../services/plugin-fees-service';
+import { ConciergeIntro } from '../components/concierge-intro';
 import { ConnectPanel } from '../components/payouts/connect-panel';
 import { StatementView } from '../components/statement/statement-view';
 import type { StatementInvoice } from '../types';
@@ -159,10 +160,10 @@ export default function PluginFeesStatementPage() {
     <div className="space-y-6">
       <div>
         <Heading as="h1" variant="h4" weight="bold">
-          My Plug-in Fees
+          My White Glove Concierge
         </Heading>
         <Text variant="muted">
-          Your plug-in fee invoices by month and, for SMDs, the running balance of MD fees
+          Your White Glove Concierge fee invoices by month and, for SMDs, the running balance of MD fees
           credited to you and amounts charged. Office, assistant and payment method are on{' '}
           <Link to="/settings" className="wb-pf-link">
             Settings
@@ -170,6 +171,8 @@ export default function PluginFeesStatementPage() {
           .
         </Text>
       </div>
+
+      <ConciergeIntro />
 
       {poll ? (
         <div className="wb-pf-callout" role="status">

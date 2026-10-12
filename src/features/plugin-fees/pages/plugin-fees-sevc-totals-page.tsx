@@ -112,7 +112,7 @@ export default function PluginFeesSevcTotalsPage() {
           SEVC Totals
         </Heading>
         <Text variant="muted">
-          What each SEVC received per month: SMD plug-in fees, recognition costs, and MD fees that reached
+          What each SEVC received per month: SMD White Glove Concierge fees, recognition costs, and MD fees that reached
           the SEVC because no SMD on the line had a verified assistant. Net of reversals.
         </Text>
       </div>

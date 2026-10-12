@@ -212,7 +212,7 @@ export default function PluginFeesCyclesPage() {
           }
         />
       ) : view === 'preview' && !canPreview ? (
-        <NonIdealState title="Preview not available" description="Previewing a month needs plug-in fee manage access." />
+        <NonIdealState title="Preview not available" description="Previewing a month needs White Glove Concierge fee manage access." />
       ) : current.isLoading ? (
         <p className="wb-pf-muted">
           {view === 'preview' ? `Computing the ${formatMonth(month)} preview…` : 'Loading report…'}

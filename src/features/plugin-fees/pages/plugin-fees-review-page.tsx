@@ -95,7 +95,7 @@ export default function PluginFeesReviewPage() {
     <div className="space-y-6">
       <div>
         <Heading as="h1" variant="h4" weight="bold">
-          Plug-in Fee Reviews
+          White Glove Concierge Reviews
         </Heading>
         <Text variant="muted">
           Approve offices and verify assistants. Every decision records who made it and when; a

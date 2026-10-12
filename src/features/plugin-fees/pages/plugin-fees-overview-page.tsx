@@ -31,7 +31,7 @@ import '../components/plugin-fees.css';
 
 const count = (value: number) => value.toLocaleString();
 
-const BACK = { backTo: '/admin/plugin-fees', backLabel: 'Plug-in Fees' };
+const BACK = { backTo: '/admin/plugin-fees', backLabel: 'White Glove Concierge' };
 
 function OverviewCard({
   id,
@@ -270,7 +270,7 @@ export default function PluginFeesOverviewPage() {
     <div className="space-y-6">
       <div>
         <Heading as="h1" variant="h4" weight="bold">
-          Plug-in Fees
+          White Glove Concierge
         </Heading>
         <Text variant="muted">
           This month&apos;s collection, open verifications, costs, SEVC receipts and the next quarterly payout,
@@ -282,7 +282,7 @@ export default function PluginFeesOverviewPage() {
         <p className="wb-pf-muted">Loading…</p>
       ) : dashboard.isError ? (
         <ErrorState
-          description={describeError(dashboard.error, 'Unable to load the plug-in fees overview.')}
+          description={describeError(dashboard.error, 'Unable to load the White Glove Concierge fees overview.')}
           onRetry={() => void dashboard.refetch()}
         />
       ) : !dashboard.data ? (

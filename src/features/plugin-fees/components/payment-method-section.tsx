@@ -118,7 +118,7 @@ function SavedCardPicker({
   const handleAuthorize = async () => {
     try {
       await authorize.mutateAsync(selected.id);
-      addToast({ type: 'success', message: `${selected.label} will be charged for your plug-in fees on the 1st.` });
+      addToast({ type: 'success', message: `${selected.label} will be charged for your White Glove Concierge fees on the 1st.` });
       onClose?.();
     } catch (error) {
       addToast({ type: 'error', message: describeError(error, 'Could not authorize your card.') });
@@ -127,13 +127,13 @@ function SavedCardPicker({
 
   let heading: string;
   if (changed && cards[0].subscription) {
-    heading = `Your website subscription card changed to ${cards[0].label}. Use it for plug-in fees too?`;
+    heading = `Your website subscription card changed to ${cards[0].label}. Use it for White Glove Concierge fees too?`;
   } else if (cards.length === 1) {
     heading = cards[0].subscription
-      ? `Use your website subscription card, ${cards[0].label}, for plug-in fees?`
-      : `Use your saved card, ${cards[0].label}, for plug-in fees?`;
+      ? `Use your website subscription card, ${cards[0].label}, for White Glove Concierge fees?`
+      : `Use your saved card, ${cards[0].label}, for White Glove Concierge fees?`;
   } else {
-    heading = 'Choose a card saved on your account for plug-in fees';
+    heading = 'Choose a card saved on your account for White Glove Concierge fees';
   }
 
   return (
@@ -166,8 +166,8 @@ function SavedCardPicker({
           disabled={authorize.isPending}
         />
         <span>
-          I authorize Wealth Builders to charge {selected.label} for my monthly plug-in fees on the
-          1st of each month, until I change my payment method here.
+          I authorize Wealth Builders to charge {selected.label} for my monthly White Glove Concierge
+          fees on the 1st of each month, until I change my payment method here.
         </span>
       </label>
       <div className="connected-account-actions">
@@ -240,7 +240,7 @@ export function PaymentMethodSection({
         type: 'success',
         message:
           preference === 'automatic'
-            ? 'Your plug-in fees will be charged automatically on the 1st.'
+            ? 'Your White Glove Concierge fees will be charged automatically on the 1st.'
             : `You'll get a payment link each month, due by the ${dueDay}.`,
       });
     } catch (error) {
@@ -253,7 +253,7 @@ export function PaymentMethodSection({
       <div className="section-header">
         <h3 className="section-title">
           <span className="title-icon">🏦</span>
-          How You Pay Plug-in Fees
+          How You Pay for White Glove Concierge
         </h3>
       </div>
 

@@ -88,7 +88,7 @@ export function PluginFeesSettingsSections() {
   if (me.isLoading) {
     return (
       <div className="glass-section">
-        <p className="wb-pf-muted">Loading plug-in fee details…</p>
+        <p className="wb-pf-muted">Loading White Glove Concierge fee details…</p>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export function PluginFeesSettingsSections() {
         <div className="section-header">
           <h3 className="section-title">
             <span className="title-icon">🏢</span>
-            Plug-in Fees
+            White Glove Concierge
           </h3>
         </div>
         <p className="wb-pf-muted">Unable to load your office, assistant and payment details.</p>

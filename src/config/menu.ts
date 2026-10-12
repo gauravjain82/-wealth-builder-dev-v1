@@ -229,7 +229,7 @@ const DATA_INTEGRITY_GROUP: MenuItem = {
  * builds its children from the per-user plug-in fee grants and adds the group, nested
  * in Admin, only when at least one child is visible.
  */
-const PLUGIN_FEES_GROUP_LABEL = 'Plug-in Fees';
+const PLUGIN_FEES_GROUP_LABEL = 'White Glove Concierge';
 
 /** Every plan has a My Team group; Builder AI nests in it. */
 const MY_TEAM_LABEL = 'My Team';
