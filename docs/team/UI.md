@@ -111,6 +111,11 @@ bookmark hint. The latter saves nothing: it asks the public endpoint whether the
 an active enrollment and then reveals the same link row with **Copy link**. No name selected, or
 no enrollment yet, gives an info toast instead of a link (PHASES T12).
 
+**Changing the pace.** There is no rule against it: **Submit** re-saves the pace for the name
+shown, as often as wanted. When the card opens on the viewer's own enrollment (name prefilled, no
+name picked), Submit saves for the viewer — the PUT goes without `user_id`. It is disabled only
+when there is neither a picked name nor an enrollment.
+
 **The public Daily Six page** (`public-daily-six-page.tsx`) is the form for today's current
 session (AM before noon, PM after), prefilled with what was already submitted. Its only addition
 is a **History** link row above the form, carrying the days-logged count when the response has

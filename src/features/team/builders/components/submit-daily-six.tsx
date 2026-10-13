@@ -241,14 +241,16 @@ export function SubmitDailySix({
     setShowSubmissionLink(false);
   };
 
+  // With no name picked, the name shown is the viewer's own enrollment; the
+  // backend applies a PUT without `user_id` to the caller.
   const handleGenerateLink = async () => {
-    if (!selectedBuilder) return;
+    if (!selectedBuilder && !activeEnrollment) return;
 
     setSavingEnrollment(true);
     try {
       const updated = customMode
         ? await updateBuilderEnrollment({
-            user_id: selectedBuilder.id,
+            user_id: selectedBuilder?.id,
             is_custom: true,
             name: customTargets.name.trim() || 'My Custom Pace',
             target_friends: customTargets.friends,
@@ -256,7 +258,7 @@ export function SubmitDailySix({
             target_appointments: customTargets.appts,
           })
         : await updateBuilderEnrollment({
-            user_id: selectedBuilder.id,
+            user_id: selectedBuilder?.id,
             pace_id: Number(selectedPaceId),
           });
 
@@ -390,7 +392,7 @@ export function SubmitDailySix({
             type="button"
             className="h-12 w-full"
             onClick={handleGenerateLink}
-            disabled={savingEnrollment || !selectedBuilder || (!customMode && !selectedPaceId)}
+            disabled={savingEnrollment || (!selectedBuilder && !activeEnrollment) || (!customMode && !selectedPaceId)}
           >
             {savingEnrollment ? 'Loading...' : 'Submit'}
           </Button>
