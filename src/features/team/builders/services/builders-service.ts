@@ -109,6 +109,12 @@ export interface ActivityLeaderboardEntry {
   activity_score: number;
 }
 
+/** The viewer's own program flags, from their associate tracker row. */
+export interface TeamProgramMembership {
+  is_builder: boolean;
+  is_producer: boolean;
+}
+
 interface ListResponse<T> {
   results?: T[];
   data?: T[];
@@ -178,6 +184,15 @@ export async function updateBuilderEnrollment(payload: {
   });
   if (!response.ok) throw await parseError(response, 'Failed to update builder enrollment');
   return (await response.json()) as BuilderEnrollment;
+}
+
+export async function fetchTeamProgramMembership(signal?: AbortSignal): Promise<TeamProgramMembership> {
+  const response = await fetch(`${API_BASE_URL}/api/tracker/builders/membership/`, {
+    headers: getAuthHeaders(),
+    signal,
+  });
+  if (!response.ok) throw await parseError(response, 'Failed to fetch program membership');
+  return (await response.json()) as TeamProgramMembership;
 }
 
 export async function fetchResultsLeaderboard(

@@ -3,7 +3,8 @@ import { PRODUCER_PROGRAM } from '@/features/team/builders/team-programs';
 
 /**
  * My Team → Producers: the Builders page over associates flagged Producer —
- * same tracker, leaderboards and Daily Six. SMD and above; lower plans see the
+ * same tracker, leaderboards and Daily Six. Leader and above, same as Builders;
+ * below that a flagged Producer gets the member view and everyone else the
  * locked teaser.
  */
 export default function ProducersPage() {

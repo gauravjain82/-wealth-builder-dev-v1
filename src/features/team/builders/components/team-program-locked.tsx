@@ -12,8 +12,9 @@ const DAILY_SIX = [
 ];
 
 /**
- * What a plan below the program's minimum sees: the page title and an
- * invitation, and nothing else. It fetches nothing.
+ * What someone below the program's minimum plan, and not flagged into the
+ * program, sees: the page title and an invitation, and nothing else. It
+ * fetches nothing.
  */
 export function TeamProgramLocked({ program }: { program: TeamProgram }) {
   const { label, pluralLabel } = program;
@@ -29,7 +30,7 @@ export function TeamProgramLocked({ program }: { program: TeamProgram }) {
         <h2 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">Become a {label}</h2>
         <p className="text-sm leading-6 text-slate-500 dark:text-white/60">
           {pluralLabel} show up every day, log their Daily Six morning and night, and compete on the results and
-          activity leaderboards. This page opens for you once you are a {label}.
+          activity leaderboards.
         </p>
 
         <ul className="mx-auto mt-5 grid max-w-sm gap-2 text-left">

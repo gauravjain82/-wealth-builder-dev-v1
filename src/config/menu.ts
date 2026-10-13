@@ -64,7 +64,8 @@ const MENU_ITEMS = {
   PROSPECT_TRACKER: { label: 'Prospect Tracker', icon: '👥', path: '/team/prospect-tracker' } as MenuItem,
   MISSION_TRACKER: { label: 'Mission Tracker', icon: '📈', path: '/team/mission-tracker' } as MenuItem,
   ASSOCIATE_TRACKER: { label: 'Associate Tracker', icon: '👔', path: '/team/associate-tracker' } as MenuItem,
-  // SMD-only (Broker plan and up): listed only in those plans' My Team groups.
+  // Listed for every plan. The page itself decides between the full page, the
+  // member view and the locked teaser (team-program-gate.tsx).
   PRODUCERS: { label: 'Producers', icon: '💼', path: '/team/producers' } as MenuItem,
   BUILDERS: { label: 'Builders', icon: '🏗️', path: '/team/builders' } as MenuItem,
 
