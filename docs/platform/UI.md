@@ -86,8 +86,9 @@ Settings], in that order, are the last children of Admin; a holder of their gran
 no Admin group gets them at top level instead.
 
 My Team, for the plans that list each: Org Chart · Prospect Tracker · Mission Tracker ·
-Associate Tracker · Licensing Tracker · Production Tracker · Team Promotion Tracker · Builders ·
-[Builder AI]. Builder AI is a nested group with its own children (all six for an owner,
+Associate Tracker · Licensing Tracker · Production Tracker · Team Promotion Tracker · Producers ·
+Builders · [Builder AI]. Producers and Builders are listed for every plan; below the plan that opens
+each, the page is a locked teaser with no data ([team UI §2.6](../team/UI.md)). Builder AI is a nested group with its own children (all six for an owner,
 Baseshop and Invitations for a builder), so the sidebar renders three levels there. The
 collapsed-rail flyout closes on a link click only, so the nested toggle can open.
 

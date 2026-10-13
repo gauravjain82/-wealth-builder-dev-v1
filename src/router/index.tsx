@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { ProtectedRoute } from './protected-route';
 import { AdminRoute } from './admin-route';
-import { SmdRoute } from './smd-route';
 import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
 import { MatchupMetricsRoute } from './matchup-metrics-route';
@@ -731,7 +730,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'team/producers',
-        element: <SmdRoute>{lazyLoad(ProducersPage)}</SmdRoute>,
+        element: lazyLoad(ProducersPage),
       },
       {
         path: 'team/builders',

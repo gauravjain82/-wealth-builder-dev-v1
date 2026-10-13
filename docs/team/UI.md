@@ -21,7 +21,8 @@
 | `/team/licensing-tracker` | `ProtectedRoute` | `LicensingTrackerPage` |
 | `/team/production-tracker` | `ProtectedRoute` | `ProductionTrackerPage` |
 | `/team/mission-tracker` | `ProtectedRoute` | `MissionTrackerPage` |
-| `/team/builders` | `ProtectedRoute` | `BuildersPage` |
+| `/team/builders` | `ProtectedRoute` | `BuildersPage` — locked teaser below Leader |
+| `/team/producers` | `ProtectedRoute` | `ProducersPage` — locked teaser below Broker (SMD) |
 | `/team/org-chart` | `ProtectedRoute` | `OrgChartPage` |
 | `/onboarding-game` | `ProtectedRoute` | `OnboardingGamePage` |
 | `/team/builders/daily-six/:agencyCode` | **none — public** | the Daily Six page |
@@ -97,6 +98,11 @@ Builder activity, results and paces, with a Daily Six submission page. The publi
 player** (`is_key_player`) — the roster and the results leaderboard both use it. This is a
 separate product from [builder-ai](../builder-ai/): someone can rank here and be absent there
 (PHASES T9).
+
+**Locked teaser.** Builders and Producers are in the My Team menu for every plan. Below the
+program's `minimumPlan` (`team-programs.ts`: Leader for Builders, Broker for Producers) the page
+renders `TeamProgramLocked` — the title, a "Become a Builder/Producer" card listing the Daily Six,
+and no tabs. It makes no request (PHASES T13).
 
 **Submit Daily Six — the personal link.** The setup card shows a person's public link only after
 **Submit** (which saves the pace) or after **Forgot your link?**, a quiet text button under the

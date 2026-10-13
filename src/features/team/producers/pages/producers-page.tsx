@@ -1,10 +1,11 @@
-import { TeamProgramPage } from '@/features/team/builders/pages/team-program-page';
+import { TeamProgramGate } from '@/features/team/builders/components/team-program-gate';
 import { PRODUCER_PROGRAM } from '@/features/team/builders/team-programs';
 
 /**
- * My Team → Producers (SMD only): the Builders page over associates flagged
- * Producer — same tracker, leaderboards and Daily Six.
+ * My Team → Producers: the Builders page over associates flagged Producer —
+ * same tracker, leaderboards and Daily Six. SMD and above; lower plans see the
+ * locked teaser.
  */
 export default function ProducersPage() {
-  return <TeamProgramPage program={PRODUCER_PROGRAM} />;
+  return <TeamProgramGate program={PRODUCER_PROGRAM} />;
 }

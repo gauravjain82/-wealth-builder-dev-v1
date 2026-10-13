@@ -8,6 +8,8 @@
  * use the same `/builders/` endpoints for those.
  */
 
+import { Plan } from '@core/types';
+
 /** Associate-tracker column variant used by a program's Tracker tab. */
 export type TeamProgramColumnVariant = 'builders' | 'producers';
 
@@ -23,6 +25,8 @@ export interface TeamProgram {
   columnVariant: TeamProgramColumnVariant;
   /** Persisted table layout id for the Tracker tab. */
   tableId: string;
+  /** Lowest plan that opens the page. Anyone below sees the locked teaser, with no data. */
+  minimumPlan: Plan;
 }
 
 export const BUILDER_PROGRAM: TeamProgram = {
@@ -32,6 +36,7 @@ export const BUILDER_PROGRAM: TeamProgram = {
   leaderboardSegment: 'builders',
   columnVariant: 'builders',
   tableId: 'builders-tracker',
+  minimumPlan: Plan.Leader,
 };
 
 export const PRODUCER_PROGRAM: TeamProgram = {
@@ -41,4 +46,5 @@ export const PRODUCER_PROGRAM: TeamProgram = {
   leaderboardSegment: 'producers',
   columnVariant: 'producers',
   tableId: 'producers-tracker',
+  minimumPlan: Plan.Broker,
 };
