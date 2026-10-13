@@ -73,6 +73,12 @@ console.
   compile time.
 - **Leave `.glass-section` and `.input-field` scoped where they are.** The hosted Calendar Sync section
   depends on them.
+- **Every `<Modal>` on this page carries `className="settings-profile-page"`.** The shared modal portals
+  to `<body>`, outside the page root, so without the class none of the page's scoped rules reach the
+  dialog and it renders as bare text.
+- **The Stripe card field takes its text colour from the resolved theme** (`cardElementOptions`), read
+  from `<html class="dark">` when the upgrade dialog opens. The iframe cannot see the page's CSS; a
+  fixed white made typed digits invisible on the light theme.
 
 ## 5. Responsive and print behaviour
 

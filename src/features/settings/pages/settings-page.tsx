@@ -247,20 +247,27 @@ const EXPANDABLE_PLAN_FEATURE_KEYS = PLAN_CARDS.flatMap((card) => card.features
   .filter((feature) => Array.isArray(feature.access) || feature.access.length > 70)
   .map((feature) => `${card.plan}:${feature.name}`));
 
-const CARD_ELEMENT_OPTIONS = {
-  style: {
-    base: {
-      color: '#ffffff',
-      fontSize: '14px',
-      '::placeholder': {
-        color: '#94a3b8',
+/**
+ * The card iframe cannot read our CSS, so the text colour is picked from the resolved
+ * theme. A fixed white rendered typed digits invisible on the light-theme field.
+ */
+function cardElementOptions(isDark: boolean) {
+  return {
+    style: {
+      base: {
+        color: isDark ? '#ffffff' : '#1e293b',
+        iconColor: isDark ? '#cbd5e1' : '#475569',
+        fontSize: '14px',
+        '::placeholder': {
+          color: '#94a3b8',
+        },
+      },
+      invalid: {
+        color: isDark ? '#f87171' : '#dc2626',
       },
     },
-    invalid: {
-      color: '#f87171',
-    },
-  },
-};
+  };
+}
 
 function normalizePlanToRoleName(plan: Plan): string {
   if (plan === Plan.NewAgent) return 'NEW_AGENT';
@@ -422,6 +429,13 @@ function UpgradeRequestForm({
     setTargetPlan(plan);
     setModalOpen(true);
   };
+
+  // Re-read on each opening, so a theme switched since the last one is picked up.
+  const cardOptions = useMemo(
+    () => cardElementOptions(document.documentElement.classList.contains('dark')),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [modalOpen]
+  );
 
 
   const handleSubmit = async () => {
@@ -612,6 +626,7 @@ function UpgradeRequestForm({
 
       <Modal
         open={modalOpen}
+        className="settings-profile-page"
         onClose={() => setModalOpen(false)}
         title={`Upgrade to ${targetPlan}`}
         contentClassName="max-w-[620px]"
@@ -627,7 +642,7 @@ function UpgradeRequestForm({
           <div className="field-group">
             <label>Card Details</label>
             <div className="card-element-wrapper">
-              <CardElement options={CARD_ELEMENT_OPTIONS} />
+              <CardElement options={cardOptions} />
             </div>
           </div>
 
@@ -1678,6 +1693,7 @@ export default function SettingsPage() {
 
       <Modal
         open={actionModal.open}
+        className="settings-profile-page"
         onClose={closeActionModal}
         title={
           actionModal.action === 'approve'
@@ -1756,6 +1772,7 @@ export default function SettingsPage() {
 
       <Modal
         open={Boolean(telegramLink)}
+        className="settings-profile-page"
         onClose={() => setTelegramLink(null)}
         title="Connect Telegram"
         contentClassName="max-w-[380px]"
