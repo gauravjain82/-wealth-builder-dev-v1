@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Copy } from 'lucide-react';
+import { Copy, Link2 } from 'lucide-react';
 import { Button, Input, Select, UserAutocompleteDropdown, type UserAutocompleteOption } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { fetchAssociates, type AssociateTrackerRecord } from '@/features/team/associate-tracker/services/associate-tracker-service';
@@ -418,13 +418,14 @@ export function SubmitDailySix({
           </p>
 
           {!showSubmissionLink && (
-            <div className="mt-1 text-center">
+            <div className="mt-3 text-center">
               <button
                 type="button"
-                className="text-xs text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline disabled:cursor-wait dark:text-white/40 dark:hover:text-white/70"
+                className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-600 hover:bg-amber-400/20 disabled:cursor-wait dark:text-amber-400"
                 onClick={handleForgotLink}
                 disabled={checkingLink}
               >
+                <Link2 size={14} />
                 {checkingLink ? 'Finding your link...' : 'Forgot your link?'}
               </button>
             </div>
