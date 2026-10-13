@@ -734,7 +734,8 @@ export function buildAssociateColumns(
       render: (row) => renderCheckbox(row, 'is_training', options),
     },
     {
-      // Read-only: set by the backend when the associate checks in at a BPM.
+      // Read-only: set by the backend when the associate checks in at a BPM or
+      // attends a training-schedule training (which also ticks `is_training`).
       // Not sortable — this table sorts server-side, and the tracker's
       // `sort_field_map` does not list `training_date`.
       key: 'training_date',

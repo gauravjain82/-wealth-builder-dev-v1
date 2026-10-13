@@ -76,9 +76,9 @@ Six component-scoped CSS files. **Content is in the components** — video URLs,
 change is a release. This module is not on [admin](../admin/)'s content engine.
 
 One oddity worth knowing: `pages/training-schedule.css` sits in this module and belongs to
-[training-schedule](../training-schedule/). It is a **byte-identical, unimported duplicate** — 18,008 bytes,
-the same as `training-schedule/pages/training-schedule.css`, and **nothing imports this copy** (verified by
-grep; the page imports its own).
+[training-schedule](../training-schedule/). It is an **unimported duplicate** — 18,008 bytes — of the stylesheet the
+training-schedule page used before its 2026-10 rebuild, which deleted its own copy and now has no
+stylesheet at all. **Nothing imports this file** (verified by grep).
 
 It is therefore dead code that looks live. Editing it changes nothing. It should be deleted — see
 [training-schedule UI §7](../training-schedule/UI.md#7-styling-and-theming).
