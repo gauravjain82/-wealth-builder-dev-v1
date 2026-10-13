@@ -4,6 +4,7 @@ import { Button, Input, Select, UserAutocompleteDropdown, type UserAutocompleteO
 import { useToastStore } from '@/store';
 import { fetchAssociates, type AssociateTrackerRecord } from '@/features/team/associate-tracker/services/associate-tracker-service';
 import {
+  fetchAgencyDailySix,
   submitDailySix,
   submitAgencyDailySix,
   updateBuilderEnrollment,
@@ -51,6 +52,19 @@ function mapAssociateToOption(row: AssociateTrackerRecord): UserAutocompleteOpti
   };
 }
 
+/**
+ * The enrollment's `submission_link` is the backend's API URL for the agency
+ * code, not a page. Only its last segment — the agency code — is usable here.
+ */
+function agencyCodeFromSubmissionLink(link: string | null | undefined): string {
+  const lastSegment = link?.replace(/\/+$/, '').split('/').pop() ?? '';
+  try {
+    return decodeURIComponent(lastSegment);
+  } catch {
+    return lastSegment;
+  }
+}
+
 function paceSortWeight(pace: BuilderPace): number {
   const name = pace.name.toLowerCase();
   if (name.includes('full')) return 0;
@@ -92,6 +106,7 @@ export function SubmitDailySix({
   const [activeEnrollment, setActiveEnrollment] = useState<BuilderEnrollment | null>(enrollment);
   const [selectedBuilder, setSelectedBuilder] = useState<UserAutocompleteOption | null>(null);
   const [showSubmissionLink, setShowSubmissionLink] = useState(false);
+  const [checkingLink, setCheckingLink] = useState(false);
 
   useEffect(() => {
     setActiveEnrollment(enrollment);
@@ -156,9 +171,12 @@ export function SubmitDailySix({
     ? customTargetsToPace(customTargets)
     : selectedPace ?? activeEnrollment?.pace;
   const activeUserName = activeEnrollment?.user_name ?? selectedBuilder?.label ?? '';
-  const activeSubmissionLink = selectedBuilder?.agencyCode
-    ? `${FRONTEND_BASE_URL}/team/builders/daily-six/${encodeURIComponent(selectedBuilder.agencyCode)}`
-    : activeEnrollment?.submission_link;
+  const linkAgencyCode = selectedBuilder
+    ? selectedBuilder.agencyCode ?? ''
+    : agencyCodeFromSubmissionLink(activeEnrollment?.submission_link);
+  const activeSubmissionLink = linkAgencyCode
+    ? `${FRONTEND_BASE_URL}/team/builders/daily-six/${encodeURIComponent(linkAgencyCode)}`
+    : null;
   const visibleTodaySubmissions = todaySubmissions;
   const existingForSession = visibleTodaySubmissions.find((submission) => submission.session === form.session);
 
@@ -193,6 +211,28 @@ export function SubmitDailySix({
       addToast({ type: 'success', message: 'Daily Six link copied.' });
     } catch {
       addToast({ type: 'error', message: 'Unable to copy link.' });
+    }
+  };
+
+  // Reveals the existing link without re-saving the pace. The link only works
+  // once the person is enrolled, so it is checked before it is shown.
+  const handleForgotLink = async () => {
+    if (!linkAgencyCode) {
+      addToast({ type: 'info', message: 'Select your name first, then tap "Forgot your link?" again.' });
+      return;
+    }
+
+    setCheckingLink(true);
+    try {
+      await fetchAgencyDailySix(linkAgencyCode);
+      setShowSubmissionLink(true);
+    } catch {
+      addToast({
+        type: 'info',
+        message: `No Daily Six link yet${activeUserName ? ` for ${activeUserName}` : ''}. Pick a pace and press Submit to create one.`,
+      });
+    } finally {
+      setCheckingLink(false);
     }
   };
 
@@ -376,6 +416,19 @@ export function SubmitDailySix({
           <p className="mt-4 text-center text-xs leading-5 text-slate-500 dark:text-white/50">
             Bookmark this page on your phone. You'll come back to it every morning and night.
           </p>
+
+          {!showSubmissionLink && (
+            <div className="mt-1 text-center">
+              <button
+                type="button"
+                className="text-xs text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline disabled:cursor-wait dark:text-white/40 dark:hover:text-white/70"
+                onClick={handleForgotLink}
+                disabled={checkingLink}
+              >
+                {checkingLink ? 'Finding your link...' : 'Forgot your link?'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

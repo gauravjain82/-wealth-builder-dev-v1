@@ -98,6 +98,12 @@ player** (`is_key_player`) — the roster and the results leaderboard both use i
 separate product from [builder-ai](../builder-ai/): someone can rank here and be absent there
 (PHASES T9).
 
+**Submit Daily Six — the personal link.** The setup card shows a person's public link only after
+**Submit** (which saves the pace) or after **Forgot your link?**, a quiet text button under the
+bookmark hint. The latter saves nothing: it asks the public endpoint whether the agency code has
+an active enrollment and then reveals the same link row with **Copy link**. No name selected, or
+no enrollment yet, gives an info toast instead of a link (PHASES T12).
+
 ### 2.7 Licensing tracker — `licensing-tracker/` (1,473 LOC)
 
 The smallest complete tracker, and therefore **the one to read first**: a page, a columns file, a
