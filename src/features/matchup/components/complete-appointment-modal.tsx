@@ -19,6 +19,7 @@ interface CompleteAppointmentModalProps {
   onCreateFollowUpAppointment?: (appointment: AppointmentListItem) => void;
   onAddToProduction?: (appointment: AppointmentListItem) => void;
   onRescheduleAppointment?: (appointment: AppointmentListItem) => void;
+  onCreateReferralProspect?: (appointment: AppointmentListItem) => void;
 }
 
 interface CompleteForm {
@@ -98,6 +99,7 @@ export function CompleteAppointmentModal({
   onCreateFollowUpAppointment,
   onAddToProduction,
   onRescheduleAppointment,
+  onCreateReferralProspect,
 }: CompleteAppointmentModalProps) {
   const [form, setForm] = useState(initialForm);
   const [hasReferrals, setHasReferrals] = useState<TriState>(null);
@@ -229,7 +231,8 @@ export function CompleteAppointmentModal({
           onChange={(value) => updateBoolean('second_appointment_scheduled', value)}
           required
         />
-        {prompts && form.second_appointment_scheduled === false ? (
+        {/* Offered on either answer (M19): a booked next appointment may still need creating here. */}
+        {prompts && form.second_appointment_scheduled !== null ? (
           <ActionPrompt
             actionText="create a follow-up appointment"
             onClick={appointment && onCreateFollowUpAppointment ? () => onCreateFollowUpAppointment(appointment) : undefined}
@@ -278,6 +281,12 @@ export function CompleteAppointmentModal({
           onChange={updateReferrals}
           required
         />
+        {prompts && hasReferrals === true ? (
+          <ActionPrompt
+            actionText="create a prospect"
+            onClick={appointment && onCreateReferralProspect ? () => onCreateReferralProspect(appointment) : undefined}
+          />
+        ) : null}
         <StringQuestion
           label="Invited to BPM?"
           name="invited_to_bpm"
@@ -289,7 +298,7 @@ export function CompleteAppointmentModal({
           onChange={(value) => updateBoolean('invited_to_bpm', value === 'YES')}
           required
         />
-        {prompts && form.invited_to_bpm === true ? (
+        {prompts && form.invited_to_bpm !== null ? (
           <ActionPrompt actionText={`Add ${contactName} to your BPM Invites`} disabled />
         ) : null}
         <StringQuestion

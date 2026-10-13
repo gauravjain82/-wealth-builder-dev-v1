@@ -72,7 +72,7 @@ Create and edit, for both kinds. The largest component, and the one with the mos
 **Company-wide** trainer search with segment filtering. Deliberately broader than the usual downline
 scope: an assigner may need a trainer from outside their own base shop.
 
-### 2.5 Complete appointment — `components/complete-appointment-modal.tsx` (419 lines)
+### 2.5 Complete appointment — `components/complete-appointment-modal.tsx` (428 lines)
 
 Records the outcome, and **offers a follow-up appointment** — including rescheduling this one instead, if
 that is what actually happened.
@@ -80,6 +80,19 @@ that is what actually happened.
 **Step 3 appt?** = Yes opens two required questions (M16): **Call made?** (Yes/No) and **How many
 appointments booked?** (a whole number, 0 allowed). Both are cleared when Step 3 flips to No, so a hidden
 answer is never submitted.
+
+**Prompts shown on either answer** (M19): once *Next appointment scheduled?* is answered, Yes or No, the
+*create a follow-up appointment* prompt appears; once *Invited to BPM?* is answered, Yes or No, the *Add …
+to your BPM Invites* prompt appears. The BPM prompt is rendered disabled — it has no handler yet. The other
+prompts stay tied to one answer: reschedule on "did not happen", Recruit Tracker on AMA = Yes, Production
+on Sale = Yes, and *create a prospect* on Referrals = Yes (M20).
+
+**Referrals = Yes** offers *create a prospect*, which opens `team`'s Add Prospect form over the follow-up
+with **Recruiter** pre-set to the appointment's contact — whoever gave the referral recruits it — and
+*How do you know this person?* pre-filled as "Referral from <contact>". Both are editable; with no contact
+on the appointment the recruiter falls back to the form's default, the signed-in user. It can be used repeatedly, one
+prospect per referral. The new prospect is not attached to the appointment and does not change the
+`referrals` value the result submits.
 
 **Edit mode** (`editing` prop, M18) corrects a filed result: titled *Edit Follow Up*, pre-filled from the
 result (a stored empty sale shows as No), saved with **Save Changes** to `PATCH …/result/`. The follow-up

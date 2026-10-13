@@ -189,6 +189,8 @@ export default function MatchupPage() {
   const [busy, setBusy] = useState(false);
   const [addProspectInitial, setAddProspectInitial] = useState<AddProspectFormData | null>(null);
   const [savingProspect, setSavingProspect] = useState(false);
+  // A referral from the follow-up form is a new prospect, not the appointment form's contact.
+  const [addProspectIsReferral, setAddProspectIsReferral] = useState(false);
   const [newAppointmentContact, setNewAppointmentContact] = useState<Prospect | null>(null);
   const [notesByUserId, setNotesByUserId] = useState<Record<number, TrackerNote[]>>({});
   const [noteDraftByAppointmentId, setNoteDraftByAppointmentId] = useState<Record<number, string>>({});
@@ -373,7 +375,21 @@ export default function MatchupPage() {
 
   const openAddProspect = (searchedName: string) => {
     const { firstName, lastName } = splitName(searchedName);
+    setAddProspectIsReferral(false);
     setAddProspectInitial({ ...defaultAddProspectForm, firstName, lastName });
+  };
+
+  const openReferralProspect = (appointment: AppointmentListItem) => {
+    // Whoever gave the referral recruits it; with no contact the form falls back to the current user.
+    const referrerId = appointment.contact ?? appointment.trainee ?? null;
+    const referrer = (appointment.contact ? appointment.contact_name : appointment.trainee_name) || '';
+    setAddProspectIsReferral(true);
+    setAddProspectInitial({
+      ...defaultAddProspectForm,
+      recruiter: referrerId != null ? referrer : '',
+      recruiterId: referrerId,
+      howKnown: referrer ? `Referral from ${referrer}` : 'Referral',
+    });
   };
 
   const submitNewProspect = async (form: AddProspectFormData) => {
@@ -408,9 +424,14 @@ export default function MatchupPage() {
         },
         prospect_meta: { outcome: 'Both', mark: 'default', hot: false, top25: false },
       });
-      setNewAppointmentContact(created);
+      if (!addProspectIsReferral) setNewAppointmentContact(created);
       setAddProspectInitial(null);
-      addToast({ type: 'success', message: 'Prospect added and selected as the appointment contact.' });
+      addToast({
+        type: 'success',
+        message: addProspectIsReferral
+          ? 'Referral added as a prospect.'
+          : 'Prospect added and selected as the appointment contact.',
+      });
     } catch (err) {
       addToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to add prospect.' });
     } finally {
@@ -861,6 +882,7 @@ export default function MatchupPage() {
         onCreateFollowUpAppointment={openFollowUpAppointmentModal}
         onAddToProduction={openProductionModal}
         onRescheduleAppointment={openRescheduleAppointment}
+        onCreateReferralProspect={openReferralProspect}
       />
       <CompleteAppointmentModal
         open={Boolean(resultEditTarget)}
