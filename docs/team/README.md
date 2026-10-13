@@ -4,7 +4,7 @@
 |---|---|
 | **Module** | `team` |
 | **Source** | `src/features/team/` |
-| **Routes** | 7 trackers under `/team/*`, `/onboarding-game`, `/team/builders/daily-six/:agencyCode` (public) |
+| **Routes** | 7 trackers under `/team/*`, `/onboarding-game`, `/team/builders/daily-six/:agencyCode` and its `/history` (public) |
 | **Backend module** | `tracker`, `accounts`, `network` |
 | **API prefix** | `/api/tracker/`, `/api/accounts/`, `/api/network/` |
 | **Status** | Production |

@@ -43,19 +43,47 @@ export interface DailySixPayload {
   business_plan_am: boolean;
   business_plan_pm: boolean;
   pages_read: boolean;
+  /**
+   * `YYYY-MM-DD` of an already-submitted day to correct. Omitted means today.
+   * The backend refuses a day outside its edit window or one with no submission.
+   */
+  submission_date?: string;
+}
+
+/** Distinct days submitted on. Two sessions on one day count once. */
+export interface DailySixStats {
+  days_this_month: number;
+  total_days: number;
+}
+
+/** The backend's own "today" and the oldest day it still accepts an edit for. */
+export interface DailySixEditWindow {
+  today: string;
+  edit_window_days: number;
+  editable_from: string;
 }
 
 export interface DailySixResponse {
   submission: DailySixSubmission;
   streak: number;
+  stats?: DailySixStats;
 }
 
-export interface AgencyDailySixContext {
+export interface AgencyDailySixContext extends Partial<DailySixEditWindow> {
   user_name: string;
   agency_code: string;
   pace: BuilderPace;
   streak: number;
   today_submissions: DailySixSubmission[];
+  stats?: DailySixStats;
+}
+
+export interface DailySixHistoryMonth extends DailySixEditWindow {
+  /** `YYYY-MM` */
+  month: string;
+  submissions: DailySixSubmission[];
+  /** Every submission still inside the edit window, newest day first — not limited to `month`. */
+  editable_submissions: DailySixSubmission[];
 }
 
 export interface ResultsLeaderboardEntry {
@@ -207,4 +235,18 @@ export async function submitAgencyDailySix(agencyCode: string, payload: DailySix
   });
   if (!response.ok) throw await parseError(response, 'Failed to submit Daily Six');
   return (await response.json()) as DailySixResponse;
+}
+
+export async function fetchAgencyDailySixHistory(
+  agencyCode: string,
+  month: string,
+  signal?: AbortSignal
+): Promise<DailySixHistoryMonth> {
+  const params = new URLSearchParams({ month });
+  const response = await fetch(
+    `${API_BASE_URL}/api/tracker/builders/daily-six/${encodeURIComponent(agencyCode)}/history/?${params.toString()}`,
+    { signal }
+  );
+  if (!response.ok) throw await parseError(response, 'Failed to fetch Daily Six history');
+  return (await response.json()) as DailySixHistoryMonth;
 }
