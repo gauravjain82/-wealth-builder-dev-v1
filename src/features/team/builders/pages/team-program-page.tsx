@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AssociateTrackerContent } from '@/features/team/associate-tracker/pages/associate-tracker-page';
+import { useAuth } from '@/features/auth';
 import { Block, ErrorState, LoadingState } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { ActivityLeaderboard } from '../components/activity-leaderboard';
-import { BuildersTabs, type BuilderTab } from '../components/builders-tabs';
+import { BuildersTabs, MEMBER_TABS, type BuilderTab } from '../components/builders-tabs';
 import { ResultsLeaderboard } from '../components/results-leaderboard';
 import { SubmitDailySix } from '../components/submit-daily-six';
 import {
@@ -22,6 +23,13 @@ import type { TeamProgram } from '../team-programs';
 
 interface TeamProgramPageProps {
   program: TeamProgram;
+  /** The viewer is flagged into this program: show the welcome line. */
+  isMember?: boolean;
+  /**
+   * The viewer is in the program but below the plan that opens the full page:
+   * no Tracker tab, and Daily Six is set up for the viewer only.
+   */
+  memberOnly?: boolean;
 }
 
 /**
@@ -29,11 +37,12 @@ interface TeamProgramPageProps {
  * Builders and Producers render this with their own {@link TeamProgram}; only
  * the tracker flag, leaderboard endpoints and labels differ.
  */
-export function TeamProgramPage({ program }: TeamProgramPageProps) {
+export function TeamProgramPage({ program, isMember = false, memberOnly = false }: TeamProgramPageProps) {
   const { label, pluralLabel } = program;
+  const { user } = useAuth();
   const trackerFilters = useMemo(() => ({ [program.trackerFlag]: 'true' }), [program.trackerFlag]);
   const addToast = useToastStore((state) => state.addToast);
-  const [activeTab, setActiveTab] = useState<BuilderTab>('tracker');
+  const [activeTab, setActiveTab] = useState<BuilderTab>(memberOnly ? 'results' : 'tracker');
   const [paces, setPaces] = useState<BuilderPace[]>([]);
   const [selectedPaceId, setSelectedPaceId] = useState<number | null>(null);
   const [enrollment, setEnrollment] = useState<BuilderEnrollment | null>(null);
@@ -160,10 +169,16 @@ export function TeamProgramPage({ program }: TeamProgramPageProps) {
         className="mb-2 flex-shrink-0"
       />
 
-      <BuildersTabs activeTab={activeTab} onChange={setActiveTab} />
+      {isMember && (
+        <p className="mb-2 flex-shrink-0 rounded-xl border border-amber-500/40 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
+          Welcome, you are a {label}.
+        </p>
+      )}
+
+      <BuildersTabs tabs={memberOnly ? MEMBER_TABS : undefined} activeTab={activeTab} onChange={setActiveTab} />
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        {activeTab === 'tracker' && (
+        {activeTab === 'tracker' && !memberOnly && (
           <AssociateTrackerContent
             pageHeading="Associate Tracker"
             pageDescription={`Monitor ${pluralLabel} and their progress`}
@@ -204,6 +219,8 @@ export function TeamProgramPage({ program }: TeamProgramPageProps) {
               todaySubmissions={todaySubmissions}
               onSubmitted={() => void loadDailySix()}
               program={program}
+              selfOnly={memberOnly}
+              selfName={user?.displayName ?? ''}
             />
           </div>
         )}

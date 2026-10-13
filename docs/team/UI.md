@@ -21,8 +21,8 @@
 | `/team/licensing-tracker` | `ProtectedRoute` | `LicensingTrackerPage` |
 | `/team/production-tracker` | `ProtectedRoute` | `ProductionTrackerPage` |
 | `/team/mission-tracker` | `ProtectedRoute` | `MissionTrackerPage` |
-| `/team/builders` | `ProtectedRoute` | `BuildersPage` — locked teaser below Leader |
-| `/team/producers` | `ProtectedRoute` | `ProducersPage` — locked teaser below Broker (SMD) |
+| `/team/builders` | `ProtectedRoute` | `BuildersPage` — below Leader: member view if flagged Builder, else locked teaser |
+| `/team/producers` | `ProtectedRoute` | `ProducersPage` — below Leader: member view if flagged Producer, else locked teaser |
 | `/team/org-chart` | `ProtectedRoute` | `OrgChartPage` |
 | `/onboarding-game` | `ProtectedRoute` | `OnboardingGamePage` |
 | `/team/builders/daily-six/:agencyCode` | **none — public** | the Daily Six page |
@@ -100,10 +100,18 @@ player** (`is_key_player`) — the roster and the results leaderboard both use i
 separate product from [builder-ai](../builder-ai/): someone can rank here and be absent there
 (PHASES T9).
 
-**Locked teaser.** Builders and Producers are in the My Team menu for every plan. Below the
-program's `minimumPlan` (`team-programs.ts`: Leader for Builders, Broker for Producers) the page
-renders `TeamProgramLocked` — the title, a "Become a Builder/Producer" card listing the Daily Six,
-and no tabs. It makes no request (PHASES T13).
+**Three states, decided by `TeamProgramGate`.** Builders and Producers are in the My Team menu for
+every plan, and both open fully at `minimumPlan` = Leader (`team-programs.ts`; PHASES T15).
+
+| Viewer | Renders |
+|---|---|
+| Leader and above | the full page: Tracker, Results Leaderboard, Activity Leaderboard, Submit Daily Six |
+| Below Leader, flagged into the program (`builders/membership/`) | **member view** — the same page without the Tracker tab, opening on Results Leaderboard. Submit Daily Six shows the viewer's own name in place of the name picker and enrolls the viewer |
+| Below Leader, not flagged | `TeamProgramLocked` — the title, a "Become a Builder/Producer" card listing the Daily Six, and no tabs (PHASES T13) |
+
+Anyone flagged into the program, at any plan, sees **"Welcome, you are a Builder/Producer."** above
+the tabs. Below Leader the gate shows a loading state while the membership request is in flight; if
+that request fails the viewer is treated as not flagged, so they get the teaser.
 
 **Submit Daily Six — the personal link.** The setup card shows a person's public link only after
 **Submit** (which saves the pace) or after **Forgot your link?**, a quiet text button under the

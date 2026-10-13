@@ -7,15 +7,20 @@ export const BUILDER_TABS: Array<{ id: BuilderTab; label: string }> = [
   { id: 'submit', label: 'Submit Daily Six' },
 ];
 
+/** Tabs for a program member below the full-page plan: everything but the tracker. */
+export const MEMBER_TABS = BUILDER_TABS.filter((tab) => tab.id !== 'tracker');
+
 interface BuildersTabsProps {
+  /** Tabs to offer. Defaults to all four. */
+  tabs?: Array<{ id: BuilderTab; label: string }>;
   activeTab: BuilderTab;
   onChange: (tab: BuilderTab) => void;
 }
 
-export function BuildersTabs({ activeTab, onChange }: BuildersTabsProps) {
+export function BuildersTabs({ tabs = BUILDER_TABS, activeTab, onChange }: BuildersTabsProps) {
   return (
     <div className="mb-2 flex flex-shrink-0 gap-1 overflow-x-auto border-b border-slate-200 dark:border-white/10">
-      {BUILDER_TABS.map((tab) => (
+      {tabs.map((tab) => (
         <button
           key={tab.id}
           type="button"

@@ -20,12 +20,18 @@ export interface TeamProgram {
   pluralLabel: string;
   /** Associate tracker boolean that marks a member of this program. */
   trackerFlag: 'is_key_player' | 'is_producer';
+  /** Key in the membership response that says the viewer is in this program. */
+  membershipFlag: 'is_builder' | 'is_producer';
   /** Path segment under `/api/tracker/` that serves this program's leaderboards. */
   leaderboardSegment: 'builders' | 'producers';
   columnVariant: TeamProgramColumnVariant;
   /** Persisted table layout id for the Tracker tab. */
   tableId: string;
-  /** Lowest plan that opens the page. Anyone below sees the locked teaser, with no data. */
+  /**
+   * Lowest plan that opens the full page, tracker included. Below it, a person
+   * flagged into the program gets the member view (leaderboards and Daily Six,
+   * no tracker) and everyone else the locked teaser.
+   */
   minimumPlan: Plan;
 }
 
@@ -33,6 +39,7 @@ export const BUILDER_PROGRAM: TeamProgram = {
   label: 'Builder',
   pluralLabel: 'Builders',
   trackerFlag: 'is_key_player',
+  membershipFlag: 'is_builder',
   leaderboardSegment: 'builders',
   columnVariant: 'builders',
   tableId: 'builders-tracker',
@@ -43,8 +50,9 @@ export const PRODUCER_PROGRAM: TeamProgram = {
   label: 'Producer',
   pluralLabel: 'Producers',
   trackerFlag: 'is_producer',
+  membershipFlag: 'is_producer',
   leaderboardSegment: 'producers',
   columnVariant: 'producers',
   tableId: 'producers-tracker',
-  minimumPlan: Plan.Broker,
+  minimumPlan: Plan.Leader,
 };

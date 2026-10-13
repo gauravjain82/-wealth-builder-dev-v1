@@ -35,6 +35,13 @@ interface SubmitDailySixProps {
   onSubmitted: () => void;
   /** Program whose flagged people the name picker offers. Defaults to Builders. */
   program?: TeamProgram;
+  /**
+   * The viewer may set up Daily Six for themselves only: the name picker is
+   * replaced by their own name and Submit enrolls the caller.
+   */
+  selfOnly?: boolean;
+  /** The viewer's name, shown in `selfOnly` mode until an enrollment supplies one. */
+  selfName?: string;
 }
 
 type CountField = 'friends_made' | 'calls_made' | 'appointments';
@@ -93,6 +100,8 @@ export function SubmitDailySix({
   todaySubmissions,
   onSubmitted,
   program = BUILDER_PROGRAM,
+  selfOnly = false,
+  selfName = '',
 }: SubmitDailySixProps) {
   const addToast = useToastStore((state) => state.addToast);
   const [step, setStep] = useState<DailySixStep>('setup');
@@ -170,7 +179,7 @@ export function SubmitDailySix({
   const activePace = customMode
     ? customTargetsToPace(customTargets)
     : selectedPace ?? activeEnrollment?.pace;
-  const activeUserName = activeEnrollment?.user_name ?? selectedBuilder?.label ?? '';
+  const activeUserName = activeEnrollment?.user_name ?? selectedBuilder?.label ?? (selfOnly ? selfName : '');
   const linkAgencyCode = selectedBuilder
     ? selectedBuilder.agencyCode ?? ''
     : agencyCodeFromSubmissionLink(activeEnrollment?.submission_link);
@@ -218,7 +227,12 @@ export function SubmitDailySix({
   // once the person is enrolled, so it is checked before it is shown.
   const handleForgotLink = async () => {
     if (!linkAgencyCode) {
-      addToast({ type: 'info', message: 'Select your name first, then tap "Forgot your link?" again.' });
+      addToast({
+        type: 'info',
+        message: selfOnly
+          ? 'No Daily Six link yet. Pick a pace and press Submit to create one.'
+          : 'Select your name first, then tap "Forgot your link?" again.',
+      });
       return;
     }
 
@@ -241,10 +255,11 @@ export function SubmitDailySix({
     setShowSubmissionLink(false);
   };
 
-  // With no name picked, the name shown is the viewer's own enrollment; the
-  // backend applies a PUT without `user_id` to the caller.
+  // With no name picked, the name shown is the viewer's own enrollment (or, in
+  // `selfOnly` mode, the viewer); the backend applies a PUT without `user_id`
+  // to the caller.
   const handleGenerateLink = async () => {
-    if (!selectedBuilder && !activeEnrollment) return;
+    if (!selfOnly && !selectedBuilder && !activeEnrollment) return;
 
     setSavingEnrollment(true);
     try {
@@ -329,15 +344,21 @@ export function SubmitDailySix({
 
           <FormLabel>Your name</FormLabel>
           <div className="mb-4">
-            <UserAutocompleteDropdown
-              selectedId={selectedBuilder?.id ?? null}
-              selectedLabel={activeUserName}
-              placeholder={`Select ${program.label.toLowerCase()}`}
-              fetchOptions={loadBuilderOptions}
-              onSelect={(option) => {
-                handleBuilderSelect(option);
-              }}
-            />
+            {selfOnly ? (
+              <div className="flex h-12 items-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-700 dark:border-white/10 dark:bg-black/20 dark:text-white/80">
+                {activeUserName || 'You'}
+              </div>
+            ) : (
+              <UserAutocompleteDropdown
+                selectedId={selectedBuilder?.id ?? null}
+                selectedLabel={activeUserName}
+                placeholder={`Select ${program.label.toLowerCase()}`}
+                fetchOptions={loadBuilderOptions}
+                onSelect={(option) => {
+                  handleBuilderSelect(option);
+                }}
+              />
+            )}
           </div>
 
           <FormLabel>Your pace</FormLabel>
@@ -392,7 +413,7 @@ export function SubmitDailySix({
             type="button"
             className="h-12 w-full"
             onClick={handleGenerateLink}
-            disabled={savingEnrollment || (!selectedBuilder && !activeEnrollment) || (!customMode && !selectedPaceId)}
+            disabled={savingEnrollment || (!selfOnly && !selectedBuilder && !activeEnrollment) || (!customMode && !selectedPaceId)}
           >
             {savingEnrollment ? 'Loading...' : 'Submit'}
           </Button>
