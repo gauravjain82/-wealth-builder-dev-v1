@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CheckCircle2, Flame, Target } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { CalendarDays, CheckCircle2, ChevronRight, Flame, Target } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { DailySixFields } from '../components/daily-six-fields';
 import {
   fetchAgencyDailySix,
   submitAgencyDailySix,
@@ -20,8 +21,6 @@ const EMPTY_FORM: DailySixPayload = {
   pages_read: false,
 };
 
-type CountField = 'friends_made' | 'calls_made' | 'appointments';
-type ToggleField = 'preplan' | 'pages_read' | 'business_plan_am' | 'business_plan_pm';
 type DailySixSuccess = {
   score: number;
   streak: number;
@@ -89,18 +88,6 @@ export default function PublicDailySixPage() {
     return `${context.user_name} - ${context.pace.name} goals`;
   }, [context]);
 
-  const updateCount = (field: CountField, delta: number) => {
-    setForm((prev) => ({ ...prev, [field]: Math.max(0, prev[field] + delta) }));
-  };
-
-  const setToggle = (field: ToggleField, value: boolean) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const toggleBusinessPlan = (field: 'business_plan_am' | 'business_plan_pm') => {
-    setForm((prev) => ({ ...prev, [field]: !prev[field] }));
-  };
-
   const calculateScore = () => {
     if (!context) return 0;
     const pct = (actual: number, goal: number) => (goal > 0 ? Math.min(1, actual / goal) : 1);
@@ -122,7 +109,9 @@ export default function PublicDailySixPage() {
     setError(null);
     try {
       const response = await submitAgencyDailySix(agencyCode, form);
-      setContext((prev) => (prev ? { ...prev, streak: response.streak } : prev));
+      setContext((prev) =>
+        prev ? { ...prev, streak: response.streak, stats: response.stats ?? prev.stats } : prev
+      );
       setSuccess({ score: calculateScore(), streak: response.streak, submission: { ...form } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit Daily Six.');
@@ -131,10 +120,11 @@ export default function PublicDailySixPage() {
     }
   };
 
+  // The form keeps what was just saved: the next submit overwrites the same
+  // session, so reopening it blank would silently zero the day.
   const handleAnotherSubmission = () => {
     setSuccess(null);
     setError(null);
-    setForm((prev) => ({ ...EMPTY_FORM, session: prev.session }));
   };
 
   return (
@@ -150,6 +140,23 @@ export default function PublicDailySixPage() {
       </div>
 
       <div className={`mx-auto max-w-[760px] ${success ? 'px-2 py-2' : 'px-3 py-6 sm:px-5'}`}>
+        {!loading && context && (
+          <Link
+            to={`/team/builders/daily-six/${encodeURIComponent(agencyCode)}/history`}
+            className="mb-2 flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#0b0c10] px-3 py-2 text-sm font-semibold text-[#f4d766] hover:bg-white/5"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <CalendarDays size={16} className="flex-shrink-0" />
+              <span className="truncate">
+                {context.stats && context.stats.total_days > 0
+                  ? `History · ${context.stats.total_days} day${context.stats.total_days === 1 ? '' : 's'} logged`
+                  : 'History'}
+              </span>
+            </span>
+            <ChevronRight size={16} className="flex-shrink-0" />
+          </Link>
+        )}
+
         <section className={`rounded-2xl border border-white/12 bg-[#0b0c10] shadow-[0_20px_70px_rgba(0,0,0,0.35)] ${
           success ? 'p-2' : 'p-2'
         }`}>
@@ -179,51 +186,7 @@ export default function PublicDailySixPage() {
                 <p className="mt-1 truncate text-sm font-medium text-slate-300">{headerText}</p>
               </div>
 
-              <div className="grid gap-2">
-                <MetricRow
-                  label="Friends"
-                  goal={context.pace.target_friends}
-                  value={form.friends_made}
-                  onDecrement={() => updateCount('friends_made', -1)}
-                  onIncrement={() => updateCount('friends_made', 1)}
-                />
-                <MetricRow
-                  label="Calls"
-                  goal={context.pace.target_calls}
-                  value={form.calls_made}
-                  onDecrement={() => updateCount('calls_made', -1)}
-                  onIncrement={() => updateCount('calls_made', 1)}
-                />
-                <MetricRow
-                  label="Appts"
-                  goal={context.pace.target_appointments}
-                  value={form.appointments}
-                  onDecrement={() => updateCount('appointments', -1)}
-                  onIncrement={() => updateCount('appointments', 1)}
-                />
-                <ToggleRow
-                  label="Preplanned tomorrow"
-                  helper="Mapped my day"
-                  yesActive={form.preplan}
-                  noActive={!form.preplan}
-                  onYes={() => setToggle('preplan', true)}
-                  onNo={() => setToggle('preplan', false)}
-                />
-                <BusinessPlanRow
-                  am={form.business_plan_am}
-                  pm={form.business_plan_pm}
-                  onAm={() => toggleBusinessPlan('business_plan_am')}
-                  onPm={() => toggleBusinessPlan('business_plan_pm')}
-                />
-                <ToggleRow
-                  label="Read 10 pages"
-                  helper="Of a book"
-                  yesActive={form.pages_read}
-                  noActive={!form.pages_read}
-                  onYes={() => setToggle('pages_read', true)}
-                  onNo={() => setToggle('pages_read', false)}
-                />
-              </div>
+              <DailySixFields pace={context.pace} form={form} onChange={setForm} />
 
               {error && (
                 <div className="mt-3 rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
@@ -246,36 +209,6 @@ export default function PublicDailySixPage() {
         </section>
       </div>
     </main>
-  );
-}
-
-function MetricRow({
-  label,
-  goal,
-  value,
-  onDecrement,
-  onIncrement,
-}: {
-  label: string;
-  goal: number;
-  value: number;
-  onDecrement: () => void;
-  onIncrement: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#14151a] px-3 py-2.5">
-      <div className="min-w-0">
-        <div className="text-sm font-semibold leading-5 text-white">{label}</div>
-        <div className="text-xs leading-4 text-slate-500">Goal {goal}</div>
-      </div>
-      <div className="flex items-center gap-1">
-        <StepButton label="-" onClick={onDecrement} />
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-[#101116] text-base font-bold">
-          {value}
-        </div>
-        <StepButton label="+" onClick={onIncrement} />
-      </div>
-    </div>
   );
 }
 
@@ -463,87 +396,5 @@ function StatusPill({ label, active }: { label: string; active: boolean }) {
     >
       {label}: {active ? 'Yes' : 'No'}
     </div>
-  );
-}
-
-function StepButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-[#101116] text-lg font-bold text-[#f4d766] hover:bg-white/5"
-      onClick={onClick}
-    >
-      {label}
-    </button>
-  );
-}
-
-function ToggleRow({
-  label,
-  helper,
-  yesActive,
-  noActive,
-  onYes,
-  onNo,
-}: {
-  label: string;
-  helper: string;
-  yesActive: boolean;
-  noActive: boolean;
-  onYes: () => void;
-  onNo: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#14151a] px-3 py-2.5">
-      <div className="min-w-0">
-        <div className="text-sm font-semibold leading-5 text-white">{label}</div>
-        <div className="text-xs leading-4 text-slate-500">{helper}</div>
-      </div>
-      <div className="flex flex-shrink-0 gap-1.5">
-        <ToggleButton label="Yes" active={yesActive} onClick={onYes} />
-        <ToggleButton label="No" active={noActive} onClick={onNo} />
-      </div>
-    </div>
-  );
-}
-
-function BusinessPlanRow({
-  am,
-  pm,
-  onAm,
-  onPm,
-}: {
-  am: boolean;
-  pm: boolean;
-  onAm: () => void;
-  onPm: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#14151a] px-3 py-2.5">
-      <div className="min-w-0">
-        <div className="text-sm font-semibold leading-5 text-white">Business plan</div>
-        <div className="text-xs leading-4 text-slate-500">Morning and night</div>
-      </div>
-      <div className="flex flex-shrink-0 gap-1.5">
-        <ToggleButton label="AM" active={am} onClick={onAm} />
-        <ToggleButton label="PM" active={pm} onClick={onPm} />
-      </div>
-    </div>
-  );
-}
-
-function ToggleButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      className={`h-8 rounded-lg border px-3 text-xs font-semibold transition ${
-        active
-          ? 'border-[#e7c95f] bg-[#e7c95f]/15 text-[#f4d766]'
-          : 'border-white/10 bg-[#101116] text-slate-300 hover:bg-white/5'
-      }`}
-      onClick={onClick}
-    >
-      {label}
-    </button>
   );
 }

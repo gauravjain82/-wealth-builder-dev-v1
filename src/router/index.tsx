@@ -132,6 +132,7 @@ const ProductsListPage = lazy(
   () => import('@/features/admin/products/pages/products-list-page')
 );
 const PublicDailySixPage = lazy(() => import('@/features/team/builders/pages/public-daily-six-page'));
+const PublicDailySixHistoryPage = lazy(() => import('@/features/team/builders/pages/public-daily-six-history-page'));
 const AddGoalsPage = lazy(() => import('@/features/team/associate-tracker/pages/add-goals-page'));
 const LicensingTrackerPage = lazy(() => import('@/features/team/licensing-tracker/pages/licensing-tracker-page'));
 const ProductionTrackerPage = lazy(() => import('@/features/team/production-tracker/pages/production-tracker-page'));
@@ -274,6 +275,11 @@ const router = createBrowserRouter([
   {
     path: '/team/builders/daily-six/:agencyCode',
     element: lazyLoad(PublicDailySixPage),
+    errorElement: <RouteErrorFallback />,
+  },
+  {
+    path: '/team/builders/daily-six/:agencyCode/history',
+    element: lazyLoad(PublicDailySixHistoryPage),
     errorElement: <RouteErrorFallback />,
   },
 

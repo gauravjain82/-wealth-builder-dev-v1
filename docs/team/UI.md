@@ -26,6 +26,7 @@
 | `/team/org-chart` | `ProtectedRoute` | `OrgChartPage` |
 | `/onboarding-game` | `ProtectedRoute` | `OnboardingGamePage` |
 | `/team/builders/daily-six/:agencyCode` | **none — public** | the Daily Six page |
+| `/team/builders/daily-six/:agencyCode/history` | **none — public** | Daily Six History — counts, recent days, calendar |
 
 **No tracker has a capability guard.** Every authenticated user reaches all seven; what they see is
 decided by team scope and segment visibility server-side. `/onboarding-game` lives in this
@@ -109,6 +110,40 @@ and no tabs. It makes no request (PHASES T13).
 bookmark hint. The latter saves nothing: it asks the public endpoint whether the agency code has
 an active enrollment and then reveals the same link row with **Copy link**. No name selected, or
 no enrollment yet, gives an info toast instead of a link (PHASES T12).
+
+**The public Daily Six page** (`public-daily-six-page.tsx`) is the form for today's current
+session (AM before noon, PM after), prefilled with what was already submitted. Its only addition
+is a **History** link row above the form, carrying the days-logged count when the response has
+`stats`. After a submit, **Log another submission** returns to the form with the saved values
+still in it.
+
+**Daily Six History** — `/team/builders/daily-six/:agencyCode/history`
+(`public-daily-six-history-page.tsx`), public. A separate page rather than a tab so the submit
+view stays as it was. **It is built for a phone first**: one column, every target at least 40px
+tall, no horizontal scroll at 390px, and the edit form replaces the page content instead of
+opening over it. Top to bottom:
+
+1. **Progress strip** — day streak, days this month, days logged. Distinct days, so AM and PM on
+   one day count once. Hidden when the response carries no `stats`; it never shows `0` for an
+   unknown.
+2. **Recent days** — one card per day still inside the edit window, newest first, with an AM and
+   a PM row each. A submitted session shows its three counts and **Edit**; a missing one shows
+   "Not submitted" and cannot be added (T14).
+3. **Calendar** (`daily-six-calendar.tsx`) — a read-only month grid. A day with a submission is
+   tinted, with one dot each for AM and PM; tapping a day shows its sessions underneath. Future
+   days are disabled and the next-month arrow stops at the current month. Nothing is edited from
+   the calendar.
+
+| State | Renders |
+|---|---|
+| **Edit** tapped | the form (`daily-six-fields.tsx`, shared with the submit page) under an "Editing Tue, Oct 13 · AM" header, with **Save changes** and **Cancel** |
+| Saved | back to the list with a "Saved …" notice; counts and history are refetched |
+| Save refused (day now locked) | the backend's `detail` under the form |
+| History request fails, or an older backend | Recent days is absent and the calendar shows the error; the submit page is unaffected |
+| Unknown or inactive agency code | the error card only |
+
+"Today", the edit window and every count come from the backend. Neither page derives them from
+the device clock (T14).
 
 ### 2.7 Licensing tracker — `licensing-tracker/` (1,473 LOC)
 

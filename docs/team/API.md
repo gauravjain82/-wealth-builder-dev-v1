@@ -62,6 +62,8 @@ legitimately has no licensing row before they start licensing.
 | Method | Path |
 |---|---|
 | GET | `/api/tracker/builders/daily-six/` |
+| GET · POST | `/api/tracker/builders/daily-six/{agency_code}/` — **no token**. GET also returns `today`, `edit_window_days`, `editable_from` and `stats`. POST takes an optional `submission_date` to correct an already-submitted day; outside the window, or for a day with no submission, it is a 400 whose `detail` is shown as-is (T14) |
+| GET | `/api/tracker/builders/daily-six/{agency_code}/history/?month=YYYY-MM` — **no token**. `submissions` for that month (the calendar) and `editable_submissions` for the edit window regardless of month (Recent days) |
 | GET | `/api/tracker/builders/enrollment/` |
 | GET | `/api/tracker/builders/paces/` |
 | GET | `/api/tracker/builders/leaderboard/activity/` |

@@ -46,6 +46,11 @@ viewer's downline and nothing else. See
 
 The Daily Six page is intentionally public so an agency code can be shared.
 
+How far back a Daily Six can be edited is the **backend's** `DAILY_SIX_EDIT_WINDOW_DAYS`
+(default `2`; `0` = today only). There is nothing to set here: the page reads the window from the
+response. The calendar needs backend branch `feature/daily-six-history`; against an older backend
+the submit page works unchanged and the History page shows an error.
+
 ## 4. Tests and checks
 
 No frontend tests ([platform OPERATIONS §4](../platform/OPERATIONS.md#4-tests-and-checks)).
