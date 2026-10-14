@@ -233,6 +233,9 @@ No print styles. Export is server-side instead, via `/appointments/export/`.
 - Modals come from the shared `Modal`, so focus handling is inherited.
 - Icons are `aria-hidden` beside real text.
 - Status colour comes with a label, so colour is never the only signal.
+- List rows are tinted with their status colour (a soft wash, a solid left stripe, a 6 px gap between
+  rows), from the same colour the backend serves. `.matchup-status-table` scopes this to the appointment
+  list; the BPM overview reuses `.matchup-table` and keeps its plain rows.
 
 Not covered: the month calendar is a grid built for a pointer, with no documented keyboard navigation
 between days.

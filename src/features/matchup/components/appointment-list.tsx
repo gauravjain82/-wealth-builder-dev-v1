@@ -343,7 +343,7 @@ export function AppointmentList({
 
   const renderTable = (rows: AppointmentListItem[]) => (
     <div className="matchup-table-wrap">
-      <table className="matchup-table">
+      <table className="matchup-table matchup-status-table">
         <thead>
           <tr>
             <th>When</th>
