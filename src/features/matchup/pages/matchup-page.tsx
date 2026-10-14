@@ -463,6 +463,18 @@ export default function MatchupPage() {
     });
   };
 
+  // Edit mode's reschedule prompt: file the corrected no-show first, so the
+  // backend sees a DONE appointment that did not happen and lets it reopen.
+  const saveResultAndReschedule = async (payload: CompleteAppointmentPayload) => {
+    if (!resultEditTarget) return;
+    const target = resultEditTarget;
+    await runMutation('Result updated.', async () => {
+      await matchupService.editResult(target.id, payload);
+      openRescheduleAppointment(target);
+      setResultEditTarget(null);
+    });
+  };
+
   // From the list the row has no result fields, so load the detail first. The
   // details and edit-appointment modals already hold it, and close first.
   const openResultEditor = (appointment: AppointmentDetail) => {
@@ -891,6 +903,7 @@ export default function MatchupPage() {
         saving={busy}
         onClose={() => setResultEditTarget(null)}
         onComplete={saveResultEdit}
+        onSaveAndReschedule={saveResultAndReschedule}
       />
       <AppointmentFormModal
         open={formOpen}

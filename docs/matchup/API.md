@@ -31,7 +31,7 @@ across the module rather than one per modal.
 |---|---|---|
 | GET · POST | `/api/matchup/appointments/` | list and create |
 | GET · PATCH · DELETE | `/api/matchup/appointments/{id}/` | detail, edit, remove |
-| POST | `/api/matchup/appointments/{id}/reschedule/` | **move in place**, with an audit record |
+| POST | `/api/matchup/appointments/{id}/reschedule/` | **move in place**, with an audit record; also reopens a `DONE` appointment whose result says it did not happen — the result is deleted and the status becomes `RESCHEDULED` (M21) |
 | POST | `/api/matchup/appointments/{id}/complete/` | file the follow-up result; sets `DONE` |
 | PATCH | `/api/matchup/appointments/{id}/result/` | **correct a filed result** (M18) — same payload as `complete/`, status unchanged, `400` if no result yet, sets `last_edited_by` |
 | GET | `/api/matchup/appointments/action-required/` | the three queues plus `can_view` / `can_take_action` |

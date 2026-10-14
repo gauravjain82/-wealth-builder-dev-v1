@@ -96,7 +96,9 @@ prospect per referral. The new prospect is not attached to the appointment and d
 
 **Edit mode** (`editing` prop, M18) corrects a filed result: titled *Edit Follow Up*, pre-filled from the
 result (a stored empty sale shows as No), saved with **Save Changes** to `PATCH …/result/`. The follow-up
-action prompts are hidden — they were offered on the first submit — and Notes becomes *Add a note*, which
+action prompts are hidden — they were offered on the first submit — except *reschedule the appointment*
+on "did not happen" (M21): it saves the corrected result, closes the form and opens the reschedule modal,
+which reopens the appointment. Notes becomes *Add a note*, which
 adds a note to the contact's feed rather than replacing earlier ones. Three entry points, all shown only when
 a result exists: an **Edit Result** button in the Outcome section of the edit-appointment form and of the
 details modal (both close and hand over their loaded detail), and an icon button on the list row (which

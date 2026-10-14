@@ -8,8 +8,8 @@ interface CompleteAppointmentModalProps {
   /**
    * Edit mode: an appointment whose result is already filed. The form opens
    * pre-filled from its result, the follow-up action prompts are hidden (they
-   * were offered on the first submit), and notes are an extra note, not a
-   * replacement.
+   * were offered on the first submit) except reschedule, and notes are an
+   * extra note, not a replacement.
    */
   editing?: AppointmentDetail | null;
   saving?: boolean;
@@ -20,6 +20,11 @@ interface CompleteAppointmentModalProps {
   onAddToProduction?: (appointment: AppointmentListItem) => void;
   onRescheduleAppointment?: (appointment: AppointmentListItem) => void;
   onCreateReferralProspect?: (appointment: AppointmentListItem) => void;
+  /**
+   * Edit mode's reschedule prompt (M21): saves the corrected "did not happen"
+   * result, then reschedules. The backend reopens a DONE no-show on reschedule.
+   */
+  onSaveAndReschedule?: (payload: CompleteAppointmentPayload) => Promise<void>;
 }
 
 interface CompleteForm {
@@ -67,6 +72,21 @@ const YES_NO_OPTIONS: Array<[boolean, string]> = [
   [false, 'NO'],
 ];
 
+/** The form as the wire payload. A form NO sale is stored as ''. */
+function payloadFromForm(form: CompleteForm & { appointment_happened: boolean }): CompleteAppointmentPayload {
+  return {
+    ...form,
+    ama_completed: form.ama_completed ?? false,
+    fna_taken: form.fna_taken ?? false,
+    second_appointment_scheduled: form.second_appointment_scheduled ?? false,
+    step_three_appointment: form.step_three_appointment ?? false,
+    calls_made: form.step_three_appointment ? form.calls_made ?? false : false,
+    appointments_booked: form.step_three_appointment ? Number(form.appointments_booked) : null,
+    invited_to_bpm: form.invited_to_bpm ?? false,
+    made_sale: form.made_sale === 'NO' ? '' : form.made_sale,
+  };
+}
+
 /** The filed result, back in form shape. A stored '' sale is the form's NO. */
 function formFromResult(result: AppointmentResult): CompleteForm {
   if (!result.appointment_happened) return { ...initialForm, appointment_happened: false };
@@ -100,6 +120,7 @@ export function CompleteAppointmentModal({
   onAddToProduction,
   onRescheduleAppointment,
   onCreateReferralProspect,
+  onSaveAndReschedule,
 }: CompleteAppointmentModalProps) {
   const [form, setForm] = useState(initialForm);
   const [hasReferrals, setHasReferrals] = useState<TriState>(null);
@@ -175,18 +196,7 @@ export function CompleteAppointmentModal({
         onSubmit={(event) => {
           event.preventDefault();
           if (!canSubmit || form.appointment_happened === null) return;
-          void onComplete({
-            ...form,
-            appointment_happened: form.appointment_happened,
-            ama_completed: form.ama_completed ?? false,
-            fna_taken: form.fna_taken ?? false,
-            second_appointment_scheduled: form.second_appointment_scheduled ?? false,
-            step_three_appointment: form.step_three_appointment ?? false,
-            calls_made: form.step_three_appointment ? form.calls_made ?? false : false,
-            appointments_booked: form.step_three_appointment ? Number(form.appointments_booked) : null,
-            invited_to_bpm: form.invited_to_bpm ?? false,
-            made_sale: form.made_sale === 'NO' ? '' : form.made_sale,
-          });
+          void onComplete(payloadFromForm({ ...form, appointment_happened: form.appointment_happened }));
         }}
       >
         <BooleanQuestion
@@ -196,10 +206,20 @@ export function CompleteAppointmentModal({
           onChange={updateAppointmentHappened}
           required
         />
-        {prompts && form.appointment_happened === false ? (
+        {/* The one prompt kept in edit mode (M21): a no-show can be reopened by rescheduling. */}
+        {form.appointment_happened === false ? (
           <ActionPrompt
             actionText="reschedule the appointment"
-            onClick={appointment && onRescheduleAppointment ? () => onRescheduleAppointment(appointment) : undefined}
+            disabled={saving}
+            onClick={
+              editing
+                ? onSaveAndReschedule
+                  ? () => void onSaveAndReschedule(payloadFromForm({ ...form, appointment_happened: false }))
+                  : undefined
+                : appointment && onRescheduleAppointment
+                  ? () => onRescheduleAppointment(appointment)
+                  : undefined
+            }
           />
         ) : null}
         {form.appointment_happened ? (
