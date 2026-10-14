@@ -39,9 +39,8 @@ export interface AssociateTrackerRecord {
   is_key_player: boolean;
   is_training: boolean;
   /**
-   * The latest date this associate was checked in at a BPM or attended a
-   * training from the training schedule, set by the backend. Date-only
-   * (`YYYY-MM-DD`); null or absent until then.
+   * The date this associate was checked in at a BPM, set by the backend at
+   * check-in. Date-only (`YYYY-MM-DD`); null or absent until then.
    */
   training_date?: string | null;
   why: string;

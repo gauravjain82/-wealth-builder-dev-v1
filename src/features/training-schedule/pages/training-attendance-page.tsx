@@ -90,12 +90,7 @@ export default function TrainingAttendancePage() {
         title={data.status === 'recorded' ? 'Thanks for joining!' : 'You’re already marked as attended'}
       >
         <TrainingSummary summary={data} />
-        <p className="text-sm text-slate-600 dark:text-white/70">
-          Your attendance is recorded
-          {data.tracker.training_date
-            ? `, and your training date is now ${new Date(`${data.tracker.training_date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`
-            : '.'}
-        </p>
+        <p className="text-sm text-slate-600 dark:text-white/70">Your attendance is recorded.</p>
         {data.meeting_url ? (
           <a
             href={data.meeting_url}

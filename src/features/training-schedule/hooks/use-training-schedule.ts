@@ -11,7 +11,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import * as api from '../services/training-schedule-service';
-import type { ScheduleSettingsPatch, TrainingInput, TrainingPatch, TrainingTarget } from '../types';
+import type {
+  MetricsPeriod,
+  ScheduleSettingsPatch,
+  TrainingInput,
+  TrainingPatch,
+  TrainingTarget,
+} from '../types';
 
 const ROOT = 'training-schedule';
 const ACCESS = 'training-schedule-access';
@@ -26,6 +32,11 @@ export const scheduleKeys = {
   hostTrainings: (hostId: number | null) => [ROOT, 'host-trainings', hostId] as const,
   attendance: (occurrenceId: number | null) => [ROOT, 'attendance', occurrenceId] as const,
   settings: [ACCESS, 'settings'] as const,
+  metrics: (hostId: number | null, weeks: MetricsPeriod) => [ROOT, 'metrics', hostId, weeks] as const,
+  memberMetrics: (hostId: number | null, memberId: number | null) =>
+    [ROOT, 'metrics-member', hostId, memberId] as const,
+  occurrenceMetrics: (hostId: number | null, occurrenceId: number | null) =>
+    [ROOT, 'metrics-occurrence', hostId, occurrenceId] as const,
 };
 
 /** How often the open attendance list refreshes. */
@@ -152,5 +163,33 @@ export function useSaveScheduleSettings() {
       client.invalidateQueries({ queryKey: scheduleKeys.access });
       client.invalidateQueries({ queryKey: [ROOT] });
     },
+  });
+}
+
+/* --- attendance metrics ---------------------------------------------------- */
+
+/** The Attendance tab for `hostId`'s BaseShop (null: the caller's own). */
+export function useAttendanceMetrics(hostId: number | null, weeks: MetricsPeriod, enabled: boolean) {
+  return useQuery({
+    queryKey: scheduleKeys.metrics(hostId, weeks),
+    queryFn: ({ signal }) => api.fetchMetrics(hostId, weeks, signal),
+    enabled,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useMemberMetrics(hostId: number | null, memberId: number | null) {
+  return useQuery({
+    queryKey: scheduleKeys.memberMetrics(hostId, memberId),
+    queryFn: ({ signal }) => api.fetchMemberMetrics(hostId, memberId as number, signal),
+    enabled: memberId !== null,
+  });
+}
+
+export function useOccurrenceMetrics(hostId: number | null, occurrenceId: number | null) {
+  return useQuery({
+    queryKey: scheduleKeys.occurrenceMetrics(hostId, occurrenceId),
+    queryFn: ({ signal }) => api.fetchOccurrenceMetrics(hostId, occurrenceId as number, signal),
+    enabled: occurrenceId !== null,
   });
 }

@@ -43,6 +43,7 @@ function blank(): TrainingInput {
     duration_minutes: 60,
     recurrence: 'weekly',
     occurrence_count: 12,
+    counts_toward_attendance: true,
   };
 }
 
@@ -58,6 +59,7 @@ function fromOccurrence(occurrence: ScheduleOccurrence): TrainingInput {
     duration_minutes: occurrence.duration_minutes,
     recurrence: occurrence.recurrence,
     occurrence_count: occurrence.series_count,
+    counts_toward_attendance: occurrence.counts_toward_attendance,
   };
 }
 
@@ -102,10 +104,20 @@ export function TrainingFormModal({ open, editing, onClose }: TrainingFormModalP
     setError(null);
     try {
       if (editing) {
-        const { title, description, meeting_url, color, timezone, start_time, duration_minutes } = form;
+        const { title, description, meeting_url, color, timezone, start_time, duration_minutes, counts_toward_attendance } =
+          form;
         await update.mutateAsync({
           trainingId: editing.training_id,
-          patch: { title, description, meeting_url, color, timezone, start_time, duration_minutes },
+          patch: {
+            title,
+            description,
+            meeting_url,
+            color,
+            timezone,
+            start_time,
+            duration_minutes,
+            counts_toward_attendance,
+          },
         });
         addToast({ type: 'success', message: 'Training updated.' });
       } else {
@@ -280,6 +292,22 @@ export function TrainingFormModal({ open, editing, onClose }: TrainingFormModalP
             )}
           </div>
         )}
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 dark:border-white/10">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4"
+            checked={form.counts_toward_attendance}
+            onChange={(e) => set('counts_toward_attendance', e.target.checked)}
+          />
+          <span>
+            <span className="block text-sm font-medium text-slate-900 dark:text-white">Counts toward attendance</span>
+            <span className="block text-xs text-slate-500 dark:text-white/50">
+              Missing it shows up in your BaseShop’s attendance tracking. Untick for optional sessions.
+              {editing ? ' Changing this also changes past dates in the metrics.' : ''}
+            </span>
+          </span>
+        </label>
 
         <Field label="Colour">
           <div className="flex flex-wrap gap-2">

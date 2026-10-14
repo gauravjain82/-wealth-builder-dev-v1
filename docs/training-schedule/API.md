@@ -35,10 +35,13 @@ Failures use one envelope, parsed into `TrainingScheduleError { status, code, de
 | POST | `trainings/<id>/delete/` | `deleteTraining` | owner, admin |
 | POST | `trainings/<id>/inherit/` | `inheritTraining` | hosts, not the owner |
 | POST | `trainings/<id>/uninherit/` | `uninheritTraining` | the inheritor |
-| GET | `hosts/[?q=]` | `fetchHosts` | hosts |
+| GET | `hosts/[?q=]` | `fetchHosts` | hosts; admins (to pick an SMD) |
 | GET | `hosts/<id>/trainings/` | `fetchHostTrainings` | hosts |
 | GET | `occurrences/<id>/attendance/` | `fetchAttendance` | owner, admin, inheritor of that date |
 | POST | `attend/<token>/` | `attend` | anyone signed in |
+| GET | `metrics/?weeks=4\|8\|12[&host=]` | `fetchMetrics` | hosts (own BaseShop); admins (any, `host` required) |
+| GET | `metrics/members/<id>/[?host=]` | `fetchMemberMetrics` | same |
+| GET | `metrics/occurrences/<id>/[?host=]` | `fetchOccurrenceMetrics` | same |
 | GET, PATCH | `admin/settings/` | `fetchSettings`, `saveSettings` | admin |
 
 ## 3. Payload types
@@ -51,8 +54,13 @@ All in `types/index.ts`. The ones worth knowing:
 - **`TrainingTarget`** — `{trainingId, occurrenceId?}`. Absent `occurrenceId` means the series. Sent as
   `{scope: "series"}` or `{scope: "occurrence", occurrence_id}`.
 - **`DeletePreview`** — `occurrence_count` must be echoed back as `expected_occurrence_count`.
-- **`AttendResult`** — includes `tracker: {is_training, training_date}` as written.
 - **`HostTraining`** — deliberately has no `meeting_url`.
+- **`AttendanceMetrics`** — `rules` (the thresholds in force), `summary` (tiles, `status_counts`,
+  `series` per date) and `members`, already sorted most urgent first.
+- **`MemberMetrics.recent`** — the last `rules.window` expected dates, oldest first; the dots.
+- **`MemberDetail.timeline`** — every expected date in the last year with `rolling_rate` and
+  `baseshop_rate`; the chart.
+- **`counts_toward_attendance`** — on `ScheduleOccurrence`, `TrainingInput` and `TrainingPatch`.
 
 ## 4. Query parameters
 
@@ -62,6 +70,8 @@ All in `types/index.ts`. The ones worth knowing:
 | `occurrences/` | `scope=all` | Every training. Silently ignored for a non-admin |
 | `hosts/` | `q` | Under two characters lists the upline; otherwise searches every host by name, username or agency code |
 | `delete-preview/` | `occurrence_id` | One date instead of the series |
+| `metrics/` | `weeks` | 4, 8 or 12; anything else is `invalid_period` |
+| `metrics/*` | `host` | Whose BaseShop. Omit for your own; an admin who is not a host must send it |
 
 ## 5. Error codes and handling
 
@@ -79,6 +89,9 @@ All in `types/index.ts`. The ones worth knowing:
 | `attendance_not_open` | 409 | Landing page: next date from `detail` |
 | `delete_blocked_inherited`, `delete_blocked_completed` | 409 | Normally seen first as `blocked_reason` in the preview |
 | `delete_preview_stale` | 409 | Toast; the dialog reloads the preview |
+| `host_required` | 400 | Admin on the Attendance tab before picking an SMD — the UI does not send the request then |
+| `invalid_period` | 400 | Not reachable from the UI |
+| `member_not_found` | 404 | Member detail notice |
 | `network` | 0 | Synthesised by the service when `fetch` rejects |
 
 ## 6. Backend ownership

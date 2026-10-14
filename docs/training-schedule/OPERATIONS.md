@@ -38,7 +38,7 @@ Two things are configured on the backend, not here:
 ## 4. Tests and checks
 
 No test runner in this repo. The wire types in `types/index.ts` are the contract check; behaviour is
-tested in `mlm_platform` (`training_schedule/tests/`, 50 tests). The UI has been type-checked, linted
+tested in `mlm_platform` (`training_schedule/tests/`, 66 tests). The UI has been type-checked, linted
 and built. **It has not been exercised in a browser against a running backend.**
 
 ## 5. Deployment
@@ -64,4 +64,7 @@ Deploying the frontend first yields a page that renders and fails every request.
 | The link says attendance isn't open during the call | The window is `opens_minutes_before` / `closes_minutes_after` around the date; check *Settings* and the training's time zone |
 | An inheritor's count is lower than the owner's | By design: an inheritor sees attendees from their own BaseShop |
 | A newly granted administrator sees no *Settings* | `authz` caches permission checks for a few minutes, and `my-access` is stale for 5 more |
+| Someone shows as Stopped who came | Their attendance was at a training not on their schedule (another host's, not inherited by their SMD) or one that does not count; the member detail shows these as "beyond their own schedule" |
+| Everyone shows as New | Members joined recently, or few trainings that count have ended; *New until* in Settings |
+| A member is judged against the wrong trainings | Metrics use the member's **current** BaseShop for the whole history; a recent move between SMDs shows that way |
 | After login the member lands on `/home`, not the attendance page | Login was opened in a new tab, which drops the router state that carries the return location |

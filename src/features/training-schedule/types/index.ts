@@ -39,6 +39,8 @@ export interface ScheduleOccurrence {
   start_time: string;
   duration_minutes: number;
   recurrence: Recurrence;
+  /** Whether missing it counts against a member in the attendance metrics. */
+  counts_toward_attendance: boolean;
   /** Dates left in the series, this one included. */
   series_count: number;
   owner: PersonRef;
@@ -68,12 +70,20 @@ export interface TrainingInput {
   duration_minutes: number;
   recurrence: Recurrence;
   occurrence_count: number;
+  counts_toward_attendance: boolean;
 }
 
 /** The fields an edit may change; the dates of a series are fixed once created. */
 export type TrainingPatch = Pick<
   TrainingInput,
-  'title' | 'description' | 'meeting_url' | 'color' | 'timezone' | 'start_time' | 'duration_minutes'
+  | 'title'
+  | 'description'
+  | 'meeting_url'
+  | 'color'
+  | 'timezone'
+  | 'start_time'
+  | 'duration_minutes'
+  | 'counts_toward_attendance'
 >;
 
 /** `occurrenceId` absent means the whole series. */
@@ -150,7 +160,6 @@ export interface AttendanceSummary {
 export interface AttendResult extends AttendanceSummary {
   status: 'recorded' | 'already_recorded';
   attended_at: string;
-  tracker: { is_training: boolean; training_date: string | null };
 }
 
 export interface Choice {
@@ -164,6 +173,11 @@ export interface ScheduleSettings {
   completed_delete_policy: string;
   attendance_opens_minutes_before: number;
   attendance_closes_minutes_after: number;
+  metrics_window: number;
+  stopped_after_misses: number;
+  slipping_after_misses: number;
+  slipping_below_rate: number;
+  judge_after_expected: number;
   choices: {
     levels: { code: string; name: string }[];
     inherited_delete_policy: Choice[];
@@ -172,3 +186,112 @@ export interface ScheduleSettings {
 }
 
 export type ScheduleSettingsPatch = Partial<Omit<ScheduleSettings, 'choices'>>;
+
+/* --- attendance metrics ---------------------------------------------------- */
+
+/** Most urgent first; the backend sorts members in this order. */
+export type MemberStatus = 'stopped' | 'never' | 'slipping' | 'on_track' | 'new';
+
+export interface MetricRules {
+  window: number;
+  stopped_after_misses: number;
+  slipping_after_misses: number;
+  slipping_below_rate: number;
+  judge_after_expected: number;
+}
+
+/** One of a member's recent expected training dates. */
+export interface RecentDate {
+  occurrence_id: number;
+  start_at: string;
+  title: string;
+  attended: boolean;
+}
+
+export interface MemberMetrics {
+  user_id: number;
+  name: string;
+  level: string | null;
+  status: MemberStatus;
+  /** The last `rules.window` expected dates, oldest first. */
+  recent: RecentDate[];
+  recent_attended: number;
+  recent_expected: number;
+  /** Percent over `recent`; null when nothing was expected yet. */
+  rate: number | null;
+  missed_in_row: number;
+  /** Expected dates in the last year. */
+  expected_count: number;
+  last_attended_at: string | null;
+  /** Every training attended, counting or not. */
+  total_attended: number;
+  joined_at: string;
+}
+
+/** One training date as the BaseShop attended it. */
+export interface OccurrencePoint {
+  occurrence_id: number;
+  training_id: number;
+  title: string;
+  start_at: string;
+  timezone: string;
+  expected: number;
+  attended: number;
+  rate: number | null;
+}
+
+export interface MetricsSummary {
+  weeks: number;
+  member_count: number;
+  rate: number | null;
+  previous_rate: number | null;
+  attended: number;
+  expected: number;
+  latest: OccurrencePoint | null;
+  status_counts: Record<MemberStatus, number>;
+  series: OccurrencePoint[];
+}
+
+export interface AttendanceMetrics {
+  host: PersonRef;
+  rules: MetricRules;
+  summary: MetricsSummary;
+  members: MemberMetrics[];
+}
+
+export interface MemberTimelinePoint {
+  occurrence_id: number;
+  title: string;
+  start_at: string;
+  timezone: string;
+  attended: boolean;
+  attended_at: string | null;
+  /** The member's rate over the window ending at this date. */
+  rolling_rate: number | null;
+  /** The BaseShop's rate at this date. */
+  baseshop_rate: number | null;
+}
+
+export interface MemberDetail extends MemberMetrics {
+  host: PersonRef;
+  rules: MetricRules;
+  timeline: MemberTimelinePoint[];
+  /** Trainings attended that were not expected of them (another host's, or not counted). */
+  other_attended: number;
+}
+
+export interface OccurrencePerson {
+  user_id: number;
+  name: string;
+  level: string | null;
+  status: MemberStatus;
+  attended_at: string | null;
+}
+
+export interface OccurrenceDetail extends OccurrencePoint {
+  host: PersonRef;
+  attended_people: OccurrencePerson[];
+  missed_people: OccurrencePerson[];
+}
+
+export type MetricsPeriod = 4 | 8 | 12;

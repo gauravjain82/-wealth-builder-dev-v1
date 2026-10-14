@@ -11,12 +11,16 @@
  */
 
 import type {
+  AttendanceMetrics,
   AttendanceRoster,
   AttendResult,
   DeletePreview,
   Host,
   HostTraining,
+  MemberDetail,
+  MetricsPeriod,
   MyAccess,
+  OccurrenceDetail,
   ScheduleOccurrence,
   ScheduleSettings,
   ScheduleSettingsPatch,
@@ -150,3 +154,20 @@ export const fetchSettings = (signal?: AbortSignal) => get<ScheduleSettings>('ad
 
 export const saveSettings = (patch: ScheduleSettingsPatch) =>
   send<ScheduleSettings>('PATCH', 'admin/settings/', patch);
+
+/** `hostId` null means the caller's own BaseShop; an administrator must name one. */
+function hostQuery(hostId: number | null, extra: Record<string, string> = {}): string {
+  const params = new URLSearchParams(extra);
+  if (hostId !== null) params.set('host', String(hostId));
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+export const fetchMetrics = (hostId: number | null, weeks: MetricsPeriod, signal?: AbortSignal) =>
+  get<AttendanceMetrics>(`metrics/${hostQuery(hostId, { weeks: String(weeks) })}`, signal);
+
+export const fetchMemberMetrics = (hostId: number | null, memberId: number, signal?: AbortSignal) =>
+  get<MemberDetail>(`metrics/members/${memberId}/${hostQuery(hostId)}`, signal);
+
+export const fetchOccurrenceMetrics = (hostId: number | null, occurrenceId: number, signal?: AbortSignal) =>
+  get<OccurrenceDetail>(`metrics/occurrences/${occurrenceId}/${hostQuery(hostId)}`, signal);

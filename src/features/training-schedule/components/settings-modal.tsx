@@ -25,7 +25,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   }, [open]);
 
   if (!open) return null;
-  const value = <K extends keyof ScheduleSettingsPatch>(key: K) => (form[key] ?? data?.[key]) as NonNullable<ScheduleSettingsPatch[K]>;
+  const value = <K extends keyof ScheduleSettingsPatch>(key: K) =>
+    (form[key] ?? data?.[key]) as NonNullable<ScheduleSettingsPatch[K]>;
   const set = <K extends keyof ScheduleSettingsPatch>(key: K, next: ScheduleSettingsPatch[K]) =>
     setForm((previous) => ({ ...previous, [key]: next }));
 
@@ -33,10 +34,16 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     event.preventDefault();
     try {
       await save.mutateAsync(form);
-      addToast({ type: 'success', message: 'Training schedule settings saved.' });
+      addToast({
+        type: 'success',
+        message: 'Training schedule settings saved.',
+      });
       onClose();
     } catch (failure) {
-      addToast({ type: 'error', message: failure instanceof Error ? failure.message : 'Could not save.' });
+      addToast({
+        type: 'error',
+        message: failure instanceof Error ? failure.message : 'Could not save.',
+      });
     }
   };
 
@@ -124,6 +131,78 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               />
             </Field>
           </div>
+
+          <fieldset className="space-y-3 rounded-lg border border-slate-200 p-3 dark:border-white/10">
+            <legend className="px-1 text-sm font-semibold text-slate-900 dark:text-white">Attendance tracking</legend>
+            <p className={mutedText}>
+              Counted in trainings, not days, so a fortnightly training is judged like a weekly one.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label="Stopped after missing"
+                htmlFor="wb-ts-stopped"
+                hint="Trainings in a row, having come before."
+              >
+                <input
+                  id="wb-ts-stopped"
+                  type="number"
+                  min={1}
+                  max={52}
+                  className={fieldClass}
+                  value={value('stopped_after_misses')}
+                  onChange={(e) => set('stopped_after_misses', Number(e.target.value))}
+                />
+              </Field>
+              <Field
+                label="Slipping after missing"
+                htmlFor="wb-ts-slipping"
+                hint="Trainings in a row. Must be fewer than Stopped."
+              >
+                <input
+                  id="wb-ts-slipping"
+                  type="number"
+                  min={1}
+                  max={52}
+                  className={fieldClass}
+                  value={value('slipping_after_misses')}
+                  onChange={(e) => set('slipping_after_misses', Number(e.target.value))}
+                />
+              </Field>
+              <Field label="Slipping below" htmlFor="wb-ts-rate" hint="Attendance rate, percent, over the window.">
+                <input
+                  id="wb-ts-rate"
+                  type="number"
+                  min={0}
+                  max={100}
+                  className={fieldClass}
+                  value={value('slipping_below_rate')}
+                  onChange={(e) => set('slipping_below_rate', Number(e.target.value))}
+                />
+              </Field>
+              <Field label="Window" htmlFor="wb-ts-window" hint="How many recent trainings the rate looks at.">
+                <input
+                  id="wb-ts-window"
+                  type="number"
+                  min={2}
+                  max={52}
+                  className={fieldClass}
+                  value={value('metrics_window')}
+                  onChange={(e) => set('metrics_window', Number(e.target.value))}
+                />
+              </Field>
+              <Field label="New until" htmlFor="wb-ts-judge" hint="Trainings expected before someone is judged.">
+                <input
+                  id="wb-ts-judge"
+                  type="number"
+                  min={1}
+                  max={52}
+                  className={fieldClass}
+                  value={value('judge_after_expected')}
+                  onChange={(e) => set('judge_after_expected', Number(e.target.value))}
+                />
+              </Field>
+            </div>
+          </fieldset>
 
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={save.isPending}>
