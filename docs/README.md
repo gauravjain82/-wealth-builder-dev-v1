@@ -15,8 +15,8 @@ name is the feature directory name, so `src/features/calendar-sync/` is document
 - **Backend:** `mlm_platform/docs/` follows the same standard. Each module's front matter
   names its backend app, and that app's `API.md` is the authority on server behaviour.
 
-**All 28 feature modules are documented.** 26 have a doc directory — **15 Full** (six files) and
-**11 Lite** (two) — and **2 are Indexed**: a row in the table below with a stated reason, no directory. Plus
+**All 28 feature modules are documented.** 26 have a doc directory — **16 Full** (six files) and
+**10 Lite** (two) — and **2 are Indexed**: a row in the table below with a stated reason, no directory. Plus
 [`platform/`](platform/) for the shell.
 
 **No dangling doc citations remain in `src/`.** Every comment that once pointed at a vendor contract now cites
@@ -55,6 +55,7 @@ See [the standard §5](DOCUMENTATION_STANDARD.md#5-doc-tiers) for how a tier is 
 | [promotion](promotion/) | `/promotion/dashboard`, `/promotion/team` | `promotion` | 1226 | Production | ✅ |
 | [settings](settings/) | `/settings` | `accounts`, `authz`, `payments`, `telegram` | 2307 | Production | ✅ |
 | [team](team/) | `/team/*` (7 trackers), `/onboarding-game`, 1 public | `accounts`, `network`, `tracker` | 22818 | Production | ✅ |
+| [training-schedule](training-schedule/) | `/training-schedule`, `/training-schedule/attend/:token` | `training_schedule` | 2239 | **Merged-not-deployed** — branch `feature/training-schedule`, coupled to the `mlm_platform` branch of the same name | ✅ |
 
 ### Lite
 
@@ -72,7 +73,6 @@ Two files each: `README.md` plus the one carrying the substance.
 | [systematic-tools](systematic-tools/) | `/systematic-tools` | — | 2948 | Production | `UI.md` | ✅ |
 | [terminated-users](terminated-users/) | `/terminated-users` | `accounts` | 529 | Production | `API.md` | ✅ |
 | [training-center](training-center/) | `/training-center` | `content` | 792 | Production | `API.md` | ✅ |
-| [training-schedule](training-schedule/) | `/training-schedule` | — | 599 | Production | `UI.md` | ✅ |
 | [welcome-videos](welcome-videos/) | `/welcome-videos`, `/welcome-videos/:videoKey`, a card on `/home` | `notifications` | ~483 | **Not yet merged** — branch `feature/wb-welcome-videos`, coupled to the `mlm_platform` branch of the same name | `UI.md` | ✅ |
 
 ### Indexed

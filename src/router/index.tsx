@@ -158,6 +158,9 @@ const WelcomeVideosPage = lazy(() => import('@/features/welcome-videos/pages/wel
 const ResetPasswordPage = lazy(() => import('@/features/auth/components/reset-password-page'));
 const TrainingCenterPage = lazy(() => import('@/features/training-center/pages/training-center-page'));
 const TrainingSchedulePage = lazy(() => import('@/features/training-schedule/pages/training-schedule-page'));
+const TrainingAttendancePage = lazy(
+  () => import('@/features/training-schedule/pages/training-attendance-page'),
+);
 const MatchupPage = lazy(() => import('@/features/matchup/pages/matchup-page'));
 const CalendarPage = lazy(() => import('@/features/matchup/pages/calendar-page'));
 const MatchupMetricsPage = lazy(() => import('@/features/matchup/metrics/pages/matchup-metrics-page'));
@@ -845,6 +848,13 @@ const router = createBrowserRouter([
   {
     path: '/events/session-checkin/:token',
     element: <ProtectedRoute>{lazyLoad(SessionSelfCheckinPage)}</ProtectedRoute>,
+    errorElement: <RouteErrorFallback />,
+  },
+  // Where the attendance link a host posts in a meeting chat lands. Signed-in, but
+  // outside the app layout; anyone signed out goes through login and comes back.
+  {
+    path: '/training-schedule/attend/:token',
+    element: <ProtectedRoute>{lazyLoad(TrainingAttendancePage)}</ProtectedRoute>,
     errorElement: <RouteErrorFallback />,
   },
   // Unauthenticated, and must stay in step with `bpm.services.qr.guest_pass_url`,
