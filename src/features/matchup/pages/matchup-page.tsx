@@ -94,6 +94,25 @@ function emptyProspectMeta() {
   };
 }
 
+// Per-browser preference only; storage can be blocked, so it never throws.
+const ACTION_PANEL_COLLAPSED_KEY = 'wb.matchup.actionRequiredCollapsed';
+
+function readActionPanelCollapsed(): boolean {
+  try {
+    return localStorage.getItem(ACTION_PANEL_COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeActionPanelCollapsed(collapsed: boolean) {
+  try {
+    localStorage.setItem(ACTION_PANEL_COLLAPSED_KEY, collapsed ? '1' : '0');
+  } catch {
+    // Not remembered; the toggle still works for this visit.
+  }
+}
+
 function prospectFromAppointment(appointment: AppointmentListItem): Prospect | null {
   const id = appointment.contact ?? appointment.trainee;
   if (!id) return null;
@@ -146,6 +165,12 @@ export default function MatchupPage() {
   const navigate = useNavigate();
   const { data: metricsAccess } = useMatchupMetricsAccess();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [actionPanelCollapsed, setActionPanelCollapsed] = useState(readActionPanelCollapsed);
+  const toggleActionPanel = () => {
+    const next = !actionPanelCollapsed;
+    setActionPanelCollapsed(next);
+    writeActionPanelCollapsed(next);
+  };
   const [preset, setPreset] = useState('all');
   const [status, setStatus] = useState('');
   const [kind, setKind] = useState<AppointmentKind | ''>('');
@@ -463,6 +488,18 @@ export default function MatchupPage() {
     });
   };
 
+  // Edit mode's reschedule prompt: file the corrected no-show first, so the
+  // backend sees a DONE appointment that did not happen and lets it reopen.
+  const saveResultAndReschedule = async (payload: CompleteAppointmentPayload) => {
+    if (!resultEditTarget) return;
+    const target = resultEditTarget;
+    await runMutation('Result updated.', async () => {
+      await matchupService.editResult(target.id, payload);
+      openRescheduleAppointment(target);
+      setResultEditTarget(null);
+    });
+  };
+
   // From the list the row has no result fields, so load the detail first. The
   // details and edit-appointment modals already hold it, and close first.
   const openResultEditor = (appointment: AppointmentDetail) => {
@@ -770,7 +807,7 @@ export default function MatchupPage() {
         onReschedule={openRescheduleAppointment}
       />
 
-      <div className="matchup-lower-layout">
+      <div className={`matchup-lower-layout${actionPanelCollapsed ? ' is-action-collapsed' : ''}`}>
         <aside className="matchup-sidebar-panel">
           <ActionRequiredPanel
             items={actionRequired}
@@ -781,6 +818,8 @@ export default function MatchupPage() {
             onDecline={(item) => void declineAppointment(item)}
             onView={(item) => void openAppointmentDetails(item)}
             busy={busy}
+            collapsed={actionPanelCollapsed}
+            onToggleCollapsed={toggleActionPanel}
           />
         </aside>
 
@@ -891,6 +930,7 @@ export default function MatchupPage() {
         saving={busy}
         onClose={() => setResultEditTarget(null)}
         onComplete={saveResultEdit}
+        onSaveAndReschedule={saveResultAndReschedule}
       />
       <AppointmentFormModal
         open={formOpen}

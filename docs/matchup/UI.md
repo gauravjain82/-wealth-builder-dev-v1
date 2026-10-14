@@ -39,6 +39,12 @@ Match Up page links out to `/settings#settings-calendar-sync` to manage the Goog
 The action-required panel is the point of the page: it answers "what is waiting on me", which is a
 different question from "show me all appointments". Its contents are computed server-side.
 
+The panel can be **minimized** from its header. On wide screens it shrinks to a 44 px rail — count plus a
+vertical label — and the list takes the width; stacked (≤ 1120 px) it becomes a single bar. The count turns
+orange while anything is waiting, so minimizing never hides that work exists. The choice is remembered per
+browser in `localStorage['wb.matchup.actionRequiredCollapsed']`, read and written in try/catch so blocked
+storage only means it is not remembered.
+
 The first filter dropdown is a **preset**, served by `/appointments/statuses/` as `presets` and defined in
 `mlm_platform` `matchup/filters.py` `PRESET_FILTERS`: all, done, sale recruit, rescheduled, not interested,
 and **result required** (M17) — the meeting has ended, it is `ACCEPTED` or `RESCHEDULED`, and no follow-up
@@ -96,7 +102,9 @@ prospect per referral. The new prospect is not attached to the appointment and d
 
 **Edit mode** (`editing` prop, M18) corrects a filed result: titled *Edit Follow Up*, pre-filled from the
 result (a stored empty sale shows as No), saved with **Save Changes** to `PATCH …/result/`. The follow-up
-action prompts are hidden — they were offered on the first submit — and Notes becomes *Add a note*, which
+action prompts are hidden — they were offered on the first submit — except *reschedule the appointment*
+on "did not happen" (M21): it saves the corrected result, closes the form and opens the reschedule modal,
+which reopens the appointment. Notes becomes *Add a note*, which
 adds a note to the contact's feed rather than replacing earlier ones. Three entry points, all shown only when
 a result exists: an **Edit Result** button in the Outcome section of the edit-appointment form and of the
 details modal (both close and hand over their loaded detail), and an icon button on the list row (which
@@ -231,6 +239,9 @@ No print styles. Export is server-side instead, via `/appointments/export/`.
 - Modals come from the shared `Modal`, so focus handling is inherited.
 - Icons are `aria-hidden` beside real text.
 - Status colour comes with a label, so colour is never the only signal.
+- List rows are tinted with their status colour (a soft wash, a solid left stripe, a 6 px gap between
+  rows), from the same colour the backend serves. `.matchup-status-table` scopes this to the appointment
+  list; the BPM overview reuses `.matchup-table` and keeps its plain rows.
 
 Not covered: the month calendar is a grid built for a pointer, with no documented keyboard navigation
 between days.

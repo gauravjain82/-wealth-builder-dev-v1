@@ -9,6 +9,8 @@ import type { AppointmentListItem, AppointmentStatus } from '../types';
  * Statuses the backend accepts for a reschedule transition
  * (`ALLOWED_TRANSITIONS["reschedule"]` in matchup/services/workflow.py). DONE,
  * CANCELLED, DECLINED and NOT_INTERESTED are terminal and cannot be rescheduled.
+ * The one exception, a DONE appointment whose result says it did not happen, is
+ * reached only from the follow-up edit form (M21), so it is not listed here.
  */
 const RESCHEDULABLE_STATUSES: AppointmentStatus[] = ['REQUESTED', 'ASSIGNED', 'ACCEPTED', 'RESCHEDULED'];
 
