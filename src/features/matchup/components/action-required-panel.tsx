@@ -1,4 +1,4 @@
-import { Check, Eye, UserPlus, X } from 'lucide-react';
+import { Check, Eye, PanelLeftClose, PanelLeftOpen, UserPlus, X } from 'lucide-react';
 import { Button } from '@shared/components/ui';
 import { formatAppointmentTime } from '../services/matchup-service';
 import type { AppointmentListItem, MatchupStatusMeta } from '../types';
@@ -13,6 +13,9 @@ interface ActionRequiredPanelProps {
   onDecline: (item: AppointmentListItem) => void;
   onView: (item: AppointmentListItem) => void;
   busy?: boolean;
+  /** Minimized to a rail (a bar on narrow screens) so the list gets the room. */
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }
 
 export function ActionRequiredPanel({
@@ -24,12 +27,48 @@ export function ActionRequiredPanel({
   onDecline,
   onView,
   busy = false,
+  collapsed = false,
+  onToggleCollapsed,
 }: ActionRequiredPanelProps) {
+  if (collapsed) {
+    return (
+      <section className="matchup-panel matchup-action-panel is-collapsed">
+        <button
+          type="button"
+          className="matchup-action-rail"
+          aria-expanded={false}
+          aria-label={`Expand Action Required (${items.length} waiting)`}
+          title="Expand Action Required"
+          onClick={onToggleCollapsed}
+        >
+          <PanelLeftOpen size={16} aria-hidden />
+          <span className={`matchup-action-rail-count${items.length ? ' has-items' : ''}`}>{items.length}</span>
+          <span className="matchup-action-rail-label">Action Required</span>
+        </button>
+      </section>
+    );
+  }
+
   return (
-    <section className="matchup-panel">
+    <section className="matchup-panel matchup-action-panel">
       <div className="matchup-panel-header">
         <h2>Action Required</h2>
-        <span>{items.length}</span>
+        <div className="matchup-action-panel-tools">
+          <span>{items.length}</span>
+          {onToggleCollapsed ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-expanded
+              aria-label="Minimize Action Required"
+              title="Minimize Action Required"
+              onClick={onToggleCollapsed}
+            >
+              <PanelLeftClose size={16} />
+            </Button>
+          ) : null}
+        </div>
       </div>
       {items.length === 0 ? (
         <p className="matchup-muted">No matchup actions waiting on you.</p>

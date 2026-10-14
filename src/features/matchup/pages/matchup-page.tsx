@@ -94,6 +94,25 @@ function emptyProspectMeta() {
   };
 }
 
+// Per-browser preference only; storage can be blocked, so it never throws.
+const ACTION_PANEL_COLLAPSED_KEY = 'wb.matchup.actionRequiredCollapsed';
+
+function readActionPanelCollapsed(): boolean {
+  try {
+    return localStorage.getItem(ACTION_PANEL_COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeActionPanelCollapsed(collapsed: boolean) {
+  try {
+    localStorage.setItem(ACTION_PANEL_COLLAPSED_KEY, collapsed ? '1' : '0');
+  } catch {
+    // Not remembered; the toggle still works for this visit.
+  }
+}
+
 function prospectFromAppointment(appointment: AppointmentListItem): Prospect | null {
   const id = appointment.contact ?? appointment.trainee;
   if (!id) return null;
@@ -146,6 +165,12 @@ export default function MatchupPage() {
   const navigate = useNavigate();
   const { data: metricsAccess } = useMatchupMetricsAccess();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [actionPanelCollapsed, setActionPanelCollapsed] = useState(readActionPanelCollapsed);
+  const toggleActionPanel = () => {
+    const next = !actionPanelCollapsed;
+    setActionPanelCollapsed(next);
+    writeActionPanelCollapsed(next);
+  };
   const [preset, setPreset] = useState('all');
   const [status, setStatus] = useState('');
   const [kind, setKind] = useState<AppointmentKind | ''>('');
@@ -782,7 +807,7 @@ export default function MatchupPage() {
         onReschedule={openRescheduleAppointment}
       />
 
-      <div className="matchup-lower-layout">
+      <div className={`matchup-lower-layout${actionPanelCollapsed ? ' is-action-collapsed' : ''}`}>
         <aside className="matchup-sidebar-panel">
           <ActionRequiredPanel
             items={actionRequired}
@@ -793,6 +818,8 @@ export default function MatchupPage() {
             onDecline={(item) => void declineAppointment(item)}
             onView={(item) => void openAppointmentDetails(item)}
             busy={busy}
+            collapsed={actionPanelCollapsed}
+            onToggleCollapsed={toggleActionPanel}
           />
         </aside>
 

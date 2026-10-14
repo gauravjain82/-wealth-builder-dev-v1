@@ -2047,6 +2047,76 @@
   padding: 14px;
 }
 
+/* Action Required minimized: a narrow rail, so the list takes the width. */
+.matchup-lower-layout.is-action-collapsed {
+  grid-template-columns: 44px minmax(0, 1fr);
+}
+
+.matchup-action-panel-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.matchup-lower-layout .matchup-action-panel.is-collapsed {
+  padding: 0;
+}
+
+.matchup-action-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 180px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  padding: 12px 0;
+  cursor: pointer;
+}
+
+.matchup-action-rail:hover {
+  background: rgba(122, 90, 22, 0.1);
+}
+
+.dark .matchup-action-rail:hover {
+  background: rgba(244, 201, 93, 0.1);
+}
+
+.matchup-action-rail:focus-visible {
+  outline: 2px solid #f4c95d;
+  outline-offset: 2px;
+}
+
+.matchup-action-rail-count {
+  min-width: 24px;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.16);
+  color: #64748b;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* Something is waiting: the count stands out even while minimized. */
+.matchup-action-rail-count.has-items {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.matchup-action-rail-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 @media (max-width: 1280px) {
   .matchup-hero {
     display: grid;
@@ -2081,9 +2151,22 @@
     overflow-x: auto;
   }
 
-  .matchup-lower-layout {
+  .matchup-lower-layout,
+  .matchup-lower-layout.is-action-collapsed {
     grid-template-columns: 1fr;
     min-height: 0;
+  }
+
+  /* Stacked above the list, the minimized panel is a single bar. */
+  .matchup-action-rail {
+    flex-direction: row;
+    min-height: 0;
+    padding: 10px 14px;
+  }
+
+  .matchup-action-rail-label {
+    writing-mode: horizontal-tb;
+    transform: none;
   }
 
   .matchup-calendar-body {

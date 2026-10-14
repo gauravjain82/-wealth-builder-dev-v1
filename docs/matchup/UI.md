@@ -39,6 +39,12 @@ Match Up page links out to `/settings#settings-calendar-sync` to manage the Goog
 The action-required panel is the point of the page: it answers "what is waiting on me", which is a
 different question from "show me all appointments". Its contents are computed server-side.
 
+The panel can be **minimized** from its header. On wide screens it shrinks to a 44 px rail — count plus a
+vertical label — and the list takes the width; stacked (≤ 1120 px) it becomes a single bar. The count turns
+orange while anything is waiting, so minimizing never hides that work exists. The choice is remembered per
+browser in `localStorage['wb.matchup.actionRequiredCollapsed']`, read and written in try/catch so blocked
+storage only means it is not remembered.
+
 The first filter dropdown is a **preset**, served by `/appointments/statuses/` as `presets` and defined in
 `mlm_platform` `matchup/filters.py` `PRESET_FILTERS`: all, done, sale recruit, rescheduled, not interested,
 and **result required** (M17) — the meeting has ended, it is `ACCEPTED` or `RESCHEDULED`, and no follow-up
