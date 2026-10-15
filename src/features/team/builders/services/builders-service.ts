@@ -1,3 +1,4 @@
+import { deviceLocalTime, deviceTimeZone } from '../daily-six-dates';
 import { BUILDER_PROGRAM, type TeamProgram } from '../team-programs';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -31,7 +32,14 @@ export interface DailySixSubmission {
   business_plan_am: boolean;
   business_plan_pm: boolean;
   pages_read: boolean;
+  /** IANA zone the submitting device reported; `submission_date` is that zone's day. */
+  client_timezone: string;
+  /** Device wall-clock time of the latest save, ISO 8601 with offset. */
+  client_local_time: string;
+  /** Server UTC time of the first save. */
   created_at: string;
+  /** Server UTC time of the latest save. */
+  server_received_at: string;
 }
 
 export interface DailySixPayload {
@@ -56,14 +64,16 @@ export interface DailySixStats {
   total_days: number;
 }
 
-/** The backend's own "today" and the oldest day it still accepts an edit for. */
+/** The submitter's local "today" (as the backend computed it) and the oldest day it still accepts an edit for. */
 export interface DailySixEditWindow {
   today: string;
+  /** IANA zone `today` was computed in; empty when the backend fell back to its own date. */
+  timezone?: string;
   edit_window_days: number;
   editable_from: string;
 }
 
-export interface DailySixResponse {
+export interface DailySixResponse extends Partial<DailySixEditWindow> {
   submission: DailySixSubmission;
   streak: number;
   stats?: DailySixStats;
@@ -218,8 +228,25 @@ export async function fetchActivityLeaderboard(
   return asList<ActivityLeaderboardEntry>(await response.json());
 }
 
+/** `?tz=` so the backend reads "today" on the device's calendar. */
+function timeZoneQuery(extra: Record<string, string> = {}): string {
+  const params = new URLSearchParams(extra);
+  const tz = deviceTimeZone();
+  if (tz) params.set('tz', tz);
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+/** The payload plus the device's zone and wall-clock time, which the backend stores with the submission. */
+function withDeviceClock(payload: DailySixPayload): DailySixPayload & {
+  client_timezone: string;
+  client_local_time: string;
+} {
+  return { ...payload, client_timezone: deviceTimeZone(), client_local_time: deviceLocalTime() };
+}
+
 export async function fetchTodayDailySix(): Promise<DailySixSubmission[]> {
-  const response = await fetch(`${API_BASE_URL}/api/tracker/builders/daily-six/`, {
+  const response = await fetch(`${API_BASE_URL}/api/tracker/builders/daily-six/${timeZoneQuery()}`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw await parseError(response, "Failed to fetch today's Daily Six");
@@ -230,14 +257,16 @@ export async function submitDailySix(payload: DailySixPayload): Promise<DailySix
   const response = await fetch(`${API_BASE_URL}/api/tracker/builders/daily-six/`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify(payload),
+    body: JSON.stringify(withDeviceClock(payload)),
   });
   if (!response.ok) throw await parseError(response, 'Failed to submit Daily Six');
   return (await response.json()) as DailySixResponse;
 }
 
 export async function fetchAgencyDailySix(agencyCode: string): Promise<AgencyDailySixContext> {
-  const response = await fetch(`${API_BASE_URL}/api/tracker/builders/daily-six/${encodeURIComponent(agencyCode)}/`);
+  const response = await fetch(
+    `${API_BASE_URL}/api/tracker/builders/daily-six/${encodeURIComponent(agencyCode)}/${timeZoneQuery()}`
+  );
   if (!response.ok) throw await parseError(response, 'Failed to fetch Daily Six link');
   return (await response.json()) as AgencyDailySixContext;
 }
@@ -246,7 +275,7 @@ export async function submitAgencyDailySix(agencyCode: string, payload: DailySix
   const response = await fetch(`${API_BASE_URL}/api/tracker/builders/daily-six/${encodeURIComponent(agencyCode)}/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(withDeviceClock(payload)),
   });
   if (!response.ok) throw await parseError(response, 'Failed to submit Daily Six');
   return (await response.json()) as DailySixResponse;
@@ -257,9 +286,8 @@ export async function fetchAgencyDailySixHistory(
   month: string,
   signal?: AbortSignal
 ): Promise<DailySixHistoryMonth> {
-  const params = new URLSearchParams({ month });
   const response = await fetch(
-    `${API_BASE_URL}/api/tracker/builders/daily-six/${encodeURIComponent(agencyCode)}/history/?${params.toString()}`,
+    `${API_BASE_URL}/api/tracker/builders/daily-six/${encodeURIComponent(agencyCode)}/history/${timeZoneQuery({ month })}`,
     { signal }
   );
   if (!response.ok) throw await parseError(response, 'Failed to fetch Daily Six history');

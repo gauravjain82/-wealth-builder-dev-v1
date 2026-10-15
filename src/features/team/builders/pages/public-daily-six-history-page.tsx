@@ -3,7 +3,7 @@ import { ChevronLeft, Pencil } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { DailySixCalendar } from '../components/daily-six-calendar';
 import { DailySixFields } from '../components/daily-six-fields';
-import { formatDailySixDay } from '../daily-six-dates';
+import { deviceMonth, formatDailySixDay } from '../daily-six-dates';
 import { useDailySixHistory } from '../hooks/use-daily-six-history';
 import {
   fetchAgencyDailySix,
@@ -93,7 +93,7 @@ export default function PublicDailySixHistoryPage() {
     };
   }, [agencyCode]);
 
-  const currentMonth = (context?.today ?? new Date().toISOString()).slice(0, 7);
+  const currentMonth = context?.today?.slice(0, 7) ?? deviceMonth();
   const shownMonth = month ?? currentMonth;
   const history = useDailySixHistory(agencyCode, shownMonth, reloadKey);
 
