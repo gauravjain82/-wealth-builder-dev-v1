@@ -86,6 +86,8 @@ export interface AgencyDailySixContext extends Partial<DailySixEditWindow> {
   streak: number;
   today_submissions: DailySixSubmission[];
   stats?: DailySixStats;
+  /** Sessions that failed to save and were recreated empty; the user still has to fill them in. */
+  needs_reentry?: DailySixSubmission[];
 }
 
 export interface DailySixHistoryMonth extends DailySixEditWindow {
