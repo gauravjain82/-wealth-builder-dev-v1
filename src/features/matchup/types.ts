@@ -12,6 +12,26 @@ export type AppointmentStatus =
 
 export type LocationType = 'VIRTUAL' | 'PHYSICAL';
 
+/**
+ * Where an appointment stands with its Google Calendar copy — separate from the
+ * appointment status. DELETED_IN_GOOGLE means someone removed the calendar copy
+ * in Google; the appointment itself is untouched until its owner cancels it or
+ * adds it back to the calendar.
+ */
+export type GoogleSyncStatus = 'NOT_SYNCED' | 'SYNCED' | 'DELETED_IN_GOOGLE';
+
+/** One row of an appointment's status history. */
+export interface AppointmentStatusChange {
+  id: number;
+  from_status: AppointmentStatus;
+  to_status: AppointmentStatus;
+  source: 'APP' | 'MANUAL' | 'REPAIR';
+  reason: string;
+  changed_by?: number | null;
+  changed_by_name?: string | null;
+  created_at: string;
+}
+
 export interface MatchupStatusMeta {
   value: AppointmentStatus;
   label: string;
@@ -141,6 +161,10 @@ export interface AppointmentListItem {
   created_at?: string;
   updated_at?: string;
   last_note?: AppointmentLastNote | null;
+  google_sync_status?: GoogleSyncStatus;
+  google_deleted_at?: string | null;
+  /** Whether the current user may use "Change status" on this appointment. */
+  can_change_status?: boolean;
 }
 
 export interface DayAppointmentItem extends AppointmentListItem {
@@ -180,6 +204,7 @@ export interface AppointmentDetail extends Omit<AppointmentListItem, 'types'> {
   assignments?: AppointmentAssignment[];
   reschedules?: AppointmentReschedule[];
   google_event_id?: string | null;
+  status_changes?: AppointmentStatusChange[];
 }
 
 export interface CalendarAppointment {
@@ -194,6 +219,7 @@ export interface CalendarAppointment {
   location_type: LocationType;
   contact_name?: string | null;
   trainee_name?: string | null;
+  google_sync_status?: GoogleSyncStatus;
   assigned_to?: number | null;
   assigned_to_name?: string | null;
   assigned_to_detail?: PersonCard | null;

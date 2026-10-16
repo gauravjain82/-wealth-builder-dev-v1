@@ -8,8 +8,10 @@ import { createProspect, type Prospect } from '@/features/team/prospect/services
 import { defaultAddProspectForm, type AddProspectFormData } from '@/features/team/prospect/types';
 import { AppointmentFormModal } from '../components/appointment-form-modal';
 import { AppointmentDetailsModal } from '../components/appointment-details-modal';
+import { ChangeStatusModal } from '../components/change-status-modal';
 import { ImportedEventModal } from '../components/imported-event-modal';
 import { MonthCalendar } from '../components/month-calendar';
+import { useAppointmentCorrections } from '../hooks/use-appointment-corrections';
 import { useMatchupDashboard } from '../hooks/use-matchup-dashboard';
 import { localDateTimeValue, matchupService } from '../services/matchup-service';
 import type {
@@ -64,6 +66,7 @@ export default function CalendarPage() {
     error,
     reload,
   } = useMatchupDashboard(filters, calendarMonth, { personal: true });
+  const corrections = useAppointmentCorrections({ onChanged: reload, setDetails: setDetailsTarget });
 
   const closeForm = () => {
     setFormOpen(false);
@@ -277,6 +280,16 @@ export default function CalendarPage() {
         appointment={detailsTarget}
         onClose={() => setDetailsTarget(null)}
         onEdit={openEdit}
+        onChangeStatus={corrections.openChangeStatus}
+        onReaddToCalendar={(appointment) => void corrections.readdToCalendar(appointment)}
+        onCancel={(appointment) => void corrections.cancelAppointment(appointment)}
+      />
+      <ChangeStatusModal
+        appointment={corrections.changeStatusTarget}
+        statuses={statuses}
+        saving={corrections.saving}
+        onClose={corrections.closeChangeStatus}
+        onSubmit={corrections.submitChangeStatus}
       />
 
       <AppointmentFormModal

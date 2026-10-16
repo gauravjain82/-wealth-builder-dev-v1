@@ -1463,6 +1463,12 @@
 .matchup-outcome-header h3 { margin:0; }
 .matchup-details-section article { display:flex; flex-direction:column; gap:2px; padding:9px 0; border-bottom:1px solid rgba(148,163,184,.15); }
 .matchup-details-section article:last-child { border-bottom:0; }
+/* Google Calendar copy deleted in Google — the appointment itself is unchanged. */
+.matchup-gcal-deleted-badge { display:inline-flex; align-items:center; gap:4px; width:fit-content; margin-top:3px; padding:1px 7px; border-radius:999px; font-size:10px; font-weight:700; line-height:1.4; color:#b45309; background:rgba(245,158,11,.14); border:1px solid rgba(245,158,11,.35); white-space:nowrap; }
+.matchup-gcal-deleted-notice { border-color:rgba(245,158,11,.4); background:rgba(245,158,11,.07); }
+.matchup-gcal-deleted-notice h3 { display:flex; align-items:center; gap:6px; }
+.matchup-gcal-deleted-notice p { margin:0; font-size:.85rem; }
+.matchup-gcal-deleted-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
 .matchup-details-section article span,.matchup-details-section article p { margin:0; color:#475569; font-size:.78rem; }
 .dark .matchup-details-section article span,.dark .matchup-details-section article p { color:#94a3b8; }
 .matchup-result-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
