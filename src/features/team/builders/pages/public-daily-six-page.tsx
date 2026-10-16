@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CalendarDays, CheckCircle2, ChevronRight, Flame, Target } from 'lucide-react';
+import { AlertTriangle, CalendarDays, CheckCircle2, ChevronRight, Flame, Target } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { DailySixFields } from '../components/daily-six-fields';
+import { formatDailySixDay } from '../daily-six-dates';
 import {
   fetchAgencyDailySix,
   submitAgencyDailySix,
   type AgencyDailySixContext,
   type BuilderPace,
   type DailySixPayload,
+  type DailySixSubmission,
 } from '../services/builders-service';
 
 const EMPTY_FORM: DailySixPayload = {
@@ -157,6 +159,10 @@ export default function PublicDailySixPage() {
           </Link>
         )}
 
+        {!loading && context?.needs_reentry && context.needs_reentry.length > 0 && (
+          <ReentryNotice agencyCode={agencyCode} submissions={context.needs_reentry} />
+        )}
+
         <section className={`rounded-2xl border border-white/12 bg-[#0b0c10] shadow-[0_20px_70px_rgba(0,0,0,0.35)] ${
           success ? 'p-2' : 'p-2'
         }`}>
@@ -209,6 +215,49 @@ export default function PublicDailySixPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+/**
+ * Asks the user to re-enter sessions that failed to save on our side. Each one
+ * opens straight into the History edit form; the backend stops listing a
+ * session once it has been saved.
+ */
+function ReentryNotice({
+  agencyCode,
+  submissions,
+}: {
+  agencyCode: string;
+  submissions: DailySixSubmission[];
+}) {
+  const historyUrl = `/team/builders/daily-six/${encodeURIComponent(agencyCode)}/history`;
+  return (
+    <div className="mb-2 rounded-xl border border-amber-400/35 bg-amber-400/10 p-3">
+      <div className="flex gap-2">
+        <AlertTriangle size={18} className="mt-0.5 flex-shrink-0 text-amber-300" />
+        <div className="min-w-0">
+          <div className="text-sm font-bold text-amber-100">Please re-enter an earlier Daily Six</div>
+          <p className="mt-0.5 text-xs leading-5 text-amber-100/80">
+            A system issue on our side stopped it from saving. Your streak is safe — we kept the day for you.
+            Just add your numbers.
+          </p>
+        </div>
+      </div>
+      <div className="mt-2 grid gap-1.5">
+        {submissions.map((submission) => (
+          <Link
+            key={submission.id}
+            to={`${historyUrl}?edit=${submission.submission_date}&session=${submission.session}`}
+            className="flex min-h-[44px] items-center justify-between gap-2 rounded-lg bg-amber-300 px-3 py-2 text-sm font-bold text-black hover:bg-amber-200"
+          >
+            <span className="truncate">
+              Fill in {formatDailySixDay(submission.submission_date)} · {submission.session === 'AM' ? 'Morning' : 'Night'}
+            </span>
+            <ChevronRight size={16} className="flex-shrink-0" />
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 

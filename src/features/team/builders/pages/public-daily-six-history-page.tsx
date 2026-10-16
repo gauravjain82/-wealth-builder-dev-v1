@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Pencil } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { DailySixCalendar } from '../components/daily-six-calendar';
 import { DailySixFields } from '../components/daily-six-fields';
 import { deviceMonth, formatDailySixDay } from '../daily-six-dates';
@@ -61,6 +61,7 @@ function dayLabel(index: number, isoDate: string): string {
  */
 export default function PublicDailySixHistoryPage() {
   const { agencyCode = '' } = useParams<{ agencyCode: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [context, setContext] = useState<AgencyDailySixContext | null>(null);
   const [contextLoading, setContextLoading] = useState(true);
   const [contextError, setContextError] = useState<string | null>(null);
@@ -116,6 +117,21 @@ export default function PublicDailySixHistoryPage() {
     setSavedNotice(null);
     window.scrollTo({ top: 0 });
   };
+
+  // `?edit=YYYY-MM-DD&session=AM|PM` (from the re-entry notice) opens that
+  // session's edit form once the editable days have loaded.
+  const editDate = searchParams.get('edit');
+  const editSession = searchParams.get('session');
+  useEffect(() => {
+    if (!editDate || !history.data) return;
+    const target = history.data.editable_submissions.find(
+      (submission) => submission.submission_date === editDate && submission.session === editSession
+    );
+    setSearchParams({}, { replace: true });
+    if (target) handleEdit(target);
+    // handleEdit only sets state; leaving it out keeps this from re-running on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editDate, editSession, history.data, setSearchParams]);
 
   const handleCancel = () => {
     setEditing(null);
