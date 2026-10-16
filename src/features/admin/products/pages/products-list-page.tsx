@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { formatMultiplier } from '@core/utils';
 import { Button, ConfirmationDialog, Input, Select } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { ProductFormModal } from '../components/product-form-modal';
@@ -247,7 +248,7 @@ export default function ProductsListPage() {
                 </td>
                 <td className="px-4 py-3">{productTypeLabel(product.product_type)}</td>
                 <td className="px-4 py-3 text-right tabular-nums">
-                  ×{Number(product.multiplier)}
+                  ×{formatMultiplier(product.multiplier)}
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums">{product.policy_count}</td>
                 <td className="px-4 py-3">
