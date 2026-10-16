@@ -183,7 +183,7 @@ const MENU_ITEMS = {
   
   // Admin items
   MISSION_RING_PROOF_ADMIN: { label: 'Mission Ring Proof', icon: '💍', path: '/admin/mission-ring-proof' } as MenuItem,
-  HELPDESK_ADMIN: { label: 'Helpdesk', icon: '🆘', path: '/admin/helpdesk' } as MenuItem,
+  HELPDESK_ADMIN: { label: 'Support Queue', icon: '🆘', path: '/admin/helpdesk' } as MenuItem,
   FUNCTIONS: { label: 'Functions', icon: '🧩', path: '/admin/functions' } as MenuItem,
   USER_PERMISSIONS: { label: 'User Permissions', icon: '🔐', path: '/admin/user-permissions' } as MenuItem,
   LEVEL_PERMISSIONS: { label: 'Level Permissions', icon: '📊', path: '/admin/level-permissions' } as MenuItem,
@@ -761,7 +761,10 @@ export function getMenuForUser(
   // The Big Event screens open for at least one event (events my-access `surfaces`).
   bigEventScreens: Partial<Record<BigEventScreen, boolean>> = {},
   // code_of_honor:review or a manage permission (Code of Honor my-access).
-  canManageCodeOfHonor: boolean = false
+  canManageCodeOfHonor: boolean = false,
+  // helpdesk:read (Helpdesk my-access `can_view`). Admin plans list Helpdesk Admin
+  // statically; it is removed for anyone without the grant and added for any holder.
+  canAccessHelpdeskAdmin: boolean = false
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -829,6 +832,11 @@ export function getMenuForUser(
   // Code of Honor committee/admin page: any code_of_honor:* access-console grant.
   if (canManageCodeOfHonor) addAdminEntry(MENU_ITEMS.CODE_OF_HONOR);
 
+  // Helpdesk Admin: helpdesk:read. Access-console based, not role based, so an
+  // Admin plan without the grant loses the static entry (below) and any grant
+  // holder gets it at the end of their Admin group (or at top level).
+  if (canAccessHelpdeskAdmin) addAdminEntry(MENU_ITEMS.HELPDESK_ADMIN);
+
   // Guidance authoring rides gms:author, its own per-user grant.
   if (
     canAuthorGuidance &&
@@ -876,6 +884,10 @@ export function getMenuForUser(
       icon: '🎪',
       children: cloneMenuItems(bigEventEntries),
     });
+  }
+
+  if (!canAccessHelpdeskAdmin) {
+    menuItems = removeMenuItemByPath(menuItems, MENU_ITEMS.HELPDESK_ADMIN.path as string);
   }
 
   if (!canManageBpmSettings) {

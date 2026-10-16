@@ -122,14 +122,65 @@ export async function lookupHelpdeskTicket(ticket: string, email: string): Promi
   return (await response.json()) as HelpdeskTicketLookupResponse;
 }
 
-export async function fetchAdminHelpdeskTickets(filters: {
+/** Filters accepted by the staff ticket list endpoint. */
+export interface AdminTicketFilters {
   ticket?: string;
   email?: string;
   status?: HelpdeskStatus | '';
   category?: HelpdeskCategory | '';
   priority?: HelpdeskPriority | '';
-} = {}): Promise<AdminTicketListItem[]> {
+}
+
+/** One page of the staff ticket list (DRF page-number pagination shape). */
+export interface PaginatedAdminTickets {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: AdminTicketListItem[];
+}
+
+/** What the current user may do in Helpdesk Admin (access-console grants). */
+export interface HelpdeskAccess {
+  /** helpdesk:read: may open Helpdesk Admin and see tickets incl. internal notes. */
+  can_view: boolean;
+  /** helpdesk:update: may change status/priority, comment and close tickets. */
+  can_update: boolean;
+}
+
+/** Default page size for the staff ticket list. */
+export const ADMIN_TICKETS_PAGE_SIZE = 25;
+
+/** Ask the backend whether the signed-in user may view/update Helpdesk Admin. */
+export async function getHelpdeskAccess(): Promise<HelpdeskAccess> {
+  const response = await fetch(`${API_BASE_URL}/api/helpdesk/my-access/`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response, 'Failed to load helpdesk access.'));
+  }
+
+  const data = (await response.json()) as Partial<HelpdeskAccess>;
+  return {
+    can_view: Boolean(data.can_view),
+    can_update: Boolean(data.can_update),
+  };
+}
+
+/**
+ * Load one page of staff tickets matching `filters`.
+ *
+ * Passing `page` makes the backend paginate; a legacy plain-array response is
+ * still accepted and wrapped so callers always get the paginated shape.
+ */
+export async function fetchAdminHelpdeskTickets(
+  filters: AdminTicketFilters = {},
+  page: number = 1,
+  pageSize: number = ADMIN_TICKETS_PAGE_SIZE
+): Promise<PaginatedAdminTickets> {
   const params = new URLSearchParams();
+  params.set('page', String(page));
+  params.set('page_size', String(pageSize));
   if (filters.ticket?.trim()) params.set('ticket', filters.ticket.trim());
   if (filters.email?.trim()) params.set('email', filters.email.trim());
   if (filters.status) params.set('status', filters.status);
@@ -144,8 +195,16 @@ export async function fetchAdminHelpdeskTickets(filters: {
     throw new Error(await parseApiError(response, 'Failed to load helpdesk tickets.'));
   }
 
-  const data = (await response.json()) as AdminTicketListItem[];
-  return Array.isArray(data) ? data : [];
+  const data = (await response.json()) as PaginatedAdminTickets | AdminTicketListItem[];
+  if (Array.isArray(data)) {
+    return { count: data.length, next: null, previous: null, results: data };
+  }
+  return {
+    count: typeof data?.count === 'number' ? data.count : 0,
+    next: data?.next ?? null,
+    previous: data?.previous ?? null,
+    results: Array.isArray(data?.results) ? data.results : [],
+  };
 }
 
 export async function fetchAdminHelpdeskTicketDetail(ticketNumber: string): Promise<AdminTicketDetail> {

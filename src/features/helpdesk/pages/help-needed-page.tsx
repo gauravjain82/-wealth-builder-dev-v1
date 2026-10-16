@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 import { useToastStore } from '@/store';
 import {
@@ -37,9 +37,18 @@ function formatDate(value: string): string {
   return parsed.toLocaleString();
 }
 
+/**
+ * Public "Help Needed?" page: submit a ticket (no login required) and look one
+ * up by ticket number + email. A signed-in user arriving with `?ticket=HD-...`
+ * (e.g. from an in-app notification) gets the lookup prefilled and run.
+ */
 export default function HelpNeededPage() {
   const addToast = useToastStore((state) => state.addToast);
   const { user, isAuthenticated } = useAuth();
+  const [searchParams] = useSearchParams();
+  const urlTicket = (searchParams.get('ticket') || '').trim();
+  // Last ?ticket= we auto-looked-up, so each link runs once, not on every render.
+  const autoLookedUpTicket = useRef<string | null>(null);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -99,23 +108,43 @@ export default function HelpNeededPage() {
     }
   };
 
+  /** Look up a ticket by number + submission email and show the result. */
+  const runLookup = useCallback(
+    async (ticketNumber: string, submissionEmail: string) => {
+      setLookupLoading(true);
+      setLookupResult(null);
+
+      try {
+        const ticket = await lookupHelpdeskTicket(ticketNumber.trim(), submissionEmail.trim());
+        setLookupResult(ticket);
+      } catch (error) {
+        addToast({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Ticket lookup failed.',
+        });
+      } finally {
+        setLookupLoading(false);
+      }
+    },
+    [addToast]
+  );
+
   const handleLookup = async (event: FormEvent) => {
     event.preventDefault();
-    setLookupLoading(true);
-    setLookupResult(null);
-
-    try {
-      const ticket = await lookupHelpdeskTicket(lookupTicketNumber.trim(), lookupEmail.trim());
-      setLookupResult(ticket);
-    } catch (error) {
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : 'Ticket lookup failed.',
-      });
-    } finally {
-      setLookupLoading(false);
-    }
+    await runLookup(lookupTicketNumber, lookupEmail);
   };
+
+  // Notification links (/helpdesk?ticket=HD-...): prefill and run the lookup for a
+  // signed-in user, using their account email as the submission email.
+  useEffect(() => {
+    if (!urlTicket || !isAuthenticated || !user?.email) return;
+    if (autoLookedUpTicket.current === urlTicket) return;
+    autoLookedUpTicket.current = urlTicket;
+
+    setLookupTicketNumber(urlTicket);
+    setLookupEmail(user.email);
+    void runLookup(urlTicket, user.email);
+  }, [isAuthenticated, runLookup, urlTicket, user?.email]);
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 text-slate-900 dark:bg-[#0b0d12] dark:text-white">

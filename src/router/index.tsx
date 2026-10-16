@@ -4,6 +4,7 @@ import { ProtectedRoute } from './protected-route';
 import { AdminRoute } from './admin-route';
 import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
+import { HelpdeskRoute } from './helpdesk-route';
 import { MatchupMetricsRoute } from './matchup-metrics-route';
 import { CodeOfHonorRoute } from './code-of-honor-route';
 import { WbPipelineRoute } from './wb-pipeline-route';
@@ -811,8 +812,9 @@ const router = createBrowserRouter([
         element: lazyLoad(HelpNeededPage),
       },
       {
+        // Helpdesk Admin; gated per-user by helpdesk:read (access console).
         path: 'admin/helpdesk',
-        element: lazyLoad(AdminHelpdeskPage),
+        element: <HelpdeskRoute>{lazyLoad(AdminHelpdeskPage)}</HelpdeskRoute>,
       },
       {
         path: 'components',
