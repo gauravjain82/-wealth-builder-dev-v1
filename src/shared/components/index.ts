@@ -68,6 +68,7 @@ export {
 export {
 	TrackerDateRangeFilter,
 	resolvePresetRange,
+	todayLocalISO,
 	type TrackerDateRangeChange,
 	type DatePresetKey,
 } from './tracker-date-range-filter';
