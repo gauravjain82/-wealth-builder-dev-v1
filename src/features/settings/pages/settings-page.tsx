@@ -739,6 +739,11 @@ function ConnectedAccountsSection({
 
 export default function SettingsPage() {
   const { addToast } = useToastStore();
+  // Assistant mode: an SMD's assistant works in the SMD's account. Personal settings
+  // (sign-in details, Telegram, calendar, billing, upgrades, plug-in fees) are hidden here
+  // and denied server-side (403 `assistant_forbidden`).
+  const { user: authUser } = useAuth();
+  const isAssistant = Boolean(authUser?.actingAs);
 
   const [userDetails, setUserDetails] = useState<CurrentUserDetails | null>(null);
   const [products, setProducts] = useState<PaymentProduct[]>([]);
@@ -1162,14 +1167,16 @@ export default function SettingsPage() {
               <span className="title-icon">👤</span>
               Profile
             </h3>
-            <ConnectedAccountsSection
-              status={telegramStatus}
-              loading={loadingTelegramStatus}
-              connecting={connectingTelegram}
-              disconnecting={disconnectingTelegram}
-              onConnect={() => void handleConnectTelegram()}
-              onDisconnect={() => void handleDisconnectTelegram()}
-            />
+            {!isAssistant ? (
+              <ConnectedAccountsSection
+                status={telegramStatus}
+                loading={loadingTelegramStatus}
+                connecting={connectingTelegram}
+                disconnecting={disconnectingTelegram}
+                onConnect={() => void handleConnectTelegram()}
+                onDisconnect={() => void handleDisconnectTelegram()}
+              />
+            ) : null}
           </div>
 
           {loading ? (
@@ -1191,17 +1198,27 @@ export default function SettingsPage() {
                   className="hidden-file-input"
                   onChange={handleUploadPhoto}
                 />
-                <button
-                  type="button"
-                  className="btn-primary btn-upload-photo"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingPhoto || loading}
-                >
-                  {uploadingPhoto ? 'Uploading...' : 'Upload Photo'}
-                </button>
+                {!isAssistant ? (
+                  <button
+                    type="button"
+                    className="btn-primary btn-upload-photo"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingPhoto || loading}
+                  >
+                    {uploadingPhoto ? 'Uploading...' : 'Upload Photo'}
+                  </button>
+                ) : null}
               </div>
 
               <div className="profile-fields">
+                {isAssistant ? (
+                  <p className="settings-hint" role="note">
+                    Profile details are read-only for assistants. Only {authUser?.actingAs?.principal_name || 'the account owner'} can
+                    change their email, phone, password or other profile details.
+                  </p>
+                ) : null}
+                {/* `display: contents` keeps the grid layout; `disabled` makes every field read-only for assistants. */}
+                <fieldset disabled={isAssistant} style={{ display: 'contents' }}>
                 <div className="field-row field-row-four">
                   <div className="field-group">
                     <label>Full Name</label>
@@ -1228,7 +1245,7 @@ export default function SettingsPage() {
                       className="input-field"
                       value={profileEmail}
                       onChange={(e) => setProfileEmail(e.target.value)}
-                      disabled={savingProfile || loading}
+                      disabled={savingProfile || loading || isAssistant}
                     />
                   </div>
                   <div className="field-group">
@@ -1276,7 +1293,7 @@ export default function SettingsPage() {
                       defaultCountry="US"
                       value={profileForm.phone}
                       onChange={(value) => updateProfileField('phone', value || '')}
-                      disabled={savingProfile}
+                      disabled={savingProfile || isAssistant}
                     />
                   </div>
                   <div className="field-group">
@@ -1401,16 +1418,20 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="button-group">
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => void handleSaveProfile()}
-                    disabled={savingProfile || loading}
-                  >
-                    {savingProfile ? 'Saving...' : 'Save Profile'}
-                  </button>
-                </div>
+                </fieldset>
+
+                {!isAssistant ? (
+                  <div className="button-group">
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={() => void handleSaveProfile()}
+                      disabled={savingProfile || loading}
+                    >
+                      {savingProfile ? 'Saving...' : 'Save Profile'}
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
           )}
@@ -1436,7 +1457,7 @@ export default function SettingsPage() {
               <div className="admin-level-info">
                 <p>You have Administrator privileges. User management and upgrades are handled through the admin panel.</p>
               </div>
-            ) : nextPlan ? (
+            ) : isAssistant ? null : nextPlan ? (
               <div className="upgrade-section">
                 <div className="upgrade-info">
                   <div className="upgrade-arrow">↓</div>
@@ -1463,6 +1484,15 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {isAssistant ? (
+          <div className="glass-section">
+            <p className="settings-hint" role="note" style={{ margin: 0 }}>
+              Calendar sync, subscription &amp; billing, upgrade requests and plug-in fees are hidden
+              while you are signed in as an assistant.
+            </p>
+          </div>
+        ) : (
+        <>
         <CalendarSyncSection />
 
         <div className="glass-section" id="settings-billing-upgrade">
@@ -1688,6 +1718,8 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
 

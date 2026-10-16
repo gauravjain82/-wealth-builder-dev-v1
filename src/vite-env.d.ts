@@ -13,6 +13,10 @@ interface ImportMetaEnv {
   readonly VITE_STRIPE_PUBLISHABLE_KEY: string;
   /** Code of Honor video (YouTube/Vimeo link or file URL). Unset shows a "coming soon" thumbnail. */
   readonly VITE_CODE_OF_HONOR_VIDEO_URL?: string;
+  /** Build identifier (e.g. git SHA) sent with "Report a problem" tickets. */
+  readonly VITE_APP_VERSION?: string;
+  /** ISO build timestamp sent with "Report a problem" tickets. */
+  readonly VITE_BUILD_TIME?: string;
 }
 
 interface ImportMeta {

@@ -5,12 +5,14 @@ import { useMisalignmentsAccess } from '../features/admin/misalignments/hooks/us
 import { useProductsAccess } from '../features/admin/products/hooks/use-products';
 import { usePipelineAccess } from '../features/admin/wb-pipeline';
 import { roleToPlan } from '../core/constants/roles';
-import { getMenuForUser, type MenuItem } from '../config/menu';
+import { HELPDESK_BADGE_PATHS, applyMenuBadges, getMenuForUser, type MenuItem } from '../config/menu';
 import { useGmsAccess } from '@/features/gms';
 import { useBpmCapabilities } from '@/features/bpm/hooks/use-bpm-capabilities';
 import { usePluginFeesAccess } from '@/features/plugin-fees/hooks/use-plugin-fees';
 import { useEventsAccess } from '@/features/events/hooks/use-events-access';
 import { useCodeOfHonorAccess } from '@/features/code-of-honor';
+import { useHelpdeskAccess } from '@/features/helpdesk/hooks/use-helpdesk-access';
+import { useQueueCounts } from '@/features/helpdesk/hooks/use-queue-counts';
 import {
   canManageCosts,
   canSeeCycles,
@@ -71,8 +73,17 @@ export function useRoleBasedMenu(): MenuItem[] {
   // Code of Honor committee/admin page: code_of_honor:* grants in the access console.
   const { data: codeOfHonorAccess } = useCodeOfHonorAccess();
   const canManageCodeOfHonor = Boolean(codeOfHonorAccess?.can_review || codeOfHonorAccess?.can_manage);
+  // Helpdesk Admin: helpdesk:read in the access console. Hidden while loading.
+  const { data: helpdeskAccess } = useHelpdeskAccess();
+  const canAccessHelpdeskAdmin = Boolean(helpdeskAccess?.can_view);
+  // Team Support (helpdesk L1 queue): active SMD, or their assistant signed in as them.
+  const canAccessTeamSupport = Boolean(helpdeskAccess?.team_queue);
+  // "Needs action" badges on Support Queue / Team Support (polled every 60 s).
+  const { data: queueCounts } = useQueueCounts();
+  const staffNeedsAction = queueCounts?.staff?.needs_action ?? 0;
+  const teamNeedsAction = queueCounts?.team?.needs_action ?? 0;
 
-  return useMemo(() => {
+  const menu = useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
     const hasPromotionAccess = Boolean(user?.hasPromotionAccess);
     if (!primaryRole)
@@ -94,7 +105,9 @@ export function useRoleBasedMenu(): MenuItem[] {
         canViewPluginFeeOverview,
         canViewPluginFeePayouts,
         bigEventScreens,
-        canManageCodeOfHonor
+        canManageCodeOfHonor,
+        canAccessHelpdeskAdmin,
+        canAccessTeamSupport
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -115,7 +128,9 @@ export function useRoleBasedMenu(): MenuItem[] {
       canViewPluginFeeOverview,
       canViewPluginFeePayouts,
       bigEventScreens,
-      canManageCodeOfHonor
+      canManageCodeOfHonor,
+      canAccessHelpdeskAdmin,
+      canAccessTeamSupport
     );
   }, [
     user?.hasPromotionAccess,
@@ -136,5 +151,17 @@ export function useRoleBasedMenu(): MenuItem[] {
     canViewPluginFeePayouts,
     bigEventScreens,
     canManageCodeOfHonor,
+    canAccessHelpdeskAdmin,
+    canAccessTeamSupport,
   ]);
+
+  // Badges are applied separately so a count change doesn't rebuild the whole menu.
+  return useMemo(
+    () =>
+      applyMenuBadges(menu, {
+        [HELPDESK_BADGE_PATHS.supportQueue]: staffNeedsAction,
+        [HELPDESK_BADGE_PATHS.teamSupport]: teamNeedsAction,
+      }),
+    [menu, staffNeedsAction, teamNeedsAction]
+  );
 }

@@ -7,6 +7,8 @@ export interface Toast {
   type: 'success' | 'error' | 'info' | 'warning';
   message: string;
   duration?: number;
+  /** Optional button shown in the toast, e.g. "View ticket". */
+  action?: { label: string; onClick: () => void };
 }
 
 interface ToastState {

@@ -4,6 +4,7 @@ import { ProtectedRoute } from './protected-route';
 import { AdminRoute } from './admin-route';
 import { BuilderAiRoute } from './builder-ai-route';
 import { MisalignmentsRoute } from './misalignments-route';
+import { HelpdeskRoute } from './helpdesk-route';
 import { MatchupMetricsRoute } from './matchup-metrics-route';
 import { CodeOfHonorRoute } from './code-of-honor-route';
 import { WbPipelineRoute } from './wb-pipeline-route';
@@ -156,6 +157,10 @@ const TenSystematicToolsPage = lazy(() => import('@/features/systematic-tools/pa
 const OnboardingGamePage = lazy(() => import('@/features/team/onboarding-game/pages/onboarding-game-page'));
 const WelcomeVideosPage = lazy(() => import('@/features/welcome-videos/pages/welcome-videos-page'));
 const ResetPasswordPage = lazy(() => import('@/features/auth/components/reset-password-page'));
+// Assistant invite email link target: preview the invite and set the assistant's password.
+const AssistantInviteAcceptPage = lazy(
+  () => import('@/features/assistant-access/pages/assistant-invite-accept-page'),
+);
 const TrainingCenterPage = lazy(() => import('@/features/training-center/pages/training-center-page'));
 const TrainingSchedulePage = lazy(() => import('@/features/training-schedule/pages/training-schedule-page'));
 const TrainingAttendancePage = lazy(
@@ -175,7 +180,9 @@ const BpmSettingsPage = lazy(() => import('@/features/bpm/pages/bpm-settings-pag
 const HelpNeededPage = lazy(() => import('@/features/helpdesk/pages/help-needed-page'));
 const PrivacyPolicyPage = lazy(() => import('@/features/legal/pages/privacy-policy-page'));
 const TermsPage = lazy(() => import('@/features/legal/pages/terms-page'));
+const MyTicketsPage = lazy(() => import('@/features/helpdesk/pages/my-tickets-page'));
 const AdminHelpdeskPage = lazy(() => import('@/features/helpdesk/pages/admin-helpdesk-page'));
+const TeamSupportPage = lazy(() => import('@/features/helpdesk/pages/team-support-page'));
 const InviteAgentsPage = lazy(() => import('@/features/admin/invite-agents/pages/invite-agents-page'));
 const FunctionsPage = lazy(() => import('@/features/admin/access-control/pages/functions-page'));
 const UserPermissionsPage = lazy(() => import('@/features/admin/access-control/pages/user-permissions-page'));
@@ -241,6 +248,13 @@ const router = createBrowserRouter([
   {
     path: '/reset-password',
     element: lazyLoad(ResetPasswordPage),
+    errorElement: <RouteErrorFallback />,
+  },
+
+  // SMD assistant invite (email link target): set password, then sign in
+  {
+    path: '/assistant/accept',
+    element: lazyLoad(AssistantInviteAcceptPage),
     errorElement: <RouteErrorFallback />,
   },
 
@@ -807,12 +821,19 @@ const router = createBrowserRouter([
         element: lazyLoad(SettingsPage),
       },
       {
+        // Signed-in "My tickets"; the public form stays at /help-needed.
         path: 'helpdesk',
-        element: lazyLoad(HelpNeededPage),
+        element: lazyLoad(MyTicketsPage),
       },
       {
+        // Helpdesk Admin; gated per-user by helpdesk:read (access console).
         path: 'admin/helpdesk',
-        element: lazyLoad(AdminHelpdeskPage),
+        element: <HelpdeskRoute>{lazyLoad(AdminHelpdeskPage)}</HelpdeskRoute>,
+      },
+      {
+        // Team Support (L1 queue); for active SMDs and their assistants (my-access team_queue).
+        path: 'team/support',
+        element: <HelpdeskRoute requires="team_queue">{lazyLoad(TeamSupportPage)}</HelpdeskRoute>,
       },
       {
         path: 'components',

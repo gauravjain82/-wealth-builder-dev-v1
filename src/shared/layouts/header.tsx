@@ -2,14 +2,40 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { ThemeToggle } from '@/shared/components/theme-toggle';
-import { Bell, CheckCheck } from 'lucide-react';
+import { Bell, CheckCheck, Inbox } from 'lucide-react';
 import { inAppNotificationService, type InAppNotification } from '@/features/matchup/services/inapp-notification-service';
 import { BpmQrModal } from '@/features/bpm/components/bpm-qr-modal';
 import { MyQrCodeModal } from '@/features/bpm/components/my-qr-code-modal';
+import { ReportProblemButton } from '@/features/helpdesk/components/report-problem-button';
+import { useQueueCounts } from '@/features/helpdesk/hooks/use-queue-counts';
+import type { HelpdeskQueueCounts } from '@/features/helpdesk/services/helpdesk-service';
 import './header.css';
 
 const LOGO_URL =
   'https://firebasestorage.googleapis.com/v0/b/wealthbuilders-crm-9c323.firebasestorage.app/o/fa509ca3-1165-43d5-b075-f174c232cb04.png?alt=media&token=0f5855f4-8176-47ca-b842-6d7d1301b939';
+
+/**
+ * Where the "needs you" indicator leads: the staff queue when it has work (or is the
+ * only queue), otherwise Team Support. With nothing needing action but overdue tickets,
+ * it opens the "At risk" view of the queue that has them.
+ */
+function needsYouTarget(counts: HelpdeskQueueCounts): string {
+  const staffPath = '/admin/helpdesk?view=needs_action';
+  const teamPath = '/team/support?view=needs_action';
+  if (counts.staff && counts.staff.needs_action > 0) return staffPath;
+  if (counts.team && counts.team.needs_action > 0) return teamPath;
+  if (counts.staff && counts.staff.breached > 0) return '/admin/helpdesk?view=at_risk';
+  if (counts.team && counts.team.breached > 0) return '/team/support?view=at_risk';
+  return counts.staff ? staffPath : teamPath;
+}
+
+/** Title/label of the "needs you" indicator, e.g. "3 tickets need you · 1 overdue". */
+function needsYouLabel(needsYou: number, overdue: number): string {
+  const parts: string[] = [];
+  if (needsYou > 0) parts.push(`${needsYou} ticket${needsYou === 1 ? '' : 's'} need${needsYou === 1 ? 's' : ''} you`);
+  if (overdue > 0) parts.push(`${overdue} overdue`);
+  return parts.join(' · ');
+}
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -26,10 +52,16 @@ export function Header() {
   const [scanOpen, setScanOpen] = useState(false);
   const [myQrOpen, setMyQrOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // Helpdesk tickets waiting on this user (staff and/or Team Support), polled every 60 s.
+  const { data: queueCounts } = useQueueCounts();
+  const needsYouCount = queueCounts?.total_needs_action ?? 0;
+  const overdueCount = queueCounts?.total_breached ?? 0;
   const notificationsRef = useRef<HTMLDivElement>(null);
 
   // Get first name
   const firstName = (user?.displayName || user?.name || user?.email || 'User').split(' ')[0];
+  // Assistant mode: greet the assistant, not the SMD whose account they work in.
+  const actingAs = user?.actingAs ?? null;
 
   // Avatar: photo URL or initials
   const avatarUrl = user?.photoURL || null;
@@ -89,6 +121,13 @@ export function Header() {
     setNotifications((current) => current.filter((item) => item.id !== notification.id));
     setUnreadCount((current) => Math.max(0, current - 1));
     setNotificationsOpen(false);
+    // Notifications that carry their own in-app link (e.g. helpdesk tickets) open it;
+    // everything else is a Match Up notification and keeps the original behaviour.
+    const link = notification.payload?.link;
+    if (typeof link === 'string' && link.startsWith('/') && !link.startsWith('//')) {
+      navigate(link);
+      return;
+    }
     navigate('/matchup', { state: { appointmentId: notification.payload?.appointment_id } });
   };
 
@@ -130,10 +169,35 @@ export function Header() {
       {/* Right: Welcome, Theme Toggle, Profile Dropdown */}
       <div className="header__right">
         <span className="header__welcome">
-          Welcome, {firstName}
+          {actingAs ? (
+            <>
+              Welcome, {actingAs.assistant_name}
+              <span className="header__welcome-suffix"> for {actingAs.principal_name}</span>
+            </>
+          ) : (
+            <>Welcome, {firstName}</>
+          )}
         </span>
 
         <ThemeToggle />
+
+        <ReportProblemButton />
+
+        {queueCounts && (needsYouCount > 0 || overdueCount > 0) ? (
+          <button
+            type="button"
+            className="header__bell-button"
+            onClick={() => navigate(needsYouTarget(queueCounts))}
+            aria-label={needsYouLabel(needsYouCount, overdueCount)}
+            title={needsYouLabel(needsYouCount, overdueCount)}
+          >
+            <Inbox size={20} />
+            {needsYouCount > 0 ? (
+              <span className="header__notification-badge header__needs-you-badge">{needsYouCount > 99 ? '99+' : needsYouCount}</span>
+            ) : null}
+            {overdueCount > 0 ? <span className="header__overdue-dot" aria-hidden="true" /> : null}
+          </button>
+        ) : null}
 
         <div ref={notificationsRef} className="header__notifications">
           <button type="button" className="header__bell-button" onClick={() => void openNotifications()} aria-label="Open notifications" title="Notifications">

@@ -13,6 +13,18 @@ export interface AuthUser extends BaseEntity {
   isActive: boolean;
 }
 
+/**
+ * Set when an SMD's assistant is signed in with their own login. The session then
+ * behaves as the SMD (`principal`) on every endpoint; this only tells the UI so it can
+ * show the assistant banner and hide personal settings.
+ */
+export interface ActingAs {
+  assistant_id: number;
+  assistant_name: string;
+  principal_id: number;
+  principal_name: string;
+}
+
 // Extended user with profile data
 export interface UserWithProfile extends AuthUser {
   accountType: AccountType;
@@ -26,6 +38,8 @@ export interface UserWithProfile extends AuthUser {
   sponsorId?: string;
   teamId?: string;
   lastLogin?: Date;
+  /** Assistant mode: who is really signed in, and whose account they work in. */
+  actingAs?: ActingAs | null;
 }
 
 // Auth credentials

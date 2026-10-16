@@ -11,6 +11,9 @@ export interface InAppNotification {
     kind?: string;
     start_at?: string;
     timezone?: string;
+    /** In-app route to open (e.g. helpdesk ticket links); must start with '/'. */
+    link?: string;
+    ticket_number?: string;
   };
   read_at: string | null;
   created_at: string;

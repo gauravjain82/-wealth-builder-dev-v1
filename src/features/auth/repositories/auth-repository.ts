@@ -1,17 +1,25 @@
 import { Plan } from '@core/types';
 import { roleToPlan } from '@core/constants/roles';
-import type { UserWithProfile, AccountType, SignupCredentials } from '../types';
+import type { ActingAs, UserWithProfile, AccountType, SignupCredentials } from '../types';
 
 const DEFAULT_ACCOUNT_TYPE: AccountType = Plan.NewAgent;
 
 const AUTH_STORAGE_KEY = 'wb.auth';
 const TOKEN_STORAGE_KEY = 'wb.authToken';
+/** Assistant-mode marker (`acting_as` from login / session), cleared on sign-out. */
+const ACTING_AS_STORAGE_KEY = 'wb.actingAs';
 
 interface LoginResponse {
   token: string;
   user_id: number;
   username: string;
   has_promotion_access?: boolean;
+  /** Present (non-null) only when an SMD's assistant signs in; user_id is then the SMD's. */
+  acting_as?: ActingAs | null;
+}
+
+interface AssistantSessionResponse {
+  acting_as: ActingAs | null;
 }
 
 interface ApiMessageResponse {
@@ -200,6 +208,7 @@ export class AuthRepository {
       loginData.user_id,
       Boolean(loginData.has_promotion_access)
     );
+    userProfile.actingAs = loginData.acting_as ?? null;
 
     this.persistSession({ token: loginData.token, user: userProfile });
     this.persistToLocalStorage(userProfile);
@@ -291,6 +300,36 @@ export class AuthRepository {
     }
   }
 
+  /**
+   * Re-read assistant mode from `GET /api/assistant-access/session/` so a stored session
+   * picks up a change made since login. Returns the updated user when it changed, the
+   * stored user when it did not, and null on any failure (callers ignore failures).
+   */
+  async refreshActingAs(): Promise<UserWithProfile | null> {
+    const session = this.getStoredSession();
+    if (!session?.token || !session?.user) return null;
+
+    try {
+      const response = await fetch(buildApiUrl('/api/assistant-access/session/'), {
+        headers: { Authorization: `Token ${session.token}` },
+      });
+      if (!response.ok) return null;
+
+      const data = (await response.json()) as AssistantSessionResponse;
+      const actingAs = data?.acting_as ?? null;
+      if (JSON.stringify(actingAs) === JSON.stringify(session.user.actingAs ?? null)) {
+        return session.user;
+      }
+
+      const updatedUser: UserWithProfile = { ...session.user, actingAs };
+      this.persistSession({ token: session.token, user: updatedUser });
+      this.persistToLocalStorage(updatedUser);
+      return updatedUser;
+    } catch {
+      return null;
+    }
+  }
+
   private getStoredSession(): StoredAuthSession | null {
     try {
       const raw = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -319,6 +358,11 @@ export class AuthRepository {
     localStorage.setItem('wb.userEmail', user.email);
     localStorage.setItem('wb.userName', user.name || user.displayName || user.email);
     localStorage.setItem('wb.hasPromotionAccess', String(Boolean(user.hasPromotionAccess)));
+    if (user.actingAs) {
+      localStorage.setItem(ACTING_AS_STORAGE_KEY, JSON.stringify(user.actingAs));
+    } else {
+      localStorage.removeItem(ACTING_AS_STORAGE_KEY);
+    }
     localStorage.setItem(
       'authUser',
       JSON.stringify({
@@ -343,6 +387,7 @@ export class AuthRepository {
     localStorage.removeItem('wb.userEmail');
     localStorage.removeItem('wb.userName');
     localStorage.removeItem('wb.hasPromotionAccess');
+    localStorage.removeItem(ACTING_AS_STORAGE_KEY);
   }
 }
 

@@ -47,9 +47,23 @@ function Toast({ toast, onClose }: ToastProps) {
     >
       <div className="flex min-w-0 items-start gap-2.5">
         <div className="mt-0.5">{typeIcons[toast.type]}</div>
-        <Text variant="small" className="font-medium leading-5 text-white/95">
-          {toast.message}
-        </Text>
+        <div className="min-w-0">
+          <Text variant="small" className="font-medium leading-5 text-white/95">
+            {toast.message}
+          </Text>
+          {toast.action ? (
+            <button
+              type="button"
+              onClick={() => {
+                toast.action?.onClick();
+                onClose();
+              }}
+              className="mt-1 text-xs font-semibold text-[#ffd700] underline-offset-2 hover:underline"
+            >
+              {toast.action.label}
+            </button>
+          ) : null}
+        </div>
       </div>
       <button
         onClick={onClose}

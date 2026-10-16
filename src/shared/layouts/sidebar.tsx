@@ -7,6 +7,19 @@ import { menuContainsPath, type MenuItem } from '@/config/menu';
 import { getSidebarMenuIcon } from './menu-icon-map';
 import './sidebar.css';
 
+/** Count pill for a menu entry; `rail` pins it to the icon in the collapsed sidebar. */
+function MenuBadge({ count, rail = false }: { count?: number; rail?: boolean }) {
+  if (!count) return null;
+  return (
+    <span
+      className={cn('sidebar__badge', rail && 'sidebar__badge--rail')}
+      aria-label={`${count} need${count === 1 ? 's' : ''} action`}
+    >
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
+
 interface MenuItemProps {
   item: MenuItem;
   isCollapsed: boolean;
@@ -129,12 +142,16 @@ function MenuItemComponent({ item, isCollapsed, level = 0 }: MenuItemProps) {
                 minWidth: '24px',
                 display: 'flex',
                 justifyContent: 'center',
+                position: 'relative',
               }}
             >
               {getSidebarMenuIcon(safeLabel, item.icon, 20)}
+              {isCollapsed && <MenuBadge count={item.badge} rail />}
             </span>
             {!isCollapsed && <span>{safeLabel}</span>}
           </div>
+          {/* Closed group: show the children's total; once open they show their own. */}
+          {!isCollapsed && !isExpanded && <MenuBadge count={item.badge} />}
           {!isCollapsed && (
             <span
               style={{
@@ -218,11 +235,14 @@ function MenuItemComponent({ item, isCollapsed, level = 0 }: MenuItemProps) {
             minWidth: '24px',
             display: 'flex',
             justifyContent: 'center',
+            position: 'relative',
           }}
         >
           {getSidebarMenuIcon(safeLabel, item.icon, 20)}
+          {isCollapsed && <MenuBadge count={item.badge} rail />}
         </span>
         {!isCollapsed && <span>{safeLabel}</span>}
+        {!isCollapsed && <MenuBadge count={item.badge} />}
       </NavLink>
     );
   }
