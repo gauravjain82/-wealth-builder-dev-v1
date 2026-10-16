@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { CalendarClock, Check, ClipboardPen, Copy, History, MapPin, Pencil, UserRound } from 'lucide-react';
+import { CalendarClock, CalendarPlus, CalendarX2, Check, ClipboardPen, Copy, History, ListRestart, MapPin, Pencil, UserRound, XCircle } from 'lucide-react';
 import { Button, Modal } from '@shared/components/ui';
 import { formatAppointmentTime } from '../services/matchup-service';
 import { canReschedule } from './reschedule-appointment-modal';
-import type { AppointmentDetail } from '../types';
+import type { AppointmentDetail, AppointmentStatus } from '../types';
 
 interface AppointmentDetailsModalProps {
   appointment: AppointmentDetail | null;
@@ -11,7 +11,19 @@ interface AppointmentDetailsModalProps {
   onEdit?: (appointment: AppointmentDetail) => void;
   onReschedule?: (appointment: AppointmentDetail) => void;
   onEditResult?: (appointment: AppointmentDetail) => void;
+  onChangeStatus?: (appointment: AppointmentDetail) => void;
+  onReaddToCalendar?: (appointment: AppointmentDetail) => void;
+  onCancel?: (appointment: AppointmentDetail) => void;
 }
+
+/** Finished appointments: nothing left to cancel or put back on a calendar. */
+const CLOSED_STATUSES: AppointmentStatus[] = ['DONE', 'CANCELLED', 'NOT_INTERESTED'];
+
+const STATUS_CHANGE_SOURCE: Record<string, string> = {
+  APP: '',
+  MANUAL: 'Changed by hand',
+  REPAIR: 'Data repair',
+};
 
 function value(value: unknown) {
   if (value === null || value === undefined || value === '') return '—';
@@ -19,7 +31,16 @@ function value(value: unknown) {
   return String(value).replace(/_/g, ' ');
 }
 
-export function AppointmentDetailsModal({ appointment, onClose, onEdit, onReschedule, onEditResult }: AppointmentDetailsModalProps) {
+export function AppointmentDetailsModal({
+  appointment,
+  onClose,
+  onEdit,
+  onReschedule,
+  onEditResult,
+  onChangeStatus,
+  onReaddToCalendar,
+  onCancel,
+}: AppointmentDetailsModalProps) {
   const [copied, setCopied] = useState(false);
   if (!appointment) return null;
   const types = appointment.types_detail || [];
@@ -31,6 +52,8 @@ export function AppointmentDetailsModal({ appointment, onClose, onEdit, onResche
   const location = appointment.location_type === 'VIRTUAL'
     ? appointment.url || appointment.url_nickname || 'Virtual'
     : [appointment.address, appointment.city, appointment.state, appointment.zip_code].filter(Boolean).join(', ');
+  const isOpen = !CLOSED_STATUSES.includes(appointment.status);
+  const deletedInGoogle = appointment.google_sync_status === 'DELETED_IN_GOOGLE';
   const copyVirtualLink = async () => {
     if (!appointment.url) return;
     await navigator.clipboard.writeText(appointment.url);
@@ -59,6 +82,14 @@ export function AppointmentDetailsModal({ appointment, onClose, onEdit, onResche
             {appointment.kind === 'REQUEST_TRAINER' ? 'Request Trainer' : 'Personal'}
           </span>
           <strong>{value(appointment.status_label || appointment.status)}</strong>
+          {deletedInGoogle ? (
+            <span className="matchup-gcal-deleted-badge"><CalendarX2 size={12} /> Deleted in Google Calendar</span>
+          ) : null}
+          {onChangeStatus && appointment.can_change_status ? (
+            <Button type="button" variant="outline" onClick={() => onChangeStatus(appointment)}>
+              <ListRestart size={16} /> Change status
+            </Button>
+          ) : null}
           {onReschedule && canReschedule(appointment.status) ? (
             <Button type="button" variant="outline" onClick={() => onReschedule(appointment)}>
               <CalendarClock size={16} /> Reschedule
@@ -72,6 +103,32 @@ export function AppointmentDetailsModal({ appointment, onClose, onEdit, onResche
         </div>
       </div>
 
+      {deletedInGoogle ? (
+        <section className="matchup-details-section matchup-gcal-deleted-notice">
+          <h3><CalendarX2 size={16} /> Removed from Google Calendar</h3>
+          <p>
+            The Google Calendar copy of this appointment was deleted
+            {appointment.google_deleted_at ? ` on ${new Date(appointment.google_deleted_at).toLocaleString()}` : ''}.
+            {' '}Its status has not changed.
+            {isOpen ? ' If the meeting is off, cancel it here; otherwise add it back to the calendar.' : ''}
+          </p>
+          {isOpen && (onReaddToCalendar || onCancel) ? (
+            <div className="matchup-gcal-deleted-actions">
+              {onReaddToCalendar ? (
+                <Button type="button" size="sm" onClick={() => onReaddToCalendar(appointment)}>
+                  <CalendarPlus size={14} /> Add back to calendar
+                </Button>
+              ) : null}
+              {onCancel ? (
+                <Button type="button" size="sm" variant="outline" onClick={() => onCancel(appointment)}>
+                  <XCircle size={14} /> Cancel appointment
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       <section className="matchup-details-section">
         <h3>Assignment history</h3>
         {appointment.assignments?.length ? appointment.assignments.map((entry) => (
@@ -84,6 +141,19 @@ export function AppointmentDetailsModal({ appointment, onClose, onEdit, onResche
         {appointment.reschedules?.length ? appointment.reschedules.map((entry) => (
           <article key={entry.id}><strong>{formatAppointmentTime(entry.previous_start_at)} → {formatAppointmentTime(entry.new_start_at)}</strong><span>{entry.new_timezone} · {entry.new_duration_minutes} minutes</span>{entry.reason ? <p>{entry.reason}</p> : null}</article>
         )) : <p className="matchup-muted">No reschedule history.</p>}
+      </section>
+
+      <section className="matchup-details-section">
+        <h3>Status history</h3>
+        {appointment.status_changes?.length ? appointment.status_changes.map((entry) => (
+          <article key={entry.id}>
+            <strong>{value(entry.from_status)} → {value(entry.to_status)}</strong>
+            <span>
+              {[STATUS_CHANGE_SOURCE[entry.source], entry.changed_by_name, new Date(entry.created_at).toLocaleString()].filter(Boolean).join(' · ')}
+            </span>
+            {entry.reason ? <p>{entry.reason}</p> : null}
+          </article>
+        )) : <p className="matchup-muted">No status changes recorded.</p>}
       </section>
 
       <section className="matchup-details-section">
