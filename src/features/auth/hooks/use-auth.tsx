@@ -31,13 +31,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(initialUser);
       setIsLoading(false);
 
-      // Hydrate photoURL from /me/ for the current session
+      // Hydrate photoURL from /me/ and assistant mode from /assistant-access/session/
+      // for the current session. Run in sequence: both rewrite the stored session.
       if (initialUser) {
-        authService.refreshPhotoURL().then((updated) => {
-          if (updated && updated.photoURL !== initialUser.photoURL) {
-            setUser(updated);
+        void (async () => {
+          const withPhoto = await authService.refreshPhotoURL();
+          if (withPhoto && withPhoto.photoURL !== initialUser.photoURL) {
+            setUser(withPhoto);
           }
-        });
+          const withActingAs = await authService.refreshActingAs();
+          if (
+            withActingAs &&
+            JSON.stringify(withActingAs.actingAs ?? null) !== JSON.stringify(initialUser.actingAs ?? null)
+          ) {
+            setUser(withActingAs);
+          }
+        })();
       }
     });
 

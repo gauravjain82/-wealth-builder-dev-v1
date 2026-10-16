@@ -100,6 +100,13 @@ export class AuthService {
   async refreshPhotoURL(): Promise<UserWithProfile | null> {
     return authRepository.refreshPhotoURL();
   }
+
+  /**
+   * Refresh assistant mode (`acting_as`) for the stored session; null on failure.
+   */
+  async refreshActingAs(): Promise<UserWithProfile | null> {
+    return authRepository.refreshActingAs();
+  }
 }
 
 // Export singleton instance

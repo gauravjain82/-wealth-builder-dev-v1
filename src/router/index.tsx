@@ -156,6 +156,10 @@ const TenSystematicToolsPage = lazy(() => import('@/features/systematic-tools/pa
 const OnboardingGamePage = lazy(() => import('@/features/team/onboarding-game/pages/onboarding-game-page'));
 const WelcomeVideosPage = lazy(() => import('@/features/welcome-videos/pages/welcome-videos-page'));
 const ResetPasswordPage = lazy(() => import('@/features/auth/components/reset-password-page'));
+// Assistant invite email link target: preview the invite and set the assistant's password.
+const AssistantInviteAcceptPage = lazy(
+  () => import('@/features/assistant-access/pages/assistant-invite-accept-page'),
+);
 const TrainingCenterPage = lazy(() => import('@/features/training-center/pages/training-center-page'));
 const TrainingSchedulePage = lazy(() => import('@/features/training-schedule/pages/training-schedule-page'));
 const TrainingAttendancePage = lazy(
@@ -241,6 +245,13 @@ const router = createBrowserRouter([
   {
     path: '/reset-password',
     element: lazyLoad(ResetPasswordPage),
+    errorElement: <RouteErrorFallback />,
+  },
+
+  // SMD assistant invite (email link target): set password, then sign in
+  {
+    path: '/assistant/accept',
+    element: lazyLoad(AssistantInviteAcceptPage),
     errorElement: <RouteErrorFallback />,
   },
 

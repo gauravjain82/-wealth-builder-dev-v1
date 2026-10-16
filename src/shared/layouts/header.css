@@ -32,6 +32,12 @@
   font-size: 14px;
 }
 
+.header__welcome-suffix {
+  font-size: 12px;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
+}
+
 .header__dropdown {
   position: relative;
 }

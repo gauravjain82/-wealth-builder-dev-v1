@@ -30,6 +30,8 @@ export function Header() {
 
   // Get first name
   const firstName = (user?.displayName || user?.name || user?.email || 'User').split(' ')[0];
+  // Assistant mode: greet the assistant, not the SMD whose account they work in.
+  const actingAs = user?.actingAs ?? null;
 
   // Avatar: photo URL or initials
   const avatarUrl = user?.photoURL || null;
@@ -130,7 +132,14 @@ export function Header() {
       {/* Right: Welcome, Theme Toggle, Profile Dropdown */}
       <div className="header__right">
         <span className="header__welcome">
-          Welcome, {firstName}
+          {actingAs ? (
+            <>
+              Welcome, {actingAs.assistant_name}
+              <span className="header__welcome-suffix"> for {actingAs.principal_name}</span>
+            </>
+          ) : (
+            <>Welcome, {firstName}</>
+          )}
         </span>
 
         <ThemeToggle />

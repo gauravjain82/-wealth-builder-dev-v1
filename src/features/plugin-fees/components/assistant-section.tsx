@@ -10,6 +10,7 @@ import { useState, type FormEvent } from 'react';
 
 import { ConfirmationDialog, PhoneField, StagedFilePicker, isValidPhoneNumber } from '@/shared/components';
 import { useToastStore } from '@/store';
+import { AssistantAccountAccess } from '@/features/assistant-access/components/assistant-account-access';
 
 import { useSubmitAssistant, useWithdrawAssistant } from '../hooks/use-plugin-fees';
 import type { AssistantHours, AssistantSubmission, SubmissionGroup } from '../types';
@@ -161,6 +162,9 @@ export function AssistantSection({
             <p className="wb-pf-muted">No verified assistant.</p>
           )}
         </div>
+
+        {/* The assistant's own login (SMDs only; renders nothing when there is no access record). */}
+        <AssistantAccountAccess submissionVerified={Boolean(effective)} />
 
         {pending ? (
           <div className="wb-pf-stack" style={{ gap: 8 }}>

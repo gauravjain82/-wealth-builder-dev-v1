@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
 import { ExpandableChat } from '@/features/ai/components/expandable-chat';
+import { AssistantModeBanner } from '@/features/assistant-access/components/assistant-mode-banner';
 import { AnnouncementBar } from '@/features/events/components/announcement-bar/announcement-bar';
 import { Header } from './header';
 import { Sidebar } from './sidebar';
@@ -14,6 +15,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="main-layout">
       <AnnouncementBar />
+      <AssistantModeBanner />
       <Header />
 
       <div className="main-layout__body">
