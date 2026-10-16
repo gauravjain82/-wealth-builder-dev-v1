@@ -18,6 +18,8 @@ export interface MenuItem {
   externalUrl?: string;
   /** Minimum roles required to see this item */
   roles?: AccountType[];
+  /** Attention count shown as a pill (hidden when 0/absent); groups carry their children's total. */
+  badge?: number;
 }
 
 /**
@@ -184,6 +186,8 @@ const MENU_ITEMS = {
   // Admin items
   MISSION_RING_PROOF_ADMIN: { label: 'Mission Ring Proof', icon: '💍', path: '/admin/mission-ring-proof' } as MenuItem,
   HELPDESK_ADMIN: { label: 'Support Queue', icon: '🆘', path: '/admin/helpdesk' } as MenuItem,
+  // Helpdesk L1 queue for an active SMD (and their assistant): my-access `team_queue`.
+  TEAM_SUPPORT: { label: 'Team Support', icon: '🎧', path: '/team/support' } as MenuItem,
   FUNCTIONS: { label: 'Functions', icon: '🧩', path: '/admin/functions' } as MenuItem,
   USER_PERMISSIONS: { label: 'User Permissions', icon: '🔐', path: '/admin/user-permissions' } as MenuItem,
   LEVEL_PERMISSIONS: { label: 'Level Permissions', icon: '📊', path: '/admin/level-permissions' } as MenuItem,
@@ -680,6 +684,33 @@ export function menuContainsPath(items: MenuItem[], path: string): boolean {
   );
 }
 
+/**
+ * Label of the menu item for `pathname`: an exact path match wins, otherwise the
+ * item whose path is the longest prefix of `pathname` (so `/events/12` finds
+ * "Events"). Returns '' when nothing in the menu matches.
+ */
+export function findMenuLabelByPath(items: MenuItem[], pathname: string): string {
+  const best = { label: '', length: -1 };
+  const visit = (list: MenuItem[]): string | null => {
+    for (const item of list) {
+      if (item.path) {
+        if (item.path === pathname) return item.label;
+        const prefix = item.path.endsWith('/') ? item.path : `${item.path}/`;
+        if (item.path !== '/' && pathname.startsWith(prefix) && item.path.length > best.length) {
+          best.label = item.label;
+          best.length = item.path.length;
+        }
+      }
+      if (item.children) {
+        const exact = visit(item.children);
+        if (exact) return exact;
+      }
+    }
+    return null;
+  };
+  return visit(items) ?? best.label;
+}
+
 /** True if an item labelled `label` appears anywhere in the (possibly nested) menu. */
 function menuContainsLabel(items: MenuItem[], label: string): boolean {
   return items.some(
@@ -695,6 +726,29 @@ export function removeMenuItemByPath(items: MenuItem[], path: string): MenuItem[
     .map((item) =>
       item.children ? { ...item, children: removeMenuItemByPath(item.children, path) } : item,
     );
+}
+
+/** Paths of the menu entries that carry helpdesk "needs action" badges. */
+export const HELPDESK_BADGE_PATHS = {
+  supportQueue: MENU_ITEMS.HELPDESK_ADMIN.path as string,
+  teamSupport: MENU_ITEMS.TEAM_SUPPORT.path as string,
+};
+
+/**
+ * Return a copy of the menu with `badge` set on items whose path is in `counts`
+ * (0 clears it). A group's badge is the sum of its children's, so a closed group
+ * still shows there is something inside.
+ */
+export function applyMenuBadges(items: MenuItem[], counts: Record<string, number>): MenuItem[] {
+  return items.map((item) => {
+    if (item.children) {
+      const children = applyMenuBadges(item.children, counts);
+      const total = children.reduce((sum, child) => sum + (child.badge ?? 0), 0);
+      return { ...item, children, badge: total || undefined };
+    }
+    const count = item.path ? counts[item.path] : undefined;
+    return count ? { ...item, badge: count } : item;
+  });
 }
 
 /** Return a copy of the menu with every top-level item matching `label` removed. */
@@ -764,7 +818,9 @@ export function getMenuForUser(
   canManageCodeOfHonor: boolean = false,
   // helpdesk:read (Helpdesk my-access `can_view`). Admin plans list Helpdesk Admin
   // statically; it is removed for anyone without the grant and added for any holder.
-  canAccessHelpdeskAdmin: boolean = false
+  canAccessHelpdeskAdmin: boolean = false,
+  // Helpdesk my-access `team_queue` (active SMD, or their assistant signed in as them).
+  canAccessTeamSupport: boolean = false
 ): MenuItem[] {
   const normalizedPlan = normalizePlan(plan);
   let menuItems = cloneMenuItems(PLAN_MENUS[normalizedPlan]);
@@ -884,6 +940,15 @@ export function getMenuForUser(
       icon: '🎪',
       children: cloneMenuItems(bigEventEntries),
     });
+  }
+
+  // Team Support (helpdesk L1 queue): last child of My Team, or top level if a plan
+  // has no My Team group.
+  if (canAccessTeamSupport && !menuContainsLabel(menuItems, MENU_ITEMS.TEAM_SUPPORT.label)) {
+    const teamSupport = cloneMenuItems([MENU_ITEMS.TEAM_SUPPORT])[0];
+    const myTeam = menuItems.find((item) => item.label === MY_TEAM_LABEL && item.children);
+    if (myTeam?.children) myTeam.children.push(teamSupport);
+    else menuItems.push(teamSupport);
   }
 
   if (!canAccessHelpdeskAdmin) {

@@ -180,7 +180,9 @@ const BpmSettingsPage = lazy(() => import('@/features/bpm/pages/bpm-settings-pag
 const HelpNeededPage = lazy(() => import('@/features/helpdesk/pages/help-needed-page'));
 const PrivacyPolicyPage = lazy(() => import('@/features/legal/pages/privacy-policy-page'));
 const TermsPage = lazy(() => import('@/features/legal/pages/terms-page'));
+const MyTicketsPage = lazy(() => import('@/features/helpdesk/pages/my-tickets-page'));
 const AdminHelpdeskPage = lazy(() => import('@/features/helpdesk/pages/admin-helpdesk-page'));
+const TeamSupportPage = lazy(() => import('@/features/helpdesk/pages/team-support-page'));
 const InviteAgentsPage = lazy(() => import('@/features/admin/invite-agents/pages/invite-agents-page'));
 const FunctionsPage = lazy(() => import('@/features/admin/access-control/pages/functions-page'));
 const UserPermissionsPage = lazy(() => import('@/features/admin/access-control/pages/user-permissions-page'));
@@ -819,13 +821,19 @@ const router = createBrowserRouter([
         element: lazyLoad(SettingsPage),
       },
       {
+        // Signed-in "My tickets"; the public form stays at /help-needed.
         path: 'helpdesk',
-        element: lazyLoad(HelpNeededPage),
+        element: lazyLoad(MyTicketsPage),
       },
       {
         // Helpdesk Admin; gated per-user by helpdesk:read (access console).
         path: 'admin/helpdesk',
         element: <HelpdeskRoute>{lazyLoad(AdminHelpdeskPage)}</HelpdeskRoute>,
+      },
+      {
+        // Team Support (L1 queue); for active SMDs and their assistants (my-access team_queue).
+        path: 'team/support',
+        element: <HelpdeskRoute requires="team_queue">{lazyLoad(TeamSupportPage)}</HelpdeskRoute>,
       },
       {
         path: 'components',
