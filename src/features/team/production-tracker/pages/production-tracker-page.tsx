@@ -131,6 +131,42 @@ function summaryToKpis(summary: ProductionSummary | null, topPerformerName: stri
   };
 }
 
+/** Map a table row onto the Add/Edit Production modal's form shape. */
+function toEditForm(row: ProductionTrackerRecord): AddProductionFormData {
+  const isSplit = row.split_mode === 'split';
+  const split = isSplit ? `${row.agent_1_pct || 50}/${row.agent_2_pct || 50}` : '100/0';
+  const targetPointsValue =
+    row.base_points !== null && row.base_points !== undefined && row.base_points !== ''
+      ? String(row.base_points)
+      : row.points_target !== null && row.points_target !== undefined
+      ? String(row.points_target)
+      : '';
+
+  return {
+    status: row.status || 'Pending',
+    dateWritten: row.date_written || '',
+    closureDate: row.closure_date || '',
+    client: row.client_name || '',
+    agentMode: isSplit ? 'split' : 'single',
+    agent1Id: row.agent_1,
+    agent1Name: row.agent_1_name || '',
+    agent2Id: row.agent_2,
+    agent2Name: row.agent_2_name || '',
+    agent1Pct: row.agent_1_pct || (isSplit ? 50 : 100),
+    agent2Pct: row.agent_2_pct || (isSplit ? 50 : 0),
+    split,
+    targetPoints: targetPointsValue,
+    multiplierPercent: '',
+    company: row.policy_company || '',
+    product: row.policy_product || '',
+    otherProduct: row.policy_other_product || '',
+    policyNumber: row.policy_number || '',
+    delivery: row.delivery || 'Pending',
+    trialApp: Boolean(row.trial_app),
+    notes: row.notes || '',
+  };
+}
+
 function mergeCompanyProducts(companyProducts: ProductionCompanyProduct[]) {
   const nextProductsByCompany: Record<string, string[]> = {};
   const multiplierTable: Record<string, number> = {};
@@ -260,6 +296,10 @@ export default function ProductionTrackerPage() {
       }, {}),
     [companyProducts]
   );
+
+  // Built once per opened row: a fresh object every render would make the modal
+  // re-seed its form (wiping the user's edits) whenever the page re-renders.
+  const editingInitialForm = useMemo(() => (editingRow ? toEditForm(editingRow) : null), [editingRow]);
 
   const companyProductsByProductName = useMemo(
     () =>
@@ -581,46 +621,19 @@ export default function ProductionTrackerPage() {
     }
   };
 
-  const toEditForm = (row: ProductionTrackerRecord): AddProductionFormData => {
-    const isSplit = row.split_mode === 'split';
-    const split = isSplit ? `${row.agent_1_pct || 50}/${row.agent_2_pct || 50}` : '100/0';
-    const targetPointsValue =
-      row.base_points !== null && row.base_points !== undefined && row.base_points !== ''
-        ? String(row.base_points)
-        : row.points_target !== null && row.points_target !== undefined
-        ? String(row.points_target)
-        : '';
-
-    return {
-      status: row.status || 'Pending',
-      dateWritten: row.date_written || '',
-      closureDate: row.closure_date || '',
-      client: row.client_name || '',
-      agentMode: isSplit ? 'split' : 'single',
-      agent1Id: row.agent_1,
-      agent1Name: row.agent_1_name || '',
-      agent2Id: row.agent_2,
-      agent2Name: row.agent_2_name || '',
-      agent1Pct: row.agent_1_pct || (isSplit ? 50 : 100),
-      agent2Pct: row.agent_2_pct || (isSplit ? 50 : 0),
-      split,
-      targetPoints: targetPointsValue,
-      multiplierPercent: '',
-      company: row.policy_company || '',
-      product: row.policy_product || '',
-      otherProduct: row.policy_other_product || '',
-      policyNumber: row.policy_number || '',
-      delivery: row.delivery || 'Pending',
-      trialApp: Boolean(row.trial_app),
-      notes: row.notes || '',
-    };
-  };
 
   const handleSaveEdit = async (form: AddProductionFormData) => {
     if (!editingRow) return;
     setSavingEdit(true);
+    // The API stores the product as a CompanyProduct FK; the name fields below are
+    // display-only and dropped by the service, so without the id a product change
+    // was silently discarded. The backend re-snapshots the multiplier and rebuilds
+    // the ledger only when this id actually changes.
+    const isOther = form.company === 'OTHER' || form.product === 'OTHER';
+    const companyProductId = isOther ? undefined : companyProductIdByKey[`${form.company}|${form.product}`];
     try {
       const updated = await updateProductionRecord(editingRow.id, {
+        ...(companyProductId !== undefined ? { company_product_id: companyProductId } : {}),
         status: form.status,
         date_written: form.dateWritten || null,
         closure_date: form.closureDate || null,
@@ -1243,7 +1256,7 @@ export default function ProductionTrackerPage() {
         prospect={null}
         title="Edit Production"
         submitLabel="Save Changes"
-        initialForm={editingRow ? toEditForm(editingRow) : null}
+        initialForm={editingInitialForm}
         companyOptions={mergedProductConfig.companyOptions}
         productsByCompany={mergedProductConfig.productsByCompany}
         splitOptions={splitOptions.filter((option) => option !== '100/0')}

@@ -40,6 +40,15 @@ function toDateString(value: Date): string {
   return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
 }
 
+/**
+ * Today as `YYYY-MM-DD` on the user's local calendar — the same calendar the
+ * "This Month"/YTD presets end on. Do not use `toISOString()` for "today": that
+ * is the UTC date, which is already tomorrow on a US evening.
+ */
+export function todayLocalISO(): string {
+  return toDateString(new Date());
+}
+
 function startOfMonth(base: Date): Date {
   return new Date(base.getFullYear(), base.getMonth(), 1);
 }

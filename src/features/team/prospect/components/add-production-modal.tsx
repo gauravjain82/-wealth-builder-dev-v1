@@ -11,6 +11,7 @@ import {
   Modal,
   Select,
   Textarea,
+  todayLocalISO,
   UserAutocompleteDropdown,
   type UserAutocompleteOption,
 } from '@/shared/components';
@@ -61,7 +62,7 @@ interface AddProductionModalProps {
 
 const defaultForm = (): AddProductionFormData => ({
   status: 'IN_PROGRESS',
-  dateWritten: new Date().toISOString().split('T')[0],
+  dateWritten: todayLocalISO(),
   closureDate: '',
   client: '',
   agentMode: 'single',

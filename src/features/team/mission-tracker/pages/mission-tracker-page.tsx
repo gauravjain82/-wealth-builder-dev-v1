@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { Block, ErrorState, LoadingState, TrackerDateRangeFilter, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
+import { Block, ErrorState, LoadingState, TrackerDateRangeFilter, todayLocalISO, type DatePresetKey, type TrackerDateRangeChange, TrackerTable } from '@/shared/components';
 import { useToastStore } from '@/store';
 import { buildMissionTrackerColumns } from '../mission-tracker-columns';
 import {
@@ -326,7 +326,7 @@ export default function MissionTrackerPage() {
 
   const handleSaveAndAddProduction = useCallback(
     (row: MissionTrackerRecord, _savingsField: SavingsToggleField, _amountField: SavingsAmountField, amount: number) => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = todayLocalISO();
 
       // Prefill logged-in user as agent_1 from localStorage.
       let agent1Id: number | null = null;
