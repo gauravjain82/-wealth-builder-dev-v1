@@ -29,6 +29,16 @@ export function formatCurrency(amount: number, currency: string = 'USD'): string
 }
 
 /**
+ * Format a product multiplier exactly as stored (up to the backend's 7 decimals),
+ * never in exponent form: `Number('0.0000002')` would render as `2e-7`.
+ */
+export function formatMultiplier(value: number | string | null | undefined): string {
+  const parsed = Number(value);
+  if (value === null || value === undefined || value === '' || !Number.isFinite(parsed)) return '';
+  return parsed.toFixed(7).replace(/\.?0+$/, '');
+}
+
+/**
  * Debounce function
  */
 export function debounce<T extends (...args: unknown[]) => unknown>(
