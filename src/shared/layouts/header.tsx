@@ -91,6 +91,13 @@ export function Header() {
     setNotifications((current) => current.filter((item) => item.id !== notification.id));
     setUnreadCount((current) => Math.max(0, current - 1));
     setNotificationsOpen(false);
+    // Notifications that carry their own in-app link (e.g. helpdesk tickets) open it;
+    // everything else is a Match Up notification and keeps the original behaviour.
+    const link = notification.payload?.link;
+    if (typeof link === 'string' && link.startsWith('/') && !link.startsWith('//')) {
+      navigate(link);
+      return;
+    }
     navigate('/matchup', { state: { appointmentId: notification.payload?.appointment_id } });
   };
 

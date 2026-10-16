@@ -1,13 +1,16 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useToastStore } from '@/store';
-import { useAuth } from '@/features/auth';
+import { useHelpdeskAccess } from '@/features/helpdesk/hooks/use-helpdesk-access';
 import {
+  ADMIN_TICKETS_PAGE_SIZE,
   closeAdminHelpdeskTicket,
   createAdminHelpdeskComment,
   fetchAdminHelpdeskTicketDetail,
   fetchAdminHelpdeskTickets,
   patchAdminHelpdeskTicket,
   type AdminTicketDetail,
+  type AdminTicketFilters,
   type AdminTicketListItem,
   type HelpdeskCategory,
   type HelpdeskPriority,
@@ -42,24 +45,33 @@ function formatDate(value: string): string {
   return parsed.toLocaleString();
 }
 
-function isAdminRole(roles: string[] | undefined): boolean {
-  if (!roles || roles.length === 0) return false;
-  return roles.some((role) => role.trim().toUpperCase().replace(/[\s-]+/g, '_') === 'ADMIN');
-}
-
+/**
+ * Staff view of helpdesk tickets: filterable, paginated list plus a detail pane.
+ *
+ * Who may open the page is decided by the route guard (helpdesk:read). Editing
+ * (status/priority, comments, close) additionally needs helpdesk:update; without
+ * it the page is read-only. A `?ticket=HD-...` query param (used by in-app
+ * notification links) filters the list to that ticket and opens it.
+ */
 export default function AdminHelpdeskPage() {
-  const { user } = useAuth();
   const addToast = useToastStore((state) => state.addToast);
+  const { data: access } = useHelpdeskAccess();
+  const canUpdate = Boolean(access?.can_update);
+
+  const [searchParams] = useSearchParams();
+  const urlTicket = (searchParams.get('ticket') || '').trim();
 
   const [statusFilter, setStatusFilter] = useState<HelpdeskStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<HelpdeskPriority | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<HelpdeskCategory | ''>('');
-  const [ticketFilter, setTicketFilter] = useState('');
+  const [ticketFilter, setTicketFilter] = useState(urlTicket);
   const [emailFilter, setEmailFilter] = useState('');
 
   const [tickets, setTickets] = useState<AdminTicketListItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [loadingTickets, setLoadingTickets] = useState(false);
-  const [selectedTicketNumber, setSelectedTicketNumber] = useState<string | null>(null);
+  const [selectedTicketNumber, setSelectedTicketNumber] = useState<string | null>(urlTicket || null);
 
   const [detail, setDetail] = useState<AdminTicketDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -72,27 +84,46 @@ export default function AdminHelpdeskPage() {
   const [isInternalComment, setIsInternalComment] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
 
-  const canAccess = useMemo(() => isAdminRole(user?.roles), [user?.roles]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / ADMIN_TICKETS_PAGE_SIZE));
+
+  /** Current filter values in the shape the list endpoint expects. */
+  const currentFilters = useCallback(
+    (): AdminTicketFilters => ({
+      ticket: ticketFilter,
+      email: emailFilter,
+      status: statusFilter,
+      priority: priorityFilter,
+      category: categoryFilter,
+    }),
+    [categoryFilter, emailFilter, priorityFilter, statusFilter, ticketFilter]
+  );
+
+  /** Apply a filter change and go back to the first page in the same render. */
+  const changeFilter = <T,>(setter: (value: T) => void, value: T) => {
+    setter(value);
+    setPage(1);
+  };
+
+  // A notification link (?ticket=) arriving while already on this page: filter to
+  // that ticket and open it. On first mount the initial state already did this.
+  useEffect(() => {
+    if (!urlTicket) return;
+    setTicketFilter(urlTicket);
+    setSelectedTicketNumber(urlTicket);
+    setPage(1);
+  }, [urlTicket]);
 
   useEffect(() => {
-    if (!canAccess) return;
-
     const loadTickets = async () => {
       setLoadingTickets(true);
       try {
-        const loaded = await fetchAdminHelpdeskTickets({
-          ticket: ticketFilter,
-          email: emailFilter,
-          status: statusFilter,
-          priority: priorityFilter,
-          category: categoryFilter,
-        });
-        setTickets(loaded);
+        const loaded = await fetchAdminHelpdeskTickets(currentFilters(), page);
+        setTickets(loaded.results);
+        setTotalCount(loaded.count);
 
-        if (loaded.length > 0 && !selectedTicketNumber) {
-          setSelectedTicketNumber(loaded[0].ticket_number);
-        }
-        if (loaded.length === 0) {
+        if (loaded.results.length > 0) {
+          setSelectedTicketNumber((current) => current ?? loaded.results[0].ticket_number);
+        } else {
           setSelectedTicketNumber(null);
           setDetail(null);
         }
@@ -107,10 +138,10 @@ export default function AdminHelpdeskPage() {
     };
 
     void loadTickets();
-  }, [addToast, canAccess, categoryFilter, emailFilter, priorityFilter, statusFilter, ticketFilter]);
+  }, [addToast, currentFilters, page]);
 
   useEffect(() => {
-    if (!canAccess || !selectedTicketNumber) return;
+    if (!selectedTicketNumber) return;
 
     const loadDetail = async () => {
       setLoadingDetail(true);
@@ -130,17 +161,13 @@ export default function AdminHelpdeskPage() {
     };
 
     void loadDetail();
-  }, [addToast, canAccess, selectedTicketNumber]);
+  }, [addToast, selectedTicketNumber]);
 
+  /** Reload the current list page after a change to a ticket. */
   const refreshTickets = async () => {
-    const loaded = await fetchAdminHelpdeskTickets({
-      ticket: ticketFilter,
-      email: emailFilter,
-      status: statusFilter,
-      priority: priorityFilter,
-      category: categoryFilter,
-    });
-    setTickets(loaded);
+    const loaded = await fetchAdminHelpdeskTickets(currentFilters(), page);
+    setTickets(loaded.results);
+    setTotalCount(loaded.count);
   };
 
   const handleSaveTicket = async () => {
@@ -211,16 +238,6 @@ export default function AdminHelpdeskPage() {
     }
   };
 
-  if (!canAccess) {
-    return (
-      <div className="p-6">
-        <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
-          You do not have permission to view Helpdesk admin.
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-full min-h-0 p-4 flex flex-col gap-4 text-slate-900 dark:text-white">
       <div className="flex items-center justify-between">
@@ -234,20 +251,20 @@ export default function AdminHelpdeskPage() {
         <input
           type="text"
           value={ticketFilter}
-          onChange={(e) => setTicketFilter(e.target.value)}
+          onChange={(e) => changeFilter(setTicketFilter, e.target.value)}
           placeholder="Ticket # (e.g. HD-001)"
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-black/30 dark:text-white dark:placeholder:text-white/50"
         />
         <input
           type="email"
           value={emailFilter}
-          onChange={(e) => setEmailFilter(e.target.value)}
+          onChange={(e) => changeFilter(setEmailFilter, e.target.value)}
           placeholder="Email"
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-black/30 dark:text-white dark:placeholder:text-white/50"
         />
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as HelpdeskStatus | '')}
+          onChange={(e) => changeFilter(setStatusFilter, e.target.value as HelpdeskStatus | '')}
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
         >
           <option value="">All Statuses</option>
@@ -259,7 +276,7 @@ export default function AdminHelpdeskPage() {
         </select>
         <select
           value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value as HelpdeskPriority | '')}
+          onChange={(e) => changeFilter(setPriorityFilter, e.target.value as HelpdeskPriority | '')}
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
         >
           <option value="">All Priorities</option>
@@ -271,7 +288,7 @@ export default function AdminHelpdeskPage() {
         </select>
         <select
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value as HelpdeskCategory | '')}
+          onChange={(e) => changeFilter(setCategoryFilter, e.target.value as HelpdeskCategory | '')}
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
         >
           <option value="">All Categories</option>
@@ -284,29 +301,52 @@ export default function AdminHelpdeskPage() {
       </div>
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[380px_1fr]">
-        <section className="min-h-0 overflow-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
-          {loadingTickets ? (
-            <div className="p-4 text-sm text-slate-600 dark:text-white/70">Loading tickets...</div>
-          ) : tickets.length === 0 ? (
-            <div className="p-4 text-sm text-slate-600 dark:text-white/70">No tickets found for the current filters.</div>
-          ) : (
-            <div className="divide-y divide-slate-200 dark:divide-white/10">
-              {tickets.map((ticket) => (
-                <button
-                  key={ticket.ticket_number}
-                  type="button"
-                  onClick={() => setSelectedTicketNumber(ticket.ticket_number)}
-                  className={`w-full px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-white/10 ${selectedTicketNumber === ticket.ticket_number ? 'bg-slate-100 dark:bg-white/10' : ''}`}
-                >
-                  <div className="text-sm font-semibold text-[#f5d66a]">{ticket.ticket_number}</div>
-                  <div className="truncate text-sm text-slate-900 dark:text-white">{ticket.subject}</div>
-                  <div className="mt-1 text-xs text-slate-600 dark:text-white/70">
-                    {ticket.status} - {ticket.priority} - {ticket.comment_count} comments
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+        <section className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
+          <div className="min-h-0 flex-1 overflow-auto">
+            {loadingTickets ? (
+              <div className="p-4 text-sm text-slate-600 dark:text-white/70">Loading tickets...</div>
+            ) : tickets.length === 0 ? (
+              <div className="p-4 text-sm text-slate-600 dark:text-white/70">No tickets found for the current filters.</div>
+            ) : (
+              <div className="divide-y divide-slate-200 dark:divide-white/10">
+                {tickets.map((ticket) => (
+                  <button
+                    key={ticket.ticket_number}
+                    type="button"
+                    onClick={() => setSelectedTicketNumber(ticket.ticket_number)}
+                    className={`w-full px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-white/10 ${selectedTicketNumber === ticket.ticket_number ? 'bg-slate-100 dark:bg-white/10' : ''}`}
+                  >
+                    <div className="text-sm font-semibold text-[#f5d66a]">{ticket.ticket_number}</div>
+                    <div className="truncate text-sm text-slate-900 dark:text-white">{ticket.subject}</div>
+                    <div className="mt-1 text-xs text-slate-600 dark:text-white/70">
+                      {ticket.status} - {ticket.priority} - {ticket.comment_count} comments
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-3 py-2 text-xs text-slate-600 dark:border-white/10 dark:text-white/70">
+            <button
+              type="button"
+              className="rounded-md border border-slate-300 px-2 py-1 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/20 dark:hover:bg-white/10"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={loadingTickets || page <= 1}
+            >
+              Prev
+            </button>
+            <span>
+              Page {page} of {totalPages} ({totalCount} tickets)
+            </span>
+            <button
+              type="button"
+              className="rounded-md border border-slate-300 px-2 py-1 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/20 dark:hover:bg-white/10"
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              disabled={loadingTickets || page >= totalPages}
+            >
+              Next
+            </button>
+          </div>
         </section>
 
         <section className="min-h-0 overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
@@ -322,56 +362,71 @@ export default function AdminHelpdeskPage() {
                 <div><strong>Email:</strong> {detail.email}</div>
                 <div><strong>Category:</strong> {detail.category}</div>
                 <div><strong>Subject:</strong> {detail.subject}</div>
+                {!canUpdate && (
+                  <div>
+                    <strong>Status:</strong> {STATUS_OPTIONS.find((item) => item.value === detail.status)?.label || detail.status}
+                    {' | '}
+                    <strong>Priority:</strong> {PRIORITY_OPTIONS.find((item) => item.value === detail.priority)?.label || detail.priority}
+                  </div>
+                )}
                 <div className="mt-2 whitespace-pre-wrap"><strong>Description:</strong> {detail.description}</div>
                 <div className="mt-2 text-xs text-slate-600 dark:text-white/65">
                   Created: {formatDate(detail.created_at)} | Updated: {formatDate(detail.updated_at)}
                 </div>
               </div>
 
-              <div className="grid gap-2 md:grid-cols-3">
-                <select
-                  value={draftStatus}
-                  onChange={(e) => setDraftStatus(e.target.value as HelpdeskStatus)}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
-                  disabled={savingTicket}
-                >
-                  {STATUS_OPTIONS.map((item) => (
-                    <option key={item.value} value={item.value} className="bg-white text-slate-900 dark:bg-[#0f131c] dark:text-white">
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={draftPriority}
-                  onChange={(e) => setDraftPriority(e.target.value as HelpdeskPriority)}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
-                  disabled={savingTicket}
-                >
-                  {PRIORITY_OPTIONS.map((item) => (
-                    <option key={item.value} value={item.value} className="bg-white text-slate-900 dark:bg-[#0f131c] dark:text-white">
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="flex-1 rounded-lg bg-[#f5d66a] px-3 py-2 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-60"
-                    onClick={() => void handleSaveTicket()}
+              {!canUpdate && (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-300/20 dark:bg-amber-500/10 dark:text-amber-50">
+                  Read-only: you can view tickets but not change, reply to, or close them.
+                </div>
+              )}
+
+              {canUpdate && (
+                <div className="grid gap-2 md:grid-cols-3">
+                  <select
+                    value={draftStatus}
+                    onChange={(e) => setDraftStatus(e.target.value as HelpdeskStatus)}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
                     disabled={savingTicket}
                   >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/25 dark:hover:bg-white/10"
-                    onClick={() => void handleCloseTicket()}
-                    disabled={savingTicket || detail.status === 'closed'}
+                    {STATUS_OPTIONS.map((item) => (
+                      <option key={item.value} value={item.value} className="bg-white text-slate-900 dark:bg-[#0f131c] dark:text-white">
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={draftPriority}
+                    onChange={(e) => setDraftPriority(e.target.value as HelpdeskPriority)}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-white/20 dark:bg-black/30 dark:text-white"
+                    disabled={savingTicket}
                   >
-                    Close
-                  </button>
+                    {PRIORITY_OPTIONS.map((item) => (
+                      <option key={item.value} value={item.value} className="bg-white text-slate-900 dark:bg-[#0f131c] dark:text-white">
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="flex-1 rounded-lg bg-[#f5d66a] px-3 py-2 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => void handleSaveTicket()}
+                      disabled={savingTicket}
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/25 dark:hover:bg-white/10"
+                      onClick={() => void handleCloseTicket()}
+                      disabled={savingTicket || detail.status === 'closed'}
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black/20">
                 <h3 className="mb-2 text-sm font-semibold">Comments</h3>
@@ -392,35 +447,37 @@ export default function AdminHelpdeskPage() {
                 </div>
               </div>
 
-              <form onSubmit={handleAddComment} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black/20">
-                <textarea
-                  value={commentBody}
-                  onChange={(e) => setCommentBody(e.target.value)}
-                  rows={4}
-                  placeholder="Write a reply or internal note"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-black/30 dark:text-white dark:placeholder:text-white/50"
-                  required
-                  disabled={postingComment}
-                />
-                <div className="mt-2 flex items-center justify-between">
-                  <label className="inline-flex items-center gap-2 text-xs text-slate-700 dark:text-white/80">
-                    <input
-                      type="checkbox"
-                      checked={isInternalComment}
-                      onChange={(e) => setIsInternalComment(e.target.checked)}
-                      disabled={postingComment}
-                    />
-                    Internal note (no email)
-                  </label>
-                  <button
-                    type="submit"
-                    className="rounded-lg bg-[#f5d66a] px-3 py-2 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-60"
+              {canUpdate && (
+                <form onSubmit={handleAddComment} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black/20">
+                  <textarea
+                    value={commentBody}
+                    onChange={(e) => setCommentBody(e.target.value)}
+                    rows={4}
+                    placeholder="Write a reply or internal note"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-black/30 dark:text-white dark:placeholder:text-white/50"
+                    required
                     disabled={postingComment}
-                  >
-                    {postingComment ? 'Posting...' : 'Add Comment'}
-                  </button>
-                </div>
-              </form>
+                  />
+                  <div className="mt-2 flex items-center justify-between">
+                    <label className="inline-flex items-center gap-2 text-xs text-slate-700 dark:text-white/80">
+                      <input
+                        type="checkbox"
+                        checked={isInternalComment}
+                        onChange={(e) => setIsInternalComment(e.target.checked)}
+                        disabled={postingComment}
+                      />
+                      Internal note (no email)
+                    </label>
+                    <button
+                      type="submit"
+                      className="rounded-lg bg-[#f5d66a] px-3 py-2 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={postingComment}
+                    >
+                      {postingComment ? 'Posting...' : 'Add Comment'}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           )}
         </section>

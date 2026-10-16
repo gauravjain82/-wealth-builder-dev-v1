@@ -11,6 +11,7 @@ import { useBpmCapabilities } from '@/features/bpm/hooks/use-bpm-capabilities';
 import { usePluginFeesAccess } from '@/features/plugin-fees/hooks/use-plugin-fees';
 import { useEventsAccess } from '@/features/events/hooks/use-events-access';
 import { useCodeOfHonorAccess } from '@/features/code-of-honor';
+import { useHelpdeskAccess } from '@/features/helpdesk/hooks/use-helpdesk-access';
 import {
   canManageCosts,
   canSeeCycles,
@@ -71,6 +72,9 @@ export function useRoleBasedMenu(): MenuItem[] {
   // Code of Honor committee/admin page: code_of_honor:* grants in the access console.
   const { data: codeOfHonorAccess } = useCodeOfHonorAccess();
   const canManageCodeOfHonor = Boolean(codeOfHonorAccess?.can_review || codeOfHonorAccess?.can_manage);
+  // Helpdesk Admin: helpdesk:read in the access console. Hidden while loading.
+  const { data: helpdeskAccess } = useHelpdeskAccess();
+  const canAccessHelpdeskAdmin = Boolean(helpdeskAccess?.can_view);
 
   return useMemo(() => {
     const primaryRole = user?.roles?.[0] || null;
@@ -94,7 +98,8 @@ export function useRoleBasedMenu(): MenuItem[] {
         canViewPluginFeeOverview,
         canViewPluginFeePayouts,
         bigEventScreens,
-        canManageCodeOfHonor
+        canManageCodeOfHonor,
+        canAccessHelpdeskAdmin
       );
     const normalizedRole = primaryRole.trim().toUpperCase().replace(/[\s-]+/g, '_');
     return getMenuForUser(
@@ -115,7 +120,8 @@ export function useRoleBasedMenu(): MenuItem[] {
       canViewPluginFeeOverview,
       canViewPluginFeePayouts,
       bigEventScreens,
-      canManageCodeOfHonor
+      canManageCodeOfHonor,
+      canAccessHelpdeskAdmin
     );
   }, [
     user?.hasPromotionAccess,
@@ -136,5 +142,6 @@ export function useRoleBasedMenu(): MenuItem[] {
     canViewPluginFeePayouts,
     bigEventScreens,
     canManageCodeOfHonor,
+    canAccessHelpdeskAdmin,
   ]);
 }
