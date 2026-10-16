@@ -178,7 +178,8 @@ function mergeCompanyProducts(companyProducts: ProductionCompanyProduct[]) {
     if (!nextProductsByCompany[item.company_name].includes(item.product_name)) {
       nextProductsByCompany[item.company_name] = [...nextProductsByCompany[item.company_name], item.product_name];
     }
-    multiplierTable[`${item.company_name}|${item.product_name}`] = parseMetricNumber(item.multiplier) || 1;
+    // Keep the real value: a 0 here used to be shown as 1, hiding a broken product.
+    multiplierTable[`${item.company_name}|${item.product_name}`] = parseMetricNumber(item.multiplier);
   });
 
   const companyOptions = Array.from(new Set(companyProducts.map((item) => item.company_name)));
@@ -300,6 +301,15 @@ export default function ProductionTrackerPage() {
   // Built once per opened row: a fresh object every render would make the modal
   // re-seed its form (wiping the user's edits) whenever the page re-renders.
   const editingInitialForm = useMemo(() => (editingRow ? toEditForm(editingRow) : null), [editingRow]);
+
+  // The server keeps a policy's own multiplier while its product is unchanged (a 0
+  // is re-taken from the product on save), so preview with that, not the catalog's.
+  const editingPolicyMultiplier = useMemo(() => {
+    if (!editingRow) return null;
+    const snapshot = parseMetricNumber(editingRow.multiplier_snapshot);
+    if (snapshot <= 0) return null;
+    return { productKey: `${editingRow.policy_company}|${editingRow.policy_product}`, value: snapshot };
+  }, [editingRow]);
 
   const companyProductsByProductName = useMemo(
     () =>
@@ -1257,6 +1267,7 @@ export default function ProductionTrackerPage() {
         title="Edit Production"
         submitLabel="Save Changes"
         initialForm={editingInitialForm}
+        policyMultiplier={editingPolicyMultiplier}
         companyOptions={mergedProductConfig.companyOptions}
         productsByCompany={mergedProductConfig.productsByCompany}
         splitOptions={splitOptions.filter((option) => option !== '100/0')}

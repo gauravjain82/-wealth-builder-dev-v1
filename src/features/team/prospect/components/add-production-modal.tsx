@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { formatMultiplier } from '@core/utils';
 import {
   Button,
   Checkbox,
@@ -56,6 +57,8 @@ interface AddProductionModalProps {
   productsByCompany?: Record<string, string[]>;
   splitOptions?: readonly string[];
   multiplierTable?: Record<string, number>;
+  /** Edit only: the policy's own multiplier, used while its original product stays selected. */
+  policyMultiplier?: { productKey: string; value: number } | null;
   onClose: () => void;
   onSubmit: (data: AddProductionFormData) => Promise<void>;
 }
@@ -95,6 +98,7 @@ export function AddProductionModal({
   productsByCompany = {},
   splitOptions = [],
   multiplierTable = {},
+  policyMultiplier = null,
   onClose,
   onSubmit,
 }: AddProductionModalProps) {
@@ -140,7 +144,9 @@ export function AddProductionModal({
       const pct = parseFloat(form.multiplierPercent);
       return isNaN(pct) ? 1 : pct;
     }
-    return multiplierTable[`${form.company}|${form.product}`] ?? 1;
+    const productKey = `${form.company}|${form.product}`;
+    if (policyMultiplier && policyMultiplier.productKey === productKey) return policyMultiplier.value;
+    return multiplierTable[productKey] ?? 1;
   };
 
   const points = useMemo(() => {
@@ -156,7 +162,7 @@ export function AddProductionModal({
       labelB: `${pB}% Points`,
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.targetPoints, form.company, form.product, form.multiplierPercent, form.split]);
+  }, [form.targetPoints, form.company, form.product, form.multiplierPercent, form.split, policyMultiplier, multiplierTable]);
 
   const handleSubmit = async () => {
     await onSubmit(form);
@@ -326,7 +332,7 @@ export function AddProductionModal({
           {form.company && form.product && (
             <FormRow>
               <Label variant="form">Multiplier</Label>
-              <Input type="text" value={getMultiplier()} readOnly disabled />
+              <Input type="text" value={formatMultiplier(getMultiplier())} readOnly disabled />
             </FormRow>
           )}
         </FormRowGroup>
@@ -345,7 +351,7 @@ export function AddProductionModal({
               <Label variant="form">Multiplier</Label>
               <Input
                 type="number"
-                step="0.01"
+                step="any"
                 placeholder="e.g. 1.25"
                 value={form.multiplierPercent}
                 onChange={(e) => update('multiplierPercent', e.target.value)}
