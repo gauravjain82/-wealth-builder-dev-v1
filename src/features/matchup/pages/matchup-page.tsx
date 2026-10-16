@@ -25,6 +25,8 @@ import { ActionRequiredPanel } from '../components/action-required-panel';
 import { AppointmentFormModal } from '../components/appointment-form-modal';
 import { AppointmentList } from '../components/appointment-list';
 import { AppointmentDetailsModal } from '../components/appointment-details-modal';
+import { ChangeStatusModal } from '../components/change-status-modal';
+import { useAppointmentCorrections } from '../hooks/use-appointment-corrections';
 import { AssignTrainerModal } from '../components/assign-trainer-modal';
 import { CompleteAppointmentModal } from '../components/complete-appointment-modal';
 import { MetricsCards } from '../components/metrics-cards';
@@ -264,6 +266,7 @@ export default function MatchupPage() {
     reload,
     loadMore,
   } = useMatchupDashboard(filters, calendarMonth);
+  const corrections = useAppointmentCorrections({ onChanged: reload, setDetails: setDetailsTarget });
 
   useEffect(() => {
     const appointmentId = (location.state as { appointmentId?: number } | null)?.appointmentId;
@@ -955,6 +958,16 @@ export default function MatchupPage() {
         }}
         onReschedule={openRescheduleAppointment}
         onEditResult={openResultEditor}
+        onChangeStatus={corrections.openChangeStatus}
+        onReaddToCalendar={(appointment) => void corrections.readdToCalendar(appointment)}
+        onCancel={(appointment) => void corrections.cancelAppointment(appointment)}
+      />
+      <ChangeStatusModal
+        appointment={corrections.changeStatusTarget}
+        statuses={statuses}
+        saving={corrections.saving}
+        onClose={corrections.closeChangeStatus}
+        onSubmit={corrections.submitChangeStatus}
       />
       <RescheduleAppointmentModal
         open={Boolean(rescheduleTarget)}

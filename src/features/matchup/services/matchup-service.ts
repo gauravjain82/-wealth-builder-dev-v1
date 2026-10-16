@@ -2,6 +2,7 @@ import type {
   AppointmentDetail,
   AppointmentFilters,
   AppointmentListItem,
+  AppointmentStatus,
   AppointmentType,
   CalendarAppointment,
   CompleteAppointmentPayload,
@@ -207,6 +208,17 @@ export const matchupService = {
 
   cancel: (appointmentId: number) =>
     request<AppointmentDetail>(`/api/matchup/appointments/${appointmentId}/cancel/`, { method: 'POST' }),
+
+  /** Set the status by hand (brokers; trainers on their own appointments). A reason is required. */
+  changeStatus: (appointmentId: number, payload: { status: AppointmentStatus; reason: string }) =>
+    request<AppointmentDetail>(`/api/matchup/appointments/${appointmentId}/change-status/`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  /** Put an appointment whose Google Calendar copy was deleted back on the calendar. */
+  readdToCalendar: (appointmentId: number) =>
+    request<AppointmentDetail>(`/api/matchup/appointments/${appointmentId}/readd-to-calendar/`, { method: 'POST' }),
 
   trainerSearch: (params: {
     q?: string;

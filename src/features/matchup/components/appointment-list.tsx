@@ -161,6 +161,11 @@ export function AppointmentList({
           </div>
           <small>{item.timezone}</small>
           <span className="matchup-row-status" style={{ color }}>{statusLabel(item, statuses)}</span>
+          {item.google_sync_status === 'DELETED_IN_GOOGLE' ? (
+            <span className="matchup-gcal-deleted-badge" title="The Google Calendar copy was deleted. Open the appointment to cancel it or add it back.">
+              Deleted in Google
+            </span>
+          ) : null}
           {item.created_by_name ? (
             <small className="matchup-row-created-by" title={`Created by ${item.created_by_name}`}>
               by {item.created_by_name}
