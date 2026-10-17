@@ -5,7 +5,7 @@
 | **Module** | `terminated-users` |
 | **Source** | `src/features/terminated-users/services/terminated-users-service.ts` |
 | **Routes** | `/terminated-users` |
-| **Backend module** | `accounts` → `mlm_platform/docs/accounts/API.md` |
+| **Backend module** | `accounts` → `wealth-builder-dev-v1-backend/docs/accounts/API.md` |
 | **API prefix** | `/api/accounts/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

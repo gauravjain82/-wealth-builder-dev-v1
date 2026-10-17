@@ -5,7 +5,7 @@
 | **Module** | `matchup` |
 | **Source** | `src/features/matchup/services/` |
 | **Routes** | `/matchup`, `/calendar` |
-| **Backend module** | `matchup` → `mlm_platform/docs/matchup/API.md`; `notifications` |
+| **Backend module** | `matchup` → `wealth-builder-dev-v1-backend/docs/matchup/API.md`; `notifications` |
 | **API prefix** | `/api/matchup/`, `/api/notifications/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

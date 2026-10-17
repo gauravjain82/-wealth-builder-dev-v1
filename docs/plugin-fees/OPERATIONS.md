@@ -5,7 +5,7 @@
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
 | **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/settings`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
-| **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
+| **Backend module** | `plugin_fees` → `wealth-builder-dev-v1-backend/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
 | **Status** | Merged-not-deployed — P2–P6 merged to `main` via PR #18 (`e91e5a5`); not deployed. Fee configuration + ledger split (2026-10-03) on branch `feature/plugin-fees-config`, uncommitted. Nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` yet |
 | **Doc version** | 0.5 |
@@ -46,7 +46,7 @@ No client-side flags. Visibility comes from `my-access/`:
 - P6: the Plug-in Fees overview and SEVC Totals: `:manage` or `:review`. Adjustments and
   Void: `:manage` only.
 
-**Coupled branches.** This module depends on `feature/plugin-fees` in `mlm_platform`. The two
+**Coupled branches.** This module depends on `feature/plugin-fees` in `wealth-builder-dev-v1-backend`. The two
 must merge and deploy together: merged alone, the frontend's Settings block silently renders
 nothing (`my-access/` 404s and the block hides) and the review route redirects to `/home`;
 the backend alone has no UI. The coupled-branches list in the repo `CLAUDE.md` does not yet

@@ -5,7 +5,7 @@
 | **Module** | `events` |
 | **Source** | `src/features/events/` |
 | **Routes** | 14 authenticated under `/events/*`, 4 **public** under `/event/*` |
-| **Backend module** | `events` → `mlm_platform/docs/events/` |
+| **Backend module** | `events` → `wealth-builder-dev-v1-backend/docs/events/` |
 | **API prefix** | `/api/events/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

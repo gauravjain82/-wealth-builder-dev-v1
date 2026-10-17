@@ -5,7 +5,7 @@
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
 | **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/settings`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
-| **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
+| **Backend module** | `plugin_fees` → `wealth-builder-dev-v1-backend/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
 | **Status** | Merged-not-deployed — P2–P6 merged to `main` via PR #18 (`e91e5a5`); not deployed. Fee configuration + ledger split (2026-10-03) on branch `feature/plugin-fees-config`, uncommitted. Nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` yet |
 | **Doc version** | 0.5 |
@@ -90,7 +90,7 @@ configuration** screen and the ledger totals (2026-10-03).
 - Changing a price already in force — the backend forbids it by design; schedule a new
   price from a future month instead.
 - The website subscription and its billing portal — [settings](../settings/).
-- Any server behaviour — `mlm_platform/docs/plugin_fees/`.
+- Any server behaviour — `wealth-builder-dev-v1-backend/docs/plugin_fees/`.
 
 ## 3. At a glance
 
@@ -158,7 +158,7 @@ configuration** screen and the ledger totals (2026-10-03).
   `cycles/…`, `costs/…`, `payments/`, `follow-ups/…`, `balances/`, `me/invoices/…`,
   `me/connect/…`, `payouts/…`, `dashboard/`, `sevc-totals/`, `adjustments/`,
   `invoices/{id}/void/`, `fee-schedule/…`, `settings/`, `config-history/`. Contract:
-  `mlm_platform/docs/plugin_fees/API.md`.
+  `wealth-builder-dev-v1-backend/docs/plugin_fees/API.md`.
 
 **External**
 - Stripe Checkout (setup mode; payment mode for Pay now) and Stripe Connect Express

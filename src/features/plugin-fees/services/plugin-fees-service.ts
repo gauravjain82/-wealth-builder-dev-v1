@@ -8,7 +8,7 @@
  * configuration screen — the effective-dated fee schedule, billing settings and their
  * change history (2026-10-03).
  *
- * Contract: `mlm_platform/docs/plugin_fees/API.md` (consumed endpoints are listed in
+ * Contract: `wealth-builder-dev-v1-backend/docs/plugin_fees/API.md` (consumed endpoints are listed in
  * `docs/plugin-fees/API.md` §2). Every path ends in `/` — Django's APPEND_SLASH would
  * otherwise redirect and drop a POST body. Every endpoint is authorised server-side;
  * hiding a control here is not authorisation.

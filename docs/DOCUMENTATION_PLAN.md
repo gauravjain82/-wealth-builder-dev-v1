@@ -2,7 +2,7 @@
 
 > **Living document.** Read it before starting a batch; update the scoreboard and the learnings
 > when you finish one. It is the frontend counterpart to
-> `mlm_platform/DOCS_STANDARDISATION_PROGRESS.md`.
+> `wealth-builder-dev-v1-backend/DOCS_STANDARDISATION_PROGRESS.md`.
 
 ## Goal
 
@@ -36,7 +36,7 @@ What remains is **upkeep, not coverage**:
 
 ### The backend has moved too
 
-`mlm_platform/docs/` now holds **14 completed app doc sets** (its batches A–D): `accounts`, `ai`,
+`wealth-builder-dev-v1-backend/docs/` now holds **14 completed app doc sets** (its batches A–D): `accounts`, `ai`,
 `audit`, `authz`, `helpdesk`, `misalignments`, `network`, `notifications`, `payments`, `platform`,
 `promotion`, `telegram_bot`, `tracker`, and `matchup` (5 of 6 — no `PHASES.md` yet).
 
@@ -112,7 +112,7 @@ Phase numbering in these is **authoritative** and must be carried across unchang
 | `CALENDAR_SYNC_PROGRESS.md` | calendar-sync | Phases 1–10. Already mined |
 | `DOCUMENTATION.md` (44 KB, 2026-09-02) | — | Covers 7 of 21 apps and predates most current code. **Historical — re-verify anything taken from it** |
 
-### 2.3 Vendor delivery packages — `mlm_platform/temporary/wb_*/`
+### 2.3 Vendor delivery packages — `wealth-builder-dev-v1-backend/temporary/wb_*/`
 
 Four packages, each with `UI_CONTRACT`, `API_CONTRACT`, `DATA_CONTRACT`, `APPLICATION_CONTRACT`,
 `AGENTS`, `CHANGE_MANIFEST`, `VERIFICATION`, `HOST_DISCOVERY_CHECKLIST`:
@@ -127,7 +127,7 @@ Four packages, each with `UI_CONTRACT`, `API_CONTRACT`, `DATA_CONTRACT`, `APPLIC
 **`temporary/` is gitignored.** These packages are not committed anywhere. Folding their content
 into `docs/<module>/` is the only thing that preserves them.
 
-### 2.4 Integration analyses — `mlm_platform/docs/integrations/`
+### 2.4 Integration analyses — `wealth-builder-dev-v1-backend/docs/integrations/`
 
 | File | Module |
 |---|---|
@@ -170,7 +170,7 @@ Repeat this for each module. Steps 2 and 6 are the ones that have caught real er
    the pages. Measure LOC and count routes, endpoints and components for §3 of `README.md`.
 2. **Collect the sources** from §2 above. Read the plan file and the progress file **before**
    writing, and note where the plan and the code disagree.
-3. **Check the backend.** If `mlm_platform/docs/<app>/` exists, read its `README` and `PHASES`; its
+3. **Check the backend.** If `wealth-builder-dev-v1-backend/docs/<app>/` exists, read its `README` and `PHASES`; its
    decision log is usually the cheapest route to the "why". If it does not, read the app's source.
 4. **Copy `_standard/` into `docs/<module>/`** and fill it in, keeping the numbered headings.
 5. **Ground every claim** as `src/features/<m>/<file>.tsx:123`. Where a number appears, cite the
@@ -251,7 +251,7 @@ All three now live in the module docs. None was in the vendor package.
 
 ### A note on E
 
-Both `events` and `matchup` have backend doc sets **pending** (`mlm_platform` batch E). `matchup`
+Both `events` and `matchup` have backend doc sets **pending** (`wealth-builder-dev-v1-backend` batch E). `matchup`
 has 5 of 6 files already. If the backend batch lands first, both frontend modules get materially
 cheaper — worth checking before starting, and worth coordinating if the backend work is active.
 
@@ -314,7 +314,7 @@ The work is complete when:
 - The three checks in §3 pass: zero broken links, zero orphan doc directories, **zero** dangling
   citations in `src/`.
 - Every module's `PHASES.md` §3 either lists cited decisions or states that none are recorded.
-- The vendor packages' content lives in `docs/`, so losing `mlm_platform/temporary/` loses nothing.
+- The vendor packages' content lives in `docs/`, so losing `wealth-builder-dev-v1-backend/temporary/` loses nothing.
 - This file's scoreboard matches reality.
 
 ## 8. Learnings log
@@ -335,7 +335,7 @@ Append as batches complete.
   that was learned during the build rather than specified. The old documents were still essential — the
   `C1`–`C13`, `G1`–`G12` and 24 owner decisions are not recoverable from source — but they are
   supporting material, not the spine.
-- **2026-09-27.** With batch D done, `mlm_platform/temporary/` is no longer a single point of failure:
+- **2026-09-27.** With batch D done, `wealth-builder-dev-v1-backend/temporary/` is no longer a single point of failure:
   every contract fact those four gitignored packages held that the frontend depends on now lives in
   `docs/`, and all 28 code citations point at real in-repo paths.
 - **2026-09-28, batches E–H.** Finishing the long tail found more than expected, because the small modules

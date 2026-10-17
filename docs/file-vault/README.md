@@ -54,7 +54,7 @@ file list ([platform decision P8](../platform/PHASES.md#3-decision-log)).
 
 **Downstream** — none.
 
-**Backend** — `content`. The authority is `mlm_platform/docs/content/`, and
+**Backend** — `content`. The authority is `wealth-builder-dev-v1-backend/docs/content/`, and
 `content/FILE_VAULT_API.md` in the backend repo describes this API specifically.
 
 ## 6. Document map

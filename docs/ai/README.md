@@ -5,7 +5,7 @@
 | **Module** | `ai` |
 | **Source** | `src/features/ai/` |
 | **Routes** | **none** — an embedded chat mounted on every authenticated page |
-| **Backend module** | `ai` → `mlm_platform/docs/ai/` |
+| **Backend module** | `ai` → `wealth-builder-dev-v1-backend/docs/ai/` |
 | **API prefix** | `/api/ai/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

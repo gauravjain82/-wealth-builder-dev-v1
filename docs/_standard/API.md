@@ -5,7 +5,7 @@
 | **Module** | `<feature-dir>` |
 | **Source** | `src/features/<feature-dir>/services/` |
 | **Routes** | `/path` |
-| **Backend module** | `<app_label>` → `mlm_platform/docs/<app_label>/API.md` |
+| **Backend module** | `<app_label>` → `wealth-builder-dev-v1-backend/docs/<app_label>/API.md` |
 | **API prefix** | `/api/<prefix>/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

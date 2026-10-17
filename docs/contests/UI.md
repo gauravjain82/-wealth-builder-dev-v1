@@ -144,7 +144,7 @@ Everything is a draft until **Apply** (or Enter in the page's search box).
 
 **SMD base shows the same people as Base shop.** It is in the menu for parity with dtez's five
 person views. The backend walks both with zero downline SMD generations
-(`mlm_platform` `population.py`, `SCOPE_ALIASES`), which is dtez's own generation map, so the rows
+(`wealth-builder-dev-v1-backend` `population.py`, `SCOPE_ALIASES`), which is dtez's own generation map, so the rows
 are equal. That is not a bug to fix.
 
 **The page's summary line** reads, as dtez's does, "Selected: *person or All agents* · View:

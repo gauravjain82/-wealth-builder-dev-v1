@@ -5,7 +5,7 @@
 | **Module** | `builder-ai` |
 | **Source** | `src/features/builder-ai/` |
 | **Routes** | 7 under `/builder-ai/*`, plus `/team/builders/daily-six/:agencyCode` (public) |
-| **Backend module** | `builderai` → `mlm_platform/docs/builderai/` |
+| **Backend module** | `builderai` → `wealth-builder-dev-v1-backend/docs/builderai/` |
 | **API prefix** | `/api/builderai/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

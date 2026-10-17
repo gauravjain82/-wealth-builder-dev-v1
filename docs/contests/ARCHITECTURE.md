@@ -259,7 +259,7 @@ Nothing is in the query string. Neither surface is deep-linkable to a filter sta
 
 `can_view_contests` rides the **same `homev2:read` grant** as Home and Leaderboards — and is also
 true for a `wbreporting:manage` holder, so an operator can see what they configure
-(`mlm_platform` `wbreporting/views.py`, `MyAccessView`) — because the
+(`wealth-builder-dev-v1-backend` `wbreporting/views.py`, `MyAccessView`) — because the
 contest card lives on the page that gate already opens. Configuring a contest is a different job for
 a different person, so it takes `wbreporting:manage` — the gate that already owns every other
 reporting configuration model.
@@ -303,7 +303,7 @@ never what is permitted.
 | A hidden identity field is absent, not blank | the backend omits `level` and `leader_name` when hidden; `ContestResults` shows a part only when present | "No level" or "Leader: -" shown for everyone when an admin hides the field |
 | Dialogs portal out of the card | shared `Modal` | overlays clipped by `overflow: hidden` |
 | Escape and a backdrop click close only the top dialog | the shared `Modal`'s open stack; the four contest dialogs pass `dismissible` | a profile over a proof closing both, or a form modal lost to a stray key (the card's Filters modal is not `dismissible`) |
-| The proof's SQL never reaches a reader | the backend omits `sql` / `sql_params` without `wbreporting:manage` (tested both ways in `mlm_platform`); the dialog shows `{ }` only when the key exists | dtez's leak: its proof endpoint returns its SQL to anyone |
+| The proof's SQL never reaches a reader | the backend omits `sql` / `sql_params` without `wbreporting:manage` (tested both ways in `wealth-builder-dev-v1-backend`); the dialog shows `{ }` only when the key exists | dtez's leak: its proof endpoint returns its SQL to anyone |
 | The proof's source total is the pill's number | computed server-side over all rows by the metric's own rule; the dialog never sums a page | a truncated page's sum contradicting the grid |
 | `TR`/`TP`/`TE` are never threshold inputs | not rendered; backend rejects them | a result component used as a requirement |
 

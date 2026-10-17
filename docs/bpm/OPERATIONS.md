@@ -125,11 +125,11 @@ Manual checks after any change, ordered by how often they catch something:
 
 ## 5. Deployment
 
-**`feature/bpm-v2` is coupled to its backend counterpart** in `mlm_platform` and they must
+**`feature/bpm-v2` is coupled to its backend counterpart** in `wealth-builder-dev-v1-backend` and they must
 merge and deploy together. Merging the frontend alone produces eight pages that render and then
 fail.
 
-**`feature/bpm-updates-oct` is coupled the same way**, to the `mlm_platform` branch of the same
+**`feature/bpm-updates-oct` is coupled the same way**, to the `wealth-builder-dev-v1-backend` branch of the same
 name (uncommitted on both sides at 2026-10-01). It needs backend migrations `bpm/0026` and
 `tracker/0053`. Without them the new fields (`zoom`, `attended_zoom`, `checkin_closes_at`,
 `checkin_closed`, `stat_card_colors`, `training_date`) are absent and the four new endpoints

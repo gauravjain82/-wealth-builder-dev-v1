@@ -11,7 +11,7 @@
 | **Doc version** | 1.0 |
 | **Verified against** | commit `7e3b7f1` — 2026-09-27 |
 
-> Phase numbering and the `G` decision prefix come from `mlm_platform/WB_GMS_PROGRESS.md` (phases 0–10)
+> Phase numbering and the `G` decision prefix come from `wealth-builder-dev-v1-backend/WB_GMS_PROGRESS.md` (phases 0–10)
 > and **must not be renumbered**. Two of the twelve `G` decisions were taken **against** the
 > recommendation and one **beyond** it; those three are the ones a later reader is most likely to
 > mistake for accidents.

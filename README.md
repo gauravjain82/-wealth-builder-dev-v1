@@ -1,7 +1,7 @@
 # Wealth Builder — frontend
 
 The Wealth Builder web app: a Vite + React + TypeScript single-page application over the
-Django REST backend in `mlm_platform`.
+Django REST backend in `wealth-builder-dev-v1-backend`.
 
 ## Tech stack
 
@@ -75,7 +75,7 @@ features/<module>/
 | Understand the shell before touching anything | [`docs/platform/`](docs/platform/) |
 | See what a complete module doc looks like | [`docs/leaderboards/`](docs/leaderboards/) |
 | Document a module | [`docs/DOCUMENTATION_STANDARD.md`](docs/DOCUMENTATION_STANDARD.md), then copy [`docs/_standard/`](docs/_standard/) |
-| Work on the backend | `mlm_platform/docs/` — same standard, same shape |
+| Work on the backend | `wealth-builder-dev-v1-backend/docs/` — same standard, same shape |
 
 Docs live at `docs/<module>/`, where `<module>` is the feature directory name exactly. Six
 files per documented module: `README`, `ARCHITECTURE`, `UI`, `API`, `OPERATIONS`, `PHASES`.
@@ -91,7 +91,7 @@ wrong — do not cite them.
   client-side feature flags, and a frontend deploy cannot turn a gated feature on.
 - **Some branches must deploy with the backend.** `feature/wb-leaderboards`,
   `feature/wb-contests`, `feature/wb-gms`, `feature/wb-reporting-pipeline` and
-  `feature/bpm-v2` each have a counterpart in `mlm_platform`. Merging one side alone produces
+  `feature/bpm-v2` each have a counterpart in `wealth-builder-dev-v1-backend`. Merging one side alone produces
   a page that renders and then fails every request.
 - **A route guard is not authorization.** The backend re-checks every request independently.
 - **There is no test suite.** `npm run type-check` plus the backend's own tests are the

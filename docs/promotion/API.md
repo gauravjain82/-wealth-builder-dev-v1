@@ -5,7 +5,7 @@
 | **Module** | `promotion` |
 | **Source** | `src/features/promotion/services/promotion-service.ts` |
 | **Routes** | `/promotion/dashboard`, `/promotion/team` |
-| **Backend module** | `promotion` → `mlm_platform/docs/promotion/API.md` |
+| **Backend module** | `promotion` → `wealth-builder-dev-v1-backend/docs/promotion/API.md` |
 | **API prefix** | `/api/promotion/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

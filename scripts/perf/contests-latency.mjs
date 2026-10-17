@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Contests page latency check — Phase 10 of the dtez parity plan
- * (mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md).
+ * (wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md).
  *
  * Opens /contests in the installed Chrome, records every /api/ request, and reports:
  *   - seconds until the first standings are on screen,

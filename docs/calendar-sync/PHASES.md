@@ -11,7 +11,7 @@
 | **Doc version** | 1.0 |
 | **Verified against** | commit `7e3b7f1` — 2026-09-27 |
 
-> Phase numbering follows `mlm_platform/CALENDAR_SYNC_PROGRESS.md`, where phases 1–6 are
+> Phase numbering follows `wealth-builder-dev-v1-backend/CALENDAR_SYNC_PROGRESS.md`, where phases 1–6 are
 > backend and the frontend work is phases 7–10. It **must not be renumbered** — the same phase
 > number means the same thing in both repos. Phase 11 is assigned by this document for work
 > that post-dates the handover log.

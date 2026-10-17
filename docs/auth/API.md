@@ -5,13 +5,13 @@
 | **Module** | `auth` |
 | **Source** | `src/features/auth/repositories/auth-repository.ts` |
 | **Routes** | `/login`, `/signup`, `/reset-password` |
-| **Backend module** | `accounts` → `mlm_platform/docs/accounts/API.md` |
+| **Backend module** | `accounts` → `wealth-builder-dev-v1-backend/docs/accounts/API.md` |
 | **API prefix** | `/api/accounts/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
 | **Verified against** | commit `7e3b7f1` — 2026-09-27 |
 
-> Endpoints **consumed**, not exposed. `mlm_platform/docs/accounts/API.md` is the authority
+> Endpoints **consumed**, not exposed. `wealth-builder-dev-v1-backend/docs/accounts/API.md` is the authority
 > on what each one does; this file records what the client sends and reads.
 
 ## 1. Conventions
@@ -56,7 +56,7 @@ only network call in this module that does. See
 | Method | State |
 |---|---|
 | `signUp` | throws `Sign up is not available in this app. Please contact an administrator.` (`:237`) |
-| `signInWithGoogle` | throws `Google sign in is not available for mlm_platform authentication.` (`:241`) |
+| `signInWithGoogle` | throws `Google sign in is not available for Wealth Builder authentication.` (`:241`) |
 | `signOut` | **local only.** Clears state and `localStorage`; makes no request, so the token stays valid server-side (`:245`) |
 
 ## 3. Payload types

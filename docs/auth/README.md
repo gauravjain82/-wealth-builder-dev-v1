@@ -5,7 +5,7 @@
 | **Module** | `auth` |
 | **Source** | `src/features/auth/` |
 | **Routes** | `/login`, `/signup`, `/reset-password` |
-| **Backend module** | `accounts` → `mlm_platform/docs/accounts/` |
+| **Backend module** | `accounts` → `wealth-builder-dev-v1-backend/docs/accounts/` |
 | **API prefix** | `/api/accounts/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

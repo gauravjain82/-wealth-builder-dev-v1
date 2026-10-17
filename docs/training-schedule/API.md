@@ -5,7 +5,7 @@
 | **Module** | `training-schedule` |
 | **Source** | `src/features/training-schedule/` |
 | **Routes** | `/training-schedule`, `/training-schedule/attend/:token` |
-| **Backend module** | `training_schedule` → `mlm_platform/docs/training_schedule/` |
+| **Backend module** | `training_schedule` → `wealth-builder-dev-v1-backend/docs/training_schedule/` |
 | **API prefix** | `/api/training-schedule/` |
 | **Status** | Merged-not-deployed |
 | **Doc version** | 2.0 |
@@ -96,6 +96,6 @@ All in `types/index.ts`. The ones worth knowing:
 
 ## 6. Backend ownership
 
-Everything here is served by the `training_schedule` app in `mlm_platform`; its rules — who is in a
+Everything here is served by the `training_schedule` app in `wealth-builder-dev-v1-backend`; its rules — who is in a
 BaseShop, when attendance is open, what a delete reaches — are documented in
-`mlm_platform/docs/training_schedule/` and tested in `training_schedule/tests/`.
+`wealth-builder-dev-v1-backend/docs/training_schedule/` and tested in `training_schedule/tests/`.

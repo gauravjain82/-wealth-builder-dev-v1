@@ -5,14 +5,14 @@
 | **Module** | `training-schedule` |
 | **Source** | `src/features/training-schedule/` |
 | **Routes** | `/training-schedule`, `/training-schedule/attend/:token` |
-| **Backend module** | `training_schedule` → `mlm_platform/docs/training_schedule/` |
+| **Backend module** | `training_schedule` → `wealth-builder-dev-v1-backend/docs/training_schedule/` |
 | **API prefix** | `/api/training-schedule/` |
 | **Status** | Merged-not-deployed |
 | **Doc version** | 2.0 |
 | **Verified against** | commit `7b487dc` plus the uncommitted rebuild on `feature/training-schedule` — 2026-10-14 |
 
 > **Not live.** This is the backend-backed rebuild on `feature/training-schedule`, which has a
-> counterpart branch of the same name in `mlm_platform`. They must merge and deploy together, and
+> counterpart branch of the same name in `wealth-builder-dev-v1-backend`. They must merge and deploy together, and
 > `migrate training_schedule` must run first — see [OPERATIONS.md §5](OPERATIONS.md#5-deployment).
 > What is in production today is the previous, browser-only page ([PHASES.md §2](PHASES.md#2-phases)).
 

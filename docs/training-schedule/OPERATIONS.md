@@ -5,7 +5,7 @@
 | **Module** | `training-schedule` |
 | **Source** | `src/features/training-schedule/` |
 | **Routes** | `/training-schedule`, `/training-schedule/attend/:token` |
-| **Backend module** | `training_schedule` → `mlm_platform/docs/training_schedule/` |
+| **Backend module** | `training_schedule` → `wealth-builder-dev-v1-backend/docs/training_schedule/` |
 | **API prefix** | `/api/training-schedule/` |
 | **Status** | Merged-not-deployed |
 | **Doc version** | 2.0 |
@@ -38,12 +38,12 @@ Two things are configured on the backend, not here:
 ## 4. Tests and checks
 
 No test runner in this repo. The wire types in `types/index.ts` are the contract check; behaviour is
-tested in `mlm_platform` (`training_schedule/tests/`, 66 tests). The UI has been type-checked, linted
+tested in `wealth-builder-dev-v1-backend` (`training_schedule/tests/`, 66 tests). The UI has been type-checked, linted
 and built. **It has not been exercised in a browser against a running backend.**
 
 ## 5. Deployment
 
-Coupled: `feature/training-schedule` here and in `mlm_platform`. Order:
+Coupled: `feature/training-schedule` here and in `wealth-builder-dev-v1-backend`. Order:
 
 1. Backend: deploy, then `migrate training_schedule` (new tables only), then
    `seed_training_schedule_permissions`.

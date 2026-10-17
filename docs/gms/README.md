@@ -5,7 +5,7 @@
 | **Module** | `gms` (Guidance Management System) |
 | **Source** | `src/features/gms/` |
 | **Routes** | `/admin/guidance` — plus a `HelpAction` any tool page can mount |
-| **Backend module** | `gms` → `mlm_platform/docs/gms/` |
+| **Backend module** | `gms` → `wealth-builder-dev-v1-backend/docs/gms/` |
 | **API prefix** | `/api/gms/` |
 | **Status** | Merged-not-deployed |
 | **Doc version** | 1.0 |

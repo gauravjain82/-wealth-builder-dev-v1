@@ -5,7 +5,7 @@
 | **Module** | `contests` |
 | **Source** | `src/features/contests/` |
 | **Routes** | `/contests`, `/admin/contest-settings` — plus an embedded card on `/home` |
-| **Backend module** | `wbreporting` → `mlm_platform/docs/wbreporting/` |
+| **Backend module** | `wbreporting` → `wealth-builder-dev-v1-backend/docs/wbreporting/` |
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Gated |
 | **Doc version** | 1.0 |

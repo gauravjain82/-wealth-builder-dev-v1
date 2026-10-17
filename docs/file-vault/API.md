@@ -5,7 +5,7 @@
 | **Module** | `file-vault` |
 | **Source** | `src/features/file-vault/services/file-vault-service.ts` |
 | **Routes** | `/file-vault` |
-| **Backend module** | `content` → `mlm_platform/docs/content/API.md` |
+| **Backend module** | `content` → `wealth-builder-dev-v1-backend/docs/content/API.md` |
 | **API prefix** | `/api/content/file-vault/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

@@ -1,6 +1,6 @@
 # Wealth Builder frontend — working notes
 
-Vite + React 18 + TypeScript SPA over the Django REST backend in the sibling `mlm_platform`
+Vite + React 18 + TypeScript SPA over the Django REST backend in the sibling `wealth-builder-dev-v1-backend`
 repo. 28 feature modules under `src/features/`.
 
 ## Find the documentation before searching the code
@@ -65,7 +65,7 @@ original design. **Do not cite them, and do not follow their patterns.**
 - **Module styles are prefixed and scoped** — `wb-lb-` for leaderboards. Do not add global
   theme rules from inside a module.
 - **Cite docs by their real in-repo path.** Older comments referenced `UI_CONTRACT.md` and
-  friends, which live in vendor packages in `mlm_platform/temporary/` and resolve nowhere
+  friends, which live in vendor packages in `wealth-builder-dev-v1-backend/temporary/` and resolve nowhere
   here. `leaderboards` is cleaned up; `contests`, `gms`, `bpm` and `calendar-sync` still have
   dangling citations. When you fold one in, repoint the comment.
 
@@ -78,7 +78,7 @@ npm run build        # type-checks first, outputs to build/
 ```
 
 There is **no test runner** in this repo. The wire types in each module's `types/` are the
-real contract check; backend behaviour is tested in `mlm_platform`. Do not claim a change is
+real contract check; backend behaviour is tested in `wealth-builder-dev-v1-backend`. Do not claim a change is
 verified on a green build alone — say what you actually ran.
 
 `npm run lint` does not pass on `main`: 7 errors — 5 in [team](docs/team/), 2 in
@@ -90,7 +90,7 @@ lines: [docs/platform/OPERATIONS.md §2](docs/platform/OPERATIONS.md#2-build-and
 
 `feature/wb-leaderboards`, `feature/wb-contests`, `feature/wb-gms`,
 `feature/wb-reporting-pipeline`, `feature/bpm-v2`, `feature/bpm-updates-oct`, `feature/wb-big-event-access`, `feature/event-champion-theme`, `feature/plugin-fee-card-reuse`, `feature/transfer-person-search`, `feature/checkin-door-assign`, `feature/followup-step3`, `feature/daily-six-history`, `feature/team-program-member-view`, `feature/training-schedule`, `feature/external-partner-transactions` and `feature/followup-reschedule-on-edit` each have a counterpart branch in
-`mlm_platform` and must merge and deploy together. Merging one side alone yields a page that
+`wealth-builder-dev-v1-backend` and must merge and deploy together. Merging one side alone yields a page that
 renders and then fails every request. `leaderboards`, `contests` and `gms` are on
 `main` but **not deployed** — their migrations are unapplied and nobody holds the grant.
 `/home` mounts the leaderboard and contest sections for every paid user, so until

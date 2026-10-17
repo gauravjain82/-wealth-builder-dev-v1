@@ -5,7 +5,7 @@
 | **Module** | `calendar-sync` |
 | **Source** | `src/features/calendar-sync/services/calendar-sync-service.ts` |
 | **Routes** | none |
-| **Backend module** | `calendarsync` → `mlm_platform/docs/calendarsync/API.md` |
+| **Backend module** | `calendarsync` → `wealth-builder-dev-v1-backend/docs/calendarsync/API.md` |
 | **API prefix** | `/api/calendarsync/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

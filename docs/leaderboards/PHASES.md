@@ -11,10 +11,10 @@
 | **Doc version** | 1.0 |
 | **Verified against** | commit `7e3b7f1` — 2026-09-27 |
 
-> Phase numbering is taken from `mlm_platform/WB_LEADERBOARDS_PROGRESS.md` and **must not be
+> Phase numbering is taken from `wealth-builder-dev-v1-backend/WB_LEADERBOARDS_PROGRESS.md` and **must not be
 > renumbered** — the same phase number means the same thing in both repos. Phases 0–4 are
 > backend-only and are listed for continuity; their detail belongs to
-> `mlm_platform/docs/wbreporting/PHASES.md`.
+> `wealth-builder-dev-v1-backend/docs/wbreporting/PHASES.md`.
 >
 > Decisions use the `L` prefix from the source document. L1–L12 were locked with the user on
 > 2026-09-25. L13–L14 are assigned by this document for choices the code makes that the
@@ -107,7 +107,7 @@ rendering an empty list; Phase 9 was the backend supplying `personal`.
 ## 3. Decision log
 
 L1–L12 are summarised from `WB_LEADERBOARDS_PROGRESS.md`; full text and consequences are in
-`mlm_platform/docs/integrations/wb-leaderboards/IMPACT_ANALYSIS.md` §7. Only the ones with
+`wealth-builder-dev-v1-backend/docs/integrations/wb-leaderboards/IMPACT_ANALYSIS.md` §7. Only the ones with
 frontend consequences are expanded.
 
 | ID | Decision | Rationale | Source |

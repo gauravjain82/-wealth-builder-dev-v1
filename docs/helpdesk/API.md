@@ -5,7 +5,7 @@
 | **Module** | `helpdesk` |
 | **Source** | `src/features/helpdesk/services/helpdesk-service.ts` |
 | **Routes** | `/help-needed`, `/helpdesk`, `/admin/helpdesk` |
-| **Backend module** | `helpdesk` → `mlm_platform/docs/helpdesk/API.md` |
+| **Backend module** | `helpdesk` → `wealth-builder-dev-v1-backend/docs/helpdesk/API.md` |
 | **API prefix** | `/api/helpdesk/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

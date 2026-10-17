@@ -1,6 +1,6 @@
 /**
  * Types for the SMD assistant-access API (`/api/assistant-access/`).
- * Contract: `mlm_platform/docs/assistant_access/DESIGN.md` § API.
+ * Contract: `wealth-builder-dev-v1-backend/docs/assistant_access/DESIGN.md` § API.
  */
 
 export type AssistantAccessStatus = 'invited' | 'active' | 'blocked' | 'revoked';

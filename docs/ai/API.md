@@ -5,7 +5,7 @@
 | **Module** | `ai` |
 | **Source** | `src/features/ai/services/ai-chat-service.ts` |
 | **Routes** | none |
-| **Backend module** | `ai` → `mlm_platform/docs/ai/API.md` |
+| **Backend module** | `ai` → `wealth-builder-dev-v1-backend/docs/ai/API.md` |
 | **API prefix** | `/api/ai/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

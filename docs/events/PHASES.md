@@ -11,7 +11,7 @@
 | **Doc version** | 1.0 |
 | **Verified against** | commit `7e3b7f1` — 2026-09-27; guest checkout confirmation against `fix/event-payment-confirmation` — 2026-10-10 |
 
-> Phase numbering comes from `mlm_platform/EVENTS_BUILD_PROGRESS.md` (phases 0–5, all complete) and
+> Phase numbering comes from `wealth-builder-dev-v1-backend/EVENTS_BUILD_PROGRESS.md` (phases 0–5, all complete) and
 > **must not be renumbered**. The design decisions come from `EVENTS_CONTEXT.md` §"Key Design Decisions
 > (Resolved)"; the `E` prefix is assigned by this document, since that file recorded them without IDs.
 >
@@ -38,7 +38,7 @@ Later refinements: event routing and `@types/qrcode` (2026-09-04), embedded rend
 (2026-09-06), and the QR scan work shared with BPM's Phase 8 including **the fallback decoder iOS needs**
 (2026-09-25). **Access-driven Big Event navigation** (2026-10-05, decision E13): the sidebar group, the
 event pickers and the in-event tabs follow access instead of role, so a per-event delegate can reach
-their event. Coupled with the `mlm_platform` branch of the same name, `feature/wb-big-event-access`.
+their event. Coupled with the `wealth-builder-dev-v1-backend` branch of the same name, `feature/wb-big-event-access`.
 
 ## 2. Phases
 

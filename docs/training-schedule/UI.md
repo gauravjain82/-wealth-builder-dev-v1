@@ -5,7 +5,7 @@
 | **Module** | `training-schedule` |
 | **Source** | `src/features/training-schedule/` |
 | **Routes** | `/training-schedule`, `/training-schedule/attend/:token` |
-| **Backend module** | `training_schedule` → `mlm_platform/docs/training_schedule/` |
+| **Backend module** | `training_schedule` → `wealth-builder-dev-v1-backend/docs/training_schedule/` |
 | **API prefix** | `/api/training-schedule/` |
 | **Status** | Merged-not-deployed |
 | **Doc version** | 2.0 |

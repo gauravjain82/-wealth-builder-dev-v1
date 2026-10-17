@@ -14,15 +14,15 @@
 > Its phase numbering is authoritative and was carried into
 > [`docs/calendar-sync/PHASES.md`](../calendar-sync/PHASES.md) unchanged. Its unnumbered
 > decisions became CS1–CS6 there. The backend's fuller log is
-> `mlm_platform/CALENDAR_SYNC_PROGRESS.md`.
+> `wealth-builder-dev-v1-backend/CALENDAR_SYNC_PROGRESS.md`.
 
 ---
 
 # Calendar Sync — Frontend Progress & Handover Log
 
 > Living handover log for the **frontend** of the Two-Way, Multi-Calendar Google
-> Sync feature. Backend (Phases 1–6) is complete in the `mlm_platform` repo; its
-> contract + handover live in `mlm_platform/CALENDAR_SYNC_PROGRESS.md`. Plan
+> Sync feature. Backend (Phases 1–6) is complete in the `wealth-builder-dev-v1-backend` repo; its
+> contract + handover live in `wealth-builder-dev-v1-backend/CALENDAR_SYNC_PROGRESS.md`. Plan
 > (target): `~/.claude/plans/tidy-zooming-ocean.md`.
 
 ## Status
@@ -74,7 +74,7 @@ Modified:
   defined but never imported).
 
 ## Consumed backend contract
-See `mlm_platform/CALENDAR_SYNC_PROGRESS.md` (§ API contract). Key notes baked into
+See `wealth-builder-dev-v1-backend/CALENDAR_SYNC_PROGRESS.md` (§ API contract). Key notes baked into
 the frontend:
 - `GET /calendars/` returns **400** for old-scope/not-connected users →
   `useGoogleCalendars` stays **disabled** until `connected && can_manage_calendars &&

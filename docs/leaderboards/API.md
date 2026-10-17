@@ -5,13 +5,13 @@
 | **Module** | `leaderboards` |
 | **Source** | `src/features/leaderboards/services/leaderboards-service.ts` |
 | **Routes** | `/leaderboards` + embedded card |
-| **Backend module** | `wbreporting` → `mlm_platform/docs/wbreporting/API.md` |
+| **Backend module** | `wbreporting` → `wealth-builder-dev-v1-backend/docs/wbreporting/API.md` |
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Merged-not-deployed |
 | **Doc version** | 1.0 |
 | **Verified against** | commit `7e3b7f1` — 2026-09-27 |
 
-> Endpoints **consumed**, not exposed. `mlm_platform/docs/wbreporting/API.md` is the
+> Endpoints **consumed**, not exposed. `wealth-builder-dev-v1-backend/docs/wbreporting/API.md` is the
 > authority on what each one does; this file records what the client sends and reads.
 
 ## 1. Conventions

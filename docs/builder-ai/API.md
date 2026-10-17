@@ -5,7 +5,7 @@
 | **Module** | `builder-ai` |
 | **Source** | `src/features/builder-ai/services/` |
 | **Routes** | 7 + 1 public |
-| **Backend module** | `builderai` → `mlm_platform/docs/builderai/API.md` |
+| **Backend module** | `builderai` → `wealth-builder-dev-v1-backend/docs/builderai/API.md` |
 | **API prefix** | `/api/builderai/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

@@ -5,7 +5,7 @@
 | **Module** | `plugin-fees` |
 | **Source** | `src/features/plugin-fees/` |
 | **Routes** | `/plugin-fees/statement`, `/admin/plugin-fees` (overview), `/admin/plugin-fees/review`, `/admin/plugin-fees/cycles`, `/admin/plugin-fees/payments`, `/admin/plugin-fees/payouts`, `/admin/plugin-fees/sevc-totals`, `/admin/plugin-fees/costs`, `/admin/plugin-fees/adjustments`, `/admin/plugin-fees/settings`, `/admin/plugin-fees/agents/:id/statement`; three sections embedded in `/settings` |
-| **Backend module** | `plugin_fees` → `mlm_platform/docs/plugin_fees/` |
+| **Backend module** | `plugin_fees` → `wealth-builder-dev-v1-backend/docs/plugin_fees/` |
 | **API prefix** | `/api/plugin-fees/` |
 | **Status** | Merged-not-deployed — P2–P6 merged to `main` via PR #18 (`e91e5a5`); not deployed. Fee configuration + ledger split (2026-10-03) on branch `feature/plugin-fees-config`, uncommitted. Nobody holds `plugin_fees:review`, `:manage` or `:payout_approve` yet |
 | **Doc version** | 0.5 |
@@ -162,7 +162,7 @@ preselected.
   (`key` = the card ids) when the list changes, so the selection and the consent tick
   reset.
 
-Backend: `mlm_platform` IMPACT_ANALYSIS D22.
+Backend: `wealth-builder-dev-v1-backend` IMPACT_ANALYSIS D22.
 
 **Decide (review). Approve/Verify/Re-verify opens `ApproveDialog` (optional note);
 Reject opens `RejectModal`, whose submit is disabled while the note is blank. The decide

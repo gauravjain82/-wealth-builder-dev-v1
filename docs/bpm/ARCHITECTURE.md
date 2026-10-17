@@ -155,7 +155,7 @@ intent; showing the history first lets the sender decide.
    with `saveGuestFollowup`, sending the card's current answers back alongside
    `appointment_id`.
 3. The backend treats absent card fields as unchanged, and a link alone does not tick
-   `blue_card` (`mlm_platform/docs/bpm/API.md` §3). Sending the answers is
+   `blue_card` (`wealth-builder-dev-v1-backend/docs/bpm/API.md` §3). Sending the answers is
    belt-and-braces: linking must never blank a filled card.
 4. A failed *create* stays in the form beside Save; a failed *link* closes the form with a
    toast, because the appointment already exists and a second Save would book it twice.

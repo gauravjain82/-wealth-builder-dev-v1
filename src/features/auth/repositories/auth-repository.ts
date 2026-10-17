@@ -179,7 +179,7 @@ async function fetchUserProfile(userId: number, token: string): Promise<Partial<
 
 /**
  * Auth Repository
- * Handles mlm_platform token authentication operations
+ * Handles Wealth Builder backend token authentication operations
  */
 export class AuthRepository {
   async signIn(email: string, password: string): Promise<UserWithProfile> {
@@ -248,7 +248,7 @@ export class AuthRepository {
   }
 
   async signInWithGoogle(): Promise<UserWithProfile> {
-    throw new Error('Google sign in is not available for mlm_platform authentication.');
+    throw new Error('Google sign in is not available for Wealth Builder authentication.');
   }
 
   async signOut(): Promise<void> {

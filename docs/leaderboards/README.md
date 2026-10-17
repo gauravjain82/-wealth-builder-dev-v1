@@ -5,7 +5,7 @@
 | **Module** | `leaderboards` |
 | **Source** | `src/features/leaderboards/` |
 | **Routes** | `/leaderboards` — plus an embedded card mounted by `/home` |
-| **Backend module** | `wbreporting` → `mlm_platform/docs/wbreporting/` |
+| **Backend module** | `wbreporting` → `wealth-builder-dev-v1-backend/docs/wbreporting/` |
 | **API prefix** | `/api/wbreporting/` |
 | **Status** | Merged-not-deployed |
 | **Doc version** | 1.0 |

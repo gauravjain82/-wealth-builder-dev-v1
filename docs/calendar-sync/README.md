@@ -5,7 +5,7 @@
 | **Module** | `calendar-sync` |
 | **Source** | `src/features/calendar-sync/` |
 | **Routes** | **none** — a section of `/settings`, plus a service `matchup` consumes |
-| **Backend module** | `calendarsync` → `mlm_platform/docs/calendarsync/` (OAuth start via `matchup`) |
+| **Backend module** | `calendarsync` → `wealth-builder-dev-v1-backend/docs/calendarsync/` (OAuth start via `matchup`) |
 | **API prefix** | `/api/calendarsync/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

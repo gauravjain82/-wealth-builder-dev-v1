@@ -5,7 +5,7 @@
 | **Module** | `training-center` |
 | **Source** | `src/features/training-center/services/training-center-service.ts` |
 | **Routes** | `/training-center` |
-| **Backend module** | `content` → `mlm_platform/docs/content/API.md` |
+| **Backend module** | `content` → `wealth-builder-dev-v1-backend/docs/content/API.md` |
 | **API prefix** | `/api/content/training-center/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

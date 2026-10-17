@@ -5,7 +5,7 @@
 | **Module** | `platform` (the application shell) |
 | **Source** | `src/router/`, `src/shared/`, `src/infrastructure/`, `src/store/`, `src/core/`, `src/config/`, `src/hooks/` |
 | **Routes** | mounts all of them |
-| **Backend module** | `accounts`, `authz` → `mlm_platform/docs/accounts/`, `mlm_platform/docs/authz/` |
+| **Backend module** | `accounts`, `authz` → `wealth-builder-dev-v1-backend/docs/accounts/`, `wealth-builder-dev-v1-backend/docs/authz/` |
 | **API prefix** | `/api/accounts/` (identity only) |
 | **Status** | Production |
 | **Doc version** | 1.0 |

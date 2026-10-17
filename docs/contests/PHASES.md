@@ -11,9 +11,9 @@
 | **Doc version** | 1.0 |
 | **Verified against** | commit `743afe1` — 2026-09-30 (parity phase 21 audit) |
 
-> Phase numbering and the `C` decision prefix come from `mlm_platform/WB_CONTESTS_PROGRESS.md`
+> Phase numbering and the `C` decision prefix come from `wealth-builder-dev-v1-backend/WB_CONTESTS_PROGRESS.md`
 > (phases 0–9, decisions C1–C13) and, from phase 10, from the dtez parity plan,
-> `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (phases 10–21, decisions C14–C30). They **must not be renumbered** —
+> `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md` (phases 10–21, decisions C14–C30). They **must not be renumbered** —
 > the same number means the same thing in both repos. Phases 0–5 are backend; the frontend is
 > phases 6 and 8, then parity phases 11, 12 and 17–20. Phases 13–16 are backend or data only.
 >
@@ -99,12 +99,12 @@ Made every later phase measurable: `npm run perf:contests` (`scripts/perf/contes
 [OPERATIONS.md §4](OPERATIONS.md#4-tests-and-checks)) here, and the read-only
 `wb_contest_parity` in the backend. Baseline: first standings 7.48 s, a contest switch 4.17 s,
 13 API calls before first standings. It also found stored results older than 45 days going stale
-(C23). Source: `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`, Phase 10.
+(C23). Source: `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md`, Phase 10.
 
 ### Phase 11 — standings speed (2026-09-29)
 
 **Goal.** Standings under 300 ms server time. The work is in the backend
-(`mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`, Phase 11); every request used to load
+(`wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md`, Phase 11); every request used to load
 the viewer's whole hierarchy, ~200,000 users, to score ~1,100 agents with results.
 
 **What changed here.** `uncoded_member_count` left `StandingsResponse` (`types/index.ts`) and the
@@ -117,7 +117,7 @@ renders, but the backend alone would leave the card reading an absent field.
 ### Phase 12 — standings speed, frontend request path (2026-09-29)
 
 **Goal.** Fewer requests, no waterfall, and a contest switch served from cache. The brief is
-`mlm_platform/docs/integrations/wb-contests/PHASE_12_KICKOFF.md`.
+`wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PHASE_12_KICKOFF.md`.
 
 **What was wrong, measured.** On a production build a `/contests` load sent
 `/api/wbreporting/my-access/` three times — under `['wb-pipeline', …]`, `['leaderboards', …]` and
@@ -160,7 +160,7 @@ backend's standings request.
 ### Phases 13–16 — backend and data (2026-09-29)
 
 No code in this repo; each is recorded for what it changed under the screen. Source:
-`mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`, Phases 13–16.
+`wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md`, Phases 13–16.
 
 - **13 — recruits.** `PR`/`TR`/`BR` count a recruit as dtez does, and team recruits credit the
   **recruiter's** leader (C21). The shared team-credit note (C5) was not reworded, so the `BR`
@@ -177,7 +177,7 @@ No code in this repo; each is recorded for what it changed under the screen. Sou
 ### Phase 17 — dtez's scoring rules (2026-09-29)
 
 Backend and frontend together, because the standings response changed
-(`mlm_platform/docs/wbreporting/API.md` §3):
+(`wealth-builder-dev-v1-backend/docs/wbreporting/API.md` §3):
 - **Columns and cards:** `tiers` now holds every visible tier with `selected`. The card shows
   only the selected tiers as columns, and every tier as a card with whole-contest counts. This
   fixes the Phase 12 finding that a second tier could not be added.
@@ -196,7 +196,7 @@ was not driven in a browser, because the backend change is not deployed. The bac
 ### Phase 18 — the standalone page shell, contest selector and filter bar (2026-09-29)
 
 **Goal.** `/contests` reads like dtez's `wb_contests.php`; the Home v2 card stays as it was. The
-brief is `mlm_platform/docs/integrations/wb-contests/PHASE_18_KICKOFF.md`.
+brief is `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PHASE_18_KICKOFF.md`.
 
 **What shipped.**
 - `useContestBoard` (`hooks/use-contest-board.ts`) holds what `ContestsCard` held — contest,
@@ -212,7 +212,7 @@ brief is `mlm_platform/docs/integrations/wb-contests/PHASE_18_KICKOFF.md`.
   four-part summary line. A person-based view with no person is an inline error with the box
   focused.
 - The summary's "N leaders identified" is a new backend field, `leader_count` on the standings
-  response (`mlm_platform` `wbreporting`, coupled). It counts what dtez counts: the people somebody
+  response (`wealth-builder-dev-v1-backend` `wbreporting`, coupled). It counts what dtez counts: the people somebody
   names as their leader, the Leaders/Agents split. 334 on production, as on dtez.
 - The contest list comes in dtez's order (C26), so the page opens on Italy, as dtez does.
 - `perf:contests` switches through the buttons when the page has them.
@@ -241,7 +241,7 @@ warnings, as on `main`.
 ### Phase 19 — tier cards, grid, cells, pills and phone layout (2026-09-29)
 
 **Goal.** `/contests`' grid reads like dtez's; the Home v2 card stays as it was (C28). The brief is
-`mlm_platform/docs/integrations/wb-contests/PHASE_19_KICKOFF.md`.
+`wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PHASE_19_KICKOFF.md`.
 
 **What shipped.**
 - `TierCards` (`components/tier-cards.tsx`): name; "N qualified · N close · N in running"; period;
@@ -260,7 +260,7 @@ warnings, as on `main`.
   background, so the page no longer depends on the app theme's.
 - On the page only, `.wb-ct` and `.wb-ct-scroll` are `overflow: visible`: both were scroll
   containers that never scrolled, which stops `position: sticky` (ARCHITECTURE.md §8).
-- Backend fields, coupled (`mlm_platform` `8deb2cd`, `caa7579`): `leader_name` on rows, `non_license`
+- Backend fields, coupled (`wealth-builder-dev-v1-backend` `8deb2cd`, `caa7579`): `leader_name` on rows, `non_license`
   on tiers, and `level` / `leader_name` absent when hidden, so "No level" and "Leader: -" never
   stand in for a hidden field.
 - `perf:contests` waits for `.wb-ct-results` too.
@@ -296,7 +296,7 @@ ours are in `Codes/wb-contests-parity-shots/phase-19/`.
 ### Phase 20 — proof, profile, help and flyer dialogs (2026-09-29)
 
 **Goal.** The four dialogs read like dtez's and every click in the plan's Appendix C behaves as
-listed. The brief is `mlm_platform/docs/integrations/wb-contests/PHASE_20_KICKOFF.md`.
+listed. The brief is `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PHASE_20_KICKOFF.md`.
 
 **What shipped.**
 - `components/contest-dialogs.tsx`, rewritten from dtez's `proof`, `detailTable`, `openProfile`,
@@ -317,7 +317,7 @@ listed. The brief is `mlm_platform/docs/integrations/wb-contests/PHASE_20_KICKOF
 - `contests.css`: the dialogs carry dtez's palette on `.wb-ct-modal` (they portal outside both hosts).
 - Types: `ProofResponse.source_total`, `truncated`, `detail_visibility`, `sql`, `sql_params`;
   `level` optional on `ProfileResponse` and `ProfilePathNode`; `ProofTarget.periodLabel`.
-- Backend, coupled (`mlm_platform`, `feature/wb-contests-parity`): every proof built in dtez's shapes
+- Backend, coupled (`wealth-builder-dev-v1-backend`, `feature/wb-contests-parity`): every proof built in dtez's shapes
   from the metric's own queryset, points per policy (C29), the new fields, the SQL for
   `wbreporting:manage` only, `level` absent from the profile when hidden, and the proof and profile
   reading only the chains they need (`reader_nodes`) instead of the viewer's whole closure.
@@ -355,7 +355,7 @@ shots in `Codes/wb-contests-parity-shots/phase-20/`).
 
 **Goal.** No doc in either repo describes the old behaviour; phase 20 deployed with its backend;
 the final latency and parity run. The brief is
-`mlm_platform/docs/integrations/wb-contests/PHASE_21_KICKOFF.md`.
+`wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PHASE_21_KICKOFF.md`.
 
 **Done here so far.** The six contest docs, `docs/README.md` and `docs/platform/UI.md` re-read
 against `743afe1`. Corrected: the Home v2 card is its own section and the "Event & Contests" media
@@ -370,7 +370,7 @@ phase 20 are listed in §5.
 ## 3. Decision log
 
 Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
-`mlm_platform/docs/integrations/wb-contests/IMPACT_ANALYSIS.md` §7. Frontend consequences expanded.
+`wealth-builder-dev-v1-backend/docs/integrations/wb-contests/IMPACT_ANALYSIS.md` §7. Frontend consequences expanded.
 
 | ID | Decision | Rationale | Source |
 |---|---|---|---|
@@ -381,29 +381,29 @@ Summarised from `WB_CONTESTS_PROGRESS.md` §Decisions; full text in
 | **C7** | **Never `qualified` while any requirement is unmeasurable.** Show progress over the measurable subset with an explicit count of what could not be measured | Declaring someone qualified on partial data is a prize promise made on a guess. **Amended by C15** (2026-09-29): an unsourced requirement now counts as 0, as on dtez | `TierEvaluation.unmeasured` |
 | **C8** | **Taken against the recommendation.** An integer `revision` column, not a round-tripped `updated_at` | Cost: a fourth migration and a save hook on both models. In exchange it matches the client's `types.ts`, which already carried `revision`, and an integer is unambiguous where a timestamp's precision is not | `types/index.ts:262`; `services/contests-service.ts:180` |
 | C9 | `accounts.Level` is the single source of truth, **and levels the data contract names but this host lacks are created there** rather than special-cased in contest code | One level table, no contest-specific level logic. `NON` is the one synthetic value (`level_id IS NULL`). **Amended by C19** (2026-09-29): `NON` excludes nobody and is not offered | `EditorOptions.levels` |
-| **C10** | `scope=all` resolves through `authz.get_scope`; `net` is shown and **its label must not say "Net Base"** | The contest `net` filter keeps the selected person plus direct reports. Package 2's Net Base is a different rule, and reusing the name would be read as that rule. Labelled **"Direct reports only"**. **Open question, C27 (parity phase 18):** dtez labels the box "Net" and its summary "View: Super Team Net". Does parity of the label outrank this decision? Until answered, both placements keep "Direct reports only" | `components/contest-filters.tsx:9`, `components/contest-filter-bar.tsx`; `mlm_platform/docs/integrations/wb-contests/PHASE_18_KICKOFF.md` §4 |
+| **C10** | `scope=all` resolves through `authz.get_scope`; `net` is shown and **its label must not say "Net Base"** | The contest `net` filter keeps the selected person plus direct reports. Package 2's Net Base is a different rule, and reusing the name would be read as that rule. Labelled **"Direct reports only"**. **Open question, C27 (parity phase 18):** dtez labels the box "Net" and its summary "View: Super Team Net". Does parity of the label outrank this decision? Until answered, both placements keep "Direct reports only" | `components/contest-filters.tsx:9`, `components/contest-filter-bar.tsx`; `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PHASE_18_KICKOFF.md` §4 |
 | C11 | `homev2:read` for reads, `wbreporting:manage` for writes | The card lives on the page `homev2:read` already opens, so a separate read permission would be granted to exactly the same people. Configuring is a different job | `router/contests-route.tsx:10` |
 | C12 | Inactive people are included | The same accepted divergence as leaderboards' L1 — fidelity to the delivered spec | `StandingRow.is_active` is carried, not filtered |
 | C13 | 50 / 200 page sizes; `considered` contests are settings-only | A considered contest is a draft; readers should not see a promise that has not been made | `WB_CONTESTS_PROGRESS.md` |
-| **C14** | **This repo's settings screen is the single editor of contest settings**; one final import from dtez (parity phase 16), then no sync either way. Approved 2026-09-29 | Until one editor was chosen the two drifted (Italy had 4 tiers on dtez, 1 here). A contest differing from dtez's page afterwards is expected, not drift | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C14); `OPERATIONS.md` §1 |
-| **C15** | A requirement with no source counts as **0**, as on dtez. Approved 2026-09-29 | The tier averages lower and cannot qualify while it is required; the pill keeps its reason. The editor accepts `C`/`BE` | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (C15) |
+| **C14** | **This repo's settings screen is the single editor of contest settings**; one final import from dtez (parity phase 16), then no sync either way. Approved 2026-09-29 | Until one editor was chosen the two drifted (Italy had 4 tiers on dtez, 1 here). A contest differing from dtez's page afterwards is expected, not drift | `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C14); `OPERATIONS.md` §1 |
+| **C15** | A requirement with no source counts as **0**, as on dtez. Approved 2026-09-29 | The tier averages lower and cannot qualify while it is required; the pill keeps its reason. The editor accepts `C`/`BE` | `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md` (C15) |
 | **C16** | With no tier chosen, order by **best %**, then name. Approved 2026-09-29 | dtez's default. No header shows an arrow then (`sort_tier: null`) | PARITY_PLAN (C16) |
 | **C17** | List anyone with **activity** on a selected tier, eligible or not. Approved 2026-09-29 | dtez's rule; a row can be all blank cells | PARITY_PLAN (C17) |
 | **C18** | **"In running" is everyone listed**, the same on every card; cards never narrow with a selection. Approved 2026-09-29 | dtez's `tierTotals`. `TierSummary.selected` tells columns from cards | PARITY_PLAN (C18) |
 | **C19** | Level eligibility is **dtez's `tierAllowed`**. Approved 2026-09-29 | People with no level pass any restriction. The editor hides "No level" and stores exclusions (both decided 2026-09-29) | PARITY_PLAN (C19); `components/tier-editor.tsx` |
 | **C20** | Default view **All** (permission-limited, C10 stays); **whole-number** percentages. Approved 2026-09-29 | dtez's initial state and `Math.round` | PARITY_PLAN (C20); `hooks/use-contest-board.ts` `DEFAULT_FILTERS` |
-| **C21** | Team recruits credit the **recruiter's** leader, as dtez does, not the recruit's. Approved 2026-09-29 | Needed for `TR`/`BR` parity. Done in `wbreporting` only (backend phase 13); the team-credit note text, `gms` and this module's wording were left unchanged on request, so "one hop of Leader" (C5) now understates how team recruits are credited | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C21) |
-| **C22** | Scope walks load **only users with an agency code**, so an uncoded user in a recruiting chain ends the walk there. Approved 2026-09-29 | The dtez reference does the same, and an uncoded user can never have a result row (D2). Loading them cost ~200,000 rows per request. Consequence here: the "without an agent code" count is gone — it was the only thing that needed the full hierarchy | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C22) |
-| **C23** | Recalculate **every open contest window** daily, not only the trailing 45 days. Approved 2026-09-29 | Stored results older than 45 days went stale when a ledger entry was back-dated (found in phase 10). A daily Celery task over the union of open windows; the 10-minute two-day run stays. Backend only | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C23) |
-| **C24** | The card prefetches the other contests' standings on **`/contests` only**, not on `/home-v2`. Taken 2026-09-29 (Phase 12) | `/home-v2` is the landing page for every gated user. Prefetching there costs one background standings request per other contest (four today, ~4 server queries each) on every home visit, paid mostly for switches nobody makes in the compact card. The contest list is still prefetched there, since the card always needs it | `components/contests-card.tsx` (`prefetchOtherContests`); `mlm_platform/docs/integrations/wb-contests/PHASE_12_KICKOFF.md` §6.3 |
-| **C25** | **No remembered contest.** The default stays `contests[0]`; the last-viewed contest is not kept in `localStorage`. Taken 2026-09-29 (Phase 12) | Offered as optional by the brief, to take a returning viewer to one round trip. Not needed: access now runs alongside the list, so the path is already two round trips. And it would change which contest a reader lands on — a visible default that Phase 18's contest selector should own, not a speed phase | `mlm_platform/docs/integrations/wb-contests/PHASE_12_KICKOFF.md` §6.2. The default is now set by C26's order |
-| **C26** | **The contests come in dtez's order**, and the first is shown: active first, then the earliest qualifying start, contests with none (rolling) last, then name. Taken 2026-09-29 (parity phase 18) | C25 left the default to this phase's selector. dtez lists Italy, Los Cabos, Ed Mylett, Private Reception, Executive Package and opens Italy; ours sorted active-then-name and opened Ed Mylett. One sort key in the list view, so the card and the page agree | `mlm_platform` `wbreporting/views_contests.py` `ContestListView`, `test_contests_come_in_dtez_order`; dtez's `list` response, 2026-09-29 |
-| **C27** | **Open.** Label the `net` checkbox "Net", as dtez does? Recommended: no — keep "Direct reports only" (C10), since Package 2's *Net Base* is a different rule and dtez's own help calls it "the narrower ownership view". Asked in parity phase 18 | Until answered, both placements and the Help text say "Direct reports only" | `mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C27) |
-| **C28** | **The Home v2 card keeps its own grid**; dtez's tier cards, grid, cells, pills and palette are on `/contests` only. Taken 2026-09-29 (parity phase 19), the brief's option (a), chosen by the user | The card lives in a `clamp(480px, 70vh, 760px)` slot and the plan says it "stays compact"; dtez's cell (a heading line, a tinted block, 260 px columns) is bigger. So the page's grid is separate components (`TierCards`, `ContestResults`) selected by `StandingsRegion`'s `variant`, and the card's `TierSelector`, `ContestStandings` and `ContestCell` are unchanged | `mlm_platform/docs/integrations/wb-contests/PHASE_19_KICKOFF.md` §4; `components/contest-board-parts.tsx` |
-| **C29** | **The points proof is one row per policy**, dtez's grain: Policy, Client, First / Last Date, First / Second / Other Advances, Chargebacks / Reversals, Net Points. Chosen by the user 2026-09-29 (parity phase 20), over keeping our per-entry (`pp`) and per-agent (`bp`) rows and only restyling | Parity with dtez's proof, and one shape for both points metrics. A backend change (the proof builders) and a coupled response change. A policy with points from several agents is masked by the most restrictive of their relationships | `mlm_platform/docs/integrations/wb-contests/PHASE_20_KICKOFF.md` §4; `mlm_platform` `wbreporting/services/contests/proof.py` `_policy_rows` |
-| **C30** | **Escape and a backdrop click are opt-in on the shared `Modal`** (`dismissible`), not its new default. Taken 2026-09-29 (parity phase 20) | The brief's trap 1: `Modal` is shared — 61 feature files render it directly and six more only through the two confirmation dialogs, 67 in all (the brief counted five, the direct `ui/modal` imports) — among them forms (the training schedule's meeting dialog, bpm's and prospect's forms) and the card's draft filters, where a stray key or click would discard input. The contest dialogs opt in; the dialog semantics and focus handling apply to all | `mlm_platform/docs/integrations/wb-contests/PHASE_20_KICKOFF.md` §6.1; `src/shared/components/ui/modal/index.tsx` |
+| **C21** | Team recruits credit the **recruiter's** leader, as dtez does, not the recruit's. Approved 2026-09-29 | Needed for `TR`/`BR` parity. Done in `wbreporting` only (backend phase 13); the team-credit note text, `gms` and this module's wording were left unchanged on request, so "one hop of Leader" (C5) now understates how team recruits are credited | `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C21) |
+| **C22** | Scope walks load **only users with an agency code**, so an uncoded user in a recruiting chain ends the walk there. Approved 2026-09-29 | The dtez reference does the same, and an uncoded user can never have a result row (D2). Loading them cost ~200,000 rows per request. Consequence here: the "without an agent code" count is gone — it was the only thing that needed the full hierarchy | `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C22) |
+| **C23** | Recalculate **every open contest window** daily, not only the trailing 45 days. Approved 2026-09-29 | Stored results older than 45 days went stale when a ledger entry was back-dated (found in phase 10). A daily Celery task over the union of open windows; the 10-minute two-day run stays. Backend only | `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C23) |
+| **C24** | The card prefetches the other contests' standings on **`/contests` only**, not on `/home-v2`. Taken 2026-09-29 (Phase 12) | `/home-v2` is the landing page for every gated user. Prefetching there costs one background standings request per other contest (four today, ~4 server queries each) on every home visit, paid mostly for switches nobody makes in the compact card. The contest list is still prefetched there, since the card always needs it | `components/contests-card.tsx` (`prefetchOtherContests`); `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PHASE_12_KICKOFF.md` §6.3 |
+| **C25** | **No remembered contest.** The default stays `contests[0]`; the last-viewed contest is not kept in `localStorage`. Taken 2026-09-29 (Phase 12) | Offered as optional by the brief, to take a returning viewer to one round trip. Not needed: access now runs alongside the list, so the path is already two round trips. And it would change which contest a reader lands on — a visible default that Phase 18's contest selector should own, not a speed phase | `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PHASE_12_KICKOFF.md` §6.2. The default is now set by C26's order |
+| **C26** | **The contests come in dtez's order**, and the first is shown: active first, then the earliest qualifying start, contests with none (rolling) last, then name. Taken 2026-09-29 (parity phase 18) | C25 left the default to this phase's selector. dtez lists Italy, Los Cabos, Ed Mylett, Private Reception, Executive Package and opens Italy; ours sorted active-then-name and opened Ed Mylett. One sort key in the list view, so the card and the page agree | `wealth-builder-dev-v1-backend` `wbreporting/views_contests.py` `ContestListView`, `test_contests_come_in_dtez_order`; dtez's `list` response, 2026-09-29 |
+| **C27** | **Open.** Label the `net` checkbox "Net", as dtez does? Recommended: no — keep "Direct reports only" (C10), since Package 2's *Net Base* is a different rule and dtez's own help calls it "the narrower ownership view". Asked in parity phase 18 | Until answered, both placements and the Help text say "Direct reports only" | `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md` (Open decisions, C27) |
+| **C28** | **The Home v2 card keeps its own grid**; dtez's tier cards, grid, cells, pills and palette are on `/contests` only. Taken 2026-09-29 (parity phase 19), the brief's option (a), chosen by the user | The card lives in a `clamp(480px, 70vh, 760px)` slot and the plan says it "stays compact"; dtez's cell (a heading line, a tinted block, 260 px columns) is bigger. So the page's grid is separate components (`TierCards`, `ContestResults`) selected by `StandingsRegion`'s `variant`, and the card's `TierSelector`, `ContestStandings` and `ContestCell` are unchanged | `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PHASE_19_KICKOFF.md` §4; `components/contest-board-parts.tsx` |
+| **C29** | **The points proof is one row per policy**, dtez's grain: Policy, Client, First / Last Date, First / Second / Other Advances, Chargebacks / Reversals, Net Points. Chosen by the user 2026-09-29 (parity phase 20), over keeping our per-entry (`pp`) and per-agent (`bp`) rows and only restyling | Parity with dtez's proof, and one shape for both points metrics. A backend change (the proof builders) and a coupled response change. A policy with points from several agents is masked by the most restrictive of their relationships | `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PHASE_20_KICKOFF.md` §4; `wealth-builder-dev-v1-backend` `wbreporting/services/contests/proof.py` `_policy_rows` |
+| **C30** | **Escape and a backdrop click are opt-in on the shared `Modal`** (`dismissible`), not its new default. Taken 2026-09-29 (parity phase 20) | The brief's trap 1: `Modal` is shared — 61 feature files render it directly and six more only through the two confirmation dialogs, 67 in all (the brief counted five, the direct `ui/modal` imports) — among them forms (the training schedule's meeting dialog, bpm's and prospect's forms) and the card's draft filters, where a stray key or click would discard input. The contest dialogs opt in; the dialog semantics and focus handling apply to all | `wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PHASE_20_KICKOFF.md` §6.1; `src/shared/components/ui/modal/index.tsx` |
 
-| **C31** | **Home v2 shows dtez's featured-contest showcase instead of the standings card**, ranked by a new `contest-board/{id}/showcase/` endpoint. Taken 2026-10-07, at the user's request | The showcase needs every listed person — a qualifier is placed at their hardest qualified tier, the closest at their hardest active unqualified tier, by that tier's progress — and no standings page holds everyone (they cap at 200 and order by best %). So Django ranks it from the same evaluation as standings (`_listed_evaluations`), and the browser lays out two boards. Defaults to dtez's "Top 10 closest" presentation, the reference screenshot's; dtez's admin-selectable mode has no backend setting here, so it is a prop. Supersedes C28's Home v2 grid; `ContestsCard` stays exported | user request 2026-10-07, reference `https://www.dtez.com/wb_contests_showcase.php`; `mlm_platform` `wbreporting/services/contests/standings.py` `build_showcase`, `ShowcaseApiTests` |
+| **C31** | **Home v2 shows dtez's featured-contest showcase instead of the standings card**, ranked by a new `contest-board/{id}/showcase/` endpoint. Taken 2026-10-07, at the user's request | The showcase needs every listed person — a qualifier is placed at their hardest qualified tier, the closest at their hardest active unqualified tier, by that tier's progress — and no standings page holds everyone (they cap at 200 and order by best %). So Django ranks it from the same evaluation as standings (`_listed_evaluations`), and the browser lays out two boards. Defaults to dtez's "Top 10 closest" presentation, the reference screenshot's; dtez's admin-selectable mode has no backend setting here, so it is a prop. Supersedes C28's Home v2 grid; `ContestsCard` stays exported | user request 2026-10-07, reference `https://www.dtez.com/wb_contests_showcase.php`; `wealth-builder-dev-v1-backend` `wbreporting/services/contests/standings.py` `build_showcase`, `ShowcaseApiTests` |
 | **C32** | **The showcase is on `/home` for every paid user, with no client-side access check.** Home v2 became `/home` (leaderboards decision L16); `/home-v2` redirects and `PrefetchContests` is gone. Taken 2026-10-12, at the user's request | `/home` is every guard's denial target and cannot be guarded itself. Chosen over hiding the section from callers without `homev2:read`: the grant is to be made to every level, and until then the showcase reads "unavailable". Without a guard delaying the mount, the list request no longer needs a head start, and a prefetch in the router would also fire for new agents, who do not see the section. Mentions of `/home-v2` above this row are history | user request 2026-10-12; `src/features/home/pages/home-page.tsx` |
 
 ## 4. Deliberately not built

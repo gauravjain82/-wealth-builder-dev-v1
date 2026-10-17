@@ -12,7 +12,7 @@ name is the feature directory name, so `src/features/calendar-sync/` is document
 - **Templates:** [`_standard/`](_standard/) — copy into `docs/<module>/` to start.
 - **The shell:** [`platform/`](platform/) — router, auth wiring, layout, data access,
   build. Read this before any module doc.
-- **Backend:** `mlm_platform/docs/` follows the same standard. Each module's front matter
+- **Backend:** `wealth-builder-dev-v1-backend/docs/` follows the same standard. Each module's front matter
   names its backend app, and that app's `API.md` is the authority on server behaviour.
 
 **All 28 feature modules are documented.** 26 have a doc directory — **16 Full** (six files) and
@@ -51,11 +51,11 @@ See [the standard §5](DOCUMENTATION_STANDARD.md#5-doc-tiers) for how a tier is 
 | [leaderboards](leaderboards/) | `/leaderboards` | `wbreporting` | 2123 | Merged-not-deployed | ✅ **reference** |
 | [licensing](licensing/) | `/licensing/*` (4 routes) | `accounts` — **not called** | 1405 | Production | ✅ |
 | [matchup](matchup/) | `/matchup`, `/calendar` | `matchup`, `notifications` | 4563 | Production | ✅ |
-| [plugin-fees](plugin-fees/) | `/plugin-fees/statement`, `/admin/plugin-fees`, `/admin/plugin-fees/{review,cycles,payments,payouts,sevc-totals,costs,adjustments}`, `/admin/plugin-fees/agents/:id/statement`, three sections of `/settings` | `plugin_fees` | ~9400 | **Merged-not-deployed** — not yet merged: branch `feature/plugin-fees`, coupled to the `mlm_platform` branch of the same name; `plugin_fees:review` / `:manage` / `:payout_approve` not granted | ✅ |
+| [plugin-fees](plugin-fees/) | `/plugin-fees/statement`, `/admin/plugin-fees`, `/admin/plugin-fees/{review,cycles,payments,payouts,sevc-totals,costs,adjustments}`, `/admin/plugin-fees/agents/:id/statement`, three sections of `/settings` | `plugin_fees` | ~9400 | **Merged-not-deployed** — not yet merged: branch `feature/plugin-fees`, coupled to the `wealth-builder-dev-v1-backend` branch of the same name; `plugin_fees:review` / `:manage` / `:payout_approve` not granted | ✅ |
 | [promotion](promotion/) | `/promotion/dashboard`, `/promotion/team` | `promotion` | 1226 | Production | ✅ |
 | [settings](settings/) | `/settings` | `accounts`, `authz`, `payments`, `telegram` | 2307 | Production | ✅ |
 | [team](team/) | `/team/*` (7 trackers), `/onboarding-game`, 1 public | `accounts`, `network`, `tracker` | 22818 | Production | ✅ |
-| [training-schedule](training-schedule/) | `/training-schedule`, `/training-schedule/attend/:token` | `training_schedule` | 2239 | **Merged-not-deployed** — branch `feature/training-schedule`, coupled to the `mlm_platform` branch of the same name | ✅ |
+| [training-schedule](training-schedule/) | `/training-schedule`, `/training-schedule/attend/:token` | `training_schedule` | 2239 | **Merged-not-deployed** — branch `feature/training-schedule`, coupled to the `wealth-builder-dev-v1-backend` branch of the same name | ✅ |
 
 ### Lite
 
@@ -73,7 +73,7 @@ Two files each: `README.md` plus the one carrying the substance.
 | [systematic-tools](systematic-tools/) | `/systematic-tools` | — | 2948 | Production | `UI.md` | ✅ |
 | [terminated-users](terminated-users/) | `/terminated-users` | `accounts` | 529 | Production | `API.md` | ✅ |
 | [training-center](training-center/) | `/training-center` | `content` | 792 | Production | `API.md` | ✅ |
-| [welcome-videos](welcome-videos/) | `/welcome-videos`, `/welcome-videos/:videoKey`, a card on `/home` | `notifications` | ~483 | **Not yet merged** — branch `feature/wb-welcome-videos`, coupled to the `mlm_platform` branch of the same name | `UI.md` | ✅ |
+| [welcome-videos](welcome-videos/) | `/welcome-videos`, `/welcome-videos/:videoKey`, a card on `/home` | `notifications` | ~483 | **Not yet merged** — branch `feature/wb-welcome-videos`, coupled to the `wealth-builder-dev-v1-backend` branch of the same name | `UI.md` | ✅ |
 
 ### Indexed
 
@@ -114,7 +114,7 @@ before its first feature commit lands.
 
 | Item | Detail |
 |---|---|
-| ~~Dangling doc citations in code~~ | **Cleared.** All 28 comments that cited `UI_CONTRACT.md`, `APPLICATION_CONTRACT.md`, `DATA_CONTRACT.md`, `API_CONTRACT.md`, `AGENTS.md`, `OWNER_DECISIONS.md`, `BPM_V2_PLAN.md` or `WB_GMS_PROGRESS.md` now cite a real in-repo path and section. Their content was folded into the relevant `docs/<module>/` files, so losing `mlm_platform/temporary/` loses nothing. Verify with the grep in [`DOCUMENTATION_PLAN.md`](DOCUMENTATION_PLAN.md#checks) — it should return 0. |
+| ~~Dangling doc citations in code~~ | **Cleared.** All 28 comments that cited `UI_CONTRACT.md`, `APPLICATION_CONTRACT.md`, `DATA_CONTRACT.md`, `API_CONTRACT.md`, `AGENTS.md`, `OWNER_DECISIONS.md`, `BPM_V2_PLAN.md` or `WB_GMS_PROGRESS.md` now cite a real in-repo path and section. Their content was folded into the relevant `docs/<module>/` files, so losing `wealth-builder-dev-v1-backend/temporary/` loses nothing. Verify with the grep in [`DOCUMENTATION_PLAN.md`](DOCUMENTATION_PLAN.md#checks) — it should return 0. |
 | Not a citation | `src/features/showcase/pages/components-showcase.tsx:449` renders the text `UI_COMPONENTS_GUIDE.md` as a placeholder link with `href="#"`. It is demo content in the internal component gallery, not a reference to a document. Left alone. |
-| Archived | [`_archive/`](_archive/) holds six superseded documents. **Do not cite them.** Three described a Firebase repository architecture this codebase no longer has (`ARCHITECTURE.md`, `QUICK_START.md`, `MIGRATION_GUIDE.md`) and are superseded by [`platform/`](platform/). `AUTHENTICATION_ROUTING.md` was wrong about where an authenticated user lands, superseded by [`auth/`](auth/). `CALENDAR_SYNC_PROGRESS.md` was accurate but silently incomplete after its Phase 11, superseded by [`calendar-sync/`](calendar-sync/). `ADMIN_CONTENT_MANAGEMENT_GUIDE.md` specified 18 endpoints under `/api/admin/pages/*` that were never built — the real content API is `/api/content/`, and `mlm_platform/docs/content/` is its authority. Each carries a banner naming its replacement and what it got wrong. |
+| Archived | [`_archive/`](_archive/) holds six superseded documents. **Do not cite them.** Three described a Firebase repository architecture this codebase no longer has (`ARCHITECTURE.md`, `QUICK_START.md`, `MIGRATION_GUIDE.md`) and are superseded by [`platform/`](platform/). `AUTHENTICATION_ROUTING.md` was wrong about where an authenticated user lands, superseded by [`auth/`](auth/). `CALENDAR_SYNC_PROGRESS.md` was accurate but silently incomplete after its Phase 11, superseded by [`calendar-sync/`](calendar-sync/). `ADMIN_CONTENT_MANAGEMENT_GUIDE.md` specified 18 endpoints under `/api/admin/pages/*` that were never built — the real content API is `/api/content/`, and `wealth-builder-dev-v1-backend/docs/content/` is its authority. Each carries a banner naming its replacement and what it got wrong. |
 | Root is clean | The repository root now holds only `README.md` and `CLAUDE.md`. Every other document lives under `docs/`. Keep it that way: a new document goes in `docs/<module>/` or it does not get written. |

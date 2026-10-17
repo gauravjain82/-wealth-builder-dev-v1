@@ -5,7 +5,7 @@ same six files and the same headings. This file defines that contract. It is nor
 if a module doc disagrees with this standard, the module doc is wrong.
 
 This is the frontend half of a two-repo standard. The backend
-(`mlm_platform/docs/DOCUMENTATION_STANDARD.md`) uses the same front matter, the same
+(`wealth-builder-dev-v1-backend/docs/DOCUMENTATION_STANDARD.md`) uses the same front matter, the same
 numbered-heading discipline and the same decision-ID rules. Five of the six filenames are
 identical in both repos. Learn the shape once, read either repo.
 
@@ -80,7 +80,7 @@ reading the body:
 | **Module** | `<feature-dir>` |
 | **Source** | `src/features/<feature-dir>/` |
 | **Routes** | `/path`, `/path/:id` or `—` |
-| **Backend module** | `<app_label>` → `mlm_platform/docs/<app_label>/` or `—` |
+| **Backend module** | `<app_label>` → `wealth-builder-dev-v1-backend/docs/<app_label>/` or `—` |
 | **API prefix** | `/api/<prefix>/` or `—` |
 | **Status** | Production · Gated · Merged-not-deployed · Stub · Deprecated |
 | **Doc version** | 1.0 |

@@ -2,7 +2,7 @@
  * Wire types for the plug-in fees P2–P6 surfaces.
  *
  * These mirror the backend contract field for field:
- * `mlm_platform/docs/plugin_fees/API.md` (summarised in `docs/plugin-fees/API.md` §3).
+ * `wealth-builder-dev-v1-backend/docs/plugin_fees/API.md` (summarised in `docs/plugin-fees/API.md` §3).
  * A field the viewer may not see is **absent**, never `null`, so optional keys below are
  * `?:`, and keys the contract says may be null are `| null`.
  */

@@ -120,7 +120,7 @@ Manual checks, ordered by what they protect:
 `playwright-core`; no browser download) and reports seconds to first standings, one contest switch,
 standings server time, and the full API waterfall. It switches by clicking the second contest
 button (parity phase 18), or through the `<select>` on a build that still has one. It is the measurement for phases 10–12 of the
-parity plan (`mlm_platform/docs/integrations/wb-contests/PARITY_PLAN.md`).
+parity plan (`wealth-builder-dev-v1-backend/docs/integrations/wb-contests/PARITY_PLAN.md`).
 
 ```bash
 npm run dev                              # in another terminal

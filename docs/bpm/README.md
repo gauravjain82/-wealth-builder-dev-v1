@@ -5,7 +5,7 @@
 | **Module** | `bpm` |
 | **Source** | `src/features/bpm/` |
 | **Routes** | `/bpm/*` (8 sub-tools), `/bpm/pass/:token` (public) |
-| **Backend module** | `bpm` → `mlm_platform/docs/bpm/` |
+| **Backend module** | `bpm` → `wealth-builder-dev-v1-backend/docs/bpm/` |
 | **API prefix** | `/api/bpm/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |

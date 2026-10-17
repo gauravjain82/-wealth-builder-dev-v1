@@ -120,7 +120,7 @@ What stands in for tests:
 3. Manual verification against a running backend, per module, recorded in that module's
    `OPERATIONS.md` §4.
 
-Backend behaviour **is** tested, in `mlm_platform`. When a change spans both repos, the
+Backend behaviour **is** tested, in `wealth-builder-dev-v1-backend`. When a change spans both repos, the
 backend test suite is the safety net; treat a green frontend build as necessary and not
 sufficient.
 
@@ -140,7 +140,7 @@ routing work on a deep link.
 counterpart, because the frontend calls endpoints that do not exist yet on the other side:
 `feature/wb-leaderboards`, `feature/wb-contests`, `feature/wb-gms`,
 `feature/wb-reporting-pipeline`, `feature/bpm-v2` — each has a matching branch in
-`mlm_platform`. Merging one side alone produces a page that renders and then fails every
+`wealth-builder-dev-v1-backend`. Merging one side alone produces a page that renders and then fails every
 request. The affected module's `OPERATIONS.md` §5 names its counterpart.
 
 ## 6. Troubleshooting

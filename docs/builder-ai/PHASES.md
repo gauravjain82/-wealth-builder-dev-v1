@@ -11,7 +11,7 @@
 | **Doc version** | 1.0 |
 | **Verified against** | commit `7e3b7f1` — 2026-09-27 |
 
-> Phase numbering comes from `mlm_platform/BUILDERAI_PROGRESS.md` (P1 core screens → P2
+> Phase numbering comes from `wealth-builder-dev-v1-backend/BUILDERAI_PROGRESS.md` (P1 core screens → P2
 > reporting/bulletin → P3 AI advice) and **must not be renumbered**. The `B` decision prefix is
 > assigned by this document; the plan recorded its decisions without IDs.
 >

@@ -46,7 +46,7 @@ browser in `localStorage['wb.matchup.actionRequiredCollapsed']`, read and writte
 storage only means it is not remembered.
 
 The first filter dropdown is a **preset**, served by `/appointments/statuses/` as `presets` and defined in
-`mlm_platform` `matchup/filters.py` `PRESET_FILTERS`: all, done, sale recruit, rescheduled, not interested,
+`wealth-builder-dev-v1-backend` `matchup/filters.py` `PRESET_FILTERS`: all, done, sale recruit, rescheduled, not interested,
 and **result required** (M17) — the meeting has ended, it is `ACCEPTED` or `RESCHEDULED`, and no follow-up
 result is filed. Unlike the action-required queue, it is not limited to the viewer's own meetings or to
 Request Trainer: it filters whatever the list already shows.

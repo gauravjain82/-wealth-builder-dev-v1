@@ -5,7 +5,7 @@
 | **Module** | `platform` |
 | **Source** | `src/features/auth/repositories/auth-repository.ts`, `src/shared/services/content-page-service.ts` |
 | **Routes** | — |
-| **Backend module** | `accounts`, `authz` → `mlm_platform/docs/accounts/API.md` |
+| **Backend module** | `accounts`, `authz` → `wealth-builder-dev-v1-backend/docs/accounts/API.md` |
 | **API prefix** | `/api/accounts/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
@@ -63,7 +63,7 @@ see [PHASES.md §4](PHASES.md#4-deliberately-not-built) and
 ### The prefixes in use
 
 21 `/api/<app>/` prefixes, by call-site count. Each maps to a Django app whose own
-`API.md` in `mlm_platform/docs/` is the authority.
+`API.md` in `wealth-builder-dev-v1-backend/docs/` is the authority.
 
 | Prefix | Calls | Consumed by |
 |---|---|---|

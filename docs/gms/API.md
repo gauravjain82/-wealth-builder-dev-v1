@@ -5,7 +5,7 @@
 | **Module** | `gms` |
 | **Source** | `src/features/gms/services/` |
 | **Routes** | `/admin/guidance` + `HelpAction` |
-| **Backend module** | `gms` → `mlm_platform/docs/gms/API.md` |
+| **Backend module** | `gms` → `wealth-builder-dev-v1-backend/docs/gms/API.md` |
 | **API prefix** | `/api/gms/` |
 | **Status** | Merged-not-deployed |
 | **Doc version** | 1.0 |

@@ -20,7 +20,7 @@
 > content inventory as useful historical analysis of what each page needs, and nothing here as
 > a description of the deployed schema.
 >
-> The authority on the real endpoints is `mlm_platform/docs/content/` in the backend repo.
+> The authority on the real endpoints is `wealth-builder-dev-v1-backend/docs/content/` in the backend repo.
 > `docs/admin/API.md` will document the frontend's consumption of them when batch D is written.
 
 ---

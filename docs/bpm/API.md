@@ -5,7 +5,7 @@
 | **Module** | `bpm` |
 | **Source** | `src/features/bpm/services/` |
 | **Routes** | `/bpm/*`, `/bpm/pass/:token` |
-| **Backend module** | `bpm` → `mlm_platform/docs/bpm/API.md` |
+| **Backend module** | `bpm` → `wealth-builder-dev-v1-backend/docs/bpm/API.md` |
 | **API prefix** | `/api/bpm/` |
 | **Status** | Production |
 | **Doc version** | 1.0 |
@@ -179,7 +179,7 @@ carry the most meaning:
 The three comments that described the guest senders and guest passes as unbuilt were fixed
 in the October update (`types.ts:729`, `:736`, `:738`).
 
-**All locations — the contract** (backend: `mlm_platform/docs/bpm/API.md` §3, "All locations";
+**All locations — the contract** (backend: `wealth-builder-dev-v1-backend/docs/bpm/API.md` §3, "All locations";
 D21, D22). The same input rule applies to `ids=`, `occurrences=` and `scope_occurrence_ids`:
 
 - **1–20 positive integers**, duplicates ignored; otherwise **400**. The client sends 2 or more —

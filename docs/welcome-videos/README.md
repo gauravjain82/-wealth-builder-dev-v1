@@ -5,9 +5,9 @@
 | **Module** | `welcome-videos` |
 | **Source** | `src/features/welcome-videos/` |
 | **Routes** | `/welcome-videos`, `/welcome-videos/:videoKey` |
-| **Backend module** | `notifications` → `mlm_platform/docs/notifications/` |
+| **Backend module** | `notifications` → `wealth-builder-dev-v1-backend/docs/notifications/` |
 | **API prefix** | `/api/notifications/` |
-| **Status** | Not yet merged — branch `feature/wb-welcome-videos`, coupled to `mlm_platform` |
+| **Status** | Not yet merged — branch `feature/wb-welcome-videos`, coupled to `wealth-builder-dev-v1-backend` |
 | **Doc version** | 1.0 |
 | **Doc tier** | **Lite** — `README.md` + [UI.md](UI.md) |
 | **Verified against** | branch `feature/wb-welcome-videos` off `e91e5a5` — 2026-10-01 (§2, §5, §8 re-read at `71df1e3`, 2026-10-07) |
@@ -34,7 +34,7 @@ agency codes and work prospects.
   app. Nothing here triggers a message.
 - **Watch tracking.** Links are Vimeo links; views are not recorded (backend decision N20).
 - **Editing the videos.** The catalogue is code (backend decision N6). Change
-  `mlm_platform/notifications/services/onboarding_drip/catalog.py` and both the messages and this
+  `wealth-builder-dev-v1-backend/notifications/services/onboarding_drip/catalog.py` and both the messages and this
   page follow.
 - [training-center](../training-center/) and the onboarding game in [team](../team/) have their
   own, separate video lists.
@@ -79,7 +79,7 @@ only with a backend deploy.
 
 ## 7. Decisions
 
-Recorded in the backend log, `mlm_platform/docs/notifications/PHASES.md` §3:
+Recorded in the backend log, `wealth-builder-dev-v1-backend/docs/notifications/PHASES.md` §3:
 
 - **N19** — every authenticated user sees all eight at once; the website does not follow the drip
   pacing. Leaders show the videos to agents and share them when needed.
