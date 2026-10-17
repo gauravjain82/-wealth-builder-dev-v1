@@ -146,8 +146,6 @@ into `docs/<module>/` is the only thing that preserves them.
 | `promotion/promotion-frontend-api.md` (30 KB) | **promotion** |
 | `payments/ROLE_TRANSITION_MASTER_GUIDE.md`, `DB_ENTRY_FLOW_REFERENCE.md`, `ROLE_TRANSITION_CONFIGURATION_HELPER.md`, `DEVOPS_RUNBOOK.md` | **settings** (billing) |
 | `helpdesk/HELPDESK.md` | **helpdesk** (Lite) |
-| `mlm_guides_package/MATCHUP_API.md` (17 KB) | **matchup** |
-| `mlm_guides_package/MLM_API_Guide_For_Frontend_And_Business.md` | several — a frontend-oriented overview |
 | `docs/builder_implementation_flow.md`, `docs/current_month_team_points_trace.md` | builder-ai, team |
 
 ### 2.6 The code itself
